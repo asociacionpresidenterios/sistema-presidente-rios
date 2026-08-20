@@ -1,0 +1,15 @@
+<!doctype html><html lang="es"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827"><link rel="manifest" href="/static/manifest.json">
+<title>{% block title %}Presidente Ríos{% endblock %}</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f4f6;color:#111827;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial}
+header{background:#111827;color:#fff;padding:18px}.wrap{max-width:1100px;margin:auto;padding:16px}
+.card{background:#fff;border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 2px 12px #0001}
+.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{border:0;border-radius:10px;padding:11px 15px;text-decoration:none;font-weight:700;cursor:pointer;background:#111827;color:white}.secondary{background:#e5e7eb;color:#111827}.danger{background:#b91c1c}
+input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:16px}label{display:block;font-weight:700;margin:12px 0 6px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:700px}th,td{text-align:left;padding:12px;border-bottom:1px solid #e5e7eb}
+.alert{padding:12px;border-radius:10px;margin:10px 0}.success{background:#dcfce7;color:#166534}.error{background:#fee2e2;color:#991b1b}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.btn{width:100%;text-align:center}}
+</style></head><body><header><div class="wrap"><b>Asociación Presidente Ríos</b><div style="opacity:.7;font-size:13px">Sistema de registro y acreditación</div></div></header>
+<main class="wrap">{% with messages=get_flashed_messages(with_categories=true) %}{% for c,m in messages %}<div class="alert {{c}}">{{m}}</div>{% endfor %}{% endwith %}{% block content %}{% endblock %}</main></body></html>

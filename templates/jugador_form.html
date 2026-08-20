@@ -1,0 +1,8 @@
+{% extends "base.html" %}{% block content %}<div class="card"><h2>{{"Editar jugador" if jugador else "Nuevo jugador"}}</h2>
+<form method="post"><div class="grid">
+<div><label>RUT</label><input name="rut" required value="{{jugador.rut if jugador else ''}}" placeholder="12.345.678-9"></div>
+<div><label>Nombre completo</label><input name="nombre_completo" required value="{{jugador.nombre_completo if jugador else ''}}"></div>
+<div><label>Fecha de nacimiento</label><input type="date" name="fecha_nacimiento" required value="{{jugador.fecha_nacimiento.isoformat() if jugador else ''}}"></div>
+<div><label>Serie</label><input name="serie" required value="{{jugador.serie if jugador else ''}}" placeholder="Senior"></div>
+<div><label>Club</label><input name="club" required value="{{jugador.club if jugador else ''}}"></div></div>
+<div class="actions" style="margin-top:18px"><button class="btn">Guardar</button><a class="btn secondary" href="/">Cancelar</a></div></form></div>{% endblock %}
