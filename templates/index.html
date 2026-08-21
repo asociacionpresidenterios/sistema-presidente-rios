@@ -1,5 +1,5 @@
 {% extends "base.html" %}{% block content %}
-<div class="card"><div class="actions" style="justify-content:space-between"><div><h2 style="margin:0">Jugadores</h2><small>{{jugadores|length}} resultado(s)</small></div><a class="btn" href="/jugadores/nuevo">+ Nuevo jugador</a></div></div>
+<div class="card"><div class="actions" style="justify-content:space-between"><div><h2 style="margin:0">Jugadores</h2><small>{{jugadores|length}} resultado(s)</small></div><div style="display:flex;gap:10px"><a class="btn" href="/jugadores/nuevo">+ Nuevo jugador</a><a class="btn" href="{{ url_for('importar_jugadores') }}">📥 Importar jugadores</a></div></div></div>
 <div class="card"><form method="get" style="display:grid;grid-template-columns:1fr auto;gap:10px"><input name="q" value="{{q}}" placeholder="Buscar por RUT, nombre o club"><button class="btn">Buscar</button></form></div>
 <div class="card tablewrap"><table><thead><tr><th>RUT</th><th>Nombre</th><th>Nacimiento</th><th>Serie</th><th>Club</th><th></th></tr></thead><tbody>
 {% for j in jugadores %}<tr><td><b>{{j.rut}}</b></td><td>{{j.nombre_completo}}</td><td>{{j.fecha_nacimiento.strftime('%d/%m/%Y')}}</td><td>{{j.serie}}</td><td>{{j.club}}</td><td><a class="btn secondary" href="/jugadores/{{j.id}}/editar">Editar</a></td></tr>
