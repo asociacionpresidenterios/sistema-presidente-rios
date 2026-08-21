@@ -514,10 +514,7 @@ def eliminar_jugador(jugador_id):
 # IMPORTAR EXCEL
 # ============================================================
 
-@app.route(
-    "/jugadores/importar",
-    methods=["GET", "POST"]
-)
+@app.route("/jugadores/importar", methods=["GET", "POST"])
 def importar_jugadores():
 
     if request.method == "GET":
