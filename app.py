@@ -848,13 +848,12 @@ def api_jugadores():
     ).strip().upper()
 
     if not rut:
-
         return jsonify([])
 
     jugadores = Jugador.query.filter(
-        Jugador.rut.ilike(
-            f"%{rut}%"
-        )
+        Jugador.rut.ilike(f"%{rut}%")
+    ).order_by(
+        Jugador.nombre_completo
     ).all()
 
     return jsonify([
@@ -862,13 +861,24 @@ def api_jugadores():
             "id": j.id,
             "rut": j.rut,
             "nombre_completo": j.nombre_completo,
-            "fecha_nacimiento":
-                j.fecha_nacimiento.isoformat(),
+            "fecha_nacimiento": j.fecha_nacimiento.isoformat(),
             "serie": j.serie,
             "club": j.club
         }
         for j in jugadores
     ])
+
+
+@app.route("/health")
+def health():
+    return {"status": "ok"}
+
+
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 5000))
+    )
 
 
 # ============================================================
