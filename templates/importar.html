@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Importar jugadores</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f3f6;
+            color: #111827;
+        }
+
+        header {
+            background: #111827;
+            color: white;
+            padding: 30px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        header p {
+            margin: 6px 0 0;
+            color: #cbd5e1;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 35px;
+            box-shadow: 0 5px 20px rgba(0,0,0,.08);
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        .info {
+            background: #f3f4f6;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+
+        .info strong {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        ul {
+            line-height: 1.8;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            margin: 20px 0;
+            background: white;
+        }
+
+        button,
+        a {
+            display: inline-block;
+            border: 0;
+            border-radius: 10px;
+            padding: 13px 22px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        button {
+            background: #111827;
+            color: white;
+        }
+
+        a {
+            background: #e5e7eb;
+            color: #111827;
+            margin-left: 8px;
+        }
+
+        .formato {
+            margin-top: 25px;
+            padding: 20px;
+            background: #eff6ff;
+            border-radius: 12px;
+        }
+
+        code {
+            background: #e5e7eb;
+            padding: 3px 6px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Asociación Presidente Ríos</h1>
+    <p>Sistema de registro y acreditación</p>
+</header>
+
+<main>
+
+    <div class="card">
+
+        <h2>Importar jugadores</h2>
+
+        <p>
+            Puedes registrar múltiples jugadores utilizando
+            un archivo Excel.
+        </p>
+
+        <div class="info">
+
+            <strong>
+                El Excel debe contener estas columnas:
+            </strong>
+
+            <ul>
+                <li>RUT</li>
+                <li>Nombre completo</li>
+                <li>Fecha de nacimiento</li>
+                <li>Serie</li>
+                <li>Club</li>
+            </ul>
+
+        </div>
+
+        <form
+            method="POST"
+            enctype="multipart/form-data"
+        >
+
+            <label>
+                <strong>Seleccionar archivo Excel</strong>
+            </label>
+
+            <input
+                type="file"
+                name="archivo"
+                accept=".xlsx"
+                required
+            >
+
+            <button type="submit">
+                Importar jugadores
+            </button>
+
+            <a href="{{ url_for('index') }}">
+                Cancelar
+            </a>
+
+        </form>
+
+        <div class="formato">
+
+            <strong>Ejemplo:</strong>
+
+            <p>
+                RUT:
+                <code>11.111.111-1</code>
+            </p>
+
+            <p>
+                Fecha:
+                <code>30/11/1989</code>
+            </p>
+
+        </div>
+
+    </div>
+
+</main>
+
+</body>
+</html>
