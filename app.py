@@ -833,7 +833,17 @@ def importar_jugadores():
             errores=errores,
             detalle_errores=detalle_errores
         )
+    except Exception as error:
+        db.session.rollback()
 
+        flash(
+            "Ocurrió un error inesperado al importar el archivo.",
+            "error"
+        )
+
+        return redirect(
+            url_for("importar_jugadores")
+        )
 
 # ============================================================
 # API
