@@ -47,7 +47,9 @@
         width: 150px;
         height: 150px;
         margin: 0 auto 20px;
+
         border-radius: 50%;
+
         background: #111827;
         color: white;
 
@@ -78,6 +80,7 @@
 
     .estado-habilitado {
         display: inline-block;
+
         margin-top: 20px;
 
         padding: 9px 18px;
@@ -93,6 +96,7 @@
 
     .serie {
         display: inline-block;
+
         margin-top: 10px;
 
         padding: 7px 15px;
@@ -161,11 +165,13 @@
 
     .seccion {
         margin-top: 20px;
+
         padding: 22px;
 
         border-radius: 14px;
 
         border: 1px solid #e5e7eb;
+
         background: #ffffff;
     }
 
@@ -182,8 +188,12 @@
 
     .disciplinario {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+
+        grid-template-columns:
+            repeat(3, 1fr);
+
         gap: 12px;
+
         margin-top: 18px;
     }
 
@@ -195,6 +205,7 @@
         border-radius: 12px;
 
         background: #f8fafc;
+
         border: 1px solid #e2e8f0;
     }
 
@@ -202,6 +213,7 @@
         display: block;
 
         font-size: 28px;
+
         font-weight: 800;
 
         margin-bottom: 5px;
@@ -209,7 +221,9 @@
 
     .disciplinario-label {
         font-size: 12px;
+
         color: #64748b;
+
         font-weight: 700;
     }
 
@@ -248,10 +262,13 @@
         border: 3px solid #111827;
 
         display: flex;
+
         align-items: center;
+
         justify-content: center;
 
         font-size: 13px;
+
         font-weight: 800;
 
         background: white;
@@ -259,7 +276,9 @@
 
     .codigo-jugador {
         font-size: 18px;
+
         font-weight: 800;
+
         letter-spacing: 1px;
     }
 
@@ -280,6 +299,7 @@
 
         .acreditacion-header {
             flex-direction: column;
+
             align-items: flex-start;
         }
 
@@ -305,6 +325,7 @@
 
         .acciones-ficha .btn {
             flex: 1;
+
             text-align: center;
         }
 
@@ -346,7 +367,9 @@
 <div class="acreditacion-container">
 
 
+    <!-- ================================================= -->
     <!-- ENCABEZADO -->
+    <!-- ================================================= -->
 
     <div class="card acreditacion-header">
 
@@ -357,7 +380,8 @@
             </h2>
 
             <small>
-                Asociación Presidente Ríos · Sistema de registro y acreditación
+                Asociación Presidente Ríos ·
+                Sistema de registro y acreditación
             </small>
 
         </div>
@@ -394,15 +418,16 @@
     </div>
 
 
-    <!-- PERFIL Y DATOS -->
+    <!-- ================================================= -->
+    <!-- INFORMACIÓN PRINCIPAL -->
+    <!-- ================================================= -->
 
     <div class="ficha-principal">
 
 
-        <!-- PERFIL -->
+        <!-- PERFIL DEL JUGADOR -->
 
         <div class="card perfil">
-
 
             <div class="foto-jugador">
 
@@ -411,11 +436,11 @@
             </div>
 
 
-            <h1 class="nombre-jugador">
+            <h2 class="nombre-jugador">
 
                 {{ jugador.nombre_completo }}
 
-            </h1>
+            </h2>
 
 
             <p class="club-jugador">
@@ -423,6 +448,13 @@
                 {{ jugador.club }}
 
             </p>
+
+
+            <span class="serie">
+
+                {{ jugador.serie }}
+
+            </span>
 
 
             <div>
@@ -435,25 +467,12 @@
 
             </div>
 
-
-            <div>
-
-                <span class="serie">
-
-                    SERIE {{ jugador.serie|upper }}
-
-                </span>
-
-            </div>
-
-
         </div>
 
 
-        <!-- DATOS -->
+        <!-- DATOS DEL JUGADOR -->
 
         <div class="card datos">
-
 
             <h2>
                 Datos del jugador
@@ -462,6 +481,8 @@
 
             <div class="datos-grid">
 
+
+                <!-- RUT -->
 
                 <div class="dato">
 
@@ -477,6 +498,25 @@
 
                 </div>
 
+
+                <!-- NOMBRE -->
+
+                <div class="dato">
+
+                    <span class="dato-label">
+                        Nombre completo
+                    </span>
+
+                    <div class="dato-valor">
+
+                        {{ jugador.nombre_completo }}
+
+                    </div>
+
+                </div>
+
+
+                <!-- FECHA DE NACIMIENTO -->
 
                 <div class="dato">
 
@@ -501,35 +541,7 @@
                 </div>
 
 
-                <div class="dato dato-completo">
-
-                    <span class="dato-label">
-                        Nombre completo
-                    </span>
-
-                    <div class="dato-valor">
-
-                        {{ jugador.nombre_completo }}
-
-                    </div>
-
-                </div>
-
-
-                <div class="dato">
-
-                    <span class="dato-label">
-                        Club
-                    </span>
-
-                    <div class="dato-valor">
-
-                        {{ jugador.club }}
-
-                    </div>
-
-                </div>
-
+                <!-- SERIE -->
 
                 <div class="dato">
 
@@ -545,45 +557,48 @@
 
                 </div>
 
+
+                <!-- CLUB -->
+
+                <div class="dato dato-completo">
+
+                    <span class="dato-label">
+                        Club
+                    </span>
+
+                    <div class="dato-valor">
+
+                        {{ jugador.club }}
+
+                    </div>
+
+                </div>
+
+
             </div>
-
-
-            <!-- ESTADO -->
-
-            <div class="seccion">
-
-                <h3>
-                    Estado de acreditación
-                </h3>
-
-                <p class="seccion-descripcion">
-
-                    El jugador figura actualmente como
-                    <strong>registro activo</strong>
-                    en el sistema de la Asociación Presidente Ríos.
-
-                </p>
-
-            </div>
-
 
         </div>
 
     </div>
 
 
-    <!-- DISCIPLINA -->
+    <!-- ================================================= -->
+    <!-- ESTADO DISCIPLINARIO -->
+    <!-- ================================================= -->
 
     <div class="card seccion">
 
         <h3>
-            ⚽ Control disciplinario
+            ⚽ Estado disciplinario
         </h3>
+
 
         <p class="seccion-descripcion">
 
-            Este módulo queda preparado para incorporar el control
-            de tarjetas y suspensiones.
+            Resumen disciplinario del jugador.
+            Estos valores quedarán conectados al
+            registro oficial de tarjetas y suspensiones
+            en la siguiente etapa.
 
         </p>
 
@@ -591,40 +606,58 @@
         <div class="disciplinario">
 
 
+            <!-- AMARILLAS -->
+
             <div class="disciplinario-item">
 
                 <span class="disciplinario-numero amarillas">
-                    —
+
+                    0
+
                 </span>
 
                 <span class="disciplinario-label">
+
                     TARJETAS AMARILLAS
+
                 </span>
 
             </div>
 
+
+            <!-- ROJAS -->
 
             <div class="disciplinario-item">
 
                 <span class="disciplinario-numero rojas">
-                    —
+
+                    0
+
                 </span>
 
                 <span class="disciplinario-label">
+
                     TARJETAS ROJAS
+
                 </span>
 
             </div>
 
 
+            <!-- SUSPENSIONES -->
+
             <div class="disciplinario-item">
 
                 <span class="disciplinario-numero suspensiones">
-                    —
+
+                    0
+
                 </span>
 
                 <span class="disciplinario-label">
+
                     SUSPENSIONES
+
                 </span>
 
             </div>
@@ -635,7 +668,9 @@
     </div>
 
 
+    <!-- ================================================= -->
     <!-- ACREDITACIÓN -->
+    <!-- ================================================= -->
 
     <div class="card seccion">
 
@@ -643,23 +678,28 @@
             🪪 Identificación de acreditación
         </h3>
 
+
         <p class="seccion-descripcion">
 
-            Código interno utilizado para identificar al jugador
-            dentro del sistema.
+            Identificación interna del jugador
+            dentro del sistema de la Asociación
+            Presidente Ríos.
 
         </p>
 
 
-        <div style="margin-top:15px;">
+        <div style="margin-top:18px;">
 
             <span class="dato-label">
+
                 CÓDIGO DEL JUGADOR
+
             </span>
+
 
             <div class="codigo-jugador">
 
-                ARP-{{ jugador.id }}
+                JUG-{{ jugador.id }}
 
             </div>
 
@@ -672,16 +712,18 @@
                 Código QR
             </strong>
 
+
             <div class="qr-placeholder">
 
                 QR
 
             </div>
 
+
             <small>
 
-                El código QR será conectado al sistema de
-                verificación en la siguiente etapa.
+                El código QR será conectado posteriormente
+                al sistema de verificación de jugadores.
 
             </small>
 
@@ -690,13 +732,16 @@
     </div>
 
 
+    <!-- ================================================= -->
     <!-- OBSERVACIONES -->
+    <!-- ================================================= -->
 
     <div class="card seccion">
 
         <h3>
             📝 Observaciones
         </h3>
+
 
         <p class="seccion-descripcion">
 
@@ -707,9 +752,14 @@
     </div>
 
 
+    <!-- ================================================= -->
+    <!-- PIE DE FICHA -->
+    <!-- ================================================= -->
+
     <div class="pie-ficha">
 
-        Asociación Presidente Ríos · Sistema de registro y acreditación
+        Asociación Presidente Ríos ·
+        Sistema de registro y acreditación
 
     </div>
 
