@@ -1,6 +1,17 @@
 import os
+import io
 from datetime import date, datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+    jsonify,
+    send_file
+)
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from openpyxl import load_workbook
@@ -71,7 +82,44 @@ class Jugador(db.Model):
         db.String(120),
         nullable=False
     )
+# ============================================================
+# FOTO DEL JUGADOR
+# ============================================================
 
+class JugadorFoto(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    jugador_id = db.Column(
+        db.Integer,
+        db.ForeignKey("jugador.id"),
+        unique=True,
+        nullable=False,
+        index=True
+    )
+
+    datos = db.Column(
+        db.LargeBinary,
+        nullable=False
+    )
+
+    mime_type = db.Column(
+        db.String(50),
+        nullable=False,
+        default="image/jpeg"
+    )
+
+    jugador = db.relationship(
+        "Jugador",
+        backref=db.backref(
+            "foto",
+            uselist=False,
+            cascade="all, delete-orphan"
+        )
+    )
 
 with app.app_context():
     db.create_all()
@@ -240,7 +288,29 @@ def index():
 
 @app.route("/jugadores/<int:jugador_id>")
 def ficha_jugador(jugador_id):
+# ============================================================
+# MOSTRAR FOTO DEL JUGADOR
+# ============================================================
 
+@app.route("/jugadores/<int:jugador_id>/foto")
+def foto_jugador(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    if not jugador.foto:
+
+        return (
+            "Sin fotografía",
+            404
+        )
+
+    return send_file(
+        io.BytesIO(jugador.foto.datos),
+        mimetype=jugador.foto.mime_type
+    )
     jugador = db.get_or_404(
         Jugador,
         jugador_id
