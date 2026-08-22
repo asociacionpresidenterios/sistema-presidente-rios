@@ -1,5 +1,4 @@
 import os
-import io
 from datetime import date, datetime
 
 from flask import (
@@ -10,11 +9,16 @@ from flask import (
     url_for,
     flash,
     jsonify,
-    send_file
+    Response
 )
+
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.utils import secure_filename
 from openpyxl import load_workbook
+
+
+# ============================================================
+# CONFIGURACIÓN
+# ============================================================
 
 app = Flask(__name__)
 
@@ -23,19 +27,27 @@ app.config["SECRET_KEY"] = os.environ.get(
     "cambia-esta-clave-en-produccion"
 )
 
+
+# ============================================================
+# BASE DE DATOS
+# ============================================================
+
 db_url = os.environ.get("DATABASE_URL")
 
 if db_url:
+
     db_url = db_url.replace(
         "postgres://",
         "postgresql+psycopg2://",
         1
     )
+
     db_url = db_url.replace(
         "postgresql://",
         "postgresql+psycopg2://",
         1
     )
+
 
 app.config["SQLALCHEMY_DATABASE_URI"] = (
     db_url or "sqlite:///jugadores.db"
@@ -51,6 +63,7 @@ db = SQLAlchemy(app)
 # ============================================================
 
 class Jugador(db.Model):
+
     id = db.Column(
         db.Integer,
         primary_key=True
@@ -82,47 +95,76 @@ class Jugador(db.Model):
         db.String(120),
         nullable=False
     )
-# ============================================================
-# FOTO DEL JUGADOR
-# ============================================================
 
-class JugadorFoto(db.Model):
+    # --------------------------------------------------------
+    # FOTOGRAFÍA
+    # --------------------------------------------------------
 
-    id = db.Column(
-        db.Integer,
-        primary_key=True
-    )
-
-    jugador_id = db.Column(
-        db.Integer,
-        db.ForeignKey("jugador.id"),
-        unique=True,
-        nullable=False,
-        index=True
-    )
-
-    datos = db.Column(
+    foto = db.Column(
         db.LargeBinary,
-        nullable=False
+        nullable=True
     )
 
-    mime_type = db.Column(
-        db.String(50),
-        nullable=False,
-        default="image/jpeg"
-    )
 
-    jugador = db.relationship(
-        "Jugador",
-        backref=db.backref(
-            "foto",
-            uselist=False,
-            cascade="all, delete-orphan"
+# ============================================================
+# CREACIÓN / ACTUALIZACIÓN SEGURA DE BASE DE DATOS
+# ============================================================
+
+def preparar_base_datos():
+
+    db.create_all()
+
+    # --------------------------------------------------------
+    # Comprobar si la columna foto existe.
+    #
+    # create_all() NO agrega columnas nuevas a una tabla
+    # existente. Por eso hacemos esta comprobación.
+    # --------------------------------------------------------
+
+    try:
+
+        inspector = db.inspect(db.engine)
+
+        columnas = [
+            columna["name"]
+            for columna in inspector.get_columns("jugador")
+        ]
+
+        if "foto" not in columnas:
+
+            if db.engine.dialect.name == "postgresql":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN IF NOT EXISTS foto BYTEA"
+                    )
+                )
+
+            elif db.engine.dialect.name == "sqlite":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN foto BLOB"
+                    )
+                )
+
+            db.session.commit()
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print(
+            "Advertencia al preparar la base de datos:",
+            error
         )
-    )
+
 
 with app.app_context():
-    db.create_all()
+
+    preparar_base_datos()
 
 
 # ============================================================
@@ -140,11 +182,13 @@ def normalizar_rut(rut):
 
     rut = str(rut).strip().upper()
 
-    # Eliminar espacios
     rut = rut.replace(" ", "")
 
-    # Eliminar puntos y guion
-    rut_limpio = rut.replace(".", "").replace("-", "")
+    rut_limpio = (
+        rut
+        .replace(".", "")
+        .replace("-", "")
+    )
 
     if len(rut_limpio) < 2:
         return ""
@@ -155,14 +199,22 @@ def normalizar_rut(rut):
     if not cuerpo.isdigit():
         return ""
 
-    # Formatear con puntos
     cuerpo_formateado = ""
 
     while len(cuerpo) > 3:
-        cuerpo_formateado = "." + cuerpo[-3:] + cuerpo_formateado
+
+        cuerpo_formateado = (
+            "." +
+            cuerpo[-3:] +
+            cuerpo_formateado
+        )
+
         cuerpo = cuerpo[:-3]
 
-    cuerpo_formateado = cuerpo + cuerpo_formateado
+    cuerpo_formateado = (
+        cuerpo +
+        cuerpo_formateado
+    )
 
     return f"{cuerpo_formateado}-{dv}"
 
@@ -176,7 +228,8 @@ def validar_rut(rut):
         return False
 
     rut_limpio = (
-        rut.replace(".", "")
+        rut
+        .replace(".", "")
         .replace("-", "")
         .replace(" ", "")
         .upper()
@@ -195,7 +248,11 @@ def validar_rut(rut):
     multiplicador = 2
 
     for digito in reversed(cuerpo):
-        suma += int(digito) * multiplicador
+
+        suma += (
+            int(digito) *
+            multiplicador
+        )
 
         multiplicador += 1
 
@@ -203,13 +260,19 @@ def validar_rut(rut):
             multiplicador = 2
 
     resto = suma % 11
+
     resultado = 11 - resto
 
     if resultado == 11:
+
         dv_calculado = "0"
+
     elif resultado == 10:
+
         dv_calculado = "K"
+
     else:
+
         dv_calculado = str(resultado)
 
     return dv == dv_calculado
@@ -225,9 +288,11 @@ def convertir_fecha(valor):
         return None
 
     if isinstance(valor, datetime):
+
         return valor.date()
 
     if isinstance(valor, date):
+
         return valor
 
     if isinstance(valor, str):
@@ -242,15 +307,70 @@ def convertir_fecha(valor):
         ]
 
         for formato in formatos:
+
             try:
+
                 return datetime.strptime(
                     valor,
                     formato
                 ).date()
+
             except ValueError:
+
                 continue
 
     return None
+
+
+def obtener_fotografia():
+    """
+    Obtiene y valida la fotografía enviada desde el formulario.
+
+    Máximo permitido: 5 MB.
+    Formatos: JPG, JPEG, PNG y WEBP.
+    """
+
+    archivo = request.files.get("foto")
+
+    if not archivo:
+        return None, None
+
+    if not archivo.filename:
+        return None, None
+
+    contenido = archivo.read()
+
+    if not contenido:
+        return None, "La fotografía seleccionada está vacía."
+
+    # Máximo 5 MB
+    maximo = 5 * 1024 * 1024
+
+    if len(contenido) > maximo:
+
+        return (
+            None,
+            "La fotografía no puede superar los 5 MB."
+        )
+
+    tipo = (
+        archivo.mimetype or ""
+    ).lower()
+
+    tipos_permitidos = {
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+    }
+
+    if tipo not in tipos_permitidos:
+
+        return (
+            None,
+            "La fotografía debe ser JPG, PNG o WEBP."
+        )
+
+    return contenido, None
 
 
 # ============================================================
@@ -260,16 +380,28 @@ def convertir_fecha(valor):
 @app.route("/")
 def index():
 
-    q = request.args.get("q", "").strip()
+    q = request.args.get(
+        "q",
+        ""
+    ).strip()
 
     query = Jugador.query
 
     if q:
+
         query = query.filter(
             db.or_(
-                Jugador.rut.ilike(f"%{q}%"),
-                Jugador.nombre_completo.ilike(f"%{q}%"),
-                Jugador.club.ilike(f"%{q}%")
+                Jugador.rut.ilike(
+                    f"%{q}%"
+                ),
+
+                Jugador.nombre_completo.ilike(
+                    f"%{q}%"
+                ),
+
+                Jugador.club.ilike(
+                    f"%{q}%"
+                )
             )
         )
 
@@ -282,35 +414,17 @@ def index():
         jugadores=jugadores,
         q=q
     )
+
+
 # ============================================================
 # FICHA INDIVIDUAL DEL JUGADOR
 # ============================================================
 
-@app.route("/jugadores/<int:jugador_id>")
+@app.route(
+    "/jugadores/<int:jugador_id>"
+)
 def ficha_jugador(jugador_id):
-# ============================================================
-# MOSTRAR FOTO DEL JUGADOR
-# ============================================================
 
-@app.route("/jugadores/<int:jugador_id>/foto")
-def foto_jugador(jugador_id):
-
-    jugador = db.get_or_404(
-        Jugador,
-        jugador_id
-    )
-
-    if not jugador.foto:
-
-        return (
-            "Sin fotografía",
-            404
-        )
-
-    return send_file(
-        io.BytesIO(jugador.foto.datos),
-        mimetype=jugador.foto.mime_type
-    )
     jugador = db.get_or_404(
         Jugador,
         jugador_id
@@ -321,6 +435,32 @@ def foto_jugador(jugador_id):
         jugador=jugador
     )
 
+
+# ============================================================
+# FOTOGRAFÍA DEL JUGADOR
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/foto"
+)
+def foto_jugador(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    if not jugador.foto:
+
+        return (
+            "",
+            404
+        )
+
+    return Response(
+        jugador.foto,
+        mimetype="image/jpeg"
+    )
 
 
 # ============================================================
@@ -336,7 +476,10 @@ def nuevo_jugador():
     if request.method == "POST":
 
         rut = normalizar_rut(
-            request.form.get("rut", "")
+            request.form.get(
+                "rut",
+                ""
+            )
         )
 
         nombre = request.form.get(
@@ -359,6 +502,10 @@ def nuevo_jugador():
             ""
         ).strip()
 
+        # ----------------------------------------------------
+        # Validar campos
+        # ----------------------------------------------------
+
         if not all([
             rut,
             nombre,
@@ -366,6 +513,7 @@ def nuevo_jugador():
             serie,
             club
         ]):
+
             flash(
                 "Completa todos los campos.",
                 "error"
@@ -375,6 +523,10 @@ def nuevo_jugador():
                 "jugador_form.html",
                 jugador=None
             )
+
+        # ----------------------------------------------------
+        # Validar RUT
+        # ----------------------------------------------------
 
         if not validar_rut(rut):
 
@@ -388,8 +540,15 @@ def nuevo_jugador():
                 jugador=None
             )
 
+        # ----------------------------------------------------
+        # Convertir fecha
+        # ----------------------------------------------------
+
         try:
-            fecha_obj = date.fromisoformat(fecha)
+
+            fecha_obj = date.fromisoformat(
+                fecha
+            )
 
         except ValueError:
 
@@ -402,6 +561,10 @@ def nuevo_jugador():
                 "jugador_form.html",
                 jugador=None
             )
+
+        # ----------------------------------------------------
+        # Verificar RUT duplicado
+        # ----------------------------------------------------
 
         if Jugador.query.filter_by(
             rut=rut
@@ -417,15 +580,39 @@ def nuevo_jugador():
                 jugador=None
             )
 
+        # ----------------------------------------------------
+        # Obtener fotografía
+        # ----------------------------------------------------
+
+        foto, error_foto = obtener_fotografia()
+
+        if error_foto:
+
+            flash(
+                error_foto,
+                "error"
+            )
+
+            return render_template(
+                "jugador_form.html",
+                jugador=None
+            )
+
+        # ----------------------------------------------------
+        # Crear jugador
+        # ----------------------------------------------------
+
         jugador = Jugador(
             rut=rut,
             nombre_completo=nombre,
             fecha_nacimiento=fecha_obj,
             serie=serie,
-            club=club
+            club=club,
+            foto=foto
         )
 
         db.session.add(jugador)
+
         db.session.commit()
 
         flash(
@@ -434,7 +621,10 @@ def nuevo_jugador():
         )
 
         return redirect(
-            url_for("index")
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
         )
 
     return render_template(
@@ -461,7 +651,10 @@ def editar_jugador(jugador_id):
     if request.method == "POST":
 
         rut = normalizar_rut(
-            request.form.get("rut", "")
+            request.form.get(
+                "rut",
+                ""
+            )
         )
 
         nombre = request.form.get(
@@ -484,6 +677,10 @@ def editar_jugador(jugador_id):
             ""
         ).strip()
 
+        # ----------------------------------------------------
+        # Validar campos
+        # ----------------------------------------------------
+
         if not all([
             rut,
             nombre,
@@ -502,6 +699,10 @@ def editar_jugador(jugador_id):
                 jugador=jugador
             )
 
+        # ----------------------------------------------------
+        # Validar RUT
+        # ----------------------------------------------------
+
         if not validar_rut(rut):
 
             flash(
@@ -513,6 +714,10 @@ def editar_jugador(jugador_id):
                 "jugador_form.html",
                 jugador=jugador
             )
+
+        # ----------------------------------------------------
+        # Verificar RUT duplicado
+        # ----------------------------------------------------
 
         otro_jugador = Jugador.query.filter(
             Jugador.rut == rut,
@@ -531,8 +736,15 @@ def editar_jugador(jugador_id):
                 jugador=jugador
             )
 
+        # ----------------------------------------------------
+        # Convertir fecha
+        # ----------------------------------------------------
+
         try:
-            fecha_obj = date.fromisoformat(fecha)
+
+            fecha_obj = date.fromisoformat(
+                fecha
+            )
 
         except ValueError:
 
@@ -546,21 +758,65 @@ def editar_jugador(jugador_id):
                 jugador=jugador
             )
 
+        # ----------------------------------------------------
+        # Obtener nueva fotografía
+        # ----------------------------------------------------
+
+        archivo_foto = request.files.get(
+            "foto"
+        )
+
+        if (
+            archivo_foto
+            and archivo_foto.filename
+        ):
+
+            foto, error_foto = obtener_fotografia()
+
+            if error_foto:
+
+                flash(
+                    error_foto,
+                    "error"
+                )
+
+                return render_template(
+                    "jugador_form.html",
+                    jugador=jugador
+                )
+
+            jugador.foto = foto
+
+        # ----------------------------------------------------
+        # Actualizar datos
+        # ----------------------------------------------------
+
         jugador.rut = rut
-        jugador.nombre_completo = nombre
-        jugador.fecha_nacimiento = fecha_obj
+
+        jugador.nombre_completo = (
+            nombre
+        )
+
+        jugador.fecha_nacimiento = (
+            fecha_obj
+        )
+
         jugador.serie = serie
+
         jugador.club = club
 
         db.session.commit()
 
         flash(
-            "Datos actualizados.",
+            "Datos actualizados correctamente.",
             "success"
         )
 
         return redirect(
-            url_for("index")
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
         )
 
     return render_template(
@@ -585,6 +841,7 @@ def eliminar_jugador(jugador_id):
     )
 
     db.session.delete(jugador)
+
     db.session.commit()
 
     flash(
@@ -601,7 +858,10 @@ def eliminar_jugador(jugador_id):
 # IMPORTAR EXCEL
 # ============================================================
 
-@app.route("/jugadores/importar", methods=["GET", "POST"])
+@app.route(
+    "/jugadores/importar",
+    methods=["GET", "POST"]
+)
 def importar_jugadores():
 
     if request.method == "GET":
@@ -681,6 +941,7 @@ def importar_jugadores():
         columnas = {}
 
         equivalencias = {
+
             "rut": [
                 "rut",
                 "r.u.t.",
@@ -711,15 +972,20 @@ def importar_jugadores():
                 "club",
                 "equipo"
             ]
+
         }
 
-        for nombre_columna, posibles in equivalencias.items():
+        for nombre_columna, posibles in (
+            equivalencias.items()
+        ):
 
             for posible in posibles:
 
                 if posible in encabezados:
 
-                    columnas[nombre_columna] = encabezados.index(
+                    columnas[
+                        nombre_columna
+                    ] = encabezados.index(
                         posible
                     )
 
@@ -735,7 +1001,8 @@ def importar_jugadores():
 
             flash(
                 "Faltan columnas obligatorias: "
-                + ", ".join(faltantes),
+                +
+                ", ".join(faltantes),
                 "error"
             )
 
@@ -748,7 +1015,9 @@ def importar_jugadores():
         # ----------------------------------------------------
 
         registrados = 0
+
         duplicados = 0
+
         errores = 0
 
         detalle_errores = []
@@ -883,17 +1152,17 @@ def importar_jugadores():
 
                 registrados += 1
 
-            except Exception as error:
+            except Exception:
 
                 errores += 1
 
                 detalle_errores.append(
                     f"Fila {numero_fila}: "
-                    f"error al procesar."
+                    "error al procesar."
                 )
 
         # ----------------------------------------------------
-        # Guardar todo
+        # Guardar
         # ----------------------------------------------------
 
         try:
@@ -905,7 +1174,8 @@ def importar_jugadores():
             db.session.rollback()
 
             flash(
-                "Ocurrió un error al guardar los jugadores.",
+                "Ocurrió un error al guardar "
+                "los jugadores.",
                 "error"
             )
 
@@ -920,11 +1190,14 @@ def importar_jugadores():
             errores=errores,
             detalle_errores=detalle_errores
         )
-    except Exception as error:
+
+    except Exception:
+
         db.session.rollback()
 
         flash(
-            "Ocurrió un error inesperado al importar el archivo.",
+            "Ocurrió un error inesperado "
+            "al importar el archivo.",
             "error"
         )
 
@@ -932,11 +1205,14 @@ def importar_jugadores():
             url_for("importar_jugadores")
         )
 
+
 # ============================================================
-# API
+# API DE JUGADORES
 # ============================================================
 
-@app.route("/api/jugadores")
+@app.route(
+    "/api/jugadores"
+)
 def api_jugadores():
 
     rut = request.args.get(
@@ -945,38 +1221,71 @@ def api_jugadores():
     ).strip().upper()
 
     if not rut:
+
         return jsonify([])
 
     jugadores = Jugador.query.filter(
-        Jugador.rut.ilike(f"%{rut}%")
+        Jugador.rut.ilike(
+            f"%{rut}%"
+        )
     ).order_by(
         Jugador.nombre_completo
     ).all()
 
     return jsonify([
+
         {
-            "id": j.id,
-            "rut": j.rut,
-            "nombre_completo": j.nombre_completo,
-            "fecha_nacimiento": j.fecha_nacimiento.isoformat(),
-            "serie": j.serie,
-            "club": j.club
+            "id": jugador.id,
+
+            "rut": jugador.rut,
+
+            "nombre_completo":
+                jugador.nombre_completo,
+
+            "fecha_nacimiento":
+                jugador.fecha_nacimiento.isoformat(),
+
+            "serie":
+                jugador.serie,
+
+            "club":
+                jugador.club,
+
+            "tiene_foto":
+                bool(jugador.foto)
         }
-        for j in jugadores
+
+        for jugador in jugadores
+
     ])
 
 
-@app.route("/health")
+# ============================================================
+# HEALTH CHECK
+# ============================================================
+
+@app.route(
+    "/health"
+)
 def health():
-    return {"status": "ok"}
 
-
-if __name__ == "__main__":
-    app.run(
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000))
-    )
+    return {
+        "status": "ok"
+    }
 
 
 # ============================================================
+# EJECUCIÓN LOCAL
+# ============================================================
 
+if __name__ == "__main__":
+
+    app.run(
+        host="0.0.0.0",
+        port=int(
+            os.environ.get(
+                "PORT",
+                5000
+            )
+        )
+    )
