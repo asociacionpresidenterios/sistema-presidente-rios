@@ -14,7 +14,8 @@ from flask import (
 
 from flask_sqlalchemy import SQLAlchemy
 from openpyxl import load_workbook
-
+import qrcode
+from io import BytesIO
 
 # ============================================================
 # CONFIGURACIÓN
@@ -461,7 +462,69 @@ def foto_jugador(jugador_id):
         jugador.foto,
         mimetype="image/jpeg"
     )
+# ============================================================
+# CÓDIGO QR DEL JUGADOR
+# ============================================================
 
+@app.route(
+    "/jugadores/<int:jugador_id>/qr"
+)
+def qr_jugador(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    # --------------------------------------------------------
+    # Dirección de la ficha del jugador
+    # --------------------------------------------------------
+
+    url_ficha = url_for(
+        "ficha_jugador",
+        jugador_id=jugador.id,
+        _external=True
+    )
+
+    # --------------------------------------------------------
+    # Crear QR
+    # --------------------------------------------------------
+
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_M,
+        box_size=10,
+        border=4
+    )
+
+    qr.add_data(url_ficha)
+
+    qr.make(
+        fit=True
+    )
+
+    imagen = qr.make_image(
+        fill_color="black",
+        back_color="white"
+    )
+
+    # --------------------------------------------------------
+    # Convertir imagen a PNG
+    # --------------------------------------------------------
+
+    memoria = BytesIO()
+
+    imagen.save(
+        memoria,
+        format="PNG"
+    )
+
+    memoria.seek(0)
+
+    return Response(
+        memoria.getvalue(),
+        mimetype="image/png"
+    )
 
 # ============================================================
 # NUEVO JUGADOR
