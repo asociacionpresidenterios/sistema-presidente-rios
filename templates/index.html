@@ -7,7 +7,7 @@
 
         <div>
             <h2 style="margin:0">Jugadores</h2>
-            <small>{{jugadores|length}} resultado(s)</small>
+            <small>{{ jugadores|length }} resultado(s)</small>
         </div>
 
         <div style="display:flex;gap:10px">
@@ -33,7 +33,7 @@
 
         <input
             name="q"
-            value="{{q}}"
+            value="{{ q }}"
             placeholder="Buscar por RUT, nombre o club"
         >
 
@@ -68,39 +68,39 @@
             <tr>
 
                 <td>
-                    <b>{{j.rut}}</b>
+                    <b>{{ j.rut }}</b>
                 </td>
 
                 <td>
-                    {{j.nombre_completo}}
+                    {{ j.nombre_completo }}
                 </td>
 
                 <td>
-                    {{j.fecha_nacimiento.strftime('%d/%m/%Y')}}
+                    {{ j.fecha_nacimiento.strftime('%d/%m/%Y') }}
                 </td>
 
                 <td>
-                    {{j.serie}}
+                    {{ j.serie }}
                 </td>
 
                 <td>
-                    {{j.club}}
+                    {{ j.club }}
                 </td>
 
                 <td>
 
-                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <div style="display:flex;gap:8px;">
 
                         <a
                             class="btn secondary"
-                            href="/jugadores/{{j.id}}"
+                            href="{{ url_for('jugador_detalle', jugador_id=j.id) }}"
                         >
                             📋 Ficha
                         </a>
 
                         <a
                             class="btn secondary"
-                            href="/jugadores/{{j.id}}/editar"
+                            href="/jugadores/{{ j.id }}/editar"
                         >
                             ✏️ Editar
                         </a>
