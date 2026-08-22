@@ -234,6 +234,23 @@ def index():
         jugadores=jugadores,
         q=q
     )
+# ============================================================
+# FICHA INDIVIDUAL DEL JUGADOR
+# ============================================================
+
+@app.route("/jugadores/<int:jugador_id>")
+def ficha_jugador(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    return render_template(
+        "jugador_detalle.html",
+        jugador=jugador
+    )
+
 
 
 # ============================================================
