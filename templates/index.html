@@ -89,11 +89,11 @@
 
                 <td>
 
-                    <div style="display:flex;gap:8px;">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
 
                         <a
                             class="btn secondary"
-                            href="{{ url_for('jugador_detalle', jugador_id=j.id) }}"
+                            href="{{ url_for('ficha_jugador', jugador_id=j.id) }}"
                         >
                             📋 Ficha
                         </a>
