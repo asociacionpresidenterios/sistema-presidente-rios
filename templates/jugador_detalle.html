@@ -3,12 +3,13 @@
 {% block content %}
 
 <style>
-    .ficha-container {
+
+    .acreditacion-container {
         max-width: 1100px;
         margin: 0 auto;
     }
 
-    .ficha-header {
+    .acreditacion-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -16,103 +17,116 @@
         margin-bottom: 20px;
     }
 
-    .ficha-header h2 {
+    .acreditacion-header h2 {
         margin: 0;
         font-size: 28px;
     }
 
-    .ficha-header small {
+    .acreditacion-header small {
         color: #6b7280;
-        font-size: 14px;
     }
 
-    .ficha-actions {
+    .acciones-ficha {
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
     }
 
-    .ficha-grid {
+    .ficha-principal {
         display: grid;
-        grid-template-columns: 320px 1fr;
+        grid-template-columns: 330px 1fr;
         gap: 20px;
     }
 
-    .perfil-card {
+    .perfil {
         text-align: center;
         padding: 30px 20px;
     }
 
-    .avatar {
-        width: 130px;
-        height: 130px;
+    .foto-jugador {
+        width: 150px;
+        height: 150px;
         margin: 0 auto 20px;
         border-radius: 50%;
         background: #111827;
         color: white;
+
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 50px;
+
+        font-size: 55px;
         font-weight: bold;
-        border: 6px solid #f3f4f6;
-        box-shadow: 0 4px 12px rgba(0,0,0,.10);
+
+        border: 7px solid #f3f4f6;
+
+        box-shadow:
+            0 6px 18px rgba(0,0,0,.12);
     }
 
     .nombre-jugador {
-        font-size: 23px;
-        font-weight: 700;
-        margin: 0 0 6px;
-    }
-
-    .club-jugador {
-        font-size: 17px;
-        color: #6b7280;
+        font-size: 24px;
+        font-weight: 800;
         margin: 0;
     }
 
-    .estado {
-        display: inline-block;
-        margin-top: 20px;
-        padding: 8px 18px;
-        border-radius: 999px;
-        background: #dcfce7;
-        color: #166534;
-        font-weight: 700;
-        font-size: 14px;
+    .club-jugador {
+        margin: 8px 0 0;
+        font-size: 17px;
+        color: #6b7280;
     }
 
-    .serie-badge {
+    .estado-habilitado {
+        display: inline-block;
+        margin-top: 20px;
+
+        padding: 9px 18px;
+
+        border-radius: 999px;
+
+        background: #dcfce7;
+        color: #166534;
+
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .serie {
         display: inline-block;
         margin-top: 10px;
-        padding: 6px 14px;
+
+        padding: 7px 15px;
+
         border-radius: 999px;
+
         background: #eef2ff;
         color: #3730a3;
-        font-weight: 600;
+
+        font-weight: 700;
         font-size: 13px;
     }
 
-    .datos-card {
+    .datos {
         padding: 28px;
     }
 
-    .datos-card h2 {
+    .datos h2 {
         margin-top: 0;
-        margin-bottom: 24px;
-        font-size: 22px;
+        margin-bottom: 22px;
     }
 
     .datos-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 18px;
+        gap: 15px;
     }
 
     .dato {
         padding: 18px;
+
         border: 1px solid #e5e7eb;
         border-radius: 12px;
+
         background: #fafafa;
     }
 
@@ -122,60 +136,154 @@
 
     .dato-label {
         display: block;
+
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 800;
+
         color: #6b7280;
+
         text-transform: uppercase;
         letter-spacing: .5px;
+
         margin-bottom: 7px;
     }
 
     .dato-valor {
         font-size: 18px;
-        font-weight: 600;
+        font-weight: 700;
         color: #111827;
     }
 
-    .rut-destacado {
-        font-size: 22px;
-        font-weight: 800;
+    .rut {
+        font-size: 24px;
         letter-spacing: .5px;
     }
 
-    .acreditacion {
+    .seccion {
         margin-top: 20px;
         padding: 22px;
+
         border-radius: 14px;
+
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
+    }
+
+    .seccion h3 {
+        margin-top: 0;
+        margin-bottom: 8px;
+    }
+
+    .seccion-descripcion {
+        color: #6b7280;
+        font-size: 14px;
+        margin-bottom: 0;
+    }
+
+    .disciplinario {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-top: 18px;
+    }
+
+    .disciplinario-item {
+        padding: 16px;
+
+        text-align: center;
+
+        border-radius: 12px;
+
         background: #f8fafc;
         border: 1px solid #e2e8f0;
     }
 
-    .acreditacion h3 {
-        margin: 0 0 8px;
-        font-size: 18px;
+    .disciplinario-numero {
+        display: block;
+
+        font-size: 28px;
+        font-weight: 800;
+
+        margin-bottom: 5px;
     }
 
-    .acreditacion p {
-        margin: 0;
+    .disciplinario-label {
+        font-size: 12px;
         color: #64748b;
-        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .amarillas {
+        color: #b45309;
+    }
+
+    .rojas {
+        color: #b91c1c;
+    }
+
+    .suspensiones {
+        color: #7c3aed;
+    }
+
+    .qr-area {
+        margin-top: 20px;
+
+        padding: 22px;
+
+        border-radius: 14px;
+
+        border: 2px dashed #cbd5e1;
+
+        text-align: center;
+
+        background: #f8fafc;
+    }
+
+    .qr-placeholder {
+        width: 110px;
+        height: 110px;
+
+        margin: 15px auto;
+
+        border: 3px solid #111827;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 13px;
+        font-weight: 800;
+
+        background: white;
+    }
+
+    .codigo-jugador {
+        font-size: 18px;
+        font-weight: 800;
+        letter-spacing: 1px;
     }
 
     .pie-ficha {
         margin-top: 20px;
+
         text-align: center;
+
         color: #6b7280;
+
         font-size: 12px;
     }
 
+
+    /* CELULARES */
+
     @media (max-width: 800px) {
 
-        .ficha-header {
+        .acreditacion-header {
             flex-direction: column;
             align-items: flex-start;
         }
 
-        .ficha-grid {
+        .ficha-principal {
             grid-template-columns: 1fr;
         }
 
@@ -187,15 +295,23 @@
             grid-column: auto;
         }
 
-        .ficha-actions {
+        .disciplinario {
+            grid-template-columns: 1fr;
+        }
+
+        .acciones-ficha {
             width: 100%;
         }
 
-        .ficha-actions .btn {
+        .acciones-ficha .btn {
             flex: 1;
             text-align: center;
         }
+
     }
+
+
+    /* IMPRESIÓN */
 
     @media print {
 
@@ -203,47 +319,51 @@
             background: white !important;
         }
 
-        .ficha-actions,
-        .btn,
+        .acciones-ficha,
         header,
-        nav {
+        nav,
+        .btn {
             display: none !important;
         }
 
-        .ficha-container {
+        .acreditacion-container {
             max-width: 100%;
         }
 
         .card {
             box-shadow: none !important;
-            border: 1px solid #ddd !important;
         }
 
-        .ficha-grid {
-            grid-template-columns: 280px 1fr;
+        .ficha-principal {
+            grid-template-columns: 300px 1fr;
         }
 
-        .pie-ficha {
-            display: block;
-        }
     }
+
 </style>
 
 
-<div class="ficha-container">
+<div class="acreditacion-container">
+
 
     <!-- ENCABEZADO -->
 
-    <div class="card ficha-header">
+    <div class="card acreditacion-header">
 
         <div>
-            <h2>Ficha del jugador</h2>
+
+            <h2>
+                🪪 Ficha del jugador
+            </h2>
+
             <small>
-                Asociación Presidente Ríos · Registro y acreditación
+                Asociación Presidente Ríos · Sistema de registro y acreditación
             </small>
+
         </div>
 
-        <div class="ficha-actions">
+
+        <div class="acciones-ficha">
 
             <a
                 class="btn secondary"
@@ -252,12 +372,14 @@
                 ← Volver
             </a>
 
+
             <a
                 class="btn secondary"
                 href="{{ url_for('editar_jugador', jugador_id=jugador.id) }}"
             >
                 ✏️ Editar
             </a>
+
 
             <button
                 class="btn"
@@ -272,52 +394,74 @@
     </div>
 
 
-    <!-- CUERPO PRINCIPAL -->
+    <!-- PERFIL Y DATOS -->
 
-    <div class="ficha-grid">
+    <div class="ficha-principal">
 
 
-        <!-- PERFIL DEL JUGADOR -->
+        <!-- PERFIL -->
 
-        <div class="card perfil-card">
+        <div class="card perfil">
 
-            <div class="avatar">
+
+            <div class="foto-jugador">
+
                 {{ jugador.nombre_completo[0]|upper }}
+
             </div>
+
 
             <h1 class="nombre-jugador">
+
                 {{ jugador.nombre_completo }}
+
             </h1>
 
+
             <p class="club-jugador">
+
                 {{ jugador.club }}
+
             </p>
 
-            <div>
-                <span class="estado">
-                    ✓ Registro activo
-                </span>
-            </div>
 
             <div>
-                <span class="serie-badge">
-                    Serie {{ jugador.serie }}
+
+                <span class="estado-habilitado">
+
+                    ✓ REGISTRO ACTIVO
+
                 </span>
+
             </div>
+
+
+            <div>
+
+                <span class="serie">
+
+                    SERIE {{ jugador.serie|upper }}
+
+                </span>
+
+            </div>
+
 
         </div>
 
 
-        <!-- DATOS DEL JUGADOR -->
+        <!-- DATOS -->
 
-        <div class="card datos-card">
+        <div class="card datos">
 
-            <h2>Datos del jugador</h2>
+
+            <h2>
+                Datos del jugador
+            </h2>
+
 
             <div class="datos-grid">
 
-
-                <!-- RUT -->
 
                 <div class="dato">
 
@@ -325,14 +469,14 @@
                         RUT
                     </span>
 
-                    <div class="dato-valor rut-destacado">
+                    <div class="dato-valor rut">
+
                         {{ jugador.rut }}
+
                     </div>
 
                 </div>
 
-
-                <!-- FECHA NACIMIENTO -->
 
                 <div class="dato">
 
@@ -343,17 +487,19 @@
                     <div class="dato-valor">
 
                         {% if jugador.fecha_nacimiento %}
+
                             {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
+
                         {% else %}
+
                             No registrada
+
                         {% endif %}
 
                     </div>
 
                 </div>
 
-
-                <!-- NOMBRE -->
 
                 <div class="dato dato-completo">
 
@@ -362,13 +508,13 @@
                     </span>
 
                     <div class="dato-valor">
+
                         {{ jugador.nombre_completo }}
+
                     </div>
 
                 </div>
 
-
-                <!-- CLUB -->
 
                 <div class="dato">
 
@@ -377,13 +523,13 @@
                     </span>
 
                     <div class="dato-valor">
+
                         {{ jugador.club }}
+
                     </div>
 
                 </div>
 
-
-                <!-- SERIE -->
 
                 <div class="dato">
 
@@ -392,7 +538,9 @@
                     </span>
 
                     <div class="dato-valor">
+
                         {{ jugador.serie }}
+
                     </div>
 
                 </div>
@@ -400,34 +548,171 @@
             </div>
 
 
-            <!-- ESTADO DE ACREDITACIÓN -->
+            <!-- ESTADO -->
 
-            <div class="acreditacion">
+            <div class="seccion">
 
                 <h3>
                     Estado de acreditación
                 </h3>
 
-                <p>
+                <p class="seccion-descripcion">
+
                     El jugador figura actualmente como
                     <strong>registro activo</strong>
-                    dentro del sistema de la Asociación Presidente Ríos.
+                    en el sistema de la Asociación Presidente Ríos.
+
                 </p>
 
             </div>
+
 
         </div>
 
     </div>
 
 
-    <!-- PIE -->
+    <!-- DISCIPLINA -->
+
+    <div class="card seccion">
+
+        <h3>
+            ⚽ Control disciplinario
+        </h3>
+
+        <p class="seccion-descripcion">
+
+            Este módulo queda preparado para incorporar el control
+            de tarjetas y suspensiones.
+
+        </p>
+
+
+        <div class="disciplinario">
+
+
+            <div class="disciplinario-item">
+
+                <span class="disciplinario-numero amarillas">
+                    —
+                </span>
+
+                <span class="disciplinario-label">
+                    TARJETAS AMARILLAS
+                </span>
+
+            </div>
+
+
+            <div class="disciplinario-item">
+
+                <span class="disciplinario-numero rojas">
+                    —
+                </span>
+
+                <span class="disciplinario-label">
+                    TARJETAS ROJAS
+                </span>
+
+            </div>
+
+
+            <div class="disciplinario-item">
+
+                <span class="disciplinario-numero suspensiones">
+                    —
+                </span>
+
+                <span class="disciplinario-label">
+                    SUSPENSIONES
+                </span>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+    <!-- ACREDITACIÓN -->
+
+    <div class="card seccion">
+
+        <h3>
+            🪪 Identificación de acreditación
+        </h3>
+
+        <p class="seccion-descripcion">
+
+            Código interno utilizado para identificar al jugador
+            dentro del sistema.
+
+        </p>
+
+
+        <div style="margin-top:15px;">
+
+            <span class="dato-label">
+                CÓDIGO DEL JUGADOR
+            </span>
+
+            <div class="codigo-jugador">
+
+                ARP-{{ jugador.id }}
+
+            </div>
+
+        </div>
+
+
+        <div class="qr-area">
+
+            <strong>
+                Código QR
+            </strong>
+
+            <div class="qr-placeholder">
+
+                QR
+
+            </div>
+
+            <small>
+
+                El código QR será conectado al sistema de
+                verificación en la siguiente etapa.
+
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <!-- OBSERVACIONES -->
+
+    <div class="card seccion">
+
+        <h3>
+            📝 Observaciones
+        </h3>
+
+        <p class="seccion-descripcion">
+
+            No existen observaciones registradas actualmente.
+
+        </p>
+
+    </div>
+
 
     <div class="pie-ficha">
 
         Asociación Presidente Ríos · Sistema de registro y acreditación
 
     </div>
+
 
 </div>
 
