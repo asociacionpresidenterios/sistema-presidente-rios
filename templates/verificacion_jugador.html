@@ -1,0 +1,505 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+
+    .verificacion-page {
+        max-width: 650px;
+        margin: 0 auto;
+        padding: 25px 10px 50px;
+    }
+
+    .verificacion-card {
+        background: white;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 15px 45px rgba(0,0,0,.16);
+        border: 1px solid #e5e7eb;
+    }
+
+
+    /* ======================================================
+       CABECERA
+       ====================================================== */
+
+    .verificacion-header {
+        background: linear-gradient(
+            135deg,
+            #0f172a,
+            #1e3a8a
+        );
+        color: white;
+        text-align: center;
+        padding: 30px 20px;
+    }
+
+    .escudo {
+        width: 78px;
+        height: 78px;
+        margin: 0 auto 15px;
+        border-radius: 22px;
+        background: rgba(255,255,255,.12);
+        border: 2px solid rgba(255,255,255,.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 38px;
+    }
+
+    .verificacion-header h1 {
+        margin: 0;
+        font-size: 25px;
+        font-weight: 800;
+    }
+
+    .verificacion-header p {
+        margin: 8px 0 0;
+        font-size: 14px;
+        opacity: .85;
+    }
+
+
+    /* ======================================================
+       ESTADO
+       ====================================================== */
+
+    .estado-container {
+        padding: 25px 25px 10px;
+        text-align: center;
+    }
+
+    .estado-valido {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        background: #dcfce7;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+        padding: 10px 18px;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 15px;
+    }
+
+    .estado-invalido {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        background: #fee2e2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+        padding: 10px 18px;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 15px;
+    }
+
+
+    /* ======================================================
+       CUERPO
+       ====================================================== */
+
+    .verificacion-body {
+        padding: 25px;
+    }
+
+    .foto-verificacion {
+        text-align: center;
+        margin-bottom: 22px;
+    }
+
+    .foto-verificacion img,
+    .foto-placeholder {
+        width: 150px;
+        height: 150px;
+        border-radius: 22px;
+        object-fit: cover;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #e5e7eb;
+        color: #64748b;
+        font-size: 55px;
+        border: 5px solid white;
+        box-shadow: 0 8px 25px rgba(0,0,0,.15);
+    }
+
+
+    /* ======================================================
+       NOMBRE
+       ====================================================== */
+
+    .nombre-jugador {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    .nombre-jugador h2 {
+        margin: 0;
+        font-size: 27px;
+        color: #111827;
+    }
+
+    .nombre-jugador p {
+        margin: 7px 0 0;
+        color: #64748b;
+        font-size: 14px;
+    }
+
+
+    /* ======================================================
+       DATOS
+       ====================================================== */
+
+    .datos-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .dato {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 14px;
+    }
+
+    .dato-label {
+        display: block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        color: #64748b;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+
+    .dato-valor {
+        display: block;
+        color: #111827;
+        font-weight: 700;
+        font-size: 16px;
+    }
+
+
+    /* ======================================================
+       VERIFICACIÓN
+       ====================================================== */
+
+    .mensaje-verificacion {
+        margin-top: 25px;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 18px;
+        text-align: center;
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+
+    /* ======================================================
+       PIE
+       ====================================================== */
+
+    .verificacion-footer {
+        border-top: 1px solid #e5e7eb;
+        background: #f8fafc;
+        padding: 17px;
+        text-align: center;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+
+    /* ======================================================
+       ERROR
+       ====================================================== */
+
+    .error-container {
+        text-align: center;
+        padding: 40px 25px;
+    }
+
+    .error-icon {
+        font-size: 60px;
+        margin-bottom: 15px;
+    }
+
+    .error-container h2 {
+        margin: 0;
+        color: #991b1b;
+    }
+
+    .error-container p {
+        color: #64748b;
+        margin-top: 10px;
+    }
+
+
+    /* ======================================================
+       RESPONSIVE
+       ====================================================== */
+
+    @media (max-width: 600px) {
+
+        .verificacion-page {
+            padding: 10px 5px 35px;
+        }
+
+        .verificacion-card {
+            border-radius: 18px;
+        }
+
+        .verificacion-header {
+            padding: 25px 15px;
+        }
+
+        .verificacion-header h1 {
+            font-size: 20px;
+        }
+
+        .verificacion-body {
+            padding: 20px 15px;
+        }
+
+        .datos-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .nombre-jugador h2 {
+            font-size: 23px;
+        }
+
+    }
+
+</style>
+
+
+<div class="verificacion-page">
+
+    <div class="verificacion-card">
+
+
+        <!-- ==================================================
+             CABECERA
+             ================================================== -->
+
+        <div class="verificacion-header">
+
+            <div class="escudo">
+                ⚽
+            </div>
+
+            <h1>
+                ASOCIACIÓN PRESIDENTE RÍOS
+            </h1>
+
+            <p>
+                Sistema Oficial de Verificación
+            </p>
+
+        </div>
+
+
+        {% if valido and jugador %}
+
+
+            <!-- ==============================================
+                 ESTADO
+                 ============================================== -->
+
+            <div class="estado-container">
+
+                <div class="estado-valido">
+
+                    ✓
+
+                    JUGADOR REGISTRADO
+
+                </div>
+
+            </div>
+
+
+            <!-- ==============================================
+                 CUERPO
+                 ============================================== -->
+
+            <div class="verificacion-body">
+
+
+                <!-- FOTO -->
+
+                <div class="foto-verificacion">
+
+                    {% if jugador.foto %}
+
+                        <img
+                            src="{{ url_for(
+                                'foto_jugador',
+                                jugador_id=jugador.id
+                            ) }}"
+                            alt="Fotografía de {{ jugador.nombre_completo }}"
+                        >
+
+                    {% else %}
+
+                        <div class="foto-placeholder">
+                            👤
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- NOMBRE -->
+
+                <div class="nombre-jugador">
+
+                    <h2>
+                        {{ jugador.nombre_completo }}
+                    </h2>
+
+                    <p>
+                        Registro Nº {{ jugador.id }}
+                    </p>
+
+                </div>
+
+
+                <!-- DATOS -->
+
+                <div class="datos-grid">
+
+
+                    <div class="dato">
+
+                        <span class="dato-label">
+                            RUT
+                        </span>
+
+                        <span class="dato-valor">
+                            {{ jugador.rut }}
+                        </span>
+
+                    </div>
+
+
+                    <div class="dato">
+
+                        <span class="dato-label">
+                            Club
+                        </span>
+
+                        <span class="dato-valor">
+                            {{ jugador.club }}
+                        </span>
+
+                    </div>
+
+
+                    <div class="dato">
+
+                        <span class="dato-label">
+                            Serie
+                        </span>
+
+                        <span class="dato-valor">
+                            {{ jugador.serie }}
+                        </span>
+
+                    </div>
+
+
+                    <div class="dato">
+
+                        <span class="dato-label">
+                            Fecha de nacimiento
+                        </span>
+
+                        <span class="dato-valor">
+
+                            {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
+
+                        </span>
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- MENSAJE -->
+
+                <div class="mensaje-verificacion">
+
+                    🛡️ Esta información corresponde al
+                    registro almacenado en el sistema de la
+                    <strong>Asociación Presidente Ríos</strong>.
+
+                    <br><br>
+
+                    La consulta fue realizada mediante
+                    el código QR asociado a la credencial
+                    del jugador.
+
+                </div>
+
+
+            </div>
+
+
+        {% else %}
+
+
+            <!-- ==============================================
+                 JUGADOR NO ENCONTRADO
+                 ============================================== -->
+
+            <div class="error-container">
+
+                <div class="error-icon">
+                    ⚠️
+                </div>
+
+                <h2>
+                    JUGADOR NO ENCONTRADO
+                </h2>
+
+                <p>
+
+                    No existe un jugador registrado
+                    con este código de verificación.
+
+                </p>
+
+            </div>
+
+
+        {% endif %}
+
+
+        <!-- ==================================================
+             PIE
+             ================================================== -->
+
+        <div class="verificacion-footer">
+
+            Asociación Presidente Ríos
+
+            <br>
+
+            Sistema Oficial de Registro de Jugadores
+
+        </div>
+
+
+    </div>
+
+</div>
+
+{% endblock %}
