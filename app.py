@@ -99,62 +99,38 @@ class Jugador(db.Model):
         nullable=False
     )
 
+    # --------------------------------------------------------
+    # FOTOGRAFÍA
+    # --------------------------------------------------------
+
     foto = db.Column(
         db.LargeBinary,
         nullable=True
     )
 
+    # --------------------------------------------------------
+    # ESTADO DEL JUGADOR
+    # --------------------------------------------------------
 
-# ============================================================
-# MODELO DISCIPLINARIO
-# ============================================================
-
-class RegistroDisciplinario(db.Model):
-
-    id = db.Column(
-        db.Integer,
-        primary_key=True
-    )
-
-    jugador_id = db.Column(
-        db.Integer,
-        db.ForeignKey("jugador.id"),
-        nullable=False,
-        index=True
-    )
-
-    tipo = db.Column(
+    estado = db.Column(
         db.String(30),
-        nullable=False
+        nullable=False,
+        default="HABILITADO"
     )
 
-    fecha = db.Column(
-        db.Date,
-        nullable=False
-    )
-
-    motivo = db.Column(
+    motivo_suspension = db.Column(
         db.String(500),
         nullable=True
     )
 
-    observacion = db.Column(
-        db.String(1000),
+    fecha_termino_suspension = db.Column(
+        db.Date,
         nullable=True
-    )
-
-    jugador = db.relationship(
-        "Jugador",
-        backref=db.backref(
-            "registros_disciplinarios",
-            lazy=True,
-            cascade="all, delete-orphan"
-        )
     )
 
 
 # ============================================================
-# PREPARAR BASE DE DATOS
+# CREACIÓN / ACTUALIZACIÓN SEGURA DE BASE DE DATOS
 # ============================================================
 
 def preparar_base_datos():
@@ -163,46 +139,83 @@ def preparar_base_datos():
 
     try:
 
-        inspector = db.inspect(
-            db.engine
-        )
+        inspector = db.inspect(db.engine)
 
-        tablas = inspector.get_table_names()
+        columnas = [
+            columna["name"]
+            for columna in inspector.get_columns("jugador")
+        ]
+
+        nuevas_columnas = {
+
+            "foto": (
+                "BYTEA"
+                if db.engine.dialect.name == "postgresql"
+                else "BLOB"
+            ),
+
+            "estado": (
+                "VARCHAR(30)"
+            ),
+
+            "motivo_suspension": (
+                "VARCHAR(500)"
+            ),
+
+            "fecha_termino_suspension": (
+                "DATE"
+            )
+        }
+
+        for nombre_columna, tipo_columna in nuevas_columnas.items():
+
+            if nombre_columna not in columnas:
+
+                try:
+
+                    db.session.execute(
+                        db.text(
+                            f"""
+                            ALTER TABLE jugador
+                            ADD COLUMN {nombre_columna}
+                            {tipo_columna}
+                            """
+                        )
+                    )
+
+                    db.session.commit()
+
+                except Exception as error:
+
+                    db.session.rollback()
+
+                    print(
+                        f"No se pudo agregar "
+                        f"{nombre_columna}:",
+                        error
+                    )
 
         # ----------------------------------------------------
-        # TABLA JUGADOR
+        # Jugadores existentes
         # ----------------------------------------------------
 
-        if "jugador" in tablas:
+        try:
 
-            columnas = [
-                columna["name"]
-                for columna in inspector.get_columns(
-                    "jugador"
+            db.session.execute(
+                db.text(
+                    """
+                    UPDATE jugador
+                    SET estado = 'HABILITADO'
+                    WHERE estado IS NULL
+                    """
                 )
-            ]
+            )
 
-            if "foto" not in columnas:
+            db.session.commit()
 
-                if db.engine.dialect.name == "postgresql":
+        except Exception:
 
-                    db.session.execute(
-                        db.text(
-                            "ALTER TABLE jugador "
-                            "ADD COLUMN IF NOT EXISTS foto BYTEA"
-                        )
-                    )
-
-                elif db.engine.dialect.name == "sqlite":
-
-                    db.session.execute(
-                        db.text(
-                            "ALTER TABLE jugador "
-                            "ADD COLUMN foto BLOB"
-                        )
-                    )
-
-                db.session.commit()
+            db.session.rollback()
 
     except Exception as error:
 
@@ -242,7 +255,6 @@ def normalizar_rut(rut):
         return ""
 
     cuerpo = rut_limpio[:-1]
-
     dv = rut_limpio[-1]
 
     if not cuerpo.isdigit():
@@ -253,16 +265,16 @@ def normalizar_rut(rut):
     while len(cuerpo) > 3:
 
         cuerpo_formateado = (
-            "."
-            + cuerpo[-3:]
-            + cuerpo_formateado
+            "." +
+            cuerpo[-3:] +
+            cuerpo_formateado
         )
 
         cuerpo = cuerpo[:-3]
 
     cuerpo_formateado = (
-        cuerpo
-        + cuerpo_formateado
+        cuerpo +
+        cuerpo_formateado
     )
 
     return f"{cuerpo_formateado}-{dv}"
@@ -285,21 +297,19 @@ def validar_rut(rut):
         return False
 
     cuerpo = rut_limpio[:-1]
-
     dv = rut_limpio[-1]
 
     if not cuerpo.isdigit():
         return False
 
     suma = 0
-
     multiplicador = 2
 
     for digito in reversed(cuerpo):
 
         suma += (
-            int(digito)
-            * multiplicador
+            int(digito) *
+            multiplicador
         )
 
         multiplicador += 1
@@ -368,9 +378,7 @@ def convertir_fecha(valor):
 
 def obtener_fotografia():
 
-    archivo = request.files.get(
-        "foto"
-    )
+    archivo = request.files.get("foto")
 
     if not archivo:
         return None, None
@@ -417,54 +425,24 @@ def obtener_fotografia():
 
 
 # ============================================================
-# FUNCIONES DISCIPLINARIAS
+# ACTUALIZAR ESTADO AUTOMÁTICO
 # ============================================================
 
-def contar_amarillas(jugador_id):
+def actualizar_estado_automatico(jugador):
 
-    return RegistroDisciplinario.query.filter_by(
-        jugador_id=jugador_id,
-        tipo="AMARILLA"
-    ).count()
+    if jugador.estado == "SUSPENDIDO":
 
+        if jugador.fecha_termino_suspension:
 
-def contar_rojas(jugador_id):
+            if date.today() > jugador.fecha_termino_suspension:
 
-    return RegistroDisciplinario.query.filter_by(
-        jugador_id=jugador_id,
-        tipo="ROJA"
-    ).count()
+                jugador.estado = "HABILITADO"
 
+                jugador.motivo_suspension = None
 
-def contar_suspensiones(jugador_id):
+                jugador.fecha_termino_suspension = None
 
-    return RegistroDisciplinario.query.filter_by(
-        jugador_id=jugador_id,
-        tipo="SUSPENSION"
-    ).count()
-
-
-def obtener_estado_disciplinario(jugador_id):
-
-    amarillas = contar_amarillas(
-        jugador_id
-    )
-
-    rojas = contar_rojas(
-        jugador_id
-    )
-
-    suspensiones = contar_suspensiones(
-        jugador_id
-    )
-
-    return {
-        "amarillas": amarillas,
-        "rojas": rojas,
-        "suspensiones": suspensiones,
-        "proxima_suspension_por_amarillas":
-            amarillas >= 4
-    }
+                db.session.commit()
 
 
 # ============================================================
@@ -503,6 +481,12 @@ def index():
         Jugador.nombre_completo
     ).all()
 
+    for jugador in jugadores:
+
+        actualizar_estado_automatico(
+            jugador
+        )
+
     return render_template(
         "index.html",
         jugadores=jugadores,
@@ -524,24 +508,13 @@ def ficha_jugador(jugador_id):
         jugador_id
     )
 
-    estado_disciplinario = (
-        obtener_estado_disciplinario(
-            jugador.id
-        )
+    actualizar_estado_automatico(
+        jugador
     )
-
-    registros = RegistroDisciplinario.query.filter_by(
-        jugador_id=jugador.id
-    ).order_by(
-        RegistroDisciplinario.fecha.desc(),
-        RegistroDisciplinario.id.desc()
-    ).all()
 
     return render_template(
         "jugador_detalle.html",
-        jugador=jugador,
-        estado_disciplinario=estado_disciplinario,
-        registros=registros
+        jugador=jugador
     )
 
 
@@ -673,9 +646,7 @@ def nuevo_jugador():
                 jugador=None
             )
 
-        foto, error_foto = (
-            obtener_fotografia()
-        )
+        foto, error_foto = obtener_fotografia()
 
         if error_foto:
 
@@ -695,7 +666,10 @@ def nuevo_jugador():
             fecha_nacimiento=fecha_obj,
             serie=serie,
             club=club,
-            foto=foto
+            foto=foto,
+            estado="HABILITADO",
+            motivo_suspension=None,
+            fecha_termino_suspension=None
         )
 
         db.session.add(jugador)
@@ -838,9 +812,7 @@ def editar_jugador(jugador_id):
             and archivo_foto.filename
         ):
 
-            foto, error_foto = (
-                obtener_fotografia()
-            )
+            foto, error_foto = obtener_fotografia()
 
             if error_foto:
 
@@ -858,13 +830,9 @@ def editar_jugador(jugador_id):
 
         jugador.rut = rut
 
-        jugador.nombre_completo = (
-            nombre
-        )
+        jugador.nombre_completo = nombre
 
-        jugador.fecha_nacimiento = (
-            fecha_obj
-        )
+        jugador.fecha_nacimiento = fecha_obj
 
         jugador.serie = serie
 
@@ -887,6 +855,111 @@ def editar_jugador(jugador_id):
     return render_template(
         "jugador_form.html",
         jugador=jugador
+    )
+
+
+# ============================================================
+# ESTADO DEL JUGADOR
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/estado",
+    methods=["POST"]
+)
+def cambiar_estado_jugador(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    estado = request.form.get(
+        "estado",
+        "HABILITADO"
+    ).strip().upper()
+
+    estados_permitidos = {
+        "HABILITADO",
+        "SUSPENDIDO",
+        "INHABILITADO"
+    }
+
+    if estado not in estados_permitidos:
+
+        flash(
+            "Estado no válido.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
+        )
+
+    jugador.estado = estado
+
+    if estado == "SUSPENDIDO":
+
+        jugador.motivo_suspension = (
+            request.form.get(
+                "motivo_suspension",
+                ""
+            ).strip()
+        )
+
+        fecha_termino = request.form.get(
+            "fecha_termino_suspension",
+            ""
+        ).strip()
+
+        if fecha_termino:
+
+            try:
+
+                jugador.fecha_termino_suspension = (
+                    date.fromisoformat(
+                        fecha_termino
+                    )
+                )
+
+            except ValueError:
+
+                flash(
+                    "La fecha de término no es válida.",
+                    "error"
+                )
+
+                return redirect(
+                    url_for(
+                        "ficha_jugador",
+                        jugador_id=jugador.id
+                    )
+                )
+
+        else:
+
+            jugador.fecha_termino_suspension = None
+
+    else:
+
+        jugador.motivo_suspension = None
+
+        jugador.fecha_termino_suspension = None
+
+    db.session.commit()
+
+    flash(
+        f"Estado actualizado a {estado}.",
+        "success"
+    )
+
+    return redirect(
+        url_for(
+            "ficha_jugador",
+            jugador_id=jugador.id
+        )
     )
 
 
@@ -916,161 +989,6 @@ def eliminar_jugador(jugador_id):
 
     return redirect(
         url_for("index")
-    )
-
-
-# ============================================================
-# REGISTRAR TARJETA / SUSPENSIÓN
-# ============================================================
-
-@app.route(
-    "/jugadores/<int:jugador_id>/disciplina/nuevo",
-    methods=["GET", "POST"]
-)
-def nuevo_registro_disciplinario(jugador_id):
-
-    jugador = db.get_or_404(
-        Jugador,
-        jugador_id
-    )
-
-    if request.method == "POST":
-
-        tipo = request.form.get(
-            "tipo",
-            ""
-        ).strip().upper()
-
-        fecha = request.form.get(
-            "fecha",
-            ""
-        ).strip()
-
-        motivo = request.form.get(
-            "motivo",
-            ""
-        ).strip()
-
-        observacion = request.form.get(
-            "observacion",
-            ""
-        ).strip()
-
-        tipos_permitidos = {
-            "AMARILLA",
-            "ROJA",
-            "SUSPENSION"
-        }
-
-        if tipo not in tipos_permitidos:
-
-            flash(
-                "Tipo de registro no válido.",
-                "error"
-            )
-
-            return render_template(
-                "disciplina_form.html",
-                jugador=jugador
-            )
-
-        if not fecha:
-
-            flash(
-                "Debes indicar la fecha.",
-                "error"
-            )
-
-            return render_template(
-                "disciplina_form.html",
-                jugador=jugador
-            )
-
-        try:
-
-            fecha_obj = date.fromisoformat(
-                fecha
-            )
-
-        except ValueError:
-
-            flash(
-                "La fecha no es válida.",
-                "error"
-            )
-
-            return render_template(
-                "disciplina_form.html",
-                jugador=jugador
-            )
-
-        registro = RegistroDisciplinario(
-            jugador_id=jugador.id,
-            tipo=tipo,
-            fecha=fecha_obj,
-            motivo=motivo,
-            observacion=observacion
-        )
-
-        db.session.add(
-            registro
-        )
-
-        db.session.commit()
-
-        flash(
-            "Registro disciplinario agregado correctamente.",
-            "success"
-        )
-
-        return redirect(
-            url_for(
-                "ficha_jugador",
-                jugador_id=jugador.id
-            )
-        )
-
-    return render_template(
-        "disciplina_form.html",
-        jugador=jugador
-    )
-
-
-# ============================================================
-# ELIMINAR REGISTRO DISCIPLINARIO
-# ============================================================
-
-@app.route(
-    "/disciplina/<int:registro_id>/eliminar",
-    methods=["POST"]
-)
-def eliminar_registro_disciplinario(
-    registro_id
-):
-
-    registro = db.get_or_404(
-        RegistroDisciplinario,
-        registro_id
-    )
-
-    jugador_id = registro.jugador_id
-
-    db.session.delete(
-        registro
-    )
-
-    db.session.commit()
-
-    flash(
-        "Registro disciplinario eliminado.",
-        "success"
-    )
-
-    return redirect(
-        url_for(
-            "ficha_jugador",
-            jugador_id=jugador_id
-        )
     )
 
 
@@ -1319,9 +1237,7 @@ def importar_jugadores():
 
                     continue
 
-                ruts_archivo.add(
-                    rut
-                )
+                ruts_archivo.add(rut)
 
                 if Jugador.query.filter_by(
                     rut=rut
@@ -1351,12 +1267,11 @@ def importar_jugadores():
                     nombre_completo=nombre,
                     fecha_nacimiento=fecha_obj,
                     serie=serie,
-                    club=club
+                    club=club,
+                    estado="HABILITADO"
                 )
 
-                db.session.add(
-                    jugador
-                )
+                db.session.add(jugador)
 
                 registrados += 1
 
@@ -1436,12 +1351,21 @@ def api_jugadores():
         Jugador.nombre_completo
     ).all()
 
-    return jsonify([
+    resultado = []
 
-        {
-            "id": jugador.id,
+    for jugador in jugadores:
 
-            "rut": jugador.rut,
+        actualizar_estado_automatico(
+            jugador
+        )
+
+        resultado.append({
+
+            "id":
+                jugador.id,
+
+            "rut":
+                jugador.rut,
 
             "nombre_completo":
                 jugador.nombre_completo,
@@ -1455,18 +1379,24 @@ def api_jugadores():
             "club":
                 jugador.club,
 
+            "estado":
+                jugador.estado,
+
+            "motivo_suspension":
+                jugador.motivo_suspension,
+
+            "fecha_termino_suspension":
+                (
+                    jugador.fecha_termino_suspension.isoformat()
+                    if jugador.fecha_termino_suspension
+                    else None
+                ),
+
             "tiene_foto":
-                bool(jugador.foto),
+                bool(jugador.foto)
+        })
 
-            "disciplina":
-                obtener_estado_disciplinario(
-                    jugador.id
-                )
-        }
-
-        for jugador in jugadores
-
-    ])
+    return jsonify(resultado)
 
 
 # ============================================================
@@ -1522,16 +1452,13 @@ def credencial_jugador(jugador_id):
         jugador_id
     )
 
-    estado_disciplinario = (
-        obtener_estado_disciplinario(
-            jugador.id
-        )
+    actualizar_estado_automatico(
+        jugador
     )
 
     return render_template(
         "jugador_credencial.html",
-        jugador=jugador,
-        estado_disciplinario=estado_disciplinario
+        jugador=jugador
     )
 
 
@@ -1550,7 +1477,7 @@ def health():
 
 
 # ============================================================
-# EJECUCIÓN
+# EJECUCIÓN LOCAL
 # ============================================================
 
 if __name__ == "__main__":
