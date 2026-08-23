@@ -14,8 +14,7 @@ from flask import (
 
 from flask_sqlalchemy import SQLAlchemy
 from openpyxl import load_workbook
-import qrcode
-from io import BytesIO
+
 
 # ============================================================
 # CONFIGURACIÓN
@@ -106,6 +105,28 @@ class Jugador(db.Model):
         nullable=True
     )
 
+    # --------------------------------------------------------
+    # ESTADO DEL JUGADOR
+    # --------------------------------------------------------
+
+    estado = db.Column(
+        db.String(30),
+        nullable=False,
+        default="HABILITADO",
+        index=True
+    )
+
+
+# ============================================================
+# ESTADOS PERMITIDOS
+# ============================================================
+
+ESTADOS_JUGADOR = {
+    "HABILITADO",
+    "PENDIENTE",
+    "SUSPENDIDO"
+}
+
 
 # ============================================================
 # CREACIÓN / ACTUALIZACIÓN SEGURA DE BASE DE DATOS
@@ -115,21 +136,27 @@ def preparar_base_datos():
 
     db.create_all()
 
-    # --------------------------------------------------------
-    # Comprobar si la columna foto existe.
-    #
-    # create_all() NO agrega columnas nuevas a una tabla
-    # existente. Por eso hacemos esta comprobación.
-    # --------------------------------------------------------
-
     try:
 
-        inspector = db.inspect(db.engine)
+        inspector = db.inspect(
+            db.engine
+        )
+
+        tablas = inspector.get_table_names()
+
+        if "jugador" not in tablas:
+            return
 
         columnas = [
             columna["name"]
-            for columna in inspector.get_columns("jugador")
+            for columna in inspector.get_columns(
+                "jugador"
+            )
         ]
+
+        # ----------------------------------------------------
+        # Agregar fotografía si no existe
+        # ----------------------------------------------------
 
         if "foto" not in columnas:
 
@@ -152,6 +179,62 @@ def preparar_base_datos():
                 )
 
             db.session.commit()
+
+        # ----------------------------------------------------
+        # Agregar estado si no existe
+        # ----------------------------------------------------
+
+        inspector = db.inspect(
+            db.engine
+        )
+
+        columnas = [
+            columna["name"]
+            for columna in inspector.get_columns(
+                "jugador"
+            )
+        ]
+
+        if "estado" not in columnas:
+
+            if db.engine.dialect.name == "postgresql":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN IF NOT EXISTS "
+                        "estado VARCHAR(30) "
+                        "NOT NULL DEFAULT 'HABILITADO'"
+                    )
+                )
+
+            elif db.engine.dialect.name == "sqlite":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN estado "
+                        "VARCHAR(30) "
+                        "NOT NULL DEFAULT 'HABILITADO'"
+                    )
+                )
+
+            db.session.commit()
+
+        # ----------------------------------------------------
+        # Asegurar estado en jugadores existentes
+        # ----------------------------------------------------
+
+        db.session.execute(
+            db.text(
+                "UPDATE jugador "
+                "SET estado = 'HABILITADO' "
+                "WHERE estado IS NULL "
+                "OR estado = ''"
+            )
+        )
+
+        db.session.commit()
 
     except Exception as error:
 
@@ -205,16 +288,16 @@ def normalizar_rut(rut):
     while len(cuerpo) > 3:
 
         cuerpo_formateado = (
-            "." +
-            cuerpo[-3:] +
-            cuerpo_formateado
+            "."
+            + cuerpo[-3:]
+            + cuerpo_formateado
         )
 
         cuerpo = cuerpo[:-3]
 
     cuerpo_formateado = (
-        cuerpo +
-        cuerpo_formateado
+        cuerpo
+        + cuerpo_formateado
     )
 
     return f"{cuerpo_formateado}-{dv}"
@@ -251,8 +334,8 @@ def validar_rut(rut):
     for digito in reversed(cuerpo):
 
         suma += (
-            int(digito) *
-            multiplicador
+            int(digito)
+            * multiplicador
         )
 
         multiplicador += 1
@@ -325,13 +408,15 @@ def convertir_fecha(valor):
 
 def obtener_fotografia():
     """
-    Obtiene y valida la fotografía enviada desde el formulario.
+    Obtiene y valida la fotografía enviada.
 
-    Máximo permitido: 5 MB.
+    Máximo: 5 MB.
     Formatos: JPG, JPEG, PNG y WEBP.
     """
 
-    archivo = request.files.get("foto")
+    archivo = request.files.get(
+        "foto"
+    )
 
     if not archivo:
         return None, None
@@ -342,9 +427,12 @@ def obtener_fotografia():
     contenido = archivo.read()
 
     if not contenido:
-        return None, "La fotografía seleccionada está vacía."
 
-    # Máximo 5 MB
+        return (
+            None,
+            "La fotografía seleccionada está vacía."
+        )
+
     maximo = 5 * 1024 * 1024
 
     if len(contenido) > maximo:
@@ -375,7 +463,7 @@ def obtener_fotografia():
 
 
 # ============================================================
-# INICIO / LISTADO DE JUGADORES
+# INICIO / LISTADO
 # ============================================================
 
 @app.route("/")
@@ -418,7 +506,7 @@ def index():
 
 
 # ============================================================
-# FICHA INDIVIDUAL DEL JUGADOR
+# FICHA INDIVIDUAL
 # ============================================================
 
 @app.route(
@@ -434,6 +522,75 @@ def ficha_jugador(jugador_id):
     return render_template(
         "jugador_detalle.html",
         jugador=jugador
+    )
+
+
+# ============================================================
+# CAMBIAR ESTADO DEL JUGADOR
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/estado",
+    methods=["POST"]
+)
+def cambiar_estado_jugador(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    nuevo_estado = (
+        request.form.get(
+            "estado",
+            ""
+        )
+        .strip()
+        .upper()
+    )
+
+    if nuevo_estado not in ESTADOS_JUGADOR:
+
+        flash(
+            "Estado de jugador no válido.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
+        )
+
+    jugador.estado = nuevo_estado
+
+    db.session.commit()
+
+    mensajes = {
+        "HABILITADO":
+            "Jugador habilitado correctamente.",
+
+        "PENDIENTE":
+            "Jugador marcado como pendiente.",
+
+        "SUSPENDIDO":
+            "Jugador suspendido correctamente."
+    }
+
+    flash(
+        mensajes.get(
+            nuevo_estado,
+            "Estado actualizado."
+        ),
+        "success"
+    )
+
+    return redirect(
+        url_for(
+            "ficha_jugador",
+            jugador_id=jugador.id
+        )
     )
 
 
@@ -462,203 +619,7 @@ def foto_jugador(jugador_id):
         jugador.foto,
         mimetype="image/jpeg"
     )
-# ============================================================
-# CÓDIGO QR DEL JUGADOR
-# ============================================================
 
-@app.route(
-    "/jugadores/<int:jugador_id>/qr"
-)
-def qr_jugador(jugador_id):
-
-    jugador = db.get_or_404(
-        Jugador,
-        jugador_id
-    )
-
-    # --------------------------------------------------------
-    # Intentar generar QR real
-    # --------------------------------------------------------
-
-    try:
-
-        import qrcode
-        from io import BytesIO
-
-        contenido = (
-            f"ASOCIACION PRESIDENTE RIOS\n"
-            f"JUGADOR: {jugador.id}\n"
-            f"RUT: {jugador.rut}\n"
-            f"NOMBRE: {jugador.nombre_completo}\n"
-            f"SERIE: {jugador.serie}\n"
-            f"CLUB: {jugador.club}"
-        )
-
-        imagen = qrcode.make(
-            contenido
-        )
-
-        memoria = BytesIO()
-
-        imagen.save(
-            memoria,
-            format="PNG"
-        )
-
-        memoria.seek(0)
-
-        return Response(
-            memoria.getvalue(),
-            mimetype="image/png"
-        )
-
-    except Exception:
-
-        # ----------------------------------------------------
-        # Si QR todavía no está instalado, devolver respuesta
-        # temporal para evitar que el sistema se caiga.
-        # ----------------------------------------------------
-
-        svg = f"""
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="300"
-            height="300"
-            viewBox="0 0 300 300"
-        >
-
-            <rect
-                width="300"
-                height="300"
-                fill="white"
-            />
-
-            <rect
-                x="20"
-                y="20"
-                width="260"
-                height="260"
-                fill="white"
-                stroke="#111827"
-                stroke-width="4"
-            />
-
-            <text
-                x="150"
-                y="130"
-                text-anchor="middle"
-                font-family="Arial"
-                font-size="24"
-                font-weight="bold"
-                fill="#111827"
-            >
-                QR
-            </text>
-
-            <text
-                x="150"
-                y="165"
-                text-anchor="middle"
-                font-family="Arial"
-                font-size="13"
-                fill="#6b7280"
-            >
-                Jugador {{ jugador.id }}
-            </text>
-
-            <text
-                x="150"
-                y="190"
-                text-anchor="middle"
-                font-family="Arial"
-                font-size="11"
-                fill="#6b7280"
-            >
-                Asociación Presidente Ríos
-            </text>
-
-        </svg>
-        """
-
-        return Response(
-            svg,
-            mimetype="image/svg+xml"
-        )
-
-
-# ============================================================
-# CREDENCIAL DEL JUGADOR
-# ============================================================
-
-@app.route(
-    "/jugadores/<int:jugador_id>/credencial"
-)
-def credencial_jugador(jugador_id):
-
-    jugador = db.get_or_404(
-        Jugador,
-        jugador_id
-    )
-
-    return render_template(
-        "jugador_credencial.html",
-        jugador=jugador
-    )
-
-    jugador = db.get_or_404(
-        Jugador,
-        jugador_id
-    )
-
-    # --------------------------------------------------------
-    # Dirección de la ficha del jugador
-    # --------------------------------------------------------
-
-    url_ficha = url_for(
-        "ficha_jugador",
-        jugador_id=jugador.id,
-        _external=True
-    )
-
-    # --------------------------------------------------------
-    # Crear QR
-    # --------------------------------------------------------
-
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_M,
-        box_size=10,
-        border=4
-    )
-
-    qr.add_data(url_ficha)
-
-    qr.make(
-        fit=True
-    )
-
-    imagen = qr.make_image(
-        fill_color="black",
-        back_color="white"
-    )
-
-    # --------------------------------------------------------
-    # Convertir imagen a PNG
-    # --------------------------------------------------------
-
-    memoria = BytesIO()
-
-    imagen.save(
-        memoria,
-        format="PNG"
-    )
-
-    memoria.seek(0)
-
-    return Response(
-        memoria.getvalue(),
-        mimetype="image/png"
-    )
 
 # ============================================================
 # NUEVO JUGADOR
@@ -699,10 +660,6 @@ def nuevo_jugador():
             ""
         ).strip()
 
-        # ----------------------------------------------------
-        # Validar campos
-        # ----------------------------------------------------
-
         if not all([
             rut,
             nombre,
@@ -721,10 +678,6 @@ def nuevo_jugador():
                 jugador=None
             )
 
-        # ----------------------------------------------------
-        # Validar RUT
-        # ----------------------------------------------------
-
         if not validar_rut(rut):
 
             flash(
@@ -736,10 +689,6 @@ def nuevo_jugador():
                 "jugador_form.html",
                 jugador=None
             )
-
-        # ----------------------------------------------------
-        # Convertir fecha
-        # ----------------------------------------------------
 
         try:
 
@@ -759,10 +708,6 @@ def nuevo_jugador():
                 jugador=None
             )
 
-        # ----------------------------------------------------
-        # Verificar RUT duplicado
-        # ----------------------------------------------------
-
         if Jugador.query.filter_by(
             rut=rut
         ).first():
@@ -776,10 +721,6 @@ def nuevo_jugador():
                 "jugador_form.html",
                 jugador=None
             )
-
-        # ----------------------------------------------------
-        # Obtener fotografía
-        # ----------------------------------------------------
 
         foto, error_foto = obtener_fotografia()
 
@@ -795,17 +736,14 @@ def nuevo_jugador():
                 jugador=None
             )
 
-        # ----------------------------------------------------
-        # Crear jugador
-        # ----------------------------------------------------
-
         jugador = Jugador(
             rut=rut,
             nombre_completo=nombre,
             fecha_nacimiento=fecha_obj,
             serie=serie,
             club=club,
-            foto=foto
+            foto=foto,
+            estado="HABILITADO"
         )
 
         db.session.add(jugador)
@@ -874,10 +812,6 @@ def editar_jugador(jugador_id):
             ""
         ).strip()
 
-        # ----------------------------------------------------
-        # Validar campos
-        # ----------------------------------------------------
-
         if not all([
             rut,
             nombre,
@@ -896,10 +830,6 @@ def editar_jugador(jugador_id):
                 jugador=jugador
             )
 
-        # ----------------------------------------------------
-        # Validar RUT
-        # ----------------------------------------------------
-
         if not validar_rut(rut):
 
             flash(
@@ -911,10 +841,6 @@ def editar_jugador(jugador_id):
                 "jugador_form.html",
                 jugador=jugador
             )
-
-        # ----------------------------------------------------
-        # Verificar RUT duplicado
-        # ----------------------------------------------------
 
         otro_jugador = Jugador.query.filter(
             Jugador.rut == rut,
@@ -932,10 +858,6 @@ def editar_jugador(jugador_id):
                 "jugador_form.html",
                 jugador=jugador
             )
-
-        # ----------------------------------------------------
-        # Convertir fecha
-        # ----------------------------------------------------
 
         try:
 
@@ -955,10 +877,6 @@ def editar_jugador(jugador_id):
                 jugador=jugador
             )
 
-        # ----------------------------------------------------
-        # Obtener nueva fotografía
-        # ----------------------------------------------------
-
         archivo_foto = request.files.get(
             "foto"
         )
@@ -968,7 +886,9 @@ def editar_jugador(jugador_id):
             and archivo_foto.filename
         ):
 
-            foto, error_foto = obtener_fotografia()
+            foto, error_foto = (
+                obtener_fotografia()
+            )
 
             if error_foto:
 
@@ -983,10 +903,6 @@ def editar_jugador(jugador_id):
                 )
 
             jugador.foto = foto
-
-        # ----------------------------------------------------
-        # Actualizar datos
-        # ----------------------------------------------------
 
         jugador.rut = rut
 
@@ -1037,7 +953,9 @@ def eliminar_jugador(jugador_id):
         jugador_id
     )
 
-    db.session.delete(jugador)
+    db.session.delete(
+        jugador
+    )
 
     db.session.commit()
 
@@ -1127,13 +1045,10 @@ def importar_jugadores():
 
         encabezados = [
             str(x).strip().lower()
-            if x is not None else ""
+            if x is not None
+            else ""
             for x in filas[0]
         ]
-
-        # ----------------------------------------------------
-        # Buscar columnas
-        # ----------------------------------------------------
 
         columnas = {}
 
@@ -1198,8 +1113,7 @@ def importar_jugadores():
 
             flash(
                 "Faltan columnas obligatorias: "
-                +
-                ", ".join(faltantes),
+                + ", ".join(faltantes),
                 "error"
             )
 
@@ -1207,23 +1121,13 @@ def importar_jugadores():
                 url_for("importar_jugadores")
             )
 
-        # ----------------------------------------------------
-        # Contadores
-        # ----------------------------------------------------
-
         registrados = 0
-
         duplicados = 0
-
         errores = 0
 
         detalle_errores = []
 
         ruts_archivo = set()
-
-        # ----------------------------------------------------
-        # Procesar filas
-        # ----------------------------------------------------
 
         for numero_fila, fila in enumerate(
             filas[1:],
@@ -1273,10 +1177,6 @@ def importar_jugadores():
                     if club is not None
                     else ""
                 )
-
-                # --------------------------------------------
-                # Validaciones
-                # --------------------------------------------
 
                 if not all([
                     rut,
@@ -1342,10 +1242,13 @@ def importar_jugadores():
                     nombre_completo=nombre,
                     fecha_nacimiento=fecha_obj,
                     serie=serie,
-                    club=club
+                    club=club,
+                    estado="HABILITADO"
                 )
 
-                db.session.add(jugador)
+                db.session.add(
+                    jugador
+                )
 
                 registrados += 1
 
@@ -1357,10 +1260,6 @@ def importar_jugadores():
                     f"Fila {numero_fila}: "
                     "error al procesar."
                 )
-
-        # ----------------------------------------------------
-        # Guardar
-        # ----------------------------------------------------
 
         try:
 
@@ -1404,6 +1303,142 @@ def importar_jugadores():
 
 
 # ============================================================
+# CÓDIGO QR DEL JUGADOR
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/qr"
+)
+def qr_jugador(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    try:
+
+        import qrcode
+        from io import BytesIO
+
+        contenido = (
+            f"ASOCIACION PRESIDENTE RIOS\n"
+            f"JUGADOR: {jugador.id}\n"
+            f"RUT: {jugador.rut}\n"
+            f"NOMBRE: {jugador.nombre_completo}\n"
+            f"SERIE: {jugador.serie}\n"
+            f"CLUB: {jugador.club}\n"
+            f"ESTADO: {jugador.estado}"
+        )
+
+        imagen = qrcode.make(
+            contenido
+        )
+
+        memoria = BytesIO()
+
+        imagen.save(
+            memoria,
+            format="PNG"
+        )
+
+        memoria.seek(0)
+
+        return Response(
+            memoria.getvalue(),
+            mimetype="image/png"
+        )
+
+    except Exception:
+
+        svg = f"""
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="300"
+            height="300"
+            viewBox="0 0 300 300"
+        >
+
+            <rect
+                width="300"
+                height="300"
+                fill="white"
+            />
+
+            <rect
+                x="20"
+                y="20"
+                width="260"
+                height="260"
+                fill="white"
+                stroke="#111827"
+                stroke-width="4"
+            />
+
+            <text
+                x="150"
+                y="130"
+                text-anchor="middle"
+                font-family="Arial"
+                font-size="24"
+                font-weight="bold"
+                fill="#111827"
+            >
+                QR
+            </text>
+
+            <text
+                x="150"
+                y="165"
+                text-anchor="middle"
+                font-family="Arial"
+                font-size="13"
+                fill="#6b7280"
+            >
+                Jugador {jugador.id}
+            </text>
+
+            <text
+                x="150"
+                y="190"
+                text-anchor="middle"
+                font-family="Arial"
+                font-size="11"
+                fill="#6b7280"
+            >
+                Asociación Presidente Ríos
+            </text>
+
+        </svg>
+        """
+
+        return Response(
+            svg,
+            mimetype="image/svg+xml"
+        )
+
+
+# ============================================================
+# CREDENCIAL DEL JUGADOR
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/credencial"
+)
+def credencial_jugador(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    return render_template(
+        "jugador_credencial.html",
+        jugador=jugador
+    )
+
+
+# ============================================================
 # API DE JUGADORES
 # ============================================================
 
@@ -1432,9 +1467,11 @@ def api_jugadores():
     return jsonify([
 
         {
-            "id": jugador.id,
+            "id":
+                jugador.id,
 
-            "rut": jugador.rut,
+            "rut":
+                jugador.rut,
 
             "nombre_completo":
                 jugador.nombre_completo,
@@ -1447,6 +1484,9 @@ def api_jugadores():
 
             "club":
                 jugador.club,
+
+            "estado":
+                jugador.estado,
 
             "tiene_foto":
                 bool(jugador.foto)
@@ -1472,7 +1512,7 @@ def health():
 
 
 # ============================================================
-# EJECUCIÓN LOCAL
+# EJECUCIÓN
 # ============================================================
 
 if __name__ == "__main__":
