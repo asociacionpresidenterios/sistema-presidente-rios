@@ -99,38 +99,14 @@ class Jugador(db.Model):
         nullable=False
     )
 
-    # --------------------------------------------------------
-    # FOTOGRAFÍA
-    # --------------------------------------------------------
-
     foto = db.Column(
         db.LargeBinary,
         nullable=True
     )
 
-    # --------------------------------------------------------
-    # ESTADO DEL JUGADOR
-    # --------------------------------------------------------
-
-    estado = db.Column(
-        db.String(30),
-        nullable=False,
-        default="HABILITADO"
-    )
-
-    motivo_suspension = db.Column(
-        db.String(500),
-        nullable=True
-    )
-
-    fecha_termino_suspension = db.Column(
-        db.Date,
-        nullable=True
-    )
-
 
 # ============================================================
-# CREACIÓN / ACTUALIZACIÓN SEGURA DE BASE DE DATOS
+# CREACIÓN / ACTUALIZACIÓN DE BASE DE DATOS
 # ============================================================
 
 def preparar_base_datos():
@@ -146,76 +122,27 @@ def preparar_base_datos():
             for columna in inspector.get_columns("jugador")
         ]
 
-        nuevas_columnas = {
+        if "foto" not in columnas:
 
-            "foto": (
-                "BYTEA"
-                if db.engine.dialect.name == "postgresql"
-                else "BLOB"
-            ),
+            if db.engine.dialect.name == "postgresql":
 
-            "estado": (
-                "VARCHAR(30)"
-            ),
-
-            "motivo_suspension": (
-                "VARCHAR(500)"
-            ),
-
-            "fecha_termino_suspension": (
-                "DATE"
-            )
-        }
-
-        for nombre_columna, tipo_columna in nuevas_columnas.items():
-
-            if nombre_columna not in columnas:
-
-                try:
-
-                    db.session.execute(
-                        db.text(
-                            f"""
-                            ALTER TABLE jugador
-                            ADD COLUMN {nombre_columna}
-                            {tipo_columna}
-                            """
-                        )
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN IF NOT EXISTS foto BYTEA"
                     )
-
-                    db.session.commit()
-
-                except Exception as error:
-
-                    db.session.rollback()
-
-                    print(
-                        f"No se pudo agregar "
-                        f"{nombre_columna}:",
-                        error
-                    )
-
-        # ----------------------------------------------------
-        # Jugadores existentes
-        # ----------------------------------------------------
-
-        try:
-
-            db.session.execute(
-                db.text(
-                    """
-                    UPDATE jugador
-                    SET estado = 'HABILITADO'
-                    WHERE estado IS NULL
-                    """
                 )
-            )
+
+            elif db.engine.dialect.name == "sqlite":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN foto BLOB"
+                    )
+                )
 
             db.session.commit()
-
-        except Exception:
-
-            db.session.rollback()
 
     except Exception as error:
 
@@ -342,11 +269,9 @@ def convertir_fecha(valor):
         return None
 
     if isinstance(valor, datetime):
-
         return valor.date()
 
     if isinstance(valor, date):
-
         return valor
 
     if isinstance(valor, str):
@@ -425,28 +350,7 @@ def obtener_fotografia():
 
 
 # ============================================================
-# ACTUALIZAR ESTADO AUTOMÁTICO
-# ============================================================
-
-def actualizar_estado_automatico(jugador):
-
-    if jugador.estado == "SUSPENDIDO":
-
-        if jugador.fecha_termino_suspension:
-
-            if date.today() > jugador.fecha_termino_suspension:
-
-                jugador.estado = "HABILITADO"
-
-                jugador.motivo_suspension = None
-
-                jugador.fecha_termino_suspension = None
-
-                db.session.commit()
-
-
-# ============================================================
-# INICIO / LISTADO
+# INICIO / LISTADO DE JUGADORES
 # ============================================================
 
 @app.route("/")
@@ -481,12 +385,6 @@ def index():
         Jugador.nombre_completo
     ).all()
 
-    for jugador in jugadores:
-
-        actualizar_estado_automatico(
-            jugador
-        )
-
     return render_template(
         "index.html",
         jugadores=jugadores,
@@ -506,10 +404,6 @@ def ficha_jugador(jugador_id):
     jugador = db.get_or_404(
         Jugador,
         jugador_id
-    )
-
-    actualizar_estado_automatico(
-        jugador
     )
 
     return render_template(
@@ -666,10 +560,7 @@ def nuevo_jugador():
             fecha_nacimiento=fecha_obj,
             serie=serie,
             club=club,
-            foto=foto,
-            estado="HABILITADO",
-            motivo_suspension=None,
-            fecha_termino_suspension=None
+            foto=foto
         )
 
         db.session.add(jugador)
@@ -829,13 +720,9 @@ def editar_jugador(jugador_id):
             jugador.foto = foto
 
         jugador.rut = rut
-
         jugador.nombre_completo = nombre
-
         jugador.fecha_nacimiento = fecha_obj
-
         jugador.serie = serie
-
         jugador.club = club
 
         db.session.commit()
@@ -855,111 +742,6 @@ def editar_jugador(jugador_id):
     return render_template(
         "jugador_form.html",
         jugador=jugador
-    )
-
-
-# ============================================================
-# ESTADO DEL JUGADOR
-# ============================================================
-
-@app.route(
-    "/jugadores/<int:jugador_id>/estado",
-    methods=["POST"]
-)
-def cambiar_estado_jugador(jugador_id):
-
-    jugador = db.get_or_404(
-        Jugador,
-        jugador_id
-    )
-
-    estado = request.form.get(
-        "estado",
-        "HABILITADO"
-    ).strip().upper()
-
-    estados_permitidos = {
-        "HABILITADO",
-        "SUSPENDIDO",
-        "INHABILITADO"
-    }
-
-    if estado not in estados_permitidos:
-
-        flash(
-            "Estado no válido.",
-            "error"
-        )
-
-        return redirect(
-            url_for(
-                "ficha_jugador",
-                jugador_id=jugador.id
-            )
-        )
-
-    jugador.estado = estado
-
-    if estado == "SUSPENDIDO":
-
-        jugador.motivo_suspension = (
-            request.form.get(
-                "motivo_suspension",
-                ""
-            ).strip()
-        )
-
-        fecha_termino = request.form.get(
-            "fecha_termino_suspension",
-            ""
-        ).strip()
-
-        if fecha_termino:
-
-            try:
-
-                jugador.fecha_termino_suspension = (
-                    date.fromisoformat(
-                        fecha_termino
-                    )
-                )
-
-            except ValueError:
-
-                flash(
-                    "La fecha de término no es válida.",
-                    "error"
-                )
-
-                return redirect(
-                    url_for(
-                        "ficha_jugador",
-                        jugador_id=jugador.id
-                    )
-                )
-
-        else:
-
-            jugador.fecha_termino_suspension = None
-
-    else:
-
-        jugador.motivo_suspension = None
-
-        jugador.fecha_termino_suspension = None
-
-    db.session.commit()
-
-    flash(
-        f"Estado actualizado a {estado}.",
-        "success"
-    )
-
-    return redirect(
-        url_for(
-            "ficha_jugador",
-            jugador_id=jugador.id
-        )
     )
 
 
@@ -1145,9 +927,7 @@ def importar_jugadores():
             )
 
         registrados = 0
-
         duplicados = 0
-
         errores = 0
 
         detalle_errores = []
@@ -1267,8 +1047,7 @@ def importar_jugadores():
                     nombre_completo=nombre,
                     fecha_nacimiento=fecha_obj,
                     serie=serie,
-                    club=club,
-                    estado="HABILITADO"
+                    club=club
                 )
 
                 db.session.add(jugador)
@@ -1351,52 +1130,26 @@ def api_jugadores():
         Jugador.nombre_completo
     ).all()
 
-    resultado = []
+    return jsonify([
 
-    for jugador in jugadores:
-
-        actualizar_estado_automatico(
-            jugador
-        )
-
-        resultado.append({
-
-            "id":
-                jugador.id,
-
-            "rut":
-                jugador.rut,
-
+        {
+            "id": jugador.id,
+            "rut": jugador.rut,
             "nombre_completo":
                 jugador.nombre_completo,
-
             "fecha_nacimiento":
                 jugador.fecha_nacimiento.isoformat(),
-
             "serie":
                 jugador.serie,
-
             "club":
                 jugador.club,
-
-            "estado":
-                jugador.estado,
-
-            "motivo_suspension":
-                jugador.motivo_suspension,
-
-            "fecha_termino_suspension":
-                (
-                    jugador.fecha_termino_suspension.isoformat()
-                    if jugador.fecha_termino_suspension
-                    else None
-                ),
-
             "tiene_foto":
                 bool(jugador.foto)
-        })
+        }
 
-    return jsonify(resultado)
+        for jugador in jugadores
+
+    ])
 
 
 # ============================================================
@@ -1413,14 +1166,18 @@ def qr_jugador(jugador_id):
         jugador_id
     )
 
-    url_credencial = url_for(
-        "credencial_jugador",
+    # IMPORTANTE:
+    # El QR ahora apunta a la página pública
+    # de verificación.
+
+    url_verificacion = url_for(
+        "verificar_jugador",
         jugador_id=jugador.id,
         _external=True
     )
 
     imagen_qr = qrcode.make(
-        url_credencial
+        url_verificacion
     )
 
     memoria = BytesIO()
@@ -1452,13 +1209,37 @@ def credencial_jugador(jugador_id):
         jugador_id
     )
 
-    actualizar_estado_automatico(
-        jugador
-    )
-
     return render_template(
         "jugador_credencial.html",
         jugador=jugador
+    )
+
+
+# ============================================================
+# VERIFICACIÓN PÚBLICA DEL JUGADOR
+# ============================================================
+
+@app.route(
+    "/verificar/jugador/<int:jugador_id>"
+)
+def verificar_jugador(jugador_id):
+
+    jugador = Jugador.query.get(
+        jugador_id
+    )
+
+    if not jugador:
+
+        return render_template(
+            "verificacion_jugador.html",
+            jugador=None,
+            valido=False
+        ), 404
+
+    return render_template(
+        "verificacion_jugador.html",
+        jugador=jugador,
+        valido=True
     )
 
 
