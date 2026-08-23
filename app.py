@@ -99,8 +99,37 @@ class Jugador(db.Model):
         nullable=False
     )
 
+    # --------------------------------------------------------
+    # FOTOGRAFÍA
+    # --------------------------------------------------------
+
     foto = db.Column(
         db.LargeBinary,
+        nullable=True
+    )
+
+    foto_tipo = db.Column(
+        db.String(50),
+        nullable=True
+    )
+
+    # --------------------------------------------------------
+    # ESTADO DEL JUGADOR
+    # --------------------------------------------------------
+
+    estado = db.Column(
+        db.String(30),
+        nullable=False,
+        default="HABILITADO"
+    )
+
+    motivo_estado = db.Column(
+        db.String(300),
+        nullable=True
+    )
+
+    fecha_estado = db.Column(
+        db.DateTime,
         nullable=True
     )
 
@@ -122,27 +151,70 @@ def preparar_base_datos():
             for columna in inspector.get_columns("jugador")
         ]
 
-        if "foto" not in columnas:
+        # ----------------------------------------------------
+        # Agregar columnas nuevas si no existen
+        # ----------------------------------------------------
 
-            if db.engine.dialect.name == "postgresql":
+        columnas_nuevas = {
+            "foto_tipo": "VARCHAR(50)",
+            "estado": "VARCHAR(30)",
+            "motivo_estado": "VARCHAR(300)",
+            "fecha_estado": "TIMESTAMP"
+        }
 
-                db.session.execute(
-                    db.text(
-                        "ALTER TABLE jugador "
-                        "ADD COLUMN IF NOT EXISTS foto BYTEA"
+        for nombre_columna, tipo_columna in columnas_nuevas.items():
+
+            if nombre_columna not in columnas:
+
+                if db.engine.dialect.name == "postgresql":
+
+                    db.session.execute(
+                        db.text(
+                            f"""
+                            ALTER TABLE jugador
+                            ADD COLUMN IF NOT EXISTS
+                            {nombre_columna}
+                            {tipo_columna}
+                            """
+                        )
                     )
-                )
 
-            elif db.engine.dialect.name == "sqlite":
+                elif db.engine.dialect.name == "sqlite":
 
-                db.session.execute(
-                    db.text(
-                        "ALTER TABLE jugador "
-                        "ADD COLUMN foto BLOB"
+                    db.session.execute(
+                        db.text(
+                            f"""
+                            ALTER TABLE jugador
+                            ADD COLUMN
+                            {nombre_columna}
+                            {tipo_columna}
+                            """
+                        )
                     )
+
+        db.session.commit()
+
+        # ----------------------------------------------------
+        # Actualizar jugadores antiguos
+        # ----------------------------------------------------
+
+        try:
+
+            db.session.execute(
+                db.text(
+                    """
+                    UPDATE jugador
+                    SET estado = 'HABILITADO'
+                    WHERE estado IS NULL
+                    """
                 )
+            )
 
             db.session.commit()
+
+        except Exception:
+
+            db.session.rollback()
 
     except Exception as error:
 
@@ -207,6 +279,10 @@ def normalizar_rut(rut):
     return f"{cuerpo_formateado}-{dv}"
 
 
+# ============================================================
+# VALIDAR RUT
+# ============================================================
+
 def validar_rut(rut):
 
     if not rut:
@@ -263,6 +339,10 @@ def validar_rut(rut):
     return dv == dv_calculado
 
 
+# ============================================================
+# CONVERTIR FECHA
+# ============================================================
+
 def convertir_fecha(valor):
 
     if valor is None:
@@ -303,15 +383,19 @@ def convertir_fecha(valor):
     return None
 
 
+# ============================================================
+# OBTENER FOTOGRAFÍA
+# ============================================================
+
 def obtener_fotografia():
 
     archivo = request.files.get("foto")
 
     if not archivo:
-        return None, None
+        return None, None, None
 
     if not archivo.filename:
-        return None, None
+        return None, None, None
 
     contenido = archivo.read()
 
@@ -319,14 +403,18 @@ def obtener_fotografia():
 
         return (
             None,
+            None,
             "La fotografía seleccionada está vacía."
         )
+
+    # Máximo 5 MB
 
     maximo = 5 * 1024 * 1024
 
     if len(contenido) > maximo:
 
         return (
+            None,
             None,
             "La fotografía no puede superar los 5 MB."
         )
@@ -345,10 +433,11 @@ def obtener_fotografia():
 
         return (
             None,
+            None,
             "La fotografía debe ser JPG, PNG o WEBP."
         )
 
-    return contenido, None
+    return contenido, tipo, None
 
 
 # ============================================================
@@ -435,9 +524,11 @@ def foto_jugador(jugador_id):
             404
         )
 
+    mimetype = jugador.foto_tipo or "image/jpeg"
+
     return Response(
         jugador.foto,
-        mimetype="image/jpeg"
+        mimetype=mimetype
     )
 
 
@@ -542,7 +633,7 @@ def nuevo_jugador():
                 jugador=None
             )
 
-        foto, error_foto = obtener_fotografia()
+        foto, foto_tipo, error_foto = obtener_fotografia()
 
         if error_foto:
 
@@ -562,7 +653,11 @@ def nuevo_jugador():
             fecha_nacimiento=fecha_obj,
             serie=serie,
             club=club,
-            foto=foto
+            foto=foto,
+            foto_tipo=foto_tipo,
+            estado="HABILITADO",
+            motivo_estado="Jugador registrado",
+            fecha_estado=datetime.utcnow()
         )
 
         db.session.add(jugador)
@@ -705,7 +800,7 @@ def editar_jugador(jugador_id):
             and archivo_foto.filename
         ):
 
-            foto, error_foto = obtener_fotografia()
+            foto, foto_tipo, error_foto = obtener_fotografia()
 
             if error_foto:
 
@@ -720,6 +815,8 @@ def editar_jugador(jugador_id):
                 )
 
             jugador.foto = foto
+
+            jugador.foto_tipo = foto_tipo
 
         jugador.rut = rut
 
@@ -748,6 +845,90 @@ def editar_jugador(jugador_id):
     return render_template(
         "jugador_form.html",
         jugador=jugador
+    )
+
+
+# ============================================================
+# CAMBIAR ESTADO DEL JUGADOR
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/estado",
+    methods=["POST"]
+)
+def cambiar_estado_jugador(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    estado = request.form.get(
+        "estado",
+        ""
+    ).strip().upper()
+
+    motivo = request.form.get(
+        "motivo_estado",
+        ""
+    ).strip()
+
+    estados_validos = {
+        "HABILITADO",
+        "SUSPENDIDO",
+        "PENDIENTE"
+    }
+
+    if estado not in estados_validos:
+
+        flash(
+            "Estado de jugador no válido.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
+        )
+
+    if estado == "SUSPENDIDO" and not motivo:
+
+        flash(
+            "Debes indicar el motivo de la suspensión.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
+        )
+
+    jugador.estado = estado
+
+    jugador.motivo_estado = (
+        motivo
+        if motivo
+        else "Sin observaciones"
+    )
+
+    jugador.fecha_estado = datetime.utcnow()
+
+    db.session.commit()
+
+    flash(
+        f"Estado actualizado a {estado}.",
+        "success"
+    )
+
+    return redirect(
+        url_for(
+            "ficha_jugador",
+            jugador_id=jugador.id
+        )
     )
 
 
@@ -1055,20 +1236,23 @@ def importar_jugadores():
                     nombre_completo=nombre,
                     fecha_nacimiento=fecha_obj,
                     serie=serie,
-                    club=club
+                    club=club,
+                    estado="HABILITADO",
+                    motivo_estado="Importado desde Excel",
+                    fecha_estado=datetime.utcnow()
                 )
 
                 db.session.add(jugador)
 
                 registrados += 1
 
-            except Exception:
+            except Exception as error:
 
                 errores += 1
 
                 detalle_errores.append(
                     f"Fila {numero_fila}: "
-                    "error al procesar."
+                    f"error al procesar ({error})."
                 )
 
         try:
@@ -1157,6 +1341,17 @@ def api_jugadores():
             "club":
                 jugador.club,
 
+            "estado":
+                jugador.estado,
+
+            "motivo_estado":
+                jugador.motivo_estado,
+
+            "fecha_estado":
+                jugador.fecha_estado.isoformat()
+                if jugador.fecha_estado
+                else None,
+
             "tiene_foto":
                 bool(jugador.foto)
         }
@@ -1180,14 +1375,12 @@ def qr_jugador(jugador_id):
         jugador_id
     )
 
-    # URL pública que abrirá el QR
     url_credencial = url_for(
         "credencial_jugador",
         jugador_id=jugador.id,
         _external=True
     )
 
-    # Crear QR
     imagen_qr = qrcode.make(
         url_credencial
     )
