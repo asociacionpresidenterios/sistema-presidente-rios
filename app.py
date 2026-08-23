@@ -470,6 +470,24 @@ def foto_jugador(jugador_id):
     "/jugadores/<int:jugador_id>/qr"
 )
 def qr_jugador(jugador_id):
+    # ============================================================
+# CREDENCIAL DEL JUGADOR
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/credencial"
+)
+def credencial_jugador(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    return render_template(
+        "jugador_credencial.html",
+        jugador=jugador
+    )
 
     jugador = db.get_or_404(
         Jugador,
