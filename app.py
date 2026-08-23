@@ -470,7 +470,123 @@ def foto_jugador(jugador_id):
     "/jugadores/<int:jugador_id>/qr"
 )
 def qr_jugador(jugador_id):
-    # ============================================================
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    # --------------------------------------------------------
+    # Intentar generar QR real
+    # --------------------------------------------------------
+
+    try:
+
+        import qrcode
+        from io import BytesIO
+
+        contenido = (
+            f"ASOCIACION PRESIDENTE RIOS\n"
+            f"JUGADOR: {jugador.id}\n"
+            f"RUT: {jugador.rut}\n"
+            f"NOMBRE: {jugador.nombre_completo}\n"
+            f"SERIE: {jugador.serie}\n"
+            f"CLUB: {jugador.club}"
+        )
+
+        imagen = qrcode.make(
+            contenido
+        )
+
+        memoria = BytesIO()
+
+        imagen.save(
+            memoria,
+            format="PNG"
+        )
+
+        memoria.seek(0)
+
+        return Response(
+            memoria.getvalue(),
+            mimetype="image/png"
+        )
+
+    except Exception:
+
+        # ----------------------------------------------------
+        # Si QR todavía no está instalado, devolver respuesta
+        # temporal para evitar que el sistema se caiga.
+        # ----------------------------------------------------
+
+        svg = f"""
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="300"
+            height="300"
+            viewBox="0 0 300 300"
+        >
+
+            <rect
+                width="300"
+                height="300"
+                fill="white"
+            />
+
+            <rect
+                x="20"
+                y="20"
+                width="260"
+                height="260"
+                fill="white"
+                stroke="#111827"
+                stroke-width="4"
+            />
+
+            <text
+                x="150"
+                y="130"
+                text-anchor="middle"
+                font-family="Arial"
+                font-size="24"
+                font-weight="bold"
+                fill="#111827"
+            >
+                QR
+            </text>
+
+            <text
+                x="150"
+                y="165"
+                text-anchor="middle"
+                font-family="Arial"
+                font-size="13"
+                fill="#6b7280"
+            >
+                Jugador {{ jugador.id }}
+            </text>
+
+            <text
+                x="150"
+                y="190"
+                text-anchor="middle"
+                font-family="Arial"
+                font-size="11"
+                fill="#6b7280"
+            >
+                Asociación Presidente Ríos
+            </text>
+
+        </svg>
+        """
+
+        return Response(
+            svg,
+            mimetype="image/svg+xml"
+        )
+
+
+# ============================================================
 # CREDENCIAL DEL JUGADOR
 # ============================================================
 
