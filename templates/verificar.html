@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+
+.verificacion-pagina {
+    min-height: 80vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 30px 15px;
+}
+
+.verificacion-contenedor {
+    width: 100%;
+    max-width: 520px;
+}
+
+.verificacion-card {
+    background: white;
+    border-radius: 22px;
+    padding: 30px;
+    box-shadow: 0 10px 35px rgba(0,0,0,.10);
+    border: 1px solid #e5e7eb;
+}
+
+.verificacion-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.verificacion-icono {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto 15px;
+    border-radius: 50%;
+    background: #dcfce7;
+    color: #15803d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 34px;
+}
+
+.verificacion-header h1 {
+    margin: 0;
+    font-size: 25px;
+    color: #111827;
+}
+
+.verificacion-header p {
+    margin-top: 8px;
+    color: #6b7280;
+}
+
+.jugador-foto {
+    text-align: center;
+    margin: 25px 0;
+}
+
+.jugador-foto img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 6px solid white;
+    box-shadow: 0 5px 20px rgba(0,0,0,.18);
+}
+
+.jugador-foto .sin-foto {
+    width: 150px;
+    height: 150px;
+    margin: auto;
+    border-radius: 50%;
+    background: #111827;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    font-weight: bold;
+}
+
+.jugador-nombre {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+    margin-top: 15px;
+}
+
+.estado {
+    text-align: center;
+    margin: 15px 0 25px;
+}
+
+.estado span {
+    display: inline-block;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.estado-activo {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.estado-inactivo {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.datos {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.dato {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.dato-completo {
+    grid-column: 1 / -1;
+}
+
+.dato-label {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.dato-valor {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.codigo {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 12px;
+    background: #f1f5f9;
+    text-align: center;
+}
+
+.codigo small {
+    display: block;
+    color: #64748b;
+    margin-bottom: 5px;
+}
+
+.codigo strong {
+    font-size: 18px;
+    color: #111827;
+}
+
+.footer-verificacion {
+    text-align: center;
+    margin-top: 25px;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.sello {
+    margin-top: 20px;
+    text-align: center;
+    padding: 12px;
+    border: 1px dashed #cbd5e1;
+    border-radius: 12px;
+    color: #64748b;
+    font-size: 12px;
+}
+
+@media (max-width: 600px) {
+
+    .verificacion-card {
+        padding: 20px;
+    }
+
+    .datos {
+        grid-template-columns: 1fr;
+    }
+
+    .dato-completo {
+        grid-column: auto;
+    }
+
+}
+
+</style>
+
+
+<div class="verificacion-pagina">
+
+    <div class="verificacion-contenedor">
+
+        <div class="verificacion-card">
+
+            <!-- ENCABEZADO -->
+
+            <div class="verificacion-header">
+
+                <div class="verificacion-icono">
+                    ✓
+                </div>
+
+                <h1>
+                    Jugador verificado
+                </h1>
+
+                <p>
+                    Asociación Presidente Ríos
+                </p>
+
+            </div>
+
+
+            <!-- FOTO -->
+
+            <div class="jugador-foto">
+
+                {% if jugador.foto %}
+
+                    <img
+                        src="{{ url_for(
+                            'foto_jugador',
+                            jugador_id=jugador.id
+                        ) }}"
+                        alt="Fotografía del jugador"
+                    >
+
+                {% else %}
+
+                    <div class="sin-foto">
+                        {{ jugador.nombre_completo[0]|upper }}
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- NOMBRE -->
+
+            <div class="jugador-nombre">
+
+                {{ jugador.nombre_completo }}
+
+            </div>
+
+
+            <!-- ESTADO -->
+
+            <div class="estado">
+
+                {% if jugador.habilitado is not defined
+                    or jugador.habilitado %}
+
+                    <span class="estado-activo">
+                        ✓ JUGADOR HABILITADO
+                    </span>
+
+                {% else %}
+
+                    <span class="estado-inactivo">
+                        ✕ JUGADOR NO HABILITADO
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+
+            <!-- DATOS -->
+
+            <div class="datos">
+
+                <div class="dato">
+
+                    <span class="dato-label">
+                        RUT
+                    </span>
+
+                    <span class="dato-valor">
+                        {{ jugador.rut }}
+                    </span>
+
+                </div>
+
+
+                <div class="dato">
+
+                    <span class="dato-label">
+                        Serie
+                    </span>
+
+                    <span class="dato-valor">
+                        {{ jugador.serie }}
+                    </span>
+
+                </div>
+
+
+                <div class="dato dato-completo">
+
+                    <span class="dato-label">
+                        Club
+                    </span>
+
+                    <span class="dato-valor">
+                        {{ jugador.club }}
+                    </span>
+
+                </div>
+
+
+                <div class="dato">
+
+                    <span class="dato-label">
+                        Fecha de nacimiento
+                    </span>
+
+                    <span class="dato-valor">
+
+                        {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
+
+                    </span>
+
+                </div>
+
+
+                <div class="dato">
+
+                    <span class="dato-label">
+                        ID jugador
+                    </span>
+
+                    <span class="dato-valor">
+                        JUG-{{ jugador.id }}
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- CÓDIGO -->
+
+            <div class="codigo">
+
+                <small>
+                    Código de acreditación
+                </small>
+
+                <strong>
+                    JUG-{{ jugador.id }}
+                </strong>
+
+            </div>
+
+
+            <!-- SELLO -->
+
+            <div class="sello">
+
+                🛡️ Registro oficial de jugadores<br>
+
+                Asociación de Fútbol Presidente Ríos
+
+            </div>
+
+
+            <!-- FOOTER -->
+
+            <div class="footer-verificacion">
+
+                Esta información corresponde al registro
+                oficial de acreditación de jugadores.
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
