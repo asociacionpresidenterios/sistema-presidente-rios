@@ -1,5 +1,8 @@
 import os
 from datetime import date, datetime
+from io import BytesIO
+
+import qrcode
 
 from flask import (
     Flask,
@@ -96,36 +99,10 @@ class Jugador(db.Model):
         nullable=False
     )
 
-    # --------------------------------------------------------
-    # FOTOGRAFÍA
-    # --------------------------------------------------------
-
     foto = db.Column(
         db.LargeBinary,
         nullable=True
     )
-
-    # --------------------------------------------------------
-    # ESTADO DEL JUGADOR
-    # --------------------------------------------------------
-
-    estado = db.Column(
-        db.String(30),
-        nullable=False,
-        default="HABILITADO",
-        index=True
-    )
-
-
-# ============================================================
-# ESTADOS PERMITIDOS
-# ============================================================
-
-ESTADOS_JUGADOR = {
-    "HABILITADO",
-    "PENDIENTE",
-    "SUSPENDIDO"
-}
 
 
 # ============================================================
@@ -138,25 +115,12 @@ def preparar_base_datos():
 
     try:
 
-        inspector = db.inspect(
-            db.engine
-        )
-
-        tablas = inspector.get_table_names()
-
-        if "jugador" not in tablas:
-            return
+        inspector = db.inspect(db.engine)
 
         columnas = [
             columna["name"]
-            for columna in inspector.get_columns(
-                "jugador"
-            )
+            for columna in inspector.get_columns("jugador")
         ]
-
-        # ----------------------------------------------------
-        # Agregar fotografía si no existe
-        # ----------------------------------------------------
 
         if "foto" not in columnas:
 
@@ -180,62 +144,6 @@ def preparar_base_datos():
 
             db.session.commit()
 
-        # ----------------------------------------------------
-        # Agregar estado si no existe
-        # ----------------------------------------------------
-
-        inspector = db.inspect(
-            db.engine
-        )
-
-        columnas = [
-            columna["name"]
-            for columna in inspector.get_columns(
-                "jugador"
-            )
-        ]
-
-        if "estado" not in columnas:
-
-            if db.engine.dialect.name == "postgresql":
-
-                db.session.execute(
-                    db.text(
-                        "ALTER TABLE jugador "
-                        "ADD COLUMN IF NOT EXISTS "
-                        "estado VARCHAR(30) "
-                        "NOT NULL DEFAULT 'HABILITADO'"
-                    )
-                )
-
-            elif db.engine.dialect.name == "sqlite":
-
-                db.session.execute(
-                    db.text(
-                        "ALTER TABLE jugador "
-                        "ADD COLUMN estado "
-                        "VARCHAR(30) "
-                        "NOT NULL DEFAULT 'HABILITADO'"
-                    )
-                )
-
-            db.session.commit()
-
-        # ----------------------------------------------------
-        # Asegurar estado en jugadores existentes
-        # ----------------------------------------------------
-
-        db.session.execute(
-            db.text(
-                "UPDATE jugador "
-                "SET estado = 'HABILITADO' "
-                "WHERE estado IS NULL "
-                "OR estado = ''"
-            )
-        )
-
-        db.session.commit()
-
     except Exception as error:
 
         db.session.rollback()
@@ -256,10 +164,6 @@ with app.app_context():
 # ============================================================
 
 def normalizar_rut(rut):
-    """
-    Convierte distintos formatos de RUT al formato:
-    11.111.111-1
-    """
 
     if rut is None:
         return ""
@@ -288,25 +192,22 @@ def normalizar_rut(rut):
     while len(cuerpo) > 3:
 
         cuerpo_formateado = (
-            "."
-            + cuerpo[-3:]
-            + cuerpo_formateado
+            "." +
+            cuerpo[-3:] +
+            cuerpo_formateado
         )
 
         cuerpo = cuerpo[:-3]
 
     cuerpo_formateado = (
-        cuerpo
-        + cuerpo_formateado
+        cuerpo +
+        cuerpo_formateado
     )
 
     return f"{cuerpo_formateado}-{dv}"
 
 
 def validar_rut(rut):
-    """
-    Valida el dígito verificador de un RUT chileno.
-    """
 
     if not rut:
         return False
@@ -334,8 +235,8 @@ def validar_rut(rut):
     for digito in reversed(cuerpo):
 
         suma += (
-            int(digito)
-            * multiplicador
+            int(digito) *
+            multiplicador
         )
 
         multiplicador += 1
@@ -363,10 +264,6 @@ def validar_rut(rut):
 
 
 def convertir_fecha(valor):
-    """
-    Convierte fechas provenientes de Excel
-    a datetime.date.
-    """
 
     if valor is None:
         return None
@@ -407,16 +304,8 @@ def convertir_fecha(valor):
 
 
 def obtener_fotografia():
-    """
-    Obtiene y valida la fotografía enviada.
 
-    Máximo: 5 MB.
-    Formatos: JPG, JPEG, PNG y WEBP.
-    """
-
-    archivo = request.files.get(
-        "foto"
-    )
+    archivo = request.files.get("foto")
 
     if not archivo:
         return None, None
@@ -526,76 +415,7 @@ def ficha_jugador(jugador_id):
 
 
 # ============================================================
-# CAMBIAR ESTADO DEL JUGADOR
-# ============================================================
-
-@app.route(
-    "/jugadores/<int:jugador_id>/estado",
-    methods=["POST"]
-)
-def cambiar_estado_jugador(jugador_id):
-
-    jugador = db.get_or_404(
-        Jugador,
-        jugador_id
-    )
-
-    nuevo_estado = (
-        request.form.get(
-            "estado",
-            ""
-        )
-        .strip()
-        .upper()
-    )
-
-    if nuevo_estado not in ESTADOS_JUGADOR:
-
-        flash(
-            "Estado de jugador no válido.",
-            "error"
-        )
-
-        return redirect(
-            url_for(
-                "ficha_jugador",
-                jugador_id=jugador.id
-            )
-        )
-
-    jugador.estado = nuevo_estado
-
-    db.session.commit()
-
-    mensajes = {
-        "HABILITADO":
-            "Jugador habilitado correctamente.",
-
-        "PENDIENTE":
-            "Jugador marcado como pendiente.",
-
-        "SUSPENDIDO":
-            "Jugador suspendido correctamente."
-    }
-
-    flash(
-        mensajes.get(
-            nuevo_estado,
-            "Estado actualizado."
-        ),
-        "success"
-    )
-
-    return redirect(
-        url_for(
-            "ficha_jugador",
-            jugador_id=jugador.id
-        )
-    )
-
-
-# ============================================================
-# FOTOGRAFÍA DEL JUGADOR
+# FOTOGRAFÍA
 # ============================================================
 
 @app.route(
@@ -742,8 +562,7 @@ def nuevo_jugador():
             fecha_nacimiento=fecha_obj,
             serie=serie,
             club=club,
-            foto=foto,
-            estado="HABILITADO"
+            foto=foto
         )
 
         db.session.add(jugador)
@@ -886,9 +705,7 @@ def editar_jugador(jugador_id):
             and archivo_foto.filename
         ):
 
-            foto, error_foto = (
-                obtener_fotografia()
-            )
+            foto, error_foto = obtener_fotografia()
 
             if error_foto:
 
@@ -906,13 +723,9 @@ def editar_jugador(jugador_id):
 
         jugador.rut = rut
 
-        jugador.nombre_completo = (
-            nombre
-        )
+        jugador.nombre_completo = nombre
 
-        jugador.fecha_nacimiento = (
-            fecha_obj
-        )
+        jugador.fecha_nacimiento = fecha_obj
 
         jugador.serie = serie
 
@@ -953,9 +766,7 @@ def eliminar_jugador(jugador_id):
         jugador_id
     )
 
-    db.session.delete(
-        jugador
-    )
+    db.session.delete(jugador)
 
     db.session.commit()
 
@@ -1045,8 +856,7 @@ def importar_jugadores():
 
         encabezados = [
             str(x).strip().lower()
-            if x is not None
-            else ""
+            if x is not None else ""
             for x in filas[0]
         ]
 
@@ -1113,7 +923,8 @@ def importar_jugadores():
 
             flash(
                 "Faltan columnas obligatorias: "
-                + ", ".join(faltantes),
+                +
+                ", ".join(faltantes),
                 "error"
             )
 
@@ -1122,7 +933,9 @@ def importar_jugadores():
             )
 
         registrados = 0
+
         duplicados = 0
+
         errores = 0
 
         detalle_errores = []
@@ -1242,13 +1055,10 @@ def importar_jugadores():
                     nombre_completo=nombre,
                     fecha_nacimiento=fecha_obj,
                     serie=serie,
-                    club=club,
-                    estado="HABILITADO"
+                    club=club
                 )
 
-                db.session.add(
-                    jugador
-                )
+                db.session.add(jugador)
 
                 registrados += 1
 
@@ -1303,142 +1113,6 @@ def importar_jugadores():
 
 
 # ============================================================
-# CÓDIGO QR DEL JUGADOR
-# ============================================================
-
-@app.route(
-    "/jugadores/<int:jugador_id>/qr"
-)
-def qr_jugador(jugador_id):
-
-    jugador = db.get_or_404(
-        Jugador,
-        jugador_id
-    )
-
-    try:
-
-        import qrcode
-        from io import BytesIO
-
-        contenido = (
-            f"ASOCIACION PRESIDENTE RIOS\n"
-            f"JUGADOR: {jugador.id}\n"
-            f"RUT: {jugador.rut}\n"
-            f"NOMBRE: {jugador.nombre_completo}\n"
-            f"SERIE: {jugador.serie}\n"
-            f"CLUB: {jugador.club}\n"
-            f"ESTADO: {jugador.estado}"
-        )
-
-        imagen = qrcode.make(
-            contenido
-        )
-
-        memoria = BytesIO()
-
-        imagen.save(
-            memoria,
-            format="PNG"
-        )
-
-        memoria.seek(0)
-
-        return Response(
-            memoria.getvalue(),
-            mimetype="image/png"
-        )
-
-    except Exception:
-
-        svg = f"""
-        <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="300"
-            height="300"
-            viewBox="0 0 300 300"
-        >
-
-            <rect
-                width="300"
-                height="300"
-                fill="white"
-            />
-
-            <rect
-                x="20"
-                y="20"
-                width="260"
-                height="260"
-                fill="white"
-                stroke="#111827"
-                stroke-width="4"
-            />
-
-            <text
-                x="150"
-                y="130"
-                text-anchor="middle"
-                font-family="Arial"
-                font-size="24"
-                font-weight="bold"
-                fill="#111827"
-            >
-                QR
-            </text>
-
-            <text
-                x="150"
-                y="165"
-                text-anchor="middle"
-                font-family="Arial"
-                font-size="13"
-                fill="#6b7280"
-            >
-                Jugador {jugador.id}
-            </text>
-
-            <text
-                x="150"
-                y="190"
-                text-anchor="middle"
-                font-family="Arial"
-                font-size="11"
-                fill="#6b7280"
-            >
-                Asociación Presidente Ríos
-            </text>
-
-        </svg>
-        """
-
-        return Response(
-            svg,
-            mimetype="image/svg+xml"
-        )
-
-
-# ============================================================
-# CREDENCIAL DEL JUGADOR
-# ============================================================
-
-@app.route(
-    "/jugadores/<int:jugador_id>/credencial"
-)
-def credencial_jugador(jugador_id):
-
-    jugador = db.get_or_404(
-        Jugador,
-        jugador_id
-    )
-
-    return render_template(
-        "jugador_credencial.html",
-        jugador=jugador
-    )
-
-
-# ============================================================
 # API DE JUGADORES
 # ============================================================
 
@@ -1467,11 +1141,9 @@ def api_jugadores():
     return jsonify([
 
         {
-            "id":
-                jugador.id,
+            "id": jugador.id,
 
-            "rut":
-                jugador.rut,
+            "rut": jugador.rut,
 
             "nombre_completo":
                 jugador.nombre_completo,
@@ -1485,9 +1157,6 @@ def api_jugadores():
             "club":
                 jugador.club,
 
-            "estado":
-                jugador.estado,
-
             "tiene_foto":
                 bool(jugador.foto)
         }
@@ -1495,6 +1164,67 @@ def api_jugadores():
         for jugador in jugadores
 
     ])
+
+
+# ============================================================
+# QR DEL JUGADOR
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/qr"
+)
+def qr_jugador(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    # URL pública que abrirá el QR
+    url_credencial = url_for(
+        "credencial_jugador",
+        jugador_id=jugador.id,
+        _external=True
+    )
+
+    # Crear QR
+    imagen_qr = qrcode.make(
+        url_credencial
+    )
+
+    memoria = BytesIO()
+
+    imagen_qr.save(
+        memoria,
+        format="PNG"
+    )
+
+    memoria.seek(0)
+
+    return Response(
+        memoria.getvalue(),
+        mimetype="image/png"
+    )
+
+
+# ============================================================
+# CREDENCIAL DEL JUGADOR
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/credencial"
+)
+def credencial_jugador(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    return render_template(
+        "jugador_credencial.html",
+        jugador=jugador
+    )
 
 
 # ============================================================
@@ -1512,7 +1242,7 @@ def health():
 
 
 # ============================================================
-# EJECUCIÓN
+# EJECUCIÓN LOCAL
 # ============================================================
 
 if __name__ == "__main__":
