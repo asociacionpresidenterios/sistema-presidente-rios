@@ -17,6 +17,7 @@ from flask import (
 
 from flask_sqlalchemy import SQLAlchemy
 from openpyxl import load_workbook
+from sqlalchemy import inspect, text
 
 
 # ============================================================
@@ -62,18 +63,6 @@ db = SQLAlchemy(app)
 
 
 # ============================================================
-# ESTADOS DISPONIBLES
-# ============================================================
-
-ESTADOS_JUGADOR = [
-    "Vigente",
-    "Pendiente",
-    "Suspendido",
-    "Inhabilitado"
-]
-
-
-# ============================================================
 # MODELO JUGADOR
 # ============================================================
 
@@ -116,15 +105,14 @@ class Jugador(db.Model):
         nullable=True
     )
 
-    # --------------------------------------------------------
+    # ========================================================
     # ESTADO DEL JUGADOR
-    # --------------------------------------------------------
+    # ========================================================
 
     estado = db.Column(
         db.String(30),
         nullable=False,
-        default="Vigente",
-        index=True
+        default="Vigente"
     )
 
 
@@ -134,11 +122,17 @@ class Jugador(db.Model):
 
 def preparar_base_datos():
 
-    db.create_all()
-
     try:
 
-        inspector = db.inspect(db.engine)
+        db.create_all()
+
+        inspector = inspect(db.engine)
+
+        tablas = inspector.get_table_names()
+
+        if "jugador" not in tablas:
+
+            return
 
         columnas = [
             columna["name"]
@@ -154,7 +148,7 @@ def preparar_base_datos():
             if db.engine.dialect.name == "postgresql":
 
                 db.session.execute(
-                    db.text(
+                    text(
                         "ALTER TABLE jugador "
                         "ADD COLUMN IF NOT EXISTS foto BYTEA"
                     )
@@ -163,7 +157,7 @@ def preparar_base_datos():
             elif db.engine.dialect.name == "sqlite":
 
                 db.session.execute(
-                    db.text(
+                    text(
                         "ALTER TABLE jugador "
                         "ADD COLUMN foto BLOB"
                     )
@@ -171,72 +165,65 @@ def preparar_base_datos():
 
             db.session.commit()
 
-
         # ----------------------------------------------------
-        # VOLVER A LEER COLUMNAS
+        # AGREGAR ESTADO SI NO EXISTE
         # ----------------------------------------------------
 
-        inspector = db.inspect(db.engine)
+        inspector = inspect(db.engine)
 
         columnas = [
             columna["name"]
             for columna in inspector.get_columns("jugador")
         ]
 
-
-        # ----------------------------------------------------
-        # AGREGAR ESTADO SI NO EXISTE
-        # ----------------------------------------------------
-
         if "estado" not in columnas:
 
             if db.engine.dialect.name == "postgresql":
 
                 db.session.execute(
-                    db.text(
+                    text(
                         "ALTER TABLE jugador "
-                        "ADD COLUMN IF NOT EXISTS "
-                        "estado VARCHAR(30) "
-                        "DEFAULT 'Vigente' "
-                        "NOT NULL"
+                        "ADD COLUMN estado VARCHAR(30) "
+                        "NOT NULL DEFAULT 'Vigente'"
                     )
                 )
 
             elif db.engine.dialect.name == "sqlite":
 
                 db.session.execute(
-                    db.text(
+                    text(
                         "ALTER TABLE jugador "
                         "ADD COLUMN estado VARCHAR(30) "
-                        "DEFAULT 'Vigente'"
+                        "NOT NULL DEFAULT 'Vigente'"
                     )
                 )
 
             db.session.commit()
 
-
         # ----------------------------------------------------
-        # ASEGURAR ESTADOS EXISTENTES
+        # ASEGURAR ESTADO EN JUGADORES ANTIGUOS
         # ----------------------------------------------------
 
         db.session.execute(
-            db.text(
+            text(
                 "UPDATE jugador "
                 "SET estado = 'Vigente' "
-                "WHERE estado IS NULL "
-                "OR estado = ''"
+                "WHERE estado IS NULL OR estado = ''"
             )
         )
 
         db.session.commit()
 
+        print(
+            "Base de datos preparada correctamente."
+        )
 
     except Exception as error:
 
         db.session.rollback()
 
         print(
-            "Advertencia al preparar la base de datos:",
+            "ERROR preparando la base de datos:",
             error
         )
 
@@ -269,7 +256,6 @@ def normalizar_rut(rut):
         return ""
 
     cuerpo = rut_limpio[:-1]
-
     dv = rut_limpio[-1]
 
     if not cuerpo.isdigit():
@@ -312,14 +298,12 @@ def validar_rut(rut):
         return False
 
     cuerpo = rut_limpio[:-1]
-
     dv = rut_limpio[-1]
 
     if not cuerpo.isdigit():
         return False
 
     suma = 0
-
     multiplicador = 2
 
     for digito in reversed(cuerpo):
@@ -332,7 +316,6 @@ def validar_rut(rut):
         multiplicador += 1
 
         if multiplicador > 7:
-
             multiplicador = 2
 
     resto = suma % 11
@@ -442,9 +425,20 @@ def obtener_fotografia():
     return contenido, None
 
 
-def validar_estado(estado):
+def obtener_estado(valor):
 
-    return estado in ESTADOS_JUGADOR
+    estados_validos = {
+        "Vigente",
+        "Pendiente",
+        "Suspendido",
+        "Inhabilitado"
+    }
+
+    if valor in estados_validos:
+
+        return valor
+
+    return "Vigente"
 
 
 # ============================================================
@@ -459,16 +453,7 @@ def index():
         ""
     ).strip()
 
-    estado_filtro = request.args.get(
-        "estado",
-        ""
-    ).strip()
-
     query = Jugador.query
-
-    # --------------------------------------------------------
-    # BUSCADOR
-    # --------------------------------------------------------
 
     if q:
 
@@ -488,29 +473,14 @@ def index():
             )
         )
 
-
-    # --------------------------------------------------------
-    # FILTRO POR ESTADO
-    # --------------------------------------------------------
-
-    if estado_filtro in ESTADOS_JUGADOR:
-
-        query = query.filter(
-            Jugador.estado == estado_filtro
-        )
-
-
     jugadores = query.order_by(
         Jugador.nombre_completo
     ).all()
 
-
     return render_template(
         "index.html",
         jugadores=jugadores,
-        q=q,
-        estado_filtro=estado_filtro,
-        estados=ESTADOS_JUGADOR
+        q=q
     )
 
 
@@ -600,15 +570,12 @@ def nuevo_jugador():
             ""
         ).strip()
 
-        estado = request.form.get(
-            "estado",
-            "Vigente"
-        ).strip()
-
-
-        # ----------------------------------------------------
-        # VALIDAR CAMPOS
-        # ----------------------------------------------------
+        estado = obtener_estado(
+            request.form.get(
+                "estado",
+                "Vigente"
+            )
+        )
 
         if not all([
             rut,
@@ -625,23 +592,8 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None,
-                estados=ESTADOS_JUGADOR
+                jugador=None
             )
-
-
-        # ----------------------------------------------------
-        # VALIDAR ESTADO
-        # ----------------------------------------------------
-
-        if not validar_estado(estado):
-
-            estado = "Vigente"
-
-
-        # ----------------------------------------------------
-        # VALIDAR RUT
-        # ----------------------------------------------------
 
         if not validar_rut(rut):
 
@@ -652,14 +604,8 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None,
-                estados=ESTADOS_JUGADOR
+                jugador=None
             )
-
-
-        # ----------------------------------------------------
-        # FECHA
-        # ----------------------------------------------------
 
         try:
 
@@ -676,14 +622,8 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None,
-                estados=ESTADOS_JUGADOR
+                jugador=None
             )
-
-
-        # ----------------------------------------------------
-        # RUT DUPLICADO
-        # ----------------------------------------------------
 
         if Jugador.query.filter_by(
             rut=rut
@@ -696,14 +636,8 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None,
-                estados=ESTADOS_JUGADOR
+                jugador=None
             )
-
-
-        # ----------------------------------------------------
-        # FOTOGRAFÍA
-        # ----------------------------------------------------
 
         foto, error_foto = obtener_fotografia()
 
@@ -716,43 +650,27 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None,
-                estados=ESTADOS_JUGADOR
+                jugador=None
             )
 
-
-        # ----------------------------------------------------
-        # CREAR JUGADOR
-        # ----------------------------------------------------
-
         jugador = Jugador(
-
             rut=rut,
-
             nombre_completo=nombre,
-
             fecha_nacimiento=fecha_obj,
-
             serie=serie,
-
             club=club,
-
             foto=foto,
-
             estado=estado
         )
-
 
         db.session.add(jugador)
 
         db.session.commit()
 
-
         flash(
             "Jugador registrado correctamente.",
             "success"
         )
-
 
         return redirect(
             url_for(
@@ -761,11 +679,9 @@ def nuevo_jugador():
             )
         )
 
-
     return render_template(
         "jugador_form.html",
-        jugador=None,
-        estados=ESTADOS_JUGADOR
+        jugador=None
     )
 
 
@@ -783,7 +699,6 @@ def editar_jugador(jugador_id):
         Jugador,
         jugador_id
     )
-
 
     if request.method == "POST":
 
@@ -814,15 +729,12 @@ def editar_jugador(jugador_id):
             ""
         ).strip()
 
-        estado = request.form.get(
-            "estado",
-            jugador.estado or "Vigente"
-        ).strip()
-
-
-        # ----------------------------------------------------
-        # VALIDAR CAMPOS
-        # ----------------------------------------------------
+        estado = obtener_estado(
+            request.form.get(
+                "estado",
+                "Vigente"
+            )
+        )
 
         if not all([
             rut,
@@ -839,32 +751,8 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador,
-                estados=ESTADOS_JUGADOR
+                jugador=jugador
             )
-
-
-        # ----------------------------------------------------
-        # VALIDAR ESTADO
-        # ----------------------------------------------------
-
-        if not validar_estado(estado):
-
-            flash(
-                "Estado no válido.",
-                "error"
-            )
-
-            return render_template(
-                "jugador_form.html",
-                jugador=jugador,
-                estados=ESTADOS_JUGADOR
-            )
-
-
-        # ----------------------------------------------------
-        # VALIDAR RUT
-        # ----------------------------------------------------
 
         if not validar_rut(rut):
 
@@ -875,20 +763,13 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador,
-                estados=ESTADOS_JUGADOR
+                jugador=jugador
             )
-
-
-        # ----------------------------------------------------
-        # RUT DUPLICADO
-        # ----------------------------------------------------
 
         otro_jugador = Jugador.query.filter(
             Jugador.rut == rut,
             Jugador.id != jugador.id
         ).first()
-
 
         if otro_jugador:
 
@@ -899,14 +780,8 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador,
-                estados=ESTADOS_JUGADOR
+                jugador=jugador
             )
-
-
-        # ----------------------------------------------------
-        # FECHA
-        # ----------------------------------------------------
 
         try:
 
@@ -923,19 +798,12 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador,
-                estados=ESTADOS_JUGADOR
+                jugador=jugador
             )
-
-
-        # ----------------------------------------------------
-        # FOTOGRAFÍA
-        # ----------------------------------------------------
 
         archivo_foto = request.files.get(
             "foto"
         )
-
 
         if (
             archivo_foto
@@ -943,7 +811,6 @@ def editar_jugador(jugador_id):
         ):
 
             foto, error_foto = obtener_fotografia()
-
 
             if error_foto:
 
@@ -954,17 +821,10 @@ def editar_jugador(jugador_id):
 
                 return render_template(
                     "jugador_form.html",
-                    jugador=jugador,
-                    estados=ESTADOS_JUGADOR
+                    jugador=jugador
                 )
 
-
             jugador.foto = foto
-
-
-        # ----------------------------------------------------
-        # ACTUALIZAR
-        # ----------------------------------------------------
 
         jugador.rut = rut
 
@@ -978,83 +838,23 @@ def editar_jugador(jugador_id):
 
         jugador.estado = estado
 
-
         db.session.commit()
-
 
         flash(
             "Datos actualizados correctamente.",
             "success"
         )
 
-
         return redirect(
             url_for(
                 "ficha_jugador",
                 jugador_id=jugador.id
             )
         )
-
 
     return render_template(
         "jugador_form.html",
-        jugador=jugador,
-        estados=ESTADOS_JUGADOR
-    )
-
-
-# ============================================================
-# CAMBIAR ESTADO RÁPIDAMENTE
-# ============================================================
-
-@app.route(
-    "/jugadores/<int:jugador_id>/estado",
-    methods=["POST"]
-)
-def cambiar_estado(jugador_id):
-
-    jugador = db.get_or_404(
-        Jugador,
-        jugador_id
-    )
-
-    estado = request.form.get(
-        "estado",
-        ""
-    ).strip()
-
-
-    if not validar_estado(estado):
-
-        flash(
-            "Estado no válido.",
-            "error"
-        )
-
-        return redirect(
-            url_for(
-                "ficha_jugador",
-                jugador_id=jugador.id
-            )
-        )
-
-
-    jugador.estado = estado
-
-    db.session.commit()
-
-
-    flash(
-        f"Estado cambiado a: {estado}.",
-        "success"
-    )
-
-
-    return redirect(
-        url_for(
-            "ficha_jugador",
-            jugador_id=jugador.id
-        )
+        jugador=jugador
     )
 
 
@@ -1073,17 +873,14 @@ def eliminar_jugador(jugador_id):
         jugador_id
     )
 
-
     db.session.delete(jugador)
 
     db.session.commit()
-
 
     flash(
         "Jugador eliminado.",
         "success"
     )
-
 
     return redirect(
         url_for("index")
@@ -1106,11 +903,9 @@ def importar_jugadores():
             "importar.html"
         )
 
-
     archivo = request.files.get(
         "archivo"
     )
-
 
     if not archivo or not archivo.filename:
 
@@ -1123,13 +918,11 @@ def importar_jugadores():
             url_for("importar_jugadores")
         )
 
-
     extension = (
         archivo.filename
         .rsplit(".", 1)[-1]
         .lower()
     )
-
 
     if extension != "xlsx":
 
@@ -1142,7 +935,6 @@ def importar_jugadores():
             url_for("importar_jugadores")
         )
 
-
     try:
 
         workbook = load_workbook(
@@ -1150,16 +942,13 @@ def importar_jugadores():
             data_only=True
         )
 
-
         hoja = workbook.active
-
 
         filas = list(
             hoja.iter_rows(
                 values_only=True
             )
         )
-
 
         if not filas:
 
@@ -1172,20 +961,13 @@ def importar_jugadores():
                 url_for("importar_jugadores")
             )
 
-
         encabezados = [
-
             str(x).strip().lower()
-            if x is not None
-            else ""
-
+            if x is not None else ""
             for x in filas[0]
-
         ]
 
-
         columnas = {}
-
 
         equivalencias = {
 
@@ -1218,16 +1000,9 @@ def importar_jugadores():
             "club": [
                 "club",
                 "equipo"
-            ],
-
-            "estado": [
-                "estado",
-                "situación",
-                "situacion"
             ]
 
         }
-
 
         for nombre_columna, posibles in (
             equivalencias.items()
@@ -1245,27 +1020,11 @@ def importar_jugadores():
 
                     break
 
-
-        # ----------------------------------------------------
-        # ESTADO ES OPCIONAL EN EXCEL
-        # ----------------------------------------------------
-
         faltantes = [
-
             campo
-
-            for campo in [
-                "rut",
-                "nombre",
-                "fecha",
-                "serie",
-                "club"
-            ]
-
+            for campo in equivalencias
             if campo not in columnas
-
         ]
-
 
         if faltantes:
 
@@ -1280,7 +1039,6 @@ def importar_jugadores():
                 url_for("importar_jugadores")
             )
 
-
         registrados = 0
 
         duplicados = 0
@@ -1290,7 +1048,6 @@ def importar_jugadores():
         detalle_errores = []
 
         ruts_archivo = set()
-
 
         for numero_fila, fila in enumerate(
             filas[1:],
@@ -1319,76 +1076,27 @@ def importar_jugadores():
                     columnas["club"]
                 ]
 
-
-                # ------------------------------------------------
-                # ESTADO
-                # ------------------------------------------------
-
-                if "estado" in columnas:
-
-                    estado_valor = fila[
-                        columnas["estado"]
-                    ]
-
-                    estado = (
-
-                        str(
-                            estado_valor
-                        ).strip()
-
-                        if estado_valor is not None
-
-                        else "Vigente"
-
-                    )
-
-                else:
-
-                    estado = "Vigente"
-
-
-                if not validar_estado(estado):
-
-                    estado = "Vigente"
-
-
                 rut = normalizar_rut(
                     rut_original
                 )
 
-
                 nombre = (
-
                     str(nombre).strip()
-
                     if nombre is not None
-
                     else ""
-
                 )
-
 
                 serie = (
-
                     str(serie).strip()
-
                     if serie is not None
-
                     else ""
-
                 )
-
 
                 club = (
-
                     str(club).strip()
-
                     if club is not None
-
                     else ""
-
                 )
-
 
                 if not all([
                     rut,
@@ -1401,28 +1109,22 @@ def importar_jugadores():
                     errores += 1
 
                     detalle_errores.append(
-
                         f"Fila {numero_fila}: "
                         "faltan datos obligatorios."
-
                     )
 
                     continue
-
 
                 if not validar_rut(rut):
 
                     errores += 1
 
                     detalle_errores.append(
-
                         f"Fila {numero_fila}: "
                         f"RUT inválido ({rut})."
-
                     )
 
                     continue
-
 
                 if rut in ruts_archivo:
 
@@ -1430,9 +1132,7 @@ def importar_jugadores():
 
                     continue
 
-
                 ruts_archivo.add(rut)
-
 
                 if Jugador.query.filter_by(
                     rut=rut
@@ -1442,68 +1142,46 @@ def importar_jugadores():
 
                     continue
 
-
                 fecha_obj = convertir_fecha(
                     fecha_valor
                 )
-
 
                 if not fecha_obj:
 
                     errores += 1
 
                     detalle_errores.append(
-
                         f"Fila {numero_fila}: "
                         "fecha de nacimiento inválida."
-
                     )
 
                     continue
 
-
                 jugador = Jugador(
-
                     rut=rut,
-
                     nombre_completo=nombre,
-
                     fecha_nacimiento=fecha_obj,
-
                     serie=serie,
-
                     club=club,
-
-                    estado=estado
-
+                    estado="Vigente"
                 )
-
 
                 db.session.add(jugador)
 
                 registrados += 1
-
 
             except Exception as error:
 
                 errores += 1
 
                 detalle_errores.append(
-
                     f"Fila {numero_fila}: "
-                    "error al procesar."
-
+                    f"error al procesar: {error}"
                 )
-
-
-        # ----------------------------------------------------
-        # GUARDAR
-        # ----------------------------------------------------
 
         try:
 
             db.session.commit()
-
 
         except Exception:
 
@@ -1519,33 +1197,22 @@ def importar_jugadores():
                 url_for("importar_jugadores")
             )
 
-
         return render_template(
-
             "importar_resultado.html",
-
             registrados=registrados,
-
             duplicados=duplicados,
-
             errores=errores,
-
             detalle_errores=detalle_errores
-
         )
-
 
     except Exception:
 
         db.session.rollback()
 
         flash(
-
             "Ocurrió un error inesperado "
             "al importar el archivo.",
-
             "error"
-
         )
 
         return redirect(
@@ -1567,29 +1234,21 @@ def api_jugadores():
         ""
     ).strip().upper()
 
-
     if not rut:
 
         return jsonify([])
 
-
     jugadores = Jugador.query.filter(
-
         Jugador.rut.ilike(
             f"%{rut}%"
         )
-
     ).order_by(
-
         Jugador.nombre_completo
-
     ).all()
-
 
     return jsonify([
 
         {
-
             "id": jugador.id,
 
             "rut": jugador.rut,
@@ -1611,7 +1270,6 @@ def api_jugadores():
 
             "tiene_foto":
                 bool(jugador.foto)
-
         }
 
         for jugador in jugadores
@@ -1633,44 +1291,28 @@ def qr_jugador(jugador_id):
         jugador_id
     )
 
-
     url_credencial = url_for(
-
         "credencial_jugador",
-
         jugador_id=jugador.id,
-
         _external=True
-
     )
-
 
     imagen_qr = qrcode.make(
         url_credencial
     )
 
-
     memoria = BytesIO()
 
-
     imagen_qr.save(
-
         memoria,
-
         format="PNG"
-
     )
-
 
     memoria.seek(0)
 
-
     return Response(
-
         memoria.getvalue(),
-
         mimetype="image/png"
-
     )
 
 
@@ -1684,20 +1326,13 @@ def qr_jugador(jugador_id):
 def credencial_jugador(jugador_id):
 
     jugador = db.get_or_404(
-
         Jugador,
-
         jugador_id
-
     )
 
-
     return render_template(
-
         "jugador_credencial.html",
-
         jugador=jugador
-
     )
 
 
@@ -1722,16 +1357,11 @@ def health():
 if __name__ == "__main__":
 
     app.run(
-
         host="0.0.0.0",
-
         port=int(
-
             os.environ.get(
                 "PORT",
                 5000
             )
-
         )
-
     )
