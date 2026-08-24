@@ -1311,7 +1311,176 @@ def credencial_jugador(jugador_id):
         jugador=jugador
     )
 
+# ============================================================
+# API DE ESTADÍSTICAS DEL DASHBOARD
+# ============================================================
 
+@app.route("/api/dashboard/estadisticas")
+def dashboard_estadisticas():
+
+    try:
+
+        # ----------------------------------------------------
+        # TOTAL DE JUGADORES
+        # ----------------------------------------------------
+
+        total_jugadores = Jugador.query.count()
+
+
+        # ----------------------------------------------------
+        # JUGADORES CON FOTOGRAFÍA
+        # ----------------------------------------------------
+
+        jugadores_con_foto = Jugador.query.filter(
+            Jugador.foto.isnot(None)
+        ).count()
+
+
+        # ----------------------------------------------------
+        # JUGADORES SIN FOTOGRAFÍA
+        # ----------------------------------------------------
+
+        jugadores_sin_foto = (
+            total_jugadores -
+            jugadores_con_foto
+        )
+
+
+        # ----------------------------------------------------
+        # CLUBES REGISTRADOS
+        # ----------------------------------------------------
+
+        clubes = db.session.query(
+            Jugador.club
+        ).filter(
+            Jugador.club.isnot(None),
+            Jugador.club != ""
+        ).distinct().all()
+
+        total_clubes = len(clubes)
+
+
+        # ----------------------------------------------------
+        # SERIES REGISTRADAS
+        # ----------------------------------------------------
+
+        series = db.session.query(
+            Jugador.serie
+        ).filter(
+            Jugador.serie.isnot(None),
+            Jugador.serie != ""
+        ).distinct().all()
+
+        total_series = len(series)
+
+
+        # ----------------------------------------------------
+        # JUGADORES POR CLUB
+        # ----------------------------------------------------
+
+        jugadores_por_club_query = db.session.query(
+            Jugador.club,
+            db.func.count(Jugador.id)
+        ).filter(
+            Jugador.club.isnot(None),
+            Jugador.club != ""
+        ).group_by(
+            Jugador.club
+        ).order_by(
+            db.func.count(Jugador.id).desc()
+        ).all()
+
+
+        jugadores_por_club = [
+
+            {
+                "club": club,
+                "cantidad": cantidad
+            }
+
+            for club, cantidad
+            in jugadores_por_club_query
+
+        ]
+
+
+        # ----------------------------------------------------
+        # JUGADORES POR SERIE
+        # ----------------------------------------------------
+
+        jugadores_por_serie_query = db.session.query(
+            Jugador.serie,
+            db.func.count(Jugador.id)
+        ).filter(
+            Jugador.serie.isnot(None),
+            Jugador.serie != ""
+        ).group_by(
+            Jugador.serie
+        ).order_by(
+            db.func.count(Jugador.id).desc()
+        ).all()
+
+
+        jugadores_por_serie = [
+
+            {
+                "serie": serie,
+                "cantidad": cantidad
+            }
+
+            for serie, cantidad
+            in jugadores_por_serie_query
+
+        ]
+
+
+        # ----------------------------------------------------
+        # RESPUESTA
+        # ----------------------------------------------------
+
+        return jsonify({
+
+            "status": "ok",
+
+            "total_jugadores":
+                total_jugadores,
+
+            "jugadores_con_foto":
+                jugadores_con_foto,
+
+            "jugadores_sin_foto":
+                jugadores_sin_foto,
+
+            "total_clubes":
+                total_clubes,
+
+            "total_series":
+                total_series,
+
+            "jugadores_por_club":
+                jugadores_por_club,
+
+            "jugadores_por_serie":
+                jugadores_por_serie
+
+        })
+
+
+    except Exception as error:
+
+        print(
+            "Error en estadísticas del Dashboard:",
+            error
+        )
+
+        return jsonify({
+
+            "status": "error",
+
+            "mensaje":
+                "No fue posible obtener las estadísticas."
+
+        }), 500
 # ============================================================
 # HEALTH CHECK
 # ============================================================
