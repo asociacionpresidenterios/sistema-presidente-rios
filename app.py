@@ -1370,7 +1370,24 @@ def qr_jugador(jugador_id):
         memoria.getvalue(),
         mimetype="image/png"
     )
+# ============================================================
+# VERIFICACIÓN PÚBLICA DEL JUGADOR
+# ============================================================
 
+@app.route(
+    "/jugadores/<int:jugador_id>/verificar"
+)
+def verificacion_jugador(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    return render_template(
+        "verificacion_jugador.html",
+        jugador=jugador
+    )
 
 # ============================================================
 # CREDENCIAL DEL JUGADOR
