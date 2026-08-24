@@ -1346,16 +1346,16 @@ def qr_jugador(jugador_id):
     )
 
     # URL pública que abrirá el QR
-    url_credencial = url_for(
-        "credencial_jugador",
-        jugador_id=jugador.id,
-        _external=True
-    )
+   url_verificacion = url_for(
+    "verificacion_jugador",
+    jugador_id=jugador.id,
+    _external=True
+)
 
     # Crear QR
-    imagen_qr = qrcode.make(
-        url_credencial
-    )
+   imagen_qr = qrcode.make(
+    url_verificacion
+)
 
     memoria = BytesIO()
 
