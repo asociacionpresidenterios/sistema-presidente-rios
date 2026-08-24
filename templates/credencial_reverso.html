@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Reverso - Credencial
+    </title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #e2e8f0;
+            color: #0f172a;
+            padding: 30px;
+        }
+
+        /* ==================================================
+           CONTENEDOR
+        ================================================== */
+
+        .pagina {
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .barra-superior {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .titulo {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 800;
+        }
+
+        .subtitulo {
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .botones {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .boton {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 18px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .boton-volver {
+            background: #cbd5e1;
+            color: #334155;
+        }
+
+        .boton-imprimir {
+            background: #2563eb;
+            color: white;
+        }
+
+        .boton-imprimir:hover {
+            background: #1d4ed8;
+        }
+
+
+        /* ==================================================
+           TARJETA PVC CR80
+        ================================================== */
+
+        .credencial {
+            width: 85.60mm;
+            height: 53.98mm;
+
+            position: relative;
+            overflow: hidden;
+
+            margin: 0 auto;
+
+            color: white;
+
+            border-radius: 3.18mm;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #0f172a 0%,
+                    #1e3a8a 55%,
+                    #2563eb 100%
+                );
+
+            box-shadow:
+                0 15px 35px rgba(0, 0, 0, 0.25);
+
+            page-break-inside: avoid;
+        }
+
+
+        /* ==================================================
+           DECORACIÓN
+        ================================================== */
+
+        .circulo {
+            position: absolute;
+
+            width: 45mm;
+            height: 45mm;
+
+            border-radius: 50%;
+
+            background:
+                rgba(255,255,255,.06);
+
+            right: -18mm;
+            top: -15mm;
+        }
+
+        .circulo2 {
+            position: absolute;
+
+            width: 38mm;
+            height: 38mm;
+
+            border-radius: 50%;
+
+            background:
+                rgba(255,255,255,.05);
+
+            left: -20mm;
+            bottom: -20mm;
+        }
+
+
+        /* ==================================================
+           CONTENIDO
+        ================================================== */
+
+        .contenido {
+            position: relative;
+            z-index: 2;
+
+            width: 100%;
+            height: 100%;
+
+            padding:
+                4mm;
+
+            display: flex;
+            flex-direction: column;
+        }
+
+
+        /* ==================================================
+           ENCABEZADO
+        ================================================== */
+
+        .encabezado {
+            text-align: center;
+
+            padding-bottom: 2.5mm;
+
+            border-bottom:
+                .25mm solid
+                rgba(255,255,255,.25);
+        }
+
+        .nombre-asociacion {
+            font-size: 4mm;
+            font-weight: 900;
+
+            text-transform: uppercase;
+
+            letter-spacing: .2mm;
+        }
+
+        .titulo-reverso {
+            margin-top: .8mm;
+
+            font-size: 2.2mm;
+
+            font-weight: 800;
+
+            color:
+                rgba(255,255,255,.75);
+
+            text-transform: uppercase;
+        }
+
+
+        /* ==================================================
+           CUERPO
+        ================================================== */
+
+        .cuerpo {
+            flex: 1;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 3mm;
+
+            padding:
+                2.5mm
+                0
+                1.5mm;
+        }
+
+
+        /* ==================================================
+           INFORMACIÓN
+        ================================================== */
+
+        .informacion {
+            flex: 1;
+        }
+
+        .bloque {
+            margin-bottom: 1.8mm;
+        }
+
+        .etiqueta {
+            font-size: 1.8mm;
+
+            font-weight: 800;
+
+            text-transform: uppercase;
+
+            color:
+                rgba(255,255,255,.65);
+
+            margin-bottom: .5mm;
+        }
+
+        .texto {
+            font-size: 2.2mm;
+
+            line-height: 1.25;
+
+            font-weight: 700;
+        }
+
+
+        /* ==================================================
+           QR
+        ================================================== */
+
+        .qr-area {
+            width: 23mm;
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: center;
+
+            justify-content: center;
+        }
+
+        .qr {
+            width: 18mm;
+            height: 18mm;
+
+            background: white;
+
+            padding: .8mm;
+
+            border-radius: 1mm;
+        }
+
+        .qr-texto {
+            margin-top: 1.2mm;
+
+            text-align: center;
+
+            font-size: 1.7mm;
+
+            line-height: 1.15;
+
+            font-weight: 800;
+
+            color:
+                rgba(255,255,255,.8);
+        }
+
+
+        /* ==================================================
+           AVISO
+        ================================================== */
+
+        .aviso {
+            width: 100%;
+
+            padding:
+                1.7mm
+                2mm;
+
+            border-radius: 1.5mm;
+
+            background:
+                rgba(255,255,255,.09);
+
+            border:
+                .25mm solid
+                rgba(255,255,255,.15);
+
+            text-align: center;
+
+            font-size: 1.75mm;
+
+            line-height: 1.25;
+
+            font-weight: 700;
+
+            color:
+                rgba(255,255,255,.85);
+        }
+
+
+        /* ==================================================
+           PIE
+        ================================================== */
+
+        .pie {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            padding-top: 1.5mm;
+
+            border-top:
+                .25mm solid
+                rgba(255,255,255,.2);
+        }
+
+        .pie-texto {
+            font-size: 1.7mm;
+
+            font-weight: 700;
+
+            color:
+                rgba(255,255,255,.65);
+        }
+
+        .autenticidad {
+            font-size: 1.8mm;
+
+            font-weight: 900;
+
+            text-transform: uppercase;
+        }
+
+
+        /* ==================================================
+           IMPRESIÓN
+        ================================================== */
+
+        @media print {
+
+            @page {
+                size: 85.60mm 53.98mm;
+                margin: 0;
+            }
+
+            html,
+            body {
+                width: 85.60mm;
+                height: 53.98mm;
+
+                margin: 0;
+                padding: 0;
+
+                background: white;
+            }
+
+            .barra-superior {
+                display: none !important;
+            }
+
+            .pagina {
+                width: 85.60mm;
+                height: 53.98mm;
+
+                margin: 0;
+                padding: 0;
+            }
+
+            .credencial {
+                width: 85.60mm;
+                height: 53.98mm;
+
+                margin: 0;
+
+                border-radius: 0;
+
+                box-shadow: none;
+
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+
+        }
+
+
+        /* ==================================================
+           MÓVIL
+        ================================================== */
+
+        @media screen and (max-width: 500px) {
+
+            body {
+                padding: 15px;
+            }
+
+            .credencial {
+                transform: scale(.95);
+
+                margin-bottom: -3mm;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="pagina">
+
+
+    <!-- ==================================================
+         BARRA SUPERIOR
+    ================================================== -->
+
+    <div class="barra-superior">
+
+        <div>
+
+            <h1 class="titulo">
+                🔄 Reverso de credencial
+            </h1>
+
+            <div class="subtitulo">
+                Asociación Presidente Ríos · Formato PVC CR80
+            </div>
+
+        </div>
+
+
+        <div class="botones">
+
+            <a
+                href="{{ url_for('ficha_jugador', jugador_id=jugador.id) }}"
+                class="boton boton-volver"
+            >
+                ← Volver
+            </a>
+
+            <button
+                type="button"
+                class="boton boton-imprimir"
+                onclick="window.print()"
+            >
+                🖨️ Imprimir reverso
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- ==================================================
+         TARJETA
+    ================================================== -->
+
+    <div class="credencial">
+
+
+        <!-- DECORACIÓN -->
+
+        <div class="circulo"></div>
+
+        <div class="circulo2"></div>
+
+
+        <div class="contenido">
+
+
+            <!-- ==================================================
+                 ENCABEZADO
+            ================================================== -->
+
+            <div class="encabezado">
+
+                <div class="nombre-asociacion">
+                    Asociación Presidente Ríos
+                </div>
+
+                <div class="titulo-reverso">
+                    Identificación deportiva oficial
+                </div>
+
+            </div>
+
+
+            <!-- ==================================================
+                 CUERPO
+            ================================================== -->
+
+            <div class="cuerpo">
+
+
+                <!-- INFORMACIÓN -->
+
+                <div class="informacion">
+
+
+                    <div class="bloque">
+
+                        <div class="etiqueta">
+                            Credencial
+                        </div>
+
+                        <div class="texto">
+                            Documento oficial de identificación
+                            deportiva del jugador.
+                        </div>
+
+                    </div>
+
+
+                    <div class="bloque">
+
+                        <div class="etiqueta">
+                            Verificación
+                        </div>
+
+                        <div class="texto">
+                            Escanea el código QR para consultar
+                            la información y estado del jugador.
+                        </div>
+
+                    </div>
+
+
+                    <div class="bloque">
+
+                        <div class="etiqueta">
+                            Uso
+                        </div>
+
+                        <div class="texto">
+                            Personal e intransferible.
+                            Debe ser presentada cuando sea
+                            solicitada por la organización.
+                        </div>
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- QR -->
+
+                <div class="qr-area">
+
+                    <img
+                        src="{{ url_for('qr_jugador', jugador_id=jugador.id) }}"
+                        class="qr"
+                        alt="Código QR de verificación"
+                    >
+
+                    <div class="qr-texto">
+                        ESCANEA PARA<br>
+                        VERIFICAR
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- ==================================================
+                 AVISO
+            ================================================== -->
+
+            <div class="aviso">
+
+                Esta credencial es propiedad de la
+                Asociación Presidente Ríos.
+                Su uso corresponde exclusivamente al
+                jugador identificado en la tarjeta.
+
+            </div>
+
+
+            <!-- ==================================================
+                 PIE
+            ================================================== -->
+
+            <div class="pie">
+
+                <div class="pie-texto">
+                    Identificación deportiva
+                </div>
+
+                <div class="autenticidad">
+                    ✓ Documento verificable
+                </div>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    window.addEventListener(
+        "beforeprint",
+        function () {
+
+            document.title =
+                "Reverso - Credencial - {{ jugador.nombre_completo }}";
+
+        }
+    );
+
+</script>
+
+</body>
+</html>
