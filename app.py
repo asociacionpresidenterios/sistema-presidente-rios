@@ -62,6 +62,43 @@ db = SQLAlchemy(app)
 
 
 # ============================================================
+# MODELO CLUB
+# ============================================================
+
+class Club(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    nombre = db.Column(
+        db.String(120),
+        unique=True,
+        nullable=False,
+        index=True
+    )
+
+    sigla = db.Column(
+        db.String(20),
+        unique=True,
+        nullable=True
+    )
+
+    estado = db.Column(
+        db.Boolean,
+        default=True,
+        nullable=False
+    )
+
+    fecha_creacion = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+
+# ============================================================
 # MODELO JUGADOR
 # ============================================================
 
@@ -117,12 +154,33 @@ def preparar_base_datos():
 
         inspector = db.inspect(db.engine)
 
-        columnas = [
+        tablas = inspector.get_table_names()
+
+        # ----------------------------------------------------
+        # Crear tabla Club si no existe
+        # ----------------------------------------------------
+
+        if "club" not in tablas:
+
+            Club.__table__.create(
+                db.engine,
+                checkfirst=True
+            )
+
+        # ----------------------------------------------------
+        # Comprobar columna foto
+        # ----------------------------------------------------
+
+        inspector = db.inspect(db.engine)
+
+        columnas_jugador = [
             columna["name"]
-            for columna in inspector.get_columns("jugador")
+            for columna in inspector.get_columns(
+                "jugador"
+            )
         ]
 
-        if "foto" not in columnas:
+        if "foto" not in columnas_jugador:
 
             if db.engine.dialect.name == "postgresql":
 
@@ -305,7 +363,9 @@ def convertir_fecha(valor):
 
 def obtener_fotografia():
 
-    archivo = request.files.get("foto")
+    archivo = request.files.get(
+        "foto"
+    )
 
     if not archivo:
         return None, None
@@ -352,94 +412,7 @@ def obtener_fotografia():
 
 
 # ============================================================
-# DASHBOARD
-# ============================================================
-
-@app.route("/dashboard")
-def dashboard():
-
-    # --------------------------------------------------------
-    # TOTAL DE JUGADORES
-    # --------------------------------------------------------
-
-    total_jugadores = Jugador.query.count()
-
-
-    # --------------------------------------------------------
-    # JUGADORES CON FOTOGRAFÍA
-    # --------------------------------------------------------
-
-    jugadores_con_foto = Jugador.query.filter(
-        Jugador.foto.isnot(None)
-    ).count()
-
-
-    # --------------------------------------------------------
-    # JUGADORES SIN FOTOGRAFÍA
-    # --------------------------------------------------------
-
-    jugadores_sin_foto = (
-        total_jugadores -
-        jugadores_con_foto
-    )
-
-
-    # --------------------------------------------------------
-    # CANTIDAD POR CLUB
-    # --------------------------------------------------------
-
-    clubes = db.session.query(
-        Jugador.club,
-        db.func.count(Jugador.id)
-    ).group_by(
-        Jugador.club
-    ).order_by(
-        db.func.count(Jugador.id).desc()
-    ).all()
-
-
-    # --------------------------------------------------------
-    # CANTIDAD POR SERIE
-    # --------------------------------------------------------
-
-    series = db.session.query(
-        Jugador.serie,
-        db.func.count(Jugador.id)
-    ).group_by(
-        Jugador.serie
-    ).order_by(
-        db.func.count(Jugador.id).desc()
-    ).all()
-
-
-    # --------------------------------------------------------
-    # ÚLTIMOS JUGADORES REGISTRADOS
-    # --------------------------------------------------------
-
-    ultimos_jugadores = Jugador.query.order_by(
-        Jugador.id.desc()
-    ).limit(10).all()
-
-
-    return render_template(
-        "dashboard.html",
-
-        total_jugadores=total_jugadores,
-
-        jugadores_con_foto=jugadores_con_foto,
-
-        jugadores_sin_foto=jugadores_sin_foto,
-
-        clubes=clubes,
-
-        series=series,
-
-        ultimos_jugadores=ultimos_jugadores
-    )
-
-
-# ============================================================
-# INICIO / LISTADO
+# INICIO / LISTADO DE JUGADORES
 # ============================================================
 
 @app.route("/")
@@ -809,13 +782,9 @@ def editar_jugador(jugador_id):
             jugador.foto = foto
 
         jugador.rut = rut
-
         jugador.nombre_completo = nombre
-
         jugador.fecha_nacimiento = fecha_obj
-
         jugador.serie = serie
-
         jugador.club = club
 
         db.session.commit()
@@ -865,6 +834,373 @@ def eliminar_jugador(jugador_id):
     return redirect(
         url_for("index")
     )
+
+
+# ============================================================
+# GESTIÓN DE CLUBES
+# ============================================================
+
+@app.route("/clubes")
+def clubes():
+
+    q = request.args.get(
+        "q",
+        ""
+    ).strip()
+
+    query = Club.query
+
+    if q:
+
+        query = query.filter(
+            db.or_(
+                Club.nombre.ilike(
+                    f"%{q}%"
+                ),
+                Club.sigla.ilike(
+                    f"%{q}%"
+                )
+            )
+        )
+
+    clubes_lista = query.order_by(
+        Club.nombre
+    ).all()
+
+    clubes_data = []
+
+    for club in clubes_lista:
+
+        cantidad_jugadores = Jugador.query.filter(
+            Jugador.club.ilike(
+                club.nombre
+            )
+        ).count()
+
+        clubes_data.append({
+
+            "club": club,
+
+            "cantidad_jugadores":
+                cantidad_jugadores
+
+        })
+
+    return render_template(
+        "clubes.html",
+        clubes=clubes_data,
+        q=q
+    )
+
+
+# ============================================================
+# NUEVO CLUB
+# ============================================================
+
+@app.route(
+    "/clubes/nuevo",
+    methods=["GET", "POST"]
+)
+def nuevo_club():
+
+    if request.method == "POST":
+
+        nombre = request.form.get(
+            "nombre",
+            ""
+        ).strip()
+
+        sigla = request.form.get(
+            "sigla",
+            ""
+        ).strip().upper()
+
+        if not nombre:
+
+            flash(
+                "Debes ingresar el nombre del club.",
+                "error"
+            )
+
+            return render_template(
+                "club_form.html",
+                club=None
+            )
+
+        club_existente = Club.query.filter(
+            db.func.lower(Club.nombre)
+            == nombre.lower()
+        ).first()
+
+        if club_existente:
+
+            flash(
+                "Ese club ya está registrado.",
+                "error"
+            )
+
+            return render_template(
+                "club_form.html",
+                club=None
+            )
+
+        if sigla:
+
+            sigla_existente = Club.query.filter(
+                db.func.lower(Club.sigla)
+                == sigla.lower()
+            ).first()
+
+            if sigla_existente:
+
+                flash(
+                    "Esa sigla ya está registrada.",
+                    "error"
+                )
+
+                return render_template(
+                    "club_form.html",
+                    club=None
+                )
+
+        club = Club(
+            nombre=nombre,
+            sigla=sigla or None,
+            estado=True
+        )
+
+        db.session.add(club)
+
+        db.session.commit()
+
+        flash(
+            "Club registrado correctamente.",
+            "success"
+        )
+
+        return redirect(
+            url_for("clubes")
+        )
+
+    return render_template(
+        "club_form.html",
+        club=None
+    )
+
+
+# ============================================================
+# EDITAR CLUB
+# ============================================================
+
+@app.route(
+    "/clubes/<int:club_id>/editar",
+    methods=["GET", "POST"]
+)
+def editar_club(club_id):
+
+    club = db.get_or_404(
+        Club,
+        club_id
+    )
+
+    if request.method == "POST":
+
+        nombre = request.form.get(
+            "nombre",
+            ""
+        ).strip()
+
+        sigla = request.form.get(
+            "sigla",
+            ""
+        ).strip().upper()
+
+        estado = request.form.get(
+            "estado"
+        )
+
+        if not nombre:
+
+            flash(
+                "Debes ingresar el nombre del club.",
+                "error"
+            )
+
+            return render_template(
+                "club_form.html",
+                club=club
+            )
+
+        club_existente = Club.query.filter(
+            db.func.lower(Club.nombre)
+            == nombre.lower(),
+            Club.id != club.id
+        ).first()
+
+        if club_existente:
+
+            flash(
+                "Ese club ya está registrado.",
+                "error"
+            )
+
+            return render_template(
+                "club_form.html",
+                club=club
+            )
+
+        if sigla:
+
+            sigla_existente = Club.query.filter(
+                db.func.lower(Club.sigla)
+                == sigla.lower(),
+                Club.id != club.id
+            ).first()
+
+            if sigla_existente:
+
+                flash(
+                    "Esa sigla ya está registrada.",
+                    "error"
+                )
+
+                return render_template(
+                    "club_form.html",
+                    club=club
+                )
+
+        club.nombre = nombre
+        club.sigla = sigla or None
+        club.estado = estado == "1"
+
+        db.session.commit()
+
+        flash(
+            "Club actualizado correctamente.",
+            "success"
+        )
+
+        return redirect(
+            url_for("clubes")
+        )
+
+    return render_template(
+        "club_form.html",
+        club=club
+    )
+
+
+# ============================================================
+# ELIMINAR CLUB
+# ============================================================
+
+@app.route(
+    "/clubes/<int:club_id>/eliminar",
+    methods=["POST"]
+)
+def eliminar_club(club_id):
+
+    club = db.get_or_404(
+        Club,
+        club_id
+    )
+
+    cantidad_jugadores = Jugador.query.filter(
+        Jugador.club.ilike(
+            club.nombre
+        )
+    ).count()
+
+    if cantidad_jugadores > 0:
+
+        flash(
+            "No puedes eliminar este club porque "
+            f"tiene {cantidad_jugadores} jugador(es) asociado(s). "
+            "Puedes dejarlo inactivo.",
+            "error"
+        )
+
+        return redirect(
+            url_for("clubes")
+        )
+
+    db.session.delete(club)
+
+    db.session.commit()
+
+    flash(
+        "Club eliminado correctamente.",
+        "success"
+    )
+
+    return redirect(
+        url_for("clubes")
+    )
+
+
+# ============================================================
+# CAMBIAR ESTADO DEL CLUB
+# ============================================================
+
+@app.route(
+    "/clubes/<int:club_id>/estado",
+    methods=["POST"]
+)
+def cambiar_estado_club(club_id):
+
+    club = db.get_or_404(
+        Club,
+        club_id
+    )
+
+    club.estado = not club.estado
+
+    db.session.commit()
+
+    if club.estado:
+
+        flash(
+            f"El club {club.nombre} está activo.",
+            "success"
+        )
+
+    else:
+
+        flash(
+            f"El club {club.nombre} está inactivo.",
+            "success"
+        )
+
+    return redirect(
+        url_for("clubes")
+    )
+
+
+# ============================================================
+# API DE CLUBES
+# ============================================================
+
+@app.route("/api/clubes")
+def api_clubes():
+
+    clubes_lista = Club.query.filter_by(
+        estado=True
+    ).order_by(
+        Club.nombre
+    ).all()
+
+    return jsonify([
+
+        {
+            "id": club.id,
+            "nombre": club.nombre,
+            "sigla": club.sigla or "",
+            "estado": club.estado
+        }
+
+        for club in clubes_lista
+
+    ])
 
 
 # ============================================================
@@ -1020,9 +1356,7 @@ def importar_jugadores():
             )
 
         registrados = 0
-
         duplicados = 0
-
         errores = 0
 
         detalle_errores = []
@@ -1311,72 +1645,99 @@ def credencial_jugador(jugador_id):
         jugador=jugador
     )
 
+
 # ============================================================
-# API DE ESTADÍSTICAS DEL DASHBOARD
+# DASHBOARD
 # ============================================================
 
-@app.route("/api/dashboard/estadisticas")
+@app.route("/dashboard")
+def dashboard():
+
+    total_jugadores = Jugador.query.count()
+
+    total_clubes = Club.query.filter_by(
+        estado=True
+    ).count()
+
+    total_series = db.session.query(
+        Jugador.serie
+    ).filter(
+        Jugador.serie.isnot(None),
+        Jugador.serie != ""
+    ).distinct().count()
+
+    jugadores_activos = total_jugadores
+
+    ultimos_jugadores = Jugador.query.order_by(
+        Jugador.id.desc()
+    ).limit(8).all()
+
+    series_query = db.session.query(
+        Jugador.serie,
+        db.func.count(Jugador.id)
+    ).filter(
+        Jugador.serie.isnot(None),
+        Jugador.serie != ""
+    ).group_by(
+        Jugador.serie
+    ).order_by(
+        db.func.count(Jugador.id).desc()
+    ).all()
+
+    series_stats = [
+
+        {
+            "nombre": serie,
+            "cantidad": cantidad
+        }
+
+        for serie, cantidad in series_query
+
+    ]
+
+    return render_template(
+        "dashboard.html",
+        total_jugadores=total_jugadores,
+        total_clubes=total_clubes,
+        total_series=total_series,
+        jugadores_activos=jugadores_activos,
+        ultimos_jugadores=ultimos_jugadores,
+        series_stats=series_stats
+    )
+
+
+# ============================================================
+# API ESTADÍSTICAS DASHBOARD
+# ============================================================
+
+@app.route(
+    "/api/dashboard/estadisticas"
+)
 def dashboard_estadisticas():
 
     try:
 
-        # ----------------------------------------------------
-        # TOTAL DE JUGADORES
-        # ----------------------------------------------------
-
         total_jugadores = Jugador.query.count()
-
-
-        # ----------------------------------------------------
-        # JUGADORES CON FOTOGRAFÍA
-        # ----------------------------------------------------
 
         jugadores_con_foto = Jugador.query.filter(
             Jugador.foto.isnot(None)
         ).count()
-
-
-        # ----------------------------------------------------
-        # JUGADORES SIN FOTOGRAFÍA
-        # ----------------------------------------------------
 
         jugadores_sin_foto = (
             total_jugadores -
             jugadores_con_foto
         )
 
+        total_clubes = Club.query.filter_by(
+            estado=True
+        ).count()
 
-        # ----------------------------------------------------
-        # CLUBES REGISTRADOS
-        # ----------------------------------------------------
-
-        clubes = db.session.query(
-            Jugador.club
-        ).filter(
-            Jugador.club.isnot(None),
-            Jugador.club != ""
-        ).distinct().all()
-
-        total_clubes = len(clubes)
-
-
-        # ----------------------------------------------------
-        # SERIES REGISTRADAS
-        # ----------------------------------------------------
-
-        series = db.session.query(
+        total_series = db.session.query(
             Jugador.serie
         ).filter(
             Jugador.serie.isnot(None),
             Jugador.serie != ""
-        ).distinct().all()
-
-        total_series = len(series)
-
-
-        # ----------------------------------------------------
-        # JUGADORES POR CLUB
-        # ----------------------------------------------------
+        ).distinct().count()
 
         jugadores_por_club_query = db.session.query(
             Jugador.club,
@@ -1390,7 +1751,6 @@ def dashboard_estadisticas():
             db.func.count(Jugador.id).desc()
         ).all()
 
-
         jugadores_por_club = [
 
             {
@@ -1402,11 +1762,6 @@ def dashboard_estadisticas():
             in jugadores_por_club_query
 
         ]
-
-
-        # ----------------------------------------------------
-        # JUGADORES POR SERIE
-        # ----------------------------------------------------
 
         jugadores_por_serie_query = db.session.query(
             Jugador.serie,
@@ -1420,7 +1775,6 @@ def dashboard_estadisticas():
             db.func.count(Jugador.id).desc()
         ).all()
 
-
         jugadores_por_serie = [
 
             {
@@ -1432,11 +1786,6 @@ def dashboard_estadisticas():
             in jugadores_por_serie_query
 
         ]
-
-
-        # ----------------------------------------------------
-        # RESPUESTA
-        # ----------------------------------------------------
 
         return jsonify({
 
@@ -1465,11 +1814,10 @@ def dashboard_estadisticas():
 
         })
 
-
     except Exception as error:
 
         print(
-            "Error en estadísticas del Dashboard:",
+            "Error en estadísticas:",
             error
         )
 
@@ -1481,6 +1829,8 @@ def dashboard_estadisticas():
                 "No fue posible obtener las estadísticas."
 
         }), 500
+
+
 # ============================================================
 # HEALTH CHECK
 # ============================================================
@@ -1496,7 +1846,7 @@ def health():
 
 
 # ============================================================
-# EJECUCIÓN
+# EJECUCIÓN LOCAL
 # ============================================================
 
 if __name__ == "__main__":
