@@ -4,6 +4,10 @@
 
 <div class="card">
 
+    <!-- ================================================== -->
+    <!-- ENCABEZADO -->
+    <!-- ================================================== -->
+
     <div style="
         display:flex;
         justify-content:space-between;
@@ -14,17 +18,20 @@
     ">
 
         <div>
+
             <h2 style="margin:0;">
-                ⚽ Registro de Jugadores
+                👥 Registro de Jugadores
             </h2>
 
             <p style="
                 margin:6px 0 0;
                 color:#6b7280;
             ">
-                Consulta y administra los jugadores registrados.
+                Gestión y consulta de jugadores
             </p>
+
         </div>
+
 
         <a
             href="{{ url_for('nuevo_jugador') }}"
@@ -36,35 +43,69 @@
     </div>
 
 
-    <!-- =====================================================
-         BUSCADOR
-    ====================================================== -->
+    <!-- ================================================== -->
+    <!-- ESTADÍSTICAS -->
+    <!-- ================================================== -->
+
+    <div style="
+        display:grid;
+        grid-template-columns:
+            repeat(auto-fit,minmax(180px,1fr));
+        gap:15px;
+        margin-bottom:20px;
+    ">
+
+        <div style="
+            padding:18px;
+            border-radius:14px;
+            background:#f8fafc;
+            border:1px solid #e5e7eb;
+        ">
+
+            <div style="
+                font-size:13px;
+                color:#6b7280;
+            ">
+                JUGADORES REGISTRADOS
+            </div>
+
+            <div style="
+                font-size:30px;
+                font-weight:800;
+                margin-top:5px;
+            ">
+                {{ jugadores|length }}
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================== -->
+    <!-- BUSCADOR -->
+    <!-- ================================================== -->
 
     <form
         method="get"
         action="{{ url_for('index') }}"
-        style="
-            margin-bottom:20px;
-        "
+        style="margin-bottom:20px;"
     >
 
-        <div
-            style="
-                display:grid;
-                grid-template-columns:1fr auto;
-                gap:10px;
-            "
-        >
+        <div style="
+            display:flex;
+            gap:10px;
+            flex-wrap:wrap;
+        ">
 
             <input
                 type="text"
                 name="q"
                 value="{{ q }}"
                 placeholder="🔎 Buscar por RUT, nombre o club..."
-                autocomplete="off"
                 style="
-                    width:100%;
-                    box-sizing:border-box;
+                    flex:1;
+                    min-width:240px;
                 "
             >
 
@@ -75,26 +116,35 @@
                 🔎 Buscar
             </button>
 
+            {% if q %}
+
+                <a
+                    href="{{ url_for('index') }}"
+                    class="btn secondary"
+                >
+                    ✕ Limpiar
+                </a>
+
+            {% endif %}
+
         </div>
 
     </form>
 
 
-    <!-- =====================================================
-         RESULTADOS
-    ====================================================== -->
+    <!-- ================================================== -->
+    <!-- RESULTADO DE BÚSQUEDA -->
+    <!-- ================================================== -->
 
     {% if q %}
 
-        <div
-            style="
-                margin-bottom:15px;
-                padding:12px 15px;
-                border-radius:10px;
-                background:#f1f5f9;
-                color:#334155;
-            "
-        >
+        <div style="
+            margin-bottom:15px;
+            padding:12px 15px;
+            background:#eff6ff;
+            border-radius:10px;
+            color:#1e40af;
+        ">
 
             Resultados para:
 
@@ -102,43 +152,16 @@
                 "{{ q }}"
             </strong>
 
-            — {{ jugadores|length }} jugador(es)
-
-            <a
-                href="{{ url_for('index') }}"
-                style="
-                    margin-left:10px;
-                    text-decoration:none;
-                "
-            >
-                ✕ Limpiar
-            </a>
-
-        </div>
-
-    {% else %}
-
-        <div
-            style="
-                margin-bottom:15px;
-                color:#64748b;
-            "
-        >
-
-            Total de jugadores:
-
-            <strong>
-                {{ jugadores|length }}
-            </strong>
+            · {{ jugadores|length }} jugador(es)
 
         </div>
 
     {% endif %}
 
 
-    <!-- =====================================================
-         TABLA
-    ====================================================== -->
+    <!-- ================================================== -->
+    <!-- TABLA -->
+    <!-- ================================================== -->
 
     {% if jugadores %}
 
@@ -146,84 +169,43 @@
             overflow-x:auto;
         ">
 
-            <table
-                style="
-                    width:100%;
-                    border-collapse:collapse;
-                "
-            >
+            <table style="
+                width:100%;
+                border-collapse:collapse;
+            ">
 
                 <thead>
 
-                    <tr>
+                    <tr style="
+                        border-bottom:2px solid #e5e7eb;
+                        text-align:left;
+                    ">
 
-                        <th
-                            style="
-                                text-align:left;
-                                padding:12px;
-                                border-bottom:2px solid #e5e7eb;
-                            "
-                        >
-                            RUT
-                        </th>
-
-                        <th
-                            style="
-                                text-align:left;
-                                padding:12px;
-                                border-bottom:2px solid #e5e7eb;
-                            "
-                        >
-                            Jugador
-                        </th>
-
-                        <th
-                            style="
-                                text-align:left;
-                                padding:12px;
-                                border-bottom:2px solid #e5e7eb;
-                            "
-                        >
-                            Fecha nacimiento
-                        </th>
-
-                        <th
-                            style="
-                                text-align:left;
-                                padding:12px;
-                                border-bottom:2px solid #e5e7eb;
-                            "
-                        >
-                            Serie
-                        </th>
-
-                        <th
-                            style="
-                                text-align:left;
-                                padding:12px;
-                                border-bottom:2px solid #e5e7eb;
-                            "
-                        >
-                            Club
-                        </th>
-
-                        <th
-                            style="
-                                text-align:center;
-                                padding:12px;
-                                border-bottom:2px solid #e5e7eb;
-                            "
-                        >
+                        <th style="padding:12px;">
                             Foto
                         </th>
 
-                        <th
-                            style="
-                                text-align:center;
-                                padding:12px;
-                                border-bottom:2px solid #e5e7eb;
-                            "
-                        >
+                        <th style="padding:12px;">
+                            RUT
+                        </th>
+
+                        <th style="padding:12px;">
+                            Nombre
+                        </th>
+
+                        <th style="padding:12px;">
+                            Fecha nacimiento
+                        </th>
+
+                        <th style="padding:12px;">
+                            Serie
+                        </th>
+
+                        <th style="padding:12px;">
+                            Club
+                        </th>
+
+                        <th style="padding:12px;">
                             Acciones
                         </th>
 
@@ -236,105 +218,13 @@
 
                     {% for jugador in jugadores %}
 
-                        <tr>
-
-                            <!-- RUT -->
-
-                            <td
-                                style="
-                                    padding:12px;
-                                    border-bottom:1px solid #e5e7eb;
-                                    white-space:nowrap;
-                                "
-                            >
-
-                                <strong>
-                                    {{ jugador.rut }}
-                                </strong>
-
-                            </td>
-
-
-                            <!-- NOMBRE -->
-
-                            <td
-                                style="
-                                    padding:12px;
-                                    border-bottom:1px solid #e5e7eb;
-                                "
-                            >
-
-                                {{ jugador.nombre_completo }}
-
-                            </td>
-
-
-                            <!-- FECHA -->
-
-                            <td
-                                style="
-                                    padding:12px;
-                                    border-bottom:1px solid #e5e7eb;
-                                    white-space:nowrap;
-                                "
-                            >
-
-                                {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
-
-                            </td>
-
-
-                            <!-- SERIE -->
-
-                            <td
-                                style="
-                                    padding:12px;
-                                    border-bottom:1px solid #e5e7eb;
-                                "
-                            >
-
-                                <span
-                                    style="
-                                        display:inline-block;
-                                        padding:5px 10px;
-                                        border-radius:20px;
-                                        background:#e0f2fe;
-                                        color:#0369a1;
-                                        font-size:13px;
-                                        font-weight:600;
-                                    "
-                                >
-
-                                    {{ jugador.serie }}
-
-                                </span>
-
-                            </td>
-
-
-                            <!-- CLUB -->
-
-                            <td
-                                style="
-                                    padding:12px;
-                                    border-bottom:1px solid #e5e7eb;
-                                "
-                            >
-
-                                {{ jugador.club }}
-
-                            </td>
-
+                        <tr style="
+                            border-bottom:1px solid #e5e7eb;
+                        ">
 
                             <!-- FOTO -->
 
-                            <td
-                                style="
-                                    padding:12px;
-                                    border-bottom:1px solid #e5e7eb;
-                                    text-align:center;
-                                "
-                            >
+                            <td style="padding:12px;">
 
                                 {% if jugador.foto %}
 
@@ -345,39 +235,102 @@
                                         ) }}"
                                         alt="Foto"
                                         style="
-                                            width:45px;
-                                            height:45px;
+                                            width:52px;
+                                            height:52px;
                                             object-fit:cover;
                                             border-radius:50%;
-                                            border:2px solid #e5e7eb;
+                                            border:3px solid white;
+                                            box-shadow:
+                                                0 2px 8px
+                                                rgba(0,0,0,.15);
                                         "
                                     >
 
                                 {% else %}
 
-                                    <span
-                                        style="
-                                            font-size:24px;
-                                        "
-                                    >
+                                    <div style="
+                                        width:52px;
+                                        height:52px;
+                                        border-radius:50%;
+                                        background:#e5e7eb;
+                                        display:flex;
+                                        align-items:center;
+                                        justify-content:center;
+                                        font-size:23px;
+                                    ">
                                         👤
-                                    </span>
+                                    </div>
 
                                 {% endif %}
 
                             </td>
 
 
+                            <!-- RUT -->
+
+                            <td style="padding:12px;">
+
+                                <strong>
+                                    {{ jugador.rut }}
+                                </strong>
+
+                            </td>
+
+
+                            <!-- NOMBRE -->
+
+                            <td style="padding:12px;">
+
+                                <strong>
+                                    {{ jugador.nombre_completo }}
+                                </strong>
+
+                            </td>
+
+
+                            <!-- FECHA -->
+
+                            <td style="padding:12px;">
+
+                                {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
+
+                            </td>
+
+
+                            <!-- SERIE -->
+
+                            <td style="padding:12px;">
+
+                                <span style="
+                                    display:inline-block;
+                                    padding:5px 9px;
+                                    border-radius:8px;
+                                    background:#f1f5f9;
+                                    font-size:13px;
+                                ">
+
+                                    {{ jugador.serie }}
+
+                                </span>
+
+                            </td>
+
+
+                            <!-- CLUB -->
+
+                            <td style="padding:12px;">
+
+                                {{ jugador.club }}
+
+                            </td>
+
+
                             <!-- ACCIONES -->
 
-                            <td
-                                style="
-                                    padding:12px;
-                                    border-bottom:1px solid #e5e7eb;
-                                    text-align:center;
-                                    white-space:nowrap;
-                                "
-                            >
+                            <td style="
+                                padding:12px;
+                                white-space:nowrap;
+                            ">
 
                                 <a
                                     href="{{ url_for(
@@ -386,12 +339,26 @@
                                     ) }}"
                                     class="btn"
                                     style="
-                                        font-size:13px;
                                         padding:7px 10px;
-                                        text-decoration:none;
+                                        font-size:13px;
                                     "
                                 >
                                     👁️ Ver
+                                </a>
+
+
+                                <a
+                                    href="{{ url_for(
+                                        'credencial_jugador',
+                                        jugador_id=jugador.id
+                                    ) }}"
+                                    class="btn"
+                                    style="
+                                        padding:7px 10px;
+                                        font-size:13px;
+                                    "
+                                >
+                                    🪪 Credencial
                                 </a>
 
 
@@ -402,12 +369,11 @@
                                     ) }}"
                                     class="btn secondary"
                                     style="
-                                        font-size:13px;
                                         padding:7px 10px;
-                                        text-decoration:none;
+                                        font-size:13px;
                                     "
                                 >
-                                    ✏️ Editar
+                                    ✏️
                                 </a>
 
 
@@ -422,7 +388,7 @@
                                     "
                                     onsubmit="
                                         return confirm(
-                                            '¿Estás seguro de eliminar este jugador?'
+                                            '¿Seguro que deseas eliminar este jugador?'
                                         );
                                     "
                                 >
@@ -431,9 +397,8 @@
                                         type="submit"
                                         class="btn secondary"
                                         style="
-                                            font-size:13px;
                                             padding:7px 10px;
-                                            cursor:pointer;
+                                            font-size:13px;
                                         "
                                     >
                                         🗑️
@@ -455,21 +420,21 @@
 
     {% else %}
 
-        <div
-            style="
-                text-align:center;
-                padding:50px 20px;
-                color:#64748b;
-            "
-        >
+        <!-- ================================================== -->
+        <!-- SIN RESULTADOS -->
+        <!-- ================================================== -->
 
-            <div
-                style="
-                    font-size:50px;
-                    margin-bottom:15px;
-                "
-            >
-                ⚽
+        <div style="
+            text-align:center;
+            padding:50px 20px;
+            color:#6b7280;
+        ">
+
+            <div style="
+                font-size:55px;
+                margin-bottom:15px;
+            ">
+                👤
             </div>
 
             {% if q %}
@@ -485,15 +450,15 @@
 
                 <a
                     href="{{ url_for('index') }}"
-                    class="btn"
+                    class="btn secondary"
                 >
-                    Ver todos los jugadores
+                    Ver todos
                 </a>
 
             {% else %}
 
                 <h3>
-                    No hay jugadores registrados
+                    Todavía no hay jugadores registrados
                 </h3>
 
                 <p>
@@ -514,5 +479,46 @@
     {% endif %}
 
 </div>
+
+
+<!-- ====================================================== -->
+<!-- ESTILOS RESPONSIVOS -->
+<!-- ====================================================== -->
+
+<style>
+
+@media (max-width: 800px) {
+
+    table {
+        font-size:13px;
+    }
+
+    table th,
+    table td {
+        padding:8px !important;
+    }
+
+    table th:nth-child(4),
+    table td:nth-child(4) {
+        display:none;
+    }
+
+}
+
+@media (max-width: 600px) {
+
+    table th:nth-child(1),
+    table td:nth-child(1) {
+        display:none;
+    }
+
+    table th:nth-child(6),
+    table td:nth-child(6) {
+        display:none;
+    }
+
+}
+
+</style>
 
 {% endblock %}
