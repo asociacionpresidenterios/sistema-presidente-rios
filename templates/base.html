@@ -1,15 +1,589 @@
-<!doctype html><html lang="es"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#111827"><link rel="manifest" href="/static/manifest.json">
-<title>{% block title %}Presidente Ríos{% endblock %}</title>
-<style>
-*{box-sizing:border-box}body{margin:0;background:#f3f4f6;color:#111827;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial}
-header{background:#111827;color:#fff;padding:18px}.wrap{max-width:1100px;margin:auto;padding:16px}
-.card{background:#fff;border-radius:16px;padding:18px;margin:14px 0;box-shadow:0 2px 12px #0001}
-.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{border:0;border-radius:10px;padding:11px 15px;text-decoration:none;font-weight:700;cursor:pointer;background:#111827;color:white}.secondary{background:#e5e7eb;color:#111827}.danger{background:#b91c1c}
-input{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font-size:16px}label{display:block;font-weight:700;margin:12px 0 6px}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:700px}th,td{text-align:left;padding:12px;border-bottom:1px solid #e5e7eb}
-.alert{padding:12px;border-radius:10px;margin:10px 0}.success{background:#dcfce7;color:#166534}.error{background:#fee2e2;color:#991b1b}
-@media(max-width:650px){.grid{grid-template-columns:1fr}.btn{width:100%;text-align:center}}
-</style></head><body><header><div class="wrap"><b>Asociación Presidente Ríos</b><div style="opacity:.7;font-size:13px">Sistema de registro y acreditación</div></div></header>
-<main class="wrap">{% with messages=get_flashed_messages(with_categories=true) %}{% for c,m in messages %}<div class="alert {{c}}">{{m}}</div>{% endfor %}{% endwith %}{% block content %}{% endblock %}</main></body></html>
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Asociación Presidente Ríos
+    </title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                Roboto,
+                Arial,
+                sans-serif;
+
+            background: #f5f7fa;
+            color: #111827;
+        }
+
+        /* =================================================
+           BARRA SUPERIOR
+           ================================================= */
+
+        .topbar {
+            height: 70px;
+            background: #ffffff;
+
+            border-bottom:
+                1px solid #e5e7eb;
+
+            display: flex;
+            align-items: center;
+
+            justify-content: space-between;
+
+            padding:
+                0 25px;
+
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            text-decoration: none;
+            color: #111827;
+        }
+
+        .brand-logo {
+            width: 42px;
+            height: 42px;
+
+            border-radius: 12px;
+
+            background: #111827;
+            color: #ffffff;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 21px;
+        }
+
+        .brand-text strong {
+            display: block;
+
+            font-size: 16px;
+            font-weight: 800;
+        }
+
+        .brand-text span {
+            display: block;
+
+            font-size: 12px;
+            color: #6b7280;
+
+            margin-top: 2px;
+        }
+
+        /* =================================================
+           MENÚ
+           ================================================= */
+
+        .nav {
+            display: flex;
+            align-items: center;
+
+            gap: 7px;
+        }
+
+        .nav a {
+            text-decoration: none;
+
+            color: #4b5563;
+
+            padding:
+                10px 13px;
+
+            border-radius: 10px;
+
+            font-size: 14px;
+            font-weight: 600;
+
+            transition:
+                background 0.2s ease,
+                color 0.2s ease;
+        }
+
+        .nav a:hover {
+            background: #f3f4f6;
+            color: #111827;
+        }
+
+        .nav a.active {
+            background: #111827;
+            color: #ffffff;
+        }
+
+        /* =================================================
+           CONTENEDOR
+           ================================================= */
+
+        .main-container {
+            width: 100%;
+            max-width: 1500px;
+
+            margin: 0 auto;
+
+            padding: 25px;
+        }
+
+        /* =================================================
+           MENSAJES FLASH
+           ================================================= */
+
+        .flash-container {
+            max-width: 1500px;
+
+            margin:
+                18px auto 0;
+
+            padding:
+                0 25px;
+        }
+
+        .flash {
+            padding:
+                13px 16px;
+
+            border-radius: 10px;
+
+            margin-bottom: 10px;
+
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .flash.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .flash.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .flash.warning {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
+        .flash.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+        }
+
+        /* =================================================
+           BOTONES
+           ================================================= */
+
+        .btn {
+            display: inline-flex;
+
+            align-items: center;
+            justify-content: center;
+
+            gap: 7px;
+
+            padding:
+                10px 15px;
+
+            border-radius: 10px;
+
+            border: 1px solid transparent;
+
+            text-decoration: none;
+
+            font-size: 14px;
+            font-weight: 700;
+
+            cursor: pointer;
+
+            transition:
+                all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: #111827;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #000000;
+        }
+
+        .btn-secondary {
+            background: #ffffff;
+            color: #111827;
+
+            border-color:
+                #d1d5db;
+        }
+
+        .btn-secondary:hover {
+            background: #f9fafb;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: #ffffff;
+        }
+
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+
+        /* =================================================
+           TABLAS
+           ================================================= */
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+
+            padding:
+                12px 14px;
+
+            background: #f9fafb;
+
+            border-bottom:
+                1px solid #e5e7eb;
+
+            font-size: 13px;
+
+            color: #374151;
+        }
+
+        td {
+            padding:
+                13px 14px;
+
+            border-bottom:
+                1px solid #f0f0f0;
+
+            font-size: 14px;
+        }
+
+        tr:hover td {
+            background: #fafafa;
+        }
+
+        /* =================================================
+           FORMULARIOS
+           ================================================= */
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+
+            padding:
+                11px 13px;
+
+            border:
+                1px solid #d1d5db;
+
+            border-radius: 9px;
+
+            font-family: inherit;
+
+            font-size: 14px;
+
+            background: #ffffff;
+
+            outline: none;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #111827;
+
+            box-shadow:
+                0 0 0 3px
+                rgba(17, 24, 39, 0.08);
+        }
+
+        label {
+            display: block;
+
+            margin-bottom: 6px;
+
+            font-size: 13px;
+
+            font-weight: 700;
+
+            color: #374151;
+        }
+
+        /* =================================================
+           FOOTER
+           ================================================= */
+
+        .footer {
+            margin-top: 40px;
+
+            padding:
+                25px;
+
+            text-align: center;
+
+            color: #9ca3af;
+
+            font-size: 12px;
+        }
+
+        /* =================================================
+           RESPONSIVE
+           ================================================= */
+
+        @media (max-width: 900px) {
+
+            .topbar {
+                height: auto;
+
+                min-height: 70px;
+
+                flex-wrap: wrap;
+
+                padding:
+                    12px 15px;
+
+                gap: 10px;
+            }
+
+            .nav {
+                width: 100%;
+
+                overflow-x: auto;
+
+                padding-bottom: 3px;
+            }
+
+            .nav a {
+                white-space: nowrap;
+            }
+
+            .main-container {
+                padding: 15px;
+            }
+
+            .flash-container {
+                padding:
+                    0 15px;
+            }
+
+        }
+
+        @media (max-width: 500px) {
+
+            .brand-text span {
+                display: none;
+            }
+
+            .brand-text strong {
+                font-size: 14px;
+            }
+
+            .brand-logo {
+                width: 38px;
+                height: 38px;
+            }
+
+            .nav a {
+                padding:
+                    9px 11px;
+
+                font-size: 13px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =================================================
+         BARRA SUPERIOR
+         ================================================= -->
+
+    <header class="topbar">
+
+
+        <a
+            href="{{ url_for('index') }}"
+            class="brand"
+        >
+
+            <div class="brand-logo">
+                ⚽
+            </div>
+
+            <div class="brand-text">
+
+                <strong>
+                    Asociación Presidente Ríos
+                </strong>
+
+                <span>
+                    Sistema de gestión futbolística
+                </span>
+
+            </div>
+
+        </a>
+
+
+        <!-- =================================================
+             MENÚ PRINCIPAL
+             ================================================= -->
+
+        <nav class="nav">
+
+
+            <a
+                href="{{ url_for('index') }}"
+                class="{% if request.endpoint == 'index' %}
+                    active
+                {% endif %}"
+            >
+                👥 Jugadores
+            </a>
+
+
+            <a
+                href="{{ url_for('nuevo_jugador') }}"
+                class="{% if request.endpoint == 'nuevo_jugador' %}
+                    active
+                {% endif %}"
+            >
+                ➕ Nuevo jugador
+            </a>
+
+
+            <a
+                href="{{ url_for('importar_jugadores') }}"
+                class="{% if request.endpoint == 'importar_jugadores' %}
+                    active
+                {% endif %}"
+            >
+                📊 Importar
+            </a>
+
+
+            <a
+                href="{{ url_for('dashboard') }}"
+                class="{% if request.endpoint == 'dashboard' %}
+                    active
+                {% endif %}"
+            >
+                📈 Dashboard
+            </a>
+
+
+        </nav>
+
+
+    </header>
+
+
+    <!-- =================================================
+         MENSAJES
+         ================================================= -->
+
+    {% with messages = get_flashed_messages(
+        with_categories=true
+    ) %}
+
+        {% if messages %}
+
+            <div class="flash-container">
+
+                {% for category, message in messages %}
+
+                    <div class="flash {{ category }}">
+
+                        {{ message }}
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+    {% endwith %}
+
+
+    <!-- =================================================
+         CONTENIDO
+         ================================================= -->
+
+    <main class="main-container">
+
+        {% block content %}
+
+        {% endblock %}
+
+    </main>
+
+
+    <!-- =================================================
+         FOOTER
+         ================================================= -->
+
+    <footer class="footer">
+
+        Asociación de Fútbol Presidente Ríos
+        <br>
+
+        Sistema de Gestión de Jugadores
+
+    </footer>
+
+
+</body>
+
+</html>
