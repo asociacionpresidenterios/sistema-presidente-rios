@@ -1335,7 +1335,39 @@ def credencial_jugador(jugador_id):
         jugador=jugador
     )
 
+# ============================================================
+# DASHBOARD
+# ============================================================
 
+@app.route("/dashboard")
+def dashboard():
+
+    total_jugadores = Jugador.query.count()
+
+    jugadores_vigentes = Jugador.query.filter_by(
+        estado="Vigente"
+    ).count() if hasattr(Jugador, "estado") else 0
+
+    jugadores_pendientes = Jugador.query.filter_by(
+        estado="Pendiente"
+    ).count() if hasattr(Jugador, "estado") else 0
+
+    jugadores_suspendidos = Jugador.query.filter_by(
+        estado="Suspendido"
+    ).count() if hasattr(Jugador, "estado") else 0
+
+    jugadores_inhabilitados = Jugador.query.filter_by(
+        estado="Inhabilitado"
+    ).count() if hasattr(Jugador, "estado") else 0
+
+    return render_template(
+        "dashboard.html",
+        total_jugadores=total_jugadores,
+        jugadores_vigentes=jugadores_vigentes,
+        jugadores_pendientes=jugadores_pendientes,
+        jugadores_suspendidos=jugadores_suspendidos,
+        jugadores_inhabilitados=jugadores_inhabilitados
+    )
 # ============================================================
 # HEALTH CHECK
 # ============================================================
