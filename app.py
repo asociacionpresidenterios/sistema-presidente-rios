@@ -62,6 +62,31 @@ db = SQLAlchemy(app)
 
 
 # ============================================================
+# ESTADOS PERMITIDOS
+# ============================================================
+
+ESTADOS_PERMITIDOS = {
+    "Vigente",
+    "Pendiente",
+    "Suspendido",
+    "Inhabilitado"
+}
+
+
+def normalizar_estado(estado):
+
+    if not estado:
+        return "Vigente"
+
+    estado = str(estado).strip()
+
+    if estado not in ESTADOS_PERMITIDOS:
+        return "Vigente"
+
+    return estado
+
+
+# ============================================================
 # MODELO JUGADOR
 # ============================================================
 
@@ -557,21 +582,12 @@ def nuevo_jugador():
             ""
         ).strip()
 
-        estado = request.form.get(
-            "estado",
-            "Vigente"
-        ).strip()
-
-        estados_permitidos = {
-            "Vigente",
-            "Pendiente",
-            "Suspendido",
-            "Inhabilitado"
-        }
-
-        if estado not in estados_permitidos:
-
-            estado = "Vigente"
+        estado = normalizar_estado(
+            request.form.get(
+                "estado",
+                "Vigente"
+            )
+        )
 
         if not all([
             rut,
@@ -659,11 +675,32 @@ def nuevo_jugador():
             estado=estado
         )
 
-        db.session.add(
-            jugador
-        )
+        try:
 
-        db.session.commit()
+            db.session.add(
+                jugador
+            )
+
+            db.session.commit()
+
+        except Exception as error:
+
+            db.session.rollback()
+
+            print(
+                "Error registrando jugador:",
+                error
+            )
+
+            flash(
+                "No fue posible guardar el jugador.",
+                "error"
+            )
+
+            return render_template(
+                "jugador_form.html",
+                jugador=None
+            )
 
         flash(
             "Jugador registrado correctamente.",
@@ -727,21 +764,12 @@ def editar_jugador(jugador_id):
             ""
         ).strip()
 
-        estado = request.form.get(
-            "estado",
-            jugador.estado or "Vigente"
-        ).strip()
-
-        estados_permitidos = {
-            "Vigente",
-            "Pendiente",
-            "Suspendido",
-            "Inhabilitado"
-        }
-
-        if estado not in estados_permitidos:
-
-            estado = "Vigente"
+        estado = normalizar_estado(
+            request.form.get(
+                "estado",
+                jugador.estado or "Vigente"
+            )
+        )
 
         if not all([
             rut,
@@ -845,7 +873,28 @@ def editar_jugador(jugador_id):
 
         jugador.estado = estado
 
-        db.session.commit()
+        try:
+
+            db.session.commit()
+
+        except Exception as error:
+
+            db.session.rollback()
+
+            print(
+                "Error actualizando jugador:",
+                error
+            )
+
+            flash(
+                "No fue posible actualizar el jugador.",
+                "error"
+            )
+
+            return render_template(
+                "jugador_form.html",
+                jugador=jugador
+            )
 
         flash(
             "Datos actualizados correctamente.",
@@ -880,11 +929,34 @@ def eliminar_jugador(jugador_id):
         jugador_id
     )
 
-    db.session.delete(
-        jugador
-    )
+    try:
 
-    db.session.commit()
+        db.session.delete(
+            jugador
+        )
+
+        db.session.commit()
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print(
+            "Error eliminando jugador:",
+            error
+        )
+
+        flash(
+            "No fue posible eliminar el jugador.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador_id
+            )
+        )
 
     flash(
         "Jugador eliminado.",
@@ -1312,19 +1384,11 @@ def qr_jugador(jugador_id):
         jugador_id
     )
 
-    # --------------------------------------------------------
-    # EL QR APUNTA A LA VERIFICACIÓN PÚBLICA
-    # --------------------------------------------------------
-
     url_verificacion = url_for(
         "verificacion_jugador",
         jugador_id=jugador.id,
         _external=True
     )
-
-    # --------------------------------------------------------
-    # CREAR QR
-    # --------------------------------------------------------
 
     imagen_qr = qrcode.make(
         url_verificacion
@@ -1346,7 +1410,7 @@ def qr_jugador(jugador_id):
 
 
 # ============================================================
-# VERIFICACIÓN PÚBLICA DEL JUGADOR
+# VERIFICACIÓN PÚBLICA
 # ============================================================
 
 @app.route(
@@ -1366,7 +1430,7 @@ def verificacion_jugador(jugador_id):
 
 
 # ============================================================
-# CREDENCIAL DEL JUGADOR
+# CREDENCIAL
 # ============================================================
 
 @app.route(
@@ -1383,11 +1447,15 @@ def credencial_jugador(jugador_id):
         "jugador_credencial.html",
         jugador=jugador
     )
+
+
 # ============================================================
 # DASHBOARD
 # ============================================================
 
-@app.route("/dashboard")
+@app.route(
+    "/dashboard"
+)
 def dashboard():
 
     total_jugadores = Jugador.query.count()
@@ -1416,6 +1484,7 @@ def dashboard():
         suspendidos=suspendidos,
         inhabilitados=inhabilitados
     )
+
 
 # ============================================================
 # HEALTH CHECK
