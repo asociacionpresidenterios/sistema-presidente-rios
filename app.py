@@ -62,40 +62,15 @@ db = SQLAlchemy(app)
 
 
 # ============================================================
-# MODELO CLUB
+# ESTADOS DISPONIBLES
 # ============================================================
 
-class Club(db.Model):
-
-    id = db.Column(
-        db.Integer,
-        primary_key=True
-    )
-
-    nombre = db.Column(
-        db.String(120),
-        unique=True,
-        nullable=False,
-        index=True
-    )
-
-    sigla = db.Column(
-        db.String(20),
-        unique=True,
-        nullable=True
-    )
-
-    estado = db.Column(
-        db.Boolean,
-        default=True,
-        nullable=False
-    )
-
-    fecha_creacion = db.Column(
-        db.DateTime,
-        default=datetime.utcnow,
-        nullable=False
-    )
+ESTADOS_JUGADOR = [
+    "Vigente",
+    "Pendiente",
+    "Suspendido",
+    "Inhabilitado"
+]
 
 
 # ============================================================
@@ -141,6 +116,17 @@ class Jugador(db.Model):
         nullable=True
     )
 
+    # --------------------------------------------------------
+    # ESTADO DEL JUGADOR
+    # --------------------------------------------------------
+
+    estado = db.Column(
+        db.String(30),
+        nullable=False,
+        default="Vigente",
+        index=True
+    )
+
 
 # ============================================================
 # CREACIÓN / ACTUALIZACIÓN SEGURA DE BASE DE DATOS
@@ -154,33 +140,16 @@ def preparar_base_datos():
 
         inspector = db.inspect(db.engine)
 
-        tablas = inspector.get_table_names()
-
-        # ----------------------------------------------------
-        # Crear tabla Club si no existe
-        # ----------------------------------------------------
-
-        if "club" not in tablas:
-
-            Club.__table__.create(
-                db.engine,
-                checkfirst=True
-            )
-
-        # ----------------------------------------------------
-        # Comprobar columna foto
-        # ----------------------------------------------------
-
-        inspector = db.inspect(db.engine)
-
-        columnas_jugador = [
+        columnas = [
             columna["name"]
-            for columna in inspector.get_columns(
-                "jugador"
-            )
+            for columna in inspector.get_columns("jugador")
         ]
 
-        if "foto" not in columnas_jugador:
+        # ----------------------------------------------------
+        # AGREGAR FOTO SI NO EXISTE
+        # ----------------------------------------------------
+
+        if "foto" not in columnas:
 
             if db.engine.dialect.name == "postgresql":
 
@@ -201,6 +170,66 @@ def preparar_base_datos():
                 )
 
             db.session.commit()
+
+
+        # ----------------------------------------------------
+        # VOLVER A LEER COLUMNAS
+        # ----------------------------------------------------
+
+        inspector = db.inspect(db.engine)
+
+        columnas = [
+            columna["name"]
+            for columna in inspector.get_columns("jugador")
+        ]
+
+
+        # ----------------------------------------------------
+        # AGREGAR ESTADO SI NO EXISTE
+        # ----------------------------------------------------
+
+        if "estado" not in columnas:
+
+            if db.engine.dialect.name == "postgresql":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN IF NOT EXISTS "
+                        "estado VARCHAR(30) "
+                        "DEFAULT 'Vigente' "
+                        "NOT NULL"
+                    )
+                )
+
+            elif db.engine.dialect.name == "sqlite":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN estado VARCHAR(30) "
+                        "DEFAULT 'Vigente'"
+                    )
+                )
+
+            db.session.commit()
+
+
+        # ----------------------------------------------------
+        # ASEGURAR ESTADOS EXISTENTES
+        # ----------------------------------------------------
+
+        db.session.execute(
+            db.text(
+                "UPDATE jugador "
+                "SET estado = 'Vigente' "
+                "WHERE estado IS NULL "
+                "OR estado = ''"
+            )
+        )
+
+        db.session.commit()
+
 
     except Exception as error:
 
@@ -240,6 +269,7 @@ def normalizar_rut(rut):
         return ""
 
     cuerpo = rut_limpio[:-1]
+
     dv = rut_limpio[-1]
 
     if not cuerpo.isdigit():
@@ -282,12 +312,14 @@ def validar_rut(rut):
         return False
 
     cuerpo = rut_limpio[:-1]
+
     dv = rut_limpio[-1]
 
     if not cuerpo.isdigit():
         return False
 
     suma = 0
+
     multiplicador = 2
 
     for digito in reversed(cuerpo):
@@ -300,6 +332,7 @@ def validar_rut(rut):
         multiplicador += 1
 
         if multiplicador > 7:
+
             multiplicador = 2
 
     resto = suma % 11
@@ -363,9 +396,7 @@ def convertir_fecha(valor):
 
 def obtener_fotografia():
 
-    archivo = request.files.get(
-        "foto"
-    )
+    archivo = request.files.get("foto")
 
     if not archivo:
         return None, None
@@ -411,8 +442,13 @@ def obtener_fotografia():
     return contenido, None
 
 
+def validar_estado(estado):
+
+    return estado in ESTADOS_JUGADOR
+
+
 # ============================================================
-# INICIO / LISTADO DE JUGADORES
+# INICIO / LISTADO
 # ============================================================
 
 @app.route("/")
@@ -423,7 +459,16 @@ def index():
         ""
     ).strip()
 
+    estado_filtro = request.args.get(
+        "estado",
+        ""
+    ).strip()
+
     query = Jugador.query
+
+    # --------------------------------------------------------
+    # BUSCADOR
+    # --------------------------------------------------------
 
     if q:
 
@@ -443,14 +488,29 @@ def index():
             )
         )
 
+
+    # --------------------------------------------------------
+    # FILTRO POR ESTADO
+    # --------------------------------------------------------
+
+    if estado_filtro in ESTADOS_JUGADOR:
+
+        query = query.filter(
+            Jugador.estado == estado_filtro
+        )
+
+
     jugadores = query.order_by(
         Jugador.nombre_completo
     ).all()
 
+
     return render_template(
         "index.html",
         jugadores=jugadores,
-        q=q
+        q=q,
+        estado_filtro=estado_filtro,
+        estados=ESTADOS_JUGADOR
     )
 
 
@@ -540,6 +600,16 @@ def nuevo_jugador():
             ""
         ).strip()
 
+        estado = request.form.get(
+            "estado",
+            "Vigente"
+        ).strip()
+
+
+        # ----------------------------------------------------
+        # VALIDAR CAMPOS
+        # ----------------------------------------------------
+
         if not all([
             rut,
             nombre,
@@ -555,8 +625,23 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None
+                jugador=None,
+                estados=ESTADOS_JUGADOR
             )
+
+
+        # ----------------------------------------------------
+        # VALIDAR ESTADO
+        # ----------------------------------------------------
+
+        if not validar_estado(estado):
+
+            estado = "Vigente"
+
+
+        # ----------------------------------------------------
+        # VALIDAR RUT
+        # ----------------------------------------------------
 
         if not validar_rut(rut):
 
@@ -567,8 +652,14 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None
+                jugador=None,
+                estados=ESTADOS_JUGADOR
             )
+
+
+        # ----------------------------------------------------
+        # FECHA
+        # ----------------------------------------------------
 
         try:
 
@@ -585,8 +676,14 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None
+                jugador=None,
+                estados=ESTADOS_JUGADOR
             )
+
+
+        # ----------------------------------------------------
+        # RUT DUPLICADO
+        # ----------------------------------------------------
 
         if Jugador.query.filter_by(
             rut=rut
@@ -599,8 +696,14 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None
+                jugador=None,
+                estados=ESTADOS_JUGADOR
             )
+
+
+        # ----------------------------------------------------
+        # FOTOGRAFÍA
+        # ----------------------------------------------------
 
         foto, error_foto = obtener_fotografia()
 
@@ -613,26 +716,43 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None
+                jugador=None,
+                estados=ESTADOS_JUGADOR
             )
 
+
+        # ----------------------------------------------------
+        # CREAR JUGADOR
+        # ----------------------------------------------------
+
         jugador = Jugador(
+
             rut=rut,
+
             nombre_completo=nombre,
+
             fecha_nacimiento=fecha_obj,
+
             serie=serie,
+
             club=club,
-            foto=foto
+
+            foto=foto,
+
+            estado=estado
         )
+
 
         db.session.add(jugador)
 
         db.session.commit()
 
+
         flash(
             "Jugador registrado correctamente.",
             "success"
         )
+
 
         return redirect(
             url_for(
@@ -641,9 +761,11 @@ def nuevo_jugador():
             )
         )
 
+
     return render_template(
         "jugador_form.html",
-        jugador=None
+        jugador=None,
+        estados=ESTADOS_JUGADOR
     )
 
 
@@ -661,6 +783,7 @@ def editar_jugador(jugador_id):
         Jugador,
         jugador_id
     )
+
 
     if request.method == "POST":
 
@@ -691,6 +814,16 @@ def editar_jugador(jugador_id):
             ""
         ).strip()
 
+        estado = request.form.get(
+            "estado",
+            jugador.estado or "Vigente"
+        ).strip()
+
+
+        # ----------------------------------------------------
+        # VALIDAR CAMPOS
+        # ----------------------------------------------------
+
         if not all([
             rut,
             nombre,
@@ -706,8 +839,32 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador
+                jugador=jugador,
+                estados=ESTADOS_JUGADOR
             )
+
+
+        # ----------------------------------------------------
+        # VALIDAR ESTADO
+        # ----------------------------------------------------
+
+        if not validar_estado(estado):
+
+            flash(
+                "Estado no válido.",
+                "error"
+            )
+
+            return render_template(
+                "jugador_form.html",
+                jugador=jugador,
+                estados=ESTADOS_JUGADOR
+            )
+
+
+        # ----------------------------------------------------
+        # VALIDAR RUT
+        # ----------------------------------------------------
 
         if not validar_rut(rut):
 
@@ -718,13 +875,20 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador
+                jugador=jugador,
+                estados=ESTADOS_JUGADOR
             )
+
+
+        # ----------------------------------------------------
+        # RUT DUPLICADO
+        # ----------------------------------------------------
 
         otro_jugador = Jugador.query.filter(
             Jugador.rut == rut,
             Jugador.id != jugador.id
         ).first()
+
 
         if otro_jugador:
 
@@ -735,8 +899,14 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador
+                jugador=jugador,
+                estados=ESTADOS_JUGADOR
             )
+
+
+        # ----------------------------------------------------
+        # FECHA
+        # ----------------------------------------------------
 
         try:
 
@@ -753,12 +923,19 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador
+                jugador=jugador,
+                estados=ESTADOS_JUGADOR
             )
+
+
+        # ----------------------------------------------------
+        # FOTOGRAFÍA
+        # ----------------------------------------------------
 
         archivo_foto = request.files.get(
             "foto"
         )
+
 
         if (
             archivo_foto
@@ -766,6 +943,7 @@ def editar_jugador(jugador_id):
         ):
 
             foto, error_foto = obtener_fotografia()
+
 
             if error_foto:
 
@@ -776,22 +954,81 @@ def editar_jugador(jugador_id):
 
                 return render_template(
                     "jugador_form.html",
-                    jugador=jugador
+                    jugador=jugador,
+                    estados=ESTADOS_JUGADOR
                 )
+
 
             jugador.foto = foto
 
+
+        # ----------------------------------------------------
+        # ACTUALIZAR
+        # ----------------------------------------------------
+
         jugador.rut = rut
+
         jugador.nombre_completo = nombre
+
         jugador.fecha_nacimiento = fecha_obj
+
         jugador.serie = serie
+
         jugador.club = club
 
+        jugador.estado = estado
+
+
         db.session.commit()
+
 
         flash(
             "Datos actualizados correctamente.",
             "success"
+        )
+
+
+        return redirect(
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
+        )
+
+
+    return render_template(
+        "jugador_form.html",
+        jugador=jugador,
+        estados=ESTADOS_JUGADOR
+    )
+
+
+# ============================================================
+# CAMBIAR ESTADO RÁPIDAMENTE
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/estado",
+    methods=["POST"]
+)
+def cambiar_estado(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    estado = request.form.get(
+        "estado",
+        ""
+    ).strip()
+
+
+    if not validar_estado(estado):
+
+        flash(
+            "Estado no válido.",
+            "error"
         )
 
         return redirect(
@@ -801,9 +1038,23 @@ def editar_jugador(jugador_id):
             )
         )
 
-    return render_template(
-        "jugador_form.html",
-        jugador=jugador
+
+    jugador.estado = estado
+
+    db.session.commit()
+
+
+    flash(
+        f"Estado cambiado a: {estado}.",
+        "success"
+    )
+
+
+    return redirect(
+        url_for(
+            "ficha_jugador",
+            jugador_id=jugador.id
+        )
     )
 
 
@@ -822,385 +1073,21 @@ def eliminar_jugador(jugador_id):
         jugador_id
     )
 
+
     db.session.delete(jugador)
 
     db.session.commit()
+
 
     flash(
         "Jugador eliminado.",
         "success"
     )
 
+
     return redirect(
         url_for("index")
     )
-
-
-# ============================================================
-# GESTIÓN DE CLUBES
-# ============================================================
-
-@app.route("/clubes")
-def clubes():
-
-    q = request.args.get(
-        "q",
-        ""
-    ).strip()
-
-    query = Club.query
-
-    if q:
-
-        query = query.filter(
-            db.or_(
-                Club.nombre.ilike(
-                    f"%{q}%"
-                ),
-                Club.sigla.ilike(
-                    f"%{q}%"
-                )
-            )
-        )
-
-    clubes_lista = query.order_by(
-        Club.nombre
-    ).all()
-
-    clubes_data = []
-
-    for club in clubes_lista:
-
-        cantidad_jugadores = Jugador.query.filter(
-            Jugador.club.ilike(
-                club.nombre
-            )
-        ).count()
-
-        clubes_data.append({
-
-            "club": club,
-
-            "cantidad_jugadores":
-                cantidad_jugadores
-
-        })
-
-    return render_template(
-        "clubes.html",
-        clubes=clubes_data,
-        q=q
-    )
-
-
-# ============================================================
-# NUEVO CLUB
-# ============================================================
-
-@app.route(
-    "/clubes/nuevo",
-    methods=["GET", "POST"]
-)
-def nuevo_club():
-
-    if request.method == "POST":
-
-        nombre = request.form.get(
-            "nombre",
-            ""
-        ).strip()
-
-        sigla = request.form.get(
-            "sigla",
-            ""
-        ).strip().upper()
-
-        if not nombre:
-
-            flash(
-                "Debes ingresar el nombre del club.",
-                "error"
-            )
-
-            return render_template(
-                "club_form.html",
-                club=None
-            )
-
-        club_existente = Club.query.filter(
-            db.func.lower(Club.nombre)
-            == nombre.lower()
-        ).first()
-
-        if club_existente:
-
-            flash(
-                "Ese club ya está registrado.",
-                "error"
-            )
-
-            return render_template(
-                "club_form.html",
-                club=None
-            )
-
-        if sigla:
-
-            sigla_existente = Club.query.filter(
-                db.func.lower(Club.sigla)
-                == sigla.lower()
-            ).first()
-
-            if sigla_existente:
-
-                flash(
-                    "Esa sigla ya está registrada.",
-                    "error"
-                )
-
-                return render_template(
-                    "club_form.html",
-                    club=None
-                )
-
-        club = Club(
-            nombre=nombre,
-            sigla=sigla or None,
-            estado=True
-        )
-
-        db.session.add(club)
-
-        db.session.commit()
-
-        flash(
-            "Club registrado correctamente.",
-            "success"
-        )
-
-        return redirect(
-            url_for("clubes")
-        )
-
-    return render_template(
-        "club_form.html",
-        club=None
-    )
-
-
-# ============================================================
-# EDITAR CLUB
-# ============================================================
-
-@app.route(
-    "/clubes/<int:club_id>/editar",
-    methods=["GET", "POST"]
-)
-def editar_club(club_id):
-
-    club = db.get_or_404(
-        Club,
-        club_id
-    )
-
-    if request.method == "POST":
-
-        nombre = request.form.get(
-            "nombre",
-            ""
-        ).strip()
-
-        sigla = request.form.get(
-            "sigla",
-            ""
-        ).strip().upper()
-
-        estado = request.form.get(
-            "estado"
-        )
-
-        if not nombre:
-
-            flash(
-                "Debes ingresar el nombre del club.",
-                "error"
-            )
-
-            return render_template(
-                "club_form.html",
-                club=club
-            )
-
-        club_existente = Club.query.filter(
-            db.func.lower(Club.nombre)
-            == nombre.lower(),
-            Club.id != club.id
-        ).first()
-
-        if club_existente:
-
-            flash(
-                "Ese club ya está registrado.",
-                "error"
-            )
-
-            return render_template(
-                "club_form.html",
-                club=club
-            )
-
-        if sigla:
-
-            sigla_existente = Club.query.filter(
-                db.func.lower(Club.sigla)
-                == sigla.lower(),
-                Club.id != club.id
-            ).first()
-
-            if sigla_existente:
-
-                flash(
-                    "Esa sigla ya está registrada.",
-                    "error"
-                )
-
-                return render_template(
-                    "club_form.html",
-                    club=club
-                )
-
-        club.nombre = nombre
-        club.sigla = sigla or None
-        club.estado = estado == "1"
-
-        db.session.commit()
-
-        flash(
-            "Club actualizado correctamente.",
-            "success"
-        )
-
-        return redirect(
-            url_for("clubes")
-        )
-
-    return render_template(
-        "club_form.html",
-        club=club
-    )
-
-
-# ============================================================
-# ELIMINAR CLUB
-# ============================================================
-
-@app.route(
-    "/clubes/<int:club_id>/eliminar",
-    methods=["POST"]
-)
-def eliminar_club(club_id):
-
-    club = db.get_or_404(
-        Club,
-        club_id
-    )
-
-    cantidad_jugadores = Jugador.query.filter(
-        Jugador.club.ilike(
-            club.nombre
-        )
-    ).count()
-
-    if cantidad_jugadores > 0:
-
-        flash(
-            "No puedes eliminar este club porque "
-            f"tiene {cantidad_jugadores} jugador(es) asociado(s). "
-            "Puedes dejarlo inactivo.",
-            "error"
-        )
-
-        return redirect(
-            url_for("clubes")
-        )
-
-    db.session.delete(club)
-
-    db.session.commit()
-
-    flash(
-        "Club eliminado correctamente.",
-        "success"
-    )
-
-    return redirect(
-        url_for("clubes")
-    )
-
-
-# ============================================================
-# CAMBIAR ESTADO DEL CLUB
-# ============================================================
-
-@app.route(
-    "/clubes/<int:club_id>/estado",
-    methods=["POST"]
-)
-def cambiar_estado_club(club_id):
-
-    club = db.get_or_404(
-        Club,
-        club_id
-    )
-
-    club.estado = not club.estado
-
-    db.session.commit()
-
-    if club.estado:
-
-        flash(
-            f"El club {club.nombre} está activo.",
-            "success"
-        )
-
-    else:
-
-        flash(
-            f"El club {club.nombre} está inactivo.",
-            "success"
-        )
-
-    return redirect(
-        url_for("clubes")
-    )
-
-
-# ============================================================
-# API DE CLUBES
-# ============================================================
-
-@app.route("/api/clubes")
-def api_clubes():
-
-    clubes_lista = Club.query.filter_by(
-        estado=True
-    ).order_by(
-        Club.nombre
-    ).all()
-
-    return jsonify([
-
-        {
-            "id": club.id,
-            "nombre": club.nombre,
-            "sigla": club.sigla or "",
-            "estado": club.estado
-        }
-
-        for club in clubes_lista
-
-    ])
 
 
 # ============================================================
@@ -1219,9 +1106,11 @@ def importar_jugadores():
             "importar.html"
         )
 
+
     archivo = request.files.get(
         "archivo"
     )
+
 
     if not archivo or not archivo.filename:
 
@@ -1234,11 +1123,13 @@ def importar_jugadores():
             url_for("importar_jugadores")
         )
 
+
     extension = (
         archivo.filename
         .rsplit(".", 1)[-1]
         .lower()
     )
+
 
     if extension != "xlsx":
 
@@ -1251,6 +1142,7 @@ def importar_jugadores():
             url_for("importar_jugadores")
         )
 
+
     try:
 
         workbook = load_workbook(
@@ -1258,13 +1150,16 @@ def importar_jugadores():
             data_only=True
         )
 
+
         hoja = workbook.active
+
 
         filas = list(
             hoja.iter_rows(
                 values_only=True
             )
         )
+
 
         if not filas:
 
@@ -1277,13 +1172,20 @@ def importar_jugadores():
                 url_for("importar_jugadores")
             )
 
+
         encabezados = [
+
             str(x).strip().lower()
-            if x is not None else ""
+            if x is not None
+            else ""
+
             for x in filas[0]
+
         ]
 
+
         columnas = {}
+
 
         equivalencias = {
 
@@ -1316,9 +1218,16 @@ def importar_jugadores():
             "club": [
                 "club",
                 "equipo"
+            ],
+
+            "estado": [
+                "estado",
+                "situación",
+                "situacion"
             ]
 
         }
+
 
         for nombre_columna, posibles in (
             equivalencias.items()
@@ -1336,11 +1245,27 @@ def importar_jugadores():
 
                     break
 
+
+        # ----------------------------------------------------
+        # ESTADO ES OPCIONAL EN EXCEL
+        # ----------------------------------------------------
+
         faltantes = [
+
             campo
-            for campo in equivalencias
+
+            for campo in [
+                "rut",
+                "nombre",
+                "fecha",
+                "serie",
+                "club"
+            ]
+
             if campo not in columnas
+
         ]
+
 
         if faltantes:
 
@@ -1355,13 +1280,17 @@ def importar_jugadores():
                 url_for("importar_jugadores")
             )
 
+
         registrados = 0
+
         duplicados = 0
+
         errores = 0
 
         detalle_errores = []
 
         ruts_archivo = set()
+
 
         for numero_fila, fila in enumerate(
             filas[1:],
@@ -1390,27 +1319,76 @@ def importar_jugadores():
                     columnas["club"]
                 ]
 
+
+                # ------------------------------------------------
+                # ESTADO
+                # ------------------------------------------------
+
+                if "estado" in columnas:
+
+                    estado_valor = fila[
+                        columnas["estado"]
+                    ]
+
+                    estado = (
+
+                        str(
+                            estado_valor
+                        ).strip()
+
+                        if estado_valor is not None
+
+                        else "Vigente"
+
+                    )
+
+                else:
+
+                    estado = "Vigente"
+
+
+                if not validar_estado(estado):
+
+                    estado = "Vigente"
+
+
                 rut = normalizar_rut(
                     rut_original
                 )
 
+
                 nombre = (
+
                     str(nombre).strip()
+
                     if nombre is not None
+
                     else ""
+
                 )
+
 
                 serie = (
+
                     str(serie).strip()
+
                     if serie is not None
+
                     else ""
+
                 )
 
+
                 club = (
+
                     str(club).strip()
+
                     if club is not None
+
                     else ""
+
                 )
+
 
                 if not all([
                     rut,
@@ -1423,22 +1401,28 @@ def importar_jugadores():
                     errores += 1
 
                     detalle_errores.append(
+
                         f"Fila {numero_fila}: "
                         "faltan datos obligatorios."
+
                     )
 
                     continue
+
 
                 if not validar_rut(rut):
 
                     errores += 1
 
                     detalle_errores.append(
+
                         f"Fila {numero_fila}: "
                         f"RUT inválido ({rut})."
+
                     )
 
                     continue
+
 
                 if rut in ruts_archivo:
 
@@ -1446,7 +1430,9 @@ def importar_jugadores():
 
                     continue
 
+
                 ruts_archivo.add(rut)
+
 
                 if Jugador.query.filter_by(
                     rut=rut
@@ -1456,45 +1442,68 @@ def importar_jugadores():
 
                     continue
 
+
                 fecha_obj = convertir_fecha(
                     fecha_valor
                 )
+
 
                 if not fecha_obj:
 
                     errores += 1
 
                     detalle_errores.append(
+
                         f"Fila {numero_fila}: "
                         "fecha de nacimiento inválida."
+
                     )
 
                     continue
 
+
                 jugador = Jugador(
+
                     rut=rut,
+
                     nombre_completo=nombre,
+
                     fecha_nacimiento=fecha_obj,
+
                     serie=serie,
-                    club=club
+
+                    club=club,
+
+                    estado=estado
+
                 )
+
 
                 db.session.add(jugador)
 
                 registrados += 1
 
-            except Exception:
+
+            except Exception as error:
 
                 errores += 1
 
                 detalle_errores.append(
+
                     f"Fila {numero_fila}: "
                     "error al procesar."
+
                 )
+
+
+        # ----------------------------------------------------
+        # GUARDAR
+        # ----------------------------------------------------
 
         try:
 
             db.session.commit()
+
 
         except Exception:
 
@@ -1510,22 +1519,33 @@ def importar_jugadores():
                 url_for("importar_jugadores")
             )
 
+
         return render_template(
+
             "importar_resultado.html",
+
             registrados=registrados,
+
             duplicados=duplicados,
+
             errores=errores,
+
             detalle_errores=detalle_errores
+
         )
+
 
     except Exception:
 
         db.session.rollback()
 
         flash(
+
             "Ocurrió un error inesperado "
             "al importar el archivo.",
+
             "error"
+
         )
 
         return redirect(
@@ -1547,21 +1567,29 @@ def api_jugadores():
         ""
     ).strip().upper()
 
+
     if not rut:
 
         return jsonify([])
 
+
     jugadores = Jugador.query.filter(
+
         Jugador.rut.ilike(
             f"%{rut}%"
         )
+
     ).order_by(
+
         Jugador.nombre_completo
+
     ).all()
+
 
     return jsonify([
 
         {
+
             "id": jugador.id,
 
             "rut": jugador.rut,
@@ -1578,8 +1606,12 @@ def api_jugadores():
             "club":
                 jugador.club,
 
+            "estado":
+                jugador.estado,
+
             "tiene_foto":
                 bool(jugador.foto)
+
         }
 
         for jugador in jugadores
@@ -1601,28 +1633,44 @@ def qr_jugador(jugador_id):
         jugador_id
     )
 
+
     url_credencial = url_for(
+
         "credencial_jugador",
+
         jugador_id=jugador.id,
+
         _external=True
+
     )
+
 
     imagen_qr = qrcode.make(
         url_credencial
     )
 
+
     memoria = BytesIO()
 
+
     imagen_qr.save(
+
         memoria,
+
         format="PNG"
+
     )
+
 
     memoria.seek(0)
 
+
     return Response(
+
         memoria.getvalue(),
+
         mimetype="image/png"
+
     )
 
 
@@ -1636,199 +1684,21 @@ def qr_jugador(jugador_id):
 def credencial_jugador(jugador_id):
 
     jugador = db.get_or_404(
+
         Jugador,
+
         jugador_id
+
     )
 
+
     return render_template(
+
         "jugador_credencial.html",
+
         jugador=jugador
+
     )
-
-
-# ============================================================
-# DASHBOARD
-# ============================================================
-
-@app.route("/dashboard")
-def dashboard():
-
-    total_jugadores = Jugador.query.count()
-
-    total_clubes = Club.query.filter_by(
-        estado=True
-    ).count()
-
-    total_series = db.session.query(
-        Jugador.serie
-    ).filter(
-        Jugador.serie.isnot(None),
-        Jugador.serie != ""
-    ).distinct().count()
-
-    jugadores_activos = total_jugadores
-
-    ultimos_jugadores = Jugador.query.order_by(
-        Jugador.id.desc()
-    ).limit(8).all()
-
-    series_query = db.session.query(
-        Jugador.serie,
-        db.func.count(Jugador.id)
-    ).filter(
-        Jugador.serie.isnot(None),
-        Jugador.serie != ""
-    ).group_by(
-        Jugador.serie
-    ).order_by(
-        db.func.count(Jugador.id).desc()
-    ).all()
-
-    series_stats = [
-
-        {
-            "nombre": serie,
-            "cantidad": cantidad
-        }
-
-        for serie, cantidad in series_query
-
-    ]
-
-    return render_template(
-        "dashboard.html",
-        total_jugadores=total_jugadores,
-        total_clubes=total_clubes,
-        total_series=total_series,
-        jugadores_activos=jugadores_activos,
-        ultimos_jugadores=ultimos_jugadores,
-        series_stats=series_stats
-    )
-
-
-# ============================================================
-# API ESTADÍSTICAS DASHBOARD
-# ============================================================
-
-@app.route(
-    "/api/dashboard/estadisticas"
-)
-def dashboard_estadisticas():
-
-    try:
-
-        total_jugadores = Jugador.query.count()
-
-        jugadores_con_foto = Jugador.query.filter(
-            Jugador.foto.isnot(None)
-        ).count()
-
-        jugadores_sin_foto = (
-            total_jugadores -
-            jugadores_con_foto
-        )
-
-        total_clubes = Club.query.filter_by(
-            estado=True
-        ).count()
-
-        total_series = db.session.query(
-            Jugador.serie
-        ).filter(
-            Jugador.serie.isnot(None),
-            Jugador.serie != ""
-        ).distinct().count()
-
-        jugadores_por_club_query = db.session.query(
-            Jugador.club,
-            db.func.count(Jugador.id)
-        ).filter(
-            Jugador.club.isnot(None),
-            Jugador.club != ""
-        ).group_by(
-            Jugador.club
-        ).order_by(
-            db.func.count(Jugador.id).desc()
-        ).all()
-
-        jugadores_por_club = [
-
-            {
-                "club": club,
-                "cantidad": cantidad
-            }
-
-            for club, cantidad
-            in jugadores_por_club_query
-
-        ]
-
-        jugadores_por_serie_query = db.session.query(
-            Jugador.serie,
-            db.func.count(Jugador.id)
-        ).filter(
-            Jugador.serie.isnot(None),
-            Jugador.serie != ""
-        ).group_by(
-            Jugador.serie
-        ).order_by(
-            db.func.count(Jugador.id).desc()
-        ).all()
-
-        jugadores_por_serie = [
-
-            {
-                "serie": serie,
-                "cantidad": cantidad
-            }
-
-            for serie, cantidad
-            in jugadores_por_serie_query
-
-        ]
-
-        return jsonify({
-
-            "status": "ok",
-
-            "total_jugadores":
-                total_jugadores,
-
-            "jugadores_con_foto":
-                jugadores_con_foto,
-
-            "jugadores_sin_foto":
-                jugadores_sin_foto,
-
-            "total_clubes":
-                total_clubes,
-
-            "total_series":
-                total_series,
-
-            "jugadores_por_club":
-                jugadores_por_club,
-
-            "jugadores_por_serie":
-                jugadores_por_serie
-
-        })
-
-    except Exception as error:
-
-        print(
-            "Error en estadísticas:",
-            error
-        )
-
-        return jsonify({
-
-            "status": "error",
-
-            "mensaje":
-                "No fue posible obtener las estadísticas."
-
-        }), 500
 
 
 # ============================================================
@@ -1852,11 +1722,16 @@ def health():
 if __name__ == "__main__":
 
     app.run(
+
         host="0.0.0.0",
+
         port=int(
+
             os.environ.get(
                 "PORT",
                 5000
             )
+
         )
+
     )
