@@ -3,213 +3,297 @@
 {% block content %}
 
 <style>
-
-    .dashboard {
-        padding: 20px;
+    .dashboard-page {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 25px;
     }
 
     .dashboard-header {
-        margin-bottom: 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 28px;
+        flex-wrap: wrap;
     }
 
-    .dashboard-header h1 {
+    .dashboard-title h1 {
         margin: 0;
         font-size: 32px;
         font-weight: 800;
+        color: #111827;
     }
 
-    .dashboard-header p {
-        margin-top: 6px;
+    .dashboard-title p {
+        margin: 7px 0 0;
         color: #6b7280;
         font-size: 15px;
     }
 
-    /* =====================================================
-       TARJETAS PRINCIPALES
-       ===================================================== */
+    .dashboard-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 11px 17px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 14px;
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
+        color: #111827;
+        transition: 0.2s ease;
+    }
+
+    .dashboard-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(0,0,0,.08);
+    }
+
+    .dashboard-btn.primary {
+        background: #111827;
+        color: #ffffff;
+        border-color: #111827;
+    }
+
+    .dashboard-btn.blue {
+        background: #2563eb;
+        color: #ffffff;
+        border-color: #2563eb;
+    }
+
+    /* TARJETAS */
 
     .stats-grid {
         display: grid;
-        grid-template-columns: repeat(
-            auto-fit,
-            minmax(190px, 1fr)
-        );
-        gap: 18px;
-        margin-bottom: 30px;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 16px;
+        margin-bottom: 28px;
     }
 
     .stat-card {
         background: #ffffff;
-        border-radius: 16px;
-        padding: 22px;
-        box-shadow:
-            0 4px 15px rgba(0, 0, 0, 0.07);
         border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 5px 18px rgba(15,23,42,.05);
+        position: relative;
+        overflow: hidden;
     }
 
-    .stat-card .icon {
-        width: 46px;
-        height: 46px;
+    .stat-card::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 4px;
+    }
+
+    .stat-card.total::after {
+        background: #111827;
+    }
+
+    .stat-card.vigente::after {
+        background: #16a34a;
+    }
+
+    .stat-card.pendiente::after {
+        background: #eab308;
+    }
+
+    .stat-card.suspendido::after {
+        background: #dc2626;
+    }
+
+    .stat-card.inhabilitado::after {
+        background: #111111;
+    }
+
+    .stat-icon {
+        width: 45px;
+        height: 45px;
         border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-size: 22px;
-        background: #f3f4f6;
         margin-bottom: 15px;
     }
 
-    .stat-card h3 {
-        margin: 0;
+    .total .stat-icon {
+        background: #f3f4f6;
+    }
+
+    .vigente .stat-icon {
+        background: #dcfce7;
+    }
+
+    .pendiente .stat-icon {
+        background: #fef9c3;
+    }
+
+    .suspendido .stat-icon {
+        background: #fee2e2;
+    }
+
+    .inhabilitado .stat-icon {
+        background: #e5e7eb;
+    }
+
+    .stat-label {
+        font-size: 13px;
+        color: #6b7280;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .stat-number {
         font-size: 30px;
         font-weight: 800;
+        color: #111827;
+        line-height: 1;
     }
 
-    .stat-card p {
-        margin: 5px 0 0;
-        color: #6b7280;
-        font-size: 14px;
-    }
-
-    /* =====================================================
-       CONTENIDO
-       ===================================================== */
+    /* CONTENIDO */
 
     .dashboard-grid {
         display: grid;
-        grid-template-columns:
-            minmax(0, 2fr)
-            minmax(280px, 1fr);
-        gap: 20px;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
     }
 
-    .panel {
+    .dashboard-panel {
         background: #ffffff;
-        border-radius: 16px;
         border: 1px solid #e5e7eb;
-        box-shadow:
-            0 4px 15px rgba(0, 0, 0, 0.06);
-        overflow: hidden;
+        border-radius: 18px;
+        padding: 22px;
+        box-shadow: 0 5px 18px rgba(15,23,42,.05);
+    }
+
+    .dashboard-panel.full {
+        grid-column: 1 / -1;
     }
 
     .panel-header {
-        padding: 18px 20px;
-        border-bottom: 1px solid #e5e7eb;
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 15px;
+        margin-bottom: 20px;
     }
 
     .panel-header h2 {
         margin: 0;
-        font-size: 18px;
-        font-weight: 700;
-    }
-
-    .panel-body {
-        padding: 20px;
-    }
-
-    /* =====================================================
-       ÚLTIMOS JUGADORES
-       ===================================================== */
-
-    .jugador-item {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        padding: 13px 0;
-        border-bottom: 1px solid #f0f0f0;
-    }
-
-    .jugador-item:last-child {
-        border-bottom: none;
-    }
-
-    .jugador-avatar {
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        overflow: hidden;
-        background: #e5e7eb;
-        display: flex;
-        align-items: center;
-        justify-content: center;
         font-size: 19px;
-        font-weight: 700;
-        flex-shrink: 0;
+        font-weight: 800;
+        color: #111827;
     }
 
-    .jugador-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .jugador-info {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .jugador-info strong {
-        display: block;
-        font-size: 15px;
-        margin-bottom: 3px;
-    }
-
-    .jugador-info span {
-        display: block;
+    .panel-header span {
         color: #6b7280;
         font-size: 13px;
     }
 
-    .jugador-link {
-        text-decoration: none;
-        color: inherit;
+    /* ESTADOS */
+
+    .status-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
     }
 
-    .jugador-link:hover strong {
-        text-decoration: underline;
+    .status-row {
+        display: grid;
+        grid-template-columns: 130px 1fr 60px;
+        align-items: center;
+        gap: 12px;
     }
 
-    /* =====================================================
-       ACCESOS RÁPIDOS
-       ===================================================== */
+    .status-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #374151;
+    }
+
+    .status-bar {
+        height: 12px;
+        background: #f3f4f6;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .status-fill {
+        height: 100%;
+        border-radius: 20px;
+        min-width: 2px;
+    }
+
+    .status-fill.vigente {
+        background: #16a34a;
+    }
+
+    .status-fill.pendiente {
+        background: #eab308;
+    }
+
+    .status-fill.suspendido {
+        background: #dc2626;
+    }
+
+    .status-fill.inhabilitado {
+        background: #111111;
+    }
+
+    .status-number {
+        text-align: right;
+        font-weight: 800;
+        color: #111827;
+    }
+
+    /* ACCESOS */
 
     .quick-actions {
         display: grid;
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
         gap: 12px;
     }
 
     .quick-action {
         display: flex;
         align-items: center;
-        gap: 13px;
-        padding: 14px;
-        border-radius: 12px;
+        gap: 12px;
+        padding: 15px;
         border: 1px solid #e5e7eb;
+        border-radius: 13px;
         text-decoration: none;
         color: #111827;
-        background: #ffffff;
-        transition: all 0.2s ease;
+        transition: .2s ease;
+        background: #fafafa;
     }
 
     .quick-action:hover {
-        background: #f9fafb;
+        background: #ffffff;
+        box-shadow: 0 5px 15px rgba(0,0,0,.07);
         transform: translateY(-1px);
-        box-shadow:
-            0 4px 12px rgba(0, 0, 0, 0.06);
     }
 
     .quick-icon {
-        width: 42px;
-        height: 42px;
+        width: 40px;
+        height: 40px;
         border-radius: 10px;
-        background: #f3f4f6;
         display: flex;
         align-items: center;
         justify-content: center;
+        background: #eef2ff;
         font-size: 19px;
         flex-shrink: 0;
     }
@@ -217,390 +301,390 @@
     .quick-text strong {
         display: block;
         font-size: 14px;
+        margin-bottom: 3px;
     }
 
-    .quick-text span {
-        display: block;
+    .quick-text small {
         color: #6b7280;
         font-size: 12px;
-        margin-top: 3px;
     }
 
-    /* =====================================================
-       SERIES
-       ===================================================== */
+    /* BUSCADOR */
 
-    .serie-item {
-        margin-bottom: 16px;
-    }
-
-    .serie-item:last-child {
-        margin-bottom: 0;
-    }
-
-    .serie-header {
+    .dashboard-search {
         display: flex;
-        justify-content: space-between;
-        margin-bottom: 7px;
+        gap: 10px;
+        margin-top: 4px;
     }
 
-    .serie-header strong {
+    .dashboard-search input {
+        flex: 1;
+        height: 44px;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        padding: 0 14px;
         font-size: 14px;
+        outline: none;
     }
 
-    .serie-header span {
-        font-size: 13px;
-        color: #6b7280;
+    .dashboard-search input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37,99,235,.10);
     }
 
-    .progress {
-        width: 100%;
-        height: 8px;
-        background: #e5e7eb;
-        border-radius: 20px;
-        overflow: hidden;
-    }
-
-    .progress-bar {
-        height: 100%;
+    .dashboard-search button {
+        border: 0;
+        border-radius: 10px;
+        padding: 0 20px;
         background: #111827;
-        border-radius: 20px;
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
     }
 
-    /* =====================================================
-       ESTADO
-       ===================================================== */
+    /* INFORMACIÓN */
 
-    .empty-state {
-        text-align: center;
-        padding: 35px 15px;
+    .info-box {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 18px;
+        border-radius: 13px;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+    }
+
+    .info-icon {
+        font-size: 25px;
+    }
+
+    .info-box strong {
+        display: block;
+        margin-bottom: 4px;
+    }
+
+    .info-box span {
         color: #6b7280;
+        font-size: 13px;
     }
 
-    .empty-state .empty-icon {
-        font-size: 35px;
-        margin-bottom: 10px;
+    /* RESPONSIVE */
+
+    @media (max-width: 1100px) {
+        .stats-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
     }
 
-    /* =====================================================
-       RESPONSIVE
-       ===================================================== */
-
-    @media (max-width: 900px) {
+    @media (max-width: 800px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
 
         .dashboard-grid {
             grid-template-columns: 1fr;
         }
 
+        .dashboard-panel.full {
+            grid-column: auto;
+        }
     }
 
-    @media (max-width: 600px) {
-
-        .dashboard {
-            padding: 12px;
-        }
-
-        .dashboard-header h1 {
-            font-size: 26px;
+    @media (max-width: 550px) {
+        .dashboard-page {
+            padding: 15px;
         }
 
         .stats-grid {
-            grid-template-columns:
-                repeat(2, minmax(0, 1fr));
-            gap: 10px;
+            grid-template-columns: 1fr;
         }
 
-        .stat-card {
-            padding: 16px;
+        .dashboard-title h1 {
+            font-size: 25px;
         }
 
-        .stat-card h3 {
-            font-size: 24px;
+        .quick-actions {
+            grid-template-columns: 1fr;
         }
 
+        .status-row {
+            grid-template-columns: 100px 1fr 45px;
+        }
+
+        .dashboard-actions {
+            width: 100%;
+        }
+
+        .dashboard-btn {
+            flex: 1;
+        }
     }
-
 </style>
 
 
-<div class="dashboard">
+<div class="dashboard-page">
 
-    <!-- =================================================
-         ENCABEZADO
-         ================================================= -->
+    <!-- =====================================================
+         CABECERA
+    ====================================================== -->
 
     <div class="dashboard-header">
 
-        <h1>
-            Panel de control
-        </h1>
+        <div class="dashboard-title">
 
-        <p>
-            Asociación de Fútbol Presidente Ríos
-        </p>
+            <h1>📊 Dashboard</h1>
+
+            <p>
+                Panel de control de jugadores
+                — Asociación Presidente Ríos
+            </p>
+
+        </div>
+
+
+        <div class="dashboard-actions">
+
+            <a
+                href="{{ url_for('index') }}"
+                class="dashboard-btn"
+            >
+                📋 Jugadores
+            </a>
+
+            <a
+                href="{{ url_for('importar_jugadores') }}"
+                class="dashboard-btn"
+            >
+                📥 Importar Excel
+            </a>
+
+            <a
+                href="{{ url_for('nuevo_jugador') }}"
+                class="dashboard-btn primary"
+            >
+                ➕ Nuevo jugador
+            </a>
+
+        </div>
 
     </div>
 
 
-    <!-- =================================================
+    <!-- =====================================================
          ESTADÍSTICAS
-         ================================================= -->
+    ====================================================== -->
 
     <div class="stats-grid">
 
-        <div class="stat-card">
+        <div class="stat-card total">
 
-            <div class="icon">
+            <div class="stat-icon">
                 👥
             </div>
 
-            <h3>
+            <div class="stat-label">
+                Total jugadores
+            </div>
+
+            <div class="stat-number">
                 {{ total_jugadores }}
-            </h3>
-
-            <p>
-                Jugadores registrados
-            </p>
-
-        </div>
-
-
-        <div class="stat-card">
-
-            <div class="icon">
-                ⚽
             </div>
 
-            <h3>
-                {{ total_clubes }}
-            </h3>
-
-            <p>
-                Clubes registrados
-            </p>
-
         </div>
 
 
-        <div class="stat-card">
+        <div class="stat-card vigente">
 
-            <div class="icon">
-                🏆
-            </div>
-
-            <h3>
-                {{ total_series }}
-            </h3>
-
-            <p>
-                Series / categorías
-            </p>
-
-        </div>
-
-
-        <div class="stat-card">
-
-            <div class="icon">
+            <div class="stat-icon">
                 🟢
             </div>
 
-            <h3>
-                {{ jugadores_activos }}
-            </h3>
+            <div class="stat-label">
+                Vigentes
+            </div>
 
-            <p>
-                Jugadores activos
-            </p>
+            <div class="stat-number">
+                {{ vigentes }}
+            </div>
+
+        </div>
+
+
+        <div class="stat-card pendiente">
+
+            <div class="stat-icon">
+                🟡
+            </div>
+
+            <div class="stat-label">
+                Pendientes
+            </div>
+
+            <div class="stat-number">
+                {{ pendientes }}
+            </div>
+
+        </div>
+
+
+        <div class="stat-card suspendido">
+
+            <div class="stat-icon">
+                🔴
+            </div>
+
+            <div class="stat-label">
+                Suspendidos
+            </div>
+
+            <div class="stat-number">
+                {{ suspendidos }}
+            </div>
+
+        </div>
+
+
+        <div class="stat-card inhabilitado">
+
+            <div class="stat-icon">
+                ⚫
+            </div>
+
+            <div class="stat-label">
+                Inhabilitados
+            </div>
+
+            <div class="stat-number">
+                {{ inhabilitados }}
+            </div>
 
         </div>
 
     </div>
 
 
-    <!-- =================================================
+    <!-- =====================================================
          CONTENIDO PRINCIPAL
-         ================================================= -->
+    ====================================================== -->
 
     <div class="dashboard-grid">
 
 
-        <!-- =============================================
-             COLUMNA IZQUIERDA
-             ============================================= -->
+        <!-- =================================================
+             ESTADO DE JUGADORES
+        ================================================== -->
 
-        <div>
+        <div class="dashboard-panel">
 
+            <div class="panel-header">
 
-            <!-- ÚLTIMOS JUGADORES -->
+                <h2>
+                    Estado de jugadores
+                </h2>
 
-            <div class="panel">
-
-                <div class="panel-header">
-
-                    <h2>
-                        Últimos jugadores registrados
-                    </h2>
-
-                </div>
-
-
-                <div class="panel-body">
-
-                    {% if ultimos_jugadores %}
-
-                        {% for jugador in ultimos_jugadores %}
-
-                            <a
-                                href="{{ url_for(
-                                    'ficha_jugador',
-                                    jugador_id=jugador.id
-                                ) }}"
-                                class="jugador-link"
-                            >
-
-                                <div class="jugador-item">
-
-
-                                    <div class="jugador-avatar">
-
-                                        {% if jugador.foto %}
-
-                                            <img
-                                                src="{{ url_for(
-                                                    'foto_jugador',
-                                                    jugador_id=jugador.id
-                                                ) }}"
-                                                alt="Foto"
-                                            >
-
-                                        {% else %}
-
-                                            👤
-
-                                        {% endif %}
-
-                                    </div>
-
-
-                                    <div class="jugador-info">
-
-                                        <strong>
-                                            {{ jugador.nombre_completo }}
-                                        </strong>
-
-                                        <span>
-                                            {{ jugador.rut }}
-                                            ·
-                                            {{ jugador.club }}
-                                        </span>
-
-                                    </div>
-
-
-                                </div>
-
-                            </a>
-
-                        {% endfor %}
-
-                    {% else %}
-
-                        <div class="empty-state">
-
-                            <div class="empty-icon">
-                                👥
-                            </div>
-
-                            No hay jugadores registrados.
-
-                        </div>
-
-                    {% endif %}
-
-                </div>
+                <span>
+                    Distribución actual
+                </span>
 
             </div>
 
 
-            <!-- JUGADORES POR SERIE -->
+            {% set max_estado = [
+                vigentes,
+                pendientes,
+                suspendidos,
+                inhabilitados,
+                1
+            ] | max %}
 
-            <div
-                class="panel"
-                style="margin-top:20px;"
-            >
 
-                <div class="panel-header">
+            <div class="status-list">
 
-                    <h2>
-                        Jugadores por serie
-                    </h2>
+
+                <div class="status-row">
+
+                    <div class="status-name">
+                        🟢 Vigente
+                    </div>
+
+                    <div class="status-bar">
+
+                        <div
+                            class="status-fill vigente"
+                            style="width: {{ (vigentes / max_estado * 100) }}%;"
+                        ></div>
+
+                    </div>
+
+                    <div class="status-number">
+                        {{ vigentes }}
+                    </div>
 
                 </div>
 
 
-                <div class="panel-body">
+                <div class="status-row">
 
-                    {% if series_stats %}
+                    <div class="status-name">
+                        🟡 Pendiente
+                    </div>
 
-                        {% set max_serie = (
-                            series_stats
-                            | map(attribute='cantidad')
-                            | max
-                        ) %}
+                    <div class="status-bar">
 
-                        {% for serie in series_stats %}
+                        <div
+                            class="status-fill pendiente"
+                            style="width: {{ (pendientes / max_estado * 100) }}%;"
+                        ></div>
 
-                            <div class="serie-item">
+                    </div>
 
-                                <div class="serie-header">
+                    <div class="status-number">
+                        {{ pendientes }}
+                    </div>
 
-                                    <strong>
-                                        {{ serie.nombre }}
-                                    </strong>
-
-                                    <span>
-                                        {{ serie.cantidad }}
-                                        jugadores
-                                    </span>
-
-                                </div>
+                </div>
 
 
-                                <div class="progress">
+                <div class="status-row">
 
-                                    <div
-                                        class="progress-bar"
-                                        style="width:
-                                        {% if max_serie > 0 %}
-                                            {{
-                                                (
-                                                    serie.cantidad
-                                                    / max_serie
-                                                    * 100
-                                                )
-                                            }}%
-                                        {% else %}
-                                            0%
-                                        {% endif %}
-                                        "
-                                    ></div>
+                    <div class="status-name">
+                        🔴 Suspendido
+                    </div>
 
-                                </div>
+                    <div class="status-bar">
 
-                            </div>
+                        <div
+                            class="status-fill suspendido"
+                            style="width: {{ (suspendidos / max_estado * 100) }}%;"
+                        ></div>
 
-                        {% endfor %}
+                    </div>
 
-                    {% else %}
+                    <div class="status-number">
+                        {{ suspendidos }}
+                    </div>
 
-                        <div class="empty-state">
+                </div>
 
-                            No existen datos por serie.
 
-                        </div>
+                <div class="status-row">
 
-                    {% endif %}
+                    <div class="status-name">
+                        ⚫ Inhabilitado
+                    </div>
+
+                    <div class="status-bar">
+
+                        <div
+                            class="status-fill inhabilitado"
+                            style="width: {{ (inhabilitados / max_estado * 100) }}%;"
+                        ></div>
+
+                    </div>
+
+                    <div class="status-number">
+                        {{ inhabilitados }}
+                    </div>
 
                 </div>
 
@@ -609,218 +693,213 @@
         </div>
 
 
-        <!-- =============================================
-             COLUMNA DERECHA
-             ============================================= -->
+        <!-- =================================================
+             ACCESOS RÁPIDOS
+        ================================================== -->
 
-        <div>
+        <div class="dashboard-panel">
 
+            <div class="panel-header">
 
-            <!-- ACCESOS RÁPIDOS -->
+                <h2>
+                    Accesos rápidos
+                </h2>
 
-            <div class="panel">
-
-                <div class="panel-header">
-
-                    <h2>
-                        Accesos rápidos
-                    </h2>
-
-                </div>
-
-
-                <div class="panel-body">
-
-                    <div class="quick-actions">
-
-
-                        <a
-                            href="{{ url_for('nuevo_jugador') }}"
-                            class="quick-action"
-                        >
-
-                            <div class="quick-icon">
-                                ➕
-                            </div>
-
-                            <div class="quick-text">
-
-                                <strong>
-                                    Registrar jugador
-                                </strong>
-
-                                <span>
-                                    Crear nueva ficha
-                                </span>
-
-                            </div>
-
-                        </a>
-
-
-                        <a
-                            href="{{ url_for(
-                                'importar_jugadores'
-                            ) }}"
-                            class="quick-action"
-                        >
-
-                            <div class="quick-icon">
-                                📊
-                            </div>
-
-                            <div class="quick-text">
-
-                                <strong>
-                                    Importar jugadores
-                                </strong>
-
-                                <span>
-                                    Cargar archivo Excel
-                                </span>
-
-                            </div>
-
-                        </a>
-
-
-                        <a
-                            href="{{ url_for('index') }}"
-                            class="quick-action"
-                        >
-
-                            <div class="quick-icon">
-                                🔎
-                            </div>
-
-                            <div class="quick-text">
-
-                                <strong>
-                                    Buscar jugadores
-                                </strong>
-
-                                <span>
-                                    Consultar padrón
-                                </span>
-
-                            </div>
-
-                        </a>
-
-
-                        <a
-                            href="{{ url_for('index') }}"
-                            class="quick-action"
-                        >
-
-                            <div class="quick-icon">
-                                🪪
-                            </div>
-
-                            <div class="quick-text">
-
-                                <strong>
-                                    Acreditaciones
-                                </strong>
-
-                                <span>
-                                    Revisar credenciales
-                                </span>
-
-                            </div>
-
-                        </a>
-
-
-                    </div>
-
-                </div>
+                <span>
+                    Gestión
+                </span>
 
             </div>
 
 
-            <!-- INFORMACIÓN DEL SISTEMA -->
-
-            <div
-                class="panel"
-                style="margin-top:20px;"
-            >
-
-                <div class="panel-header">
-
-                    <h2>
-                        Sistema
-                    </h2>
-
-                </div>
+            <div class="quick-actions">
 
 
-                <div class="panel-body">
+                <a
+                    href="{{ url_for('nuevo_jugador') }}"
+                    class="quick-action"
+                >
 
-                    <div
-                        style="
-                            display:flex;
-                            justify-content:space-between;
-                            padding:10px 0;
-                            border-bottom:1px solid #eee;
-                        "
-                    >
+                    <div class="quick-icon">
+                        ➕
+                    </div>
 
-                        <span>
-                            Estado
-                        </span>
+                    <div class="quick-text">
 
                         <strong>
-                            🟢 Operativo
+                            Nuevo jugador
                         </strong>
+
+                        <small>
+                            Registrar jugador
+                        </small>
 
                     </div>
 
+                </a>
 
-                    <div
-                        style="
-                            display:flex;
-                            justify-content:space-between;
-                            padding:10px 0;
-                            border-bottom:1px solid #eee;
-                        "
-                    >
 
-                        <span>
-                            Base de datos
-                        </span>
+                <a
+                    href="{{ url_for('index') }}"
+                    class="quick-action"
+                >
+
+                    <div class="quick-icon">
+                        👥
+                    </div>
+
+                    <div class="quick-text">
 
                         <strong>
-                            🟢 Conectada
+                            Ver jugadores
                         </strong>
+
+                        <small>
+                            Listado completo
+                        </small>
 
                     </div>
 
+                </a>
 
-                    <div
-                        style="
-                            display:flex;
-                            justify-content:space-between;
-                            padding:10px 0;
-                        "
-                    >
 
-                        <span>
-                            Credenciales QR
-                        </span>
+                <a
+                    href="{{ url_for('importar_jugadores') }}"
+                    class="quick-action"
+                >
+
+                    <div class="quick-icon">
+                        📥
+                    </div>
+
+                    <div class="quick-text">
 
                         <strong>
-                            🟢 Activas
+                            Importar Excel
                         </strong>
+
+                        <small>
+                            Cargar jugadores
+                        </small>
 
                     </div>
 
-                </div>
+                </a>
+
+
+                <a
+                    href="{{ url_for('index') }}"
+                    class="quick-action"
+                >
+
+                    <div class="quick-icon">
+                        🔎
+                    </div>
+
+                    <div class="quick-text">
+
+                        <strong>
+                            Buscar jugador
+                        </strong>
+
+                        <small>
+                            Buscar por RUT o nombre
+                        </small>
+
+                    </div>
+
+                </a>
 
             </div>
-
 
         </div>
+
+
+        <!-- =================================================
+             BUSCADOR
+        ================================================== -->
+
+        <div class="dashboard-panel full">
+
+            <div class="panel-header">
+
+                <div>
+
+                    <h2>
+                        🔎 Búsqueda rápida
+                    </h2>
+
+                    <span>
+                        Busca directamente un jugador registrado
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <form
+                action="{{ url_for('index') }}"
+                method="GET"
+                class="dashboard-search"
+            >
+
+                <input
+                    type="text"
+                    name="q"
+                    placeholder="Ingresa RUT, nombre o club..."
+                    autocomplete="off"
+                >
+
+                <button type="submit">
+                    Buscar
+                </button>
+
+            </form>
+
+        </div>
+
+
+        <!-- =================================================
+             RESUMEN
+        ================================================== -->
+
+        <div class="dashboard-panel full">
+
+            <div class="panel-header">
+
+                <h2>
+                    📌 Resumen del sistema
+                </h2>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <div class="info-icon">
+                    🪪
+                </div>
+
+                <div>
+
+                    <strong>
+                        Sistema de jugadores
+                    </strong>
+
+                    <span>
+                        Desde este panel puedes administrar
+                        jugadores, estados, fotografías,
+                        credenciales y registros importados
+                        desde Excel.
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
 
     </div>
 
