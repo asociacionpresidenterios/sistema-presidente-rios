@@ -62,18 +62,6 @@ db = SQLAlchemy(app)
 
 
 # ============================================================
-# ESTADOS PERMITIDOS
-# ============================================================
-
-ESTADOS_JUGADOR = [
-    "Vigente",
-    "Pendiente",
-    "Suspendido",
-    "Inhabilitado"
-]
-
-
-# ============================================================
 # MODELO JUGADOR
 # ============================================================
 
@@ -111,19 +99,15 @@ class Jugador(db.Model):
         nullable=False
     )
 
-    # ========================================================
-    # ESTADO DEL JUGADOR
-    # ========================================================
+    foto = db.Column(
+        db.LargeBinary,
+        nullable=True
+    )
 
     estado = db.Column(
         db.String(30),
         nullable=False,
         default="Vigente"
-    )
-
-    foto = db.Column(
-        db.LargeBinary,
-        nullable=True
     )
 
 
@@ -137,11 +121,15 @@ def preparar_base_datos():
 
     try:
 
-        inspector = db.inspect(db.engine)
+        inspector = db.inspect(
+            db.engine
+        )
 
         columnas = [
             columna["name"]
-            for columna in inspector.get_columns("jugador")
+            for columna in inspector.get_columns(
+                "jugador"
+            )
         ]
 
         # ----------------------------------------------------
@@ -174,11 +162,15 @@ def preparar_base_datos():
         # AGREGAR ESTADO SI NO EXISTE
         # ----------------------------------------------------
 
-        inspector = db.inspect(db.engine)
+        inspector = db.inspect(
+            db.engine
+        )
 
         columnas = [
             columna["name"]
-            for columna in inspector.get_columns("jugador")
+            for columna in inspector.get_columns(
+                "jugador"
+            )
         ]
 
         if "estado" not in columnas:
@@ -190,7 +182,7 @@ def preparar_base_datos():
                         "ALTER TABLE jugador "
                         "ADD COLUMN IF NOT EXISTS "
                         "estado VARCHAR(30) "
-                        "NOT NULL DEFAULT 'Vigente'"
+                        "DEFAULT 'Vigente'"
                     )
                 )
 
@@ -199,23 +191,23 @@ def preparar_base_datos():
                 db.session.execute(
                     db.text(
                         "ALTER TABLE jugador "
-                        "ADD COLUMN estado "
-                        "VARCHAR(30) "
-                        "NOT NULL DEFAULT 'Vigente'"
+                        "ADD COLUMN estado VARCHAR(30) "
+                        "DEFAULT 'Vigente'"
                     )
                 )
 
             db.session.commit()
 
         # ----------------------------------------------------
-        # ASEGURAR QUE NO HAYA ESTADOS VACÍOS
+        # ASEGURAR ESTADO EN REGISTROS ANTIGUOS
         # ----------------------------------------------------
 
         db.session.execute(
             db.text(
                 "UPDATE jugador "
                 "SET estado = 'Vigente' "
-                "WHERE estado IS NULL OR estado = ''"
+                "WHERE estado IS NULL "
+                "OR estado = ''"
             )
         )
 
@@ -247,7 +239,10 @@ def normalizar_rut(rut):
 
     rut = str(rut).strip().upper()
 
-    rut = rut.replace(" ", "")
+    rut = rut.replace(
+        " ",
+        ""
+    )
 
     rut_limpio = (
         rut
@@ -259,6 +254,7 @@ def normalizar_rut(rut):
         return ""
 
     cuerpo = rut_limpio[:-1]
+
     dv = rut_limpio[-1]
 
     if not cuerpo.isdigit():
@@ -269,16 +265,16 @@ def normalizar_rut(rut):
     while len(cuerpo) > 3:
 
         cuerpo_formateado = (
-            "." +
-            cuerpo[-3:] +
-            cuerpo_formateado
+            "."
+            + cuerpo[-3:]
+            + cuerpo_formateado
         )
 
         cuerpo = cuerpo[:-3]
 
     cuerpo_formateado = (
-        cuerpo +
-        cuerpo_formateado
+        cuerpo
+        + cuerpo_formateado
     )
 
     return f"{cuerpo_formateado}-{dv}"
@@ -301,19 +297,21 @@ def validar_rut(rut):
         return False
 
     cuerpo = rut_limpio[:-1]
+
     dv = rut_limpio[-1]
 
     if not cuerpo.isdigit():
         return False
 
     suma = 0
+
     multiplicador = 2
 
     for digito in reversed(cuerpo):
 
         suma += (
-            int(digito) *
-            multiplicador
+            int(digito)
+            * multiplicador
         )
 
         multiplicador += 1
@@ -382,7 +380,9 @@ def convertir_fecha(valor):
 
 def obtener_fotografia():
 
-    archivo = request.files.get("foto")
+    archivo = request.files.get(
+        "foto"
+    )
 
     if not archivo:
         return None, None
@@ -426,20 +426,6 @@ def obtener_fotografia():
         )
 
     return contenido, None
-
-
-def obtener_estado(formulario, estado_actual="Vigente"):
-
-    estado = formulario.get(
-        "estado",
-        estado_actual
-    ).strip()
-
-    if estado not in ESTADOS_JUGADOR:
-
-        return "Vigente"
-
-    return estado
 
 
 # ============================================================
@@ -571,9 +557,21 @@ def nuevo_jugador():
             ""
         ).strip()
 
-        estado = obtener_estado(
-            request.form
-        )
+        estado = request.form.get(
+            "estado",
+            "Vigente"
+        ).strip()
+
+        estados_permitidos = {
+            "Vigente",
+            "Pendiente",
+            "Suspendido",
+            "Inhabilitado"
+        }
+
+        if estado not in estados_permitidos:
+
+            estado = "Vigente"
 
         if not all([
             rut,
@@ -590,8 +588,7 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None,
-                estados=ESTADOS_JUGADOR
+                jugador=None
             )
 
         if not validar_rut(rut):
@@ -603,8 +600,7 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None,
-                estados=ESTADOS_JUGADOR
+                jugador=None
             )
 
         try:
@@ -622,8 +618,7 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None,
-                estados=ESTADOS_JUGADOR
+                jugador=None
             )
 
         if Jugador.query.filter_by(
@@ -637,8 +632,7 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None,
-                estados=ESTADOS_JUGADOR
+                jugador=None
             )
 
         foto, error_foto = obtener_fotografia()
@@ -652,8 +646,7 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None,
-                estados=ESTADOS_JUGADOR
+                jugador=None
             )
 
         jugador = Jugador(
@@ -662,11 +655,13 @@ def nuevo_jugador():
             fecha_nacimiento=fecha_obj,
             serie=serie,
             club=club,
-            estado=estado,
-            foto=foto
+            foto=foto,
+            estado=estado
         )
 
-        db.session.add(jugador)
+        db.session.add(
+            jugador
+        )
 
         db.session.commit()
 
@@ -684,8 +679,7 @@ def nuevo_jugador():
 
     return render_template(
         "jugador_form.html",
-        jugador=None,
-        estados=ESTADOS_JUGADOR
+        jugador=None
     )
 
 
@@ -733,10 +727,21 @@ def editar_jugador(jugador_id):
             ""
         ).strip()
 
-        estado = obtener_estado(
-            request.form,
+        estado = request.form.get(
+            "estado",
             jugador.estado or "Vigente"
-        )
+        ).strip()
+
+        estados_permitidos = {
+            "Vigente",
+            "Pendiente",
+            "Suspendido",
+            "Inhabilitado"
+        }
+
+        if estado not in estados_permitidos:
+
+            estado = "Vigente"
 
         if not all([
             rut,
@@ -753,8 +758,7 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador,
-                estados=ESTADOS_JUGADOR
+                jugador=jugador
             )
 
         if not validar_rut(rut):
@@ -766,8 +770,7 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador,
-                estados=ESTADOS_JUGADOR
+                jugador=jugador
             )
 
         otro_jugador = Jugador.query.filter(
@@ -784,8 +787,7 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador,
-                estados=ESTADOS_JUGADOR
+                jugador=jugador
             )
 
         try:
@@ -803,8 +805,7 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador,
-                estados=ESTADOS_JUGADOR
+                jugador=jugador
             )
 
         archivo_foto = request.files.get(
@@ -827,8 +828,7 @@ def editar_jugador(jugador_id):
 
                 return render_template(
                     "jugador_form.html",
-                    jugador=jugador,
-                    estados=ESTADOS_JUGADOR
+                    jugador=jugador
                 )
 
             jugador.foto = foto
@@ -861,8 +861,7 @@ def editar_jugador(jugador_id):
 
     return render_template(
         "jugador_form.html",
-        jugador=jugador,
-        estados=ESTADOS_JUGADOR
+        jugador=jugador
     )
 
 
@@ -881,7 +880,9 @@ def eliminar_jugador(jugador_id):
         jugador_id
     )
 
-    db.session.delete(jugador)
+    db.session.delete(
+        jugador
+    )
 
     db.session.commit()
 
@@ -1008,13 +1009,6 @@ def importar_jugadores():
             "club": [
                 "club",
                 "equipo"
-            ],
-
-            "estado": [
-                "estado",
-                "estatus",
-                "situación",
-                "situacion"
             ]
 
         }
@@ -1035,16 +1029,9 @@ def importar_jugadores():
 
                     break
 
-        # Las columnas principales siguen siendo obligatorias.
         faltantes = [
             campo
-            for campo in [
-                "rut",
-                "nombre",
-                "fecha",
-                "serie",
-                "club"
-            ]
+            for campo in equivalencias
             if campo not in columnas
         ]
 
@@ -1052,13 +1039,14 @@ def importar_jugadores():
 
             flash(
                 "Faltan columnas obligatorias: "
-                +
-                ", ".join(faltantes),
+                + ", ".join(faltantes),
                 "error"
             )
 
             return redirect(
-                url_for("importar_jugadores")
+                url_for(
+                    "importar_jugadores"
+                )
             )
 
         registrados = 0
@@ -1119,38 +1107,6 @@ def importar_jugadores():
                     if club is not None
                     else ""
                 )
-
-                # --------------------------------------------
-                # ESTADO OPCIONAL EN EXCEL
-                # --------------------------------------------
-
-                estado = "Vigente"
-
-                if "estado" in columnas:
-
-                    estado_valor = fila[
-                        columnas["estado"]
-                    ]
-
-                    if estado_valor is not None:
-
-                        estado_texto = (
-                            str(estado_valor)
-                            .strip()
-                            .lower()
-                        )
-
-                        estados_excel = {
-                            "vigente": "Vigente",
-                            "pendiente": "Pendiente",
-                            "suspendido": "Suspendido",
-                            "inhabilitado": "Inhabilitado"
-                        }
-
-                        estado = estados_excel.get(
-                            estado_texto,
-                            "Vigente"
-                        )
 
                 if not all([
                     rut,
@@ -1217,10 +1173,12 @@ def importar_jugadores():
                     fecha_nacimiento=fecha_obj,
                     serie=serie,
                     club=club,
-                    estado=estado
+                    estado="Vigente"
                 )
 
-                db.session.add(jugador)
+                db.session.add(
+                    jugador
+                )
 
                 registrados += 1
 
@@ -1230,7 +1188,7 @@ def importar_jugadores():
 
                 detalle_errores.append(
                     f"Fila {numero_fila}: "
-                    f"error al procesar ({error})."
+                    f"error al procesar: {error}"
                 )
 
         try:
@@ -1248,7 +1206,9 @@ def importar_jugadores():
             )
 
             return redirect(
-                url_for("importar_jugadores")
+                url_for(
+                    "importar_jugadores"
+                )
             )
 
         return render_template(
@@ -1259,9 +1219,14 @@ def importar_jugadores():
             detalle_errores=detalle_errores
         )
 
-    except Exception:
+    except Exception as error:
 
         db.session.rollback()
+
+        print(
+            "Error importando Excel:",
+            error
+        )
 
         flash(
             "Ocurrió un error inesperado "
@@ -1270,7 +1235,9 @@ def importar_jugadores():
         )
 
         return redirect(
-            url_for("importar_jugadores")
+            url_for(
+                "importar_jugadores"
+            )
         )
 
 
@@ -1320,7 +1287,7 @@ def api_jugadores():
                 jugador.club,
 
             "estado":
-                jugador.estado,
+                jugador.estado or "Vigente",
 
             "tiene_foto":
                 bool(jugador.foto)
@@ -1345,17 +1312,23 @@ def qr_jugador(jugador_id):
         jugador_id
     )
 
-    # URL pública que abrirá el QR
-   url_verificacion = url_for(
-    "verificacion_jugador",
-    jugador_id=jugador.id,
-    _external=True
-)
+    # --------------------------------------------------------
+    # EL QR APUNTA A LA VERIFICACIÓN PÚBLICA
+    # --------------------------------------------------------
 
-    # Crear QR
-   imagen_qr = qrcode.make(
-    url_verificacion
-)
+    url_verificacion = url_for(
+        "verificacion_jugador",
+        jugador_id=jugador.id,
+        _external=True
+    )
+
+    # --------------------------------------------------------
+    # CREAR QR
+    # --------------------------------------------------------
+
+    imagen_qr = qrcode.make(
+        url_verificacion
+    )
 
     memoria = BytesIO()
 
@@ -1370,6 +1343,8 @@ def qr_jugador(jugador_id):
         memoria.getvalue(),
         mimetype="image/png"
     )
+
+
 # ============================================================
 # VERIFICACIÓN PÚBLICA DEL JUGADOR
 # ============================================================
@@ -1389,6 +1364,7 @@ def verificacion_jugador(jugador_id):
         jugador=jugador
     )
 
+
 # ============================================================
 # CREDENCIAL DEL JUGADOR
 # ============================================================
@@ -1406,41 +1382,6 @@ def credencial_jugador(jugador_id):
     return render_template(
         "jugador_credencial.html",
         jugador=jugador
-    )
-
-
-# ============================================================
-# DASHBOARD
-# ============================================================
-
-@app.route("/dashboard")
-def dashboard():
-
-    total_jugadores = Jugador.query.count()
-
-    jugadores_vigentes = Jugador.query.filter_by(
-        estado="Vigente"
-    ).count()
-
-    jugadores_pendientes = Jugador.query.filter_by(
-        estado="Pendiente"
-    ).count()
-
-    jugadores_suspendidos = Jugador.query.filter_by(
-        estado="Suspendido"
-    ).count()
-
-    jugadores_inhabilitados = Jugador.query.filter_by(
-        estado="Inhabilitado"
-    ).count()
-
-    return render_template(
-        "dashboard.html",
-        total_jugadores=total_jugadores,
-        jugadores_vigentes=jugadores_vigentes,
-        jugadores_pendientes=jugadores_pendientes,
-        jugadores_suspendidos=jugadores_suspendidos,
-        jugadores_inhabilitados=jugadores_inhabilitados
     )
 
 
