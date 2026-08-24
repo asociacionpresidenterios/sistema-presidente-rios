@@ -106,7 +106,7 @@ class Jugador(db.Model):
 
 
 # ============================================================
-# CREACIÓN / ACTUALIZACIÓN DE BASE DE DATOS
+# CREACIÓN / ACTUALIZACIÓN SEGURA DE BASE DE DATOS
 # ============================================================
 
 def preparar_base_datos():
@@ -269,9 +269,11 @@ def convertir_fecha(valor):
         return None
 
     if isinstance(valor, datetime):
+
         return valor.date()
 
     if isinstance(valor, date):
+
         return valor
 
     if isinstance(valor, str):
@@ -350,7 +352,94 @@ def obtener_fotografia():
 
 
 # ============================================================
-# INICIO / LISTADO DE JUGADORES
+# DASHBOARD
+# ============================================================
+
+@app.route("/dashboard")
+def dashboard():
+
+    # --------------------------------------------------------
+    # TOTAL DE JUGADORES
+    # --------------------------------------------------------
+
+    total_jugadores = Jugador.query.count()
+
+
+    # --------------------------------------------------------
+    # JUGADORES CON FOTOGRAFÍA
+    # --------------------------------------------------------
+
+    jugadores_con_foto = Jugador.query.filter(
+        Jugador.foto.isnot(None)
+    ).count()
+
+
+    # --------------------------------------------------------
+    # JUGADORES SIN FOTOGRAFÍA
+    # --------------------------------------------------------
+
+    jugadores_sin_foto = (
+        total_jugadores -
+        jugadores_con_foto
+    )
+
+
+    # --------------------------------------------------------
+    # CANTIDAD POR CLUB
+    # --------------------------------------------------------
+
+    clubes = db.session.query(
+        Jugador.club,
+        db.func.count(Jugador.id)
+    ).group_by(
+        Jugador.club
+    ).order_by(
+        db.func.count(Jugador.id).desc()
+    ).all()
+
+
+    # --------------------------------------------------------
+    # CANTIDAD POR SERIE
+    # --------------------------------------------------------
+
+    series = db.session.query(
+        Jugador.serie,
+        db.func.count(Jugador.id)
+    ).group_by(
+        Jugador.serie
+    ).order_by(
+        db.func.count(Jugador.id).desc()
+    ).all()
+
+
+    # --------------------------------------------------------
+    # ÚLTIMOS JUGADORES REGISTRADOS
+    # --------------------------------------------------------
+
+    ultimos_jugadores = Jugador.query.order_by(
+        Jugador.id.desc()
+    ).limit(10).all()
+
+
+    return render_template(
+        "dashboard.html",
+
+        total_jugadores=total_jugadores,
+
+        jugadores_con_foto=jugadores_con_foto,
+
+        jugadores_sin_foto=jugadores_sin_foto,
+
+        clubes=clubes,
+
+        series=series,
+
+        ultimos_jugadores=ultimos_jugadores
+    )
+
+
+# ============================================================
+# INICIO / LISTADO
 # ============================================================
 
 @app.route("/")
@@ -720,9 +809,13 @@ def editar_jugador(jugador_id):
             jugador.foto = foto
 
         jugador.rut = rut
+
         jugador.nombre_completo = nombre
+
         jugador.fecha_nacimiento = fecha_obj
+
         jugador.serie = serie
+
         jugador.club = club
 
         db.session.commit()
@@ -927,7 +1020,9 @@ def importar_jugadores():
             )
 
         registrados = 0
+
         duplicados = 0
+
         errores = 0
 
         detalle_errores = []
@@ -1134,15 +1229,21 @@ def api_jugadores():
 
         {
             "id": jugador.id,
+
             "rut": jugador.rut,
+
             "nombre_completo":
                 jugador.nombre_completo,
+
             "fecha_nacimiento":
                 jugador.fecha_nacimiento.isoformat(),
+
             "serie":
                 jugador.serie,
+
             "club":
                 jugador.club,
+
             "tiene_foto":
                 bool(jugador.foto)
         }
@@ -1166,18 +1267,14 @@ def qr_jugador(jugador_id):
         jugador_id
     )
 
-    # IMPORTANTE:
-    # El QR ahora apunta a la página pública
-    # de verificación.
-
-    url_verificacion = url_for(
-        "verificar_jugador",
+    url_credencial = url_for(
+        "credencial_jugador",
         jugador_id=jugador.id,
         _external=True
     )
 
     imagen_qr = qrcode.make(
-        url_verificacion
+        url_credencial
     )
 
     memoria = BytesIO()
@@ -1216,34 +1313,6 @@ def credencial_jugador(jugador_id):
 
 
 # ============================================================
-# VERIFICACIÓN PÚBLICA DEL JUGADOR
-# ============================================================
-
-@app.route(
-    "/verificar/jugador/<int:jugador_id>"
-)
-def verificar_jugador(jugador_id):
-
-    jugador = Jugador.query.get(
-        jugador_id
-    )
-
-    if not jugador:
-
-        return render_template(
-            "verificacion_jugador.html",
-            jugador=None,
-            valido=False
-        ), 404
-
-    return render_template(
-        "verificacion_jugador.html",
-        jugador=jugador,
-        valido=True
-    )
-
-
-# ============================================================
 # HEALTH CHECK
 # ============================================================
 
@@ -1258,7 +1327,7 @@ def health():
 
 
 # ============================================================
-# EJECUCIÓN LOCAL
+# EJECUCIÓN
 # ============================================================
 
 if __name__ == "__main__":
