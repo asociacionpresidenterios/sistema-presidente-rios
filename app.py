@@ -1594,10 +1594,12 @@ def credencial_reverso(jugador_id):
 # DASHBOARD
 # ============================================================
 
-@app.route(
-    "/dashboard"
-)
+@app.route("/dashboard")
 def dashboard():
+
+    # --------------------------------------------------------
+    # INDICADORES GENERALES
+    # --------------------------------------------------------
 
     total_jugadores = Jugador.query.count()
 
@@ -1617,13 +1619,83 @@ def dashboard():
         estado="Inhabilitado"
     ).count()
 
+
+    # --------------------------------------------------------
+    # JUGADORES POR CLUB
+    # --------------------------------------------------------
+
+    jugadores_por_club = (
+        db.session.query(
+            Jugador.club,
+            db.func.count(Jugador.id)
+        )
+        .filter(
+            Jugador.club.isnot(None),
+            Jugador.club != ""
+        )
+        .group_by(Jugador.club)
+        .order_by(
+            db.func.count(Jugador.id).desc()
+        )
+        .all()
+    )
+
+
+    # --------------------------------------------------------
+    # JUGADORES POR SERIE
+    # --------------------------------------------------------
+
+    jugadores_por_serie = (
+        db.session.query(
+            Jugador.serie,
+            db.func.count(Jugador.id)
+        )
+        .filter(
+            Jugador.serie.isnot(None),
+            Jugador.serie != ""
+        )
+        .group_by(Jugador.serie)
+        .order_by(
+            db.func.count(Jugador.id).desc()
+        )
+        .all()
+    )
+
+
+    # --------------------------------------------------------
+    # ÚLTIMOS JUGADORES REGISTRADOS
+    # --------------------------------------------------------
+
+    ultimos_jugadores = (
+        Jugador.query
+        .order_by(Jugador.id.desc())
+        .limit(5)
+        .all()
+    )
+
+
+    # --------------------------------------------------------
+    # ENVIAR DATOS AL DASHBOARD
+    # --------------------------------------------------------
+
     return render_template(
         "dashboard.html",
+
         total_jugadores=total_jugadores,
+
         vigentes=vigentes,
+
         pendientes=pendientes,
+
         suspendidos=suspendidos,
-        inhabilitados=inhabilitados
+
+        inhabilitados=inhabilitados,
+
+        jugadores_por_club=jugadores_por_club,
+
+        jugadores_por_serie=jugadores_por_serie,
+
+        ultimos_jugadores=ultimos_jugadores
     )
 
 
