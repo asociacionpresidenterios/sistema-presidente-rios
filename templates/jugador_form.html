@@ -503,34 +503,42 @@
                  SERIE DESDE CATÁLOGO
             ================================================== -->
 
-            <div class="campo">
+<div class="campo">
 
-                <label for="serie">
-                    Serie
-                </label>
+    <label for="serie">
+        Serie
+    </label>
 
-                <select
-                    id="serie"
-                    name="serie"
-                    required
-                >
+    <select
+        id="serie"
+        name="serie"
+        required
+    >
 
-                    <option value="">
-                        Seleccionar serie
-                    </option>
+        <option value="">
+            Seleccionar serie
+        </option>
 
-                    {% for item in series %}
+        {% for serie in series %}
 
-                        <option
-                            value="{{ item.nombre }}"
-                            {% if jugador and jugador.serie == item.nombre %}
-                                selected
-                            {% endif %}
-                        >
-                            {{ item.nombre }}
-                        </option>
+            <option
+                value="{{ serie.nombre }}"
+                {% if jugador and jugador.serie == serie.nombre %}
+                    selected
+                {% endif %}
+            >
+                {{ serie.nombre }}
+            </option>
 
-                    {% endfor %}
+        {% endfor %}
+
+    </select>
+
+    <div class="ayuda">
+        Solo aparecen las series activas configuradas.
+    </div>
+
+</div>
 
                     <!--
                     Permite mantener una serie antigua
@@ -579,15 +587,40 @@
 
             <div class="campo campo-completo">
 
-                <label for="club">
-                    Club
-                </label>
+    <label for="club">
+        Club
+    </label>
 
-                <select
-                    id="club"
-                    name="club"
-                    required
-                >
+    <select
+        id="club"
+        name="club"
+        required
+    >
+
+        <option value="">
+            Seleccionar club
+        </option>
+
+        {% for club in clubes %}
+
+            <option
+                value="{{ club.nombre }}"
+                {% if jugador and jugador.club == club.nombre %}
+                    selected
+                {% endif %}
+            >
+                {{ club.nombre }}
+            </option>
+
+        {% endfor %}
+
+    </select>
+
+    <div class="ayuda">
+        Solo aparecen los clubes activos configurados.
+    </div>
+
+</div>
 
                     <option value="">
                         Seleccionar club
