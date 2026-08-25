@@ -85,7 +85,59 @@ def normalizar_estado(estado):
 
     return estado
 
+# ============================================================
+# MODELO CLUB
+# ============================================================
 
+class Club(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    nombre = db.Column(
+        db.String(120),
+        unique=True,
+        nullable=False
+    )
+
+    activo = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=True
+    )
+
+
+# ============================================================
+# MODELO SERIE
+# ============================================================
+
+class Serie(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    nombre = db.Column(
+        db.String(80),
+        unique=True,
+        nullable=False
+    )
+
+    activo = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=True
+    )
+
+
+# ============================================================
+# MODELO JUGADOR
+# ============================================================
+
+class Jugador(db.Model):
 # ============================================================
 # MODELO JUGADOR
 # ============================================================
@@ -1519,7 +1571,216 @@ def dashboard():
         suspendidos=suspendidos,
         inhabilitados=inhabilitados
     )
+# ============================================================
+# ADMINISTRACIÓN DE CLUBES Y SERIES
+# ============================================================
 
+@app.route("/configuracion")
+def configuracion():
+
+    clubes = Club.query.order_by(
+        Club.nombre
+    ).all()
+
+    series = Serie.query.order_by(
+        Serie.nombre
+    ).all()
+
+    return render_template(
+        "configuracion.html",
+        clubes=clubes,
+        series=series
+    )
+
+
+# ============================================================
+# CREAR CLUB
+# ============================================================
+
+@app.route(
+    "/clubes/nuevo",
+    methods=["POST"]
+)
+def nuevo_club():
+
+    nombre = request.form.get(
+        "nombre",
+        ""
+    ).strip()
+
+    if not nombre:
+
+        flash(
+            "Debes ingresar el nombre del club.",
+            "error"
+        )
+
+        return redirect(
+            url_for("configuracion")
+        )
+
+    club_existente = Club.query.filter(
+        db.func.lower(Club.nombre) ==
+        nombre.lower()
+    ).first()
+
+    if club_existente:
+
+        flash(
+            "Ese club ya está registrado.",
+            "error"
+        )
+
+        return redirect(
+            url_for("configuracion")
+        )
+
+    club = Club(
+        nombre=nombre,
+        activo=True
+    )
+
+    db.session.add(club)
+    db.session.commit()
+
+    flash(
+        f"Club '{nombre}' agregado correctamente.",
+        "success"
+    )
+
+    return redirect(
+        url_for("configuracion")
+    )
+
+
+# ============================================================
+# CREAR SERIE
+# ============================================================
+
+@app.route(
+    "/series/nueva",
+    methods=["POST"]
+)
+def nueva_serie():
+
+    nombre = request.form.get(
+        "nombre",
+        ""
+    ).strip()
+
+    if not nombre:
+
+        flash(
+            "Debes ingresar el nombre de la serie.",
+            "error"
+        )
+
+        return redirect(
+            url_for("configuracion")
+        )
+
+    serie_existente = Serie.query.filter(
+        db.func.lower(Serie.nombre) ==
+        nombre.lower()
+    ).first()
+
+    if serie_existente:
+
+        flash(
+            "Esa serie ya está registrada.",
+            "error"
+        )
+
+        return redirect(
+            url_for("configuracion")
+        )
+
+    serie = Serie(
+        nombre=nombre,
+        activo=True
+    )
+
+    db.session.add(serie)
+    db.session.commit()
+
+    flash(
+        f"Serie '{nombre}' agregada correctamente.",
+        "success"
+    )
+
+    return redirect(
+        url_for("configuracion")
+    )
+
+
+# ============================================================
+# ACTIVAR / DESACTIVAR CLUB
+# ============================================================
+
+@app.route(
+    "/clubes/<int:club_id>/estado",
+    methods=["POST"]
+)
+def cambiar_estado_club(club_id):
+
+    club = db.get_or_404(
+        Club,
+        club_id
+    )
+
+    club.activo = not club.activo
+
+    db.session.commit()
+
+    estado = (
+        "activado"
+        if club.activo
+        else "desactivado"
+    )
+
+    flash(
+        f"Club {estado} correctamente.",
+        "success"
+    )
+
+    return redirect(
+        url_for("configuracion")
+    )
+
+
+# ============================================================
+# ACTIVAR / DESACTIVAR SERIE
+# ============================================================
+
+@app.route(
+    "/series/<int:serie_id>/estado",
+    methods=["POST"]
+)
+def cambiar_estado_serie(serie_id):
+
+    serie = db.get_or_404(
+        Serie,
+        serie_id
+    )
+
+    serie.activo = not serie.activo
+
+    db.session.commit()
+
+    estado = (
+        "activada"
+        if serie.activo
+        else "desactivada"
+    )
+
+    flash(
+        f"Serie {estado} correctamente.",
+        "success"
+    )
+
+    return redirect(
+        url_for("configuracion")
+    )
 
 # ============================================================
 # HEALTH CHECK
