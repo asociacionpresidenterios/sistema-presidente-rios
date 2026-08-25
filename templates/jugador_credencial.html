@@ -58,6 +58,7 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        gap: 7px;
         padding: 12px 18px;
         border-radius: 11px;
         border: none;
@@ -65,6 +66,12 @@
         font-size: 14px;
         font-weight: 800;
         cursor: pointer;
+        transition: .2s ease;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(0,0,0,.10);
     }
 
     .btn-volver {
@@ -81,8 +88,13 @@
         background: #ea580c;
     }
 
+    .btn-verificar {
+        background: #111827;
+        color: white;
+    }
+
     /* =====================================================
-       ZONA TARJETA
+       ZONA DE CREDENCIAL
     ===================================================== */
 
     .zona-credencial {
@@ -92,8 +104,7 @@
     }
 
     /* =====================================================
-       CREDENCIAL
-       CR80 VERTICAL
+       CREDENCIAL PVC CR80
     ===================================================== */
 
     .credencial {
@@ -160,6 +171,20 @@
         left: -90px;
     }
 
+    .linea-decorativa {
+        position: absolute;
+
+        width: 330px;
+        height: 2px;
+
+        background: rgba(255,255,255,.12);
+
+        transform: rotate(-25deg);
+
+        bottom: 92px;
+        right: -95px;
+    }
+
     /* =====================================================
        CONTENIDO
     ===================================================== */
@@ -196,6 +221,7 @@
         border-bottom:
             1px solid
             rgba(255,255,255,.28);
+
     }
 
     .asociacion {
@@ -207,6 +233,21 @@
         font-weight: 900;
 
         text-transform: uppercase;
+
+    }
+
+    .subtitulo-asociacion {
+
+        margin-top: 4px;
+
+        font-size: 6.5px;
+
+        font-weight: 700;
+
+        letter-spacing: .5px;
+
+        opacity: .82;
+
     }
 
     .credencial-oficial {
@@ -229,11 +270,26 @@
         width: 72px;
 
         text-align: center;
+
     }
 
     /* =====================================================
-       FOTO
+       FOTO + QR
     ===================================================== */
+
+    .identificacion-superior {
+
+        display: flex;
+
+        justify-content: center;
+
+        align-items: center;
+
+        gap: 9px;
+
+        margin-top: 12px;
+
+    }
 
     .foto-area {
 
@@ -241,13 +297,14 @@
 
         justify-content: center;
 
-        margin-top: 13px;
+        align-items: center;
+
     }
 
     .foto {
 
-        width: 105px;
-        height: 118px;
+        width: 102px;
+        height: 112px;
 
         object-fit: cover;
 
@@ -256,12 +313,13 @@
         border: 3px solid white;
 
         background: rgba(255,255,255,.15);
+
     }
 
     .foto-vacia {
 
-        width: 105px;
-        height: 118px;
+        width: 102px;
+        height: 112px;
 
         border:
             2px dashed
@@ -277,9 +335,90 @@
 
         text-align: center;
 
-        font-size: 9px;
+        font-size: 8px;
+
+        line-height: 1.2;
 
         font-weight: 800;
+
+        padding: 8px;
+
+    }
+
+    /* =====================================================
+       QR
+    ===================================================== */
+
+    .qr-area {
+
+        width: 82px;
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        justify-content: center;
+
+        gap: 4px;
+
+    }
+
+    .qr-contenedor {
+
+        width: 76px;
+        height: 76px;
+
+        padding: 4px;
+
+        background: white;
+
+        border-radius: 8px;
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+    }
+
+    .qr-imagen {
+
+        width: 68px;
+        height: 68px;
+
+        object-fit: contain;
+
+        display: block;
+
+    }
+
+    .qr-titulo {
+
+        font-size: 6.5px;
+
+        font-weight: 900;
+
+        text-transform: uppercase;
+
+        text-align: center;
+
+        line-height: 1.05;
+
+    }
+
+    .qr-descripcion {
+
+        font-size: 5.5px;
+
+        text-align: center;
+
+        line-height: 1.05;
+
+        opacity: .78;
+
     }
 
     /* =====================================================
@@ -288,7 +427,7 @@
 
     .informacion {
 
-        margin-top: 10px;
+        margin-top: 8px;
 
         text-align: center;
 
@@ -296,14 +435,15 @@
 
         flex-direction: column;
 
-        gap: 5px;
+        gap: 4px;
+
     }
 
     .nombre {
 
         margin: 0 0 2px;
 
-        font-size: 14px;
+        font-size: 13.5px;
 
         line-height: 1.05;
 
@@ -312,6 +452,7 @@
         text-transform: uppercase;
 
         word-break: break-word;
+
     }
 
     .dato {
@@ -321,11 +462,12 @@
         flex-direction: column;
 
         align-items: center;
+
     }
 
     .dato-label {
 
-        font-size: 6.5px;
+        font-size: 6.3px;
 
         line-height: 1;
 
@@ -336,13 +478,14 @@
         opacity: .75;
 
         letter-spacing: .5px;
+
     }
 
     .dato-valor {
 
         margin-top: 2px;
 
-        font-size: 9.5px;
+        font-size: 8.8px;
 
         line-height: 1.05;
 
@@ -351,6 +494,7 @@
         max-width: 205px;
 
         overflow-wrap: anywhere;
+
     }
 
     /* =====================================================
@@ -374,6 +518,10 @@
         font-weight: 900;
 
         white-space: nowrap;
+
+        box-shadow:
+            0 2px 7px rgba(0,0,0,.08);
+
     }
 
     .estado-vigente {
@@ -398,7 +546,7 @@
 
     .pie {
 
-        margin-top: 8px;
+        margin-top: 7px;
 
         margin-left: -15px;
         margin-right: -15px;
@@ -421,17 +569,19 @@
         justify-content: space-between;
 
         align-items: center;
+
     }
 
     .identificacion {
 
-        font-size: 7px;
+        font-size: 6.5px;
 
         line-height: 1.1;
 
         font-weight: 900;
 
         text-transform: uppercase;
+
     }
 
     .numero {
@@ -439,6 +589,56 @@
         font-size: 10px;
 
         font-weight: 900;
+
+    }
+
+    /* =====================================================
+       INFORMACIÓN DE VERIFICACIÓN
+    ===================================================== */
+
+    .panel-info {
+
+        max-width: 520px;
+
+        margin: 35px auto 0;
+
+        background: white;
+
+        border: 1px solid #e5e7eb;
+
+        border-radius: 16px;
+
+        padding: 18px 20px;
+
+        box-shadow:
+            0 8px 25px rgba(15,23,42,.06);
+
+        text-align: center;
+
+    }
+
+    .panel-info h3 {
+
+        margin: 0 0 7px;
+
+        color: #111827;
+
+        font-size: 16px;
+
+        font-weight: 900;
+
+    }
+
+    .panel-info p {
+
+        margin: 0;
+
+        color: #64748b;
+
+        font-size: 13px;
+
+        line-height: 1.5;
+
     }
 
     /* =====================================================
@@ -448,25 +648,32 @@
     @media print {
 
         @page {
+
             size: auto;
+
             margin: 0;
+
         }
 
         html,
         body {
 
             margin: 0 !important;
+
             padding: 0 !important;
 
             background: white !important;
+
         }
 
         header,
         nav,
         footer,
-        .credencial-header {
+        .credencial-header,
+        .panel-info {
 
             display: none !important;
+
         }
 
         .credencial-pagina {
@@ -476,6 +683,7 @@
             padding: 0 !important;
 
             max-width: none !important;
+
         }
 
         .zona-credencial {
@@ -485,6 +693,7 @@
             justify-content: center;
 
             align-items: flex-start;
+
         }
 
         .credencial {
@@ -494,7 +703,48 @@
             print-color-adjust: exact;
 
             -webkit-print-color-adjust: exact;
+
         }
+
+    }
+
+    /* =====================================================
+       RESPONSIVE
+    ===================================================== */
+
+    @media (max-width: 600px) {
+
+        .credencial-pagina {
+
+            padding:
+                20px 12px 40px;
+
+        }
+
+        .credencial-header {
+
+            margin-bottom: 25px;
+
+        }
+
+        .titulo h1 {
+
+            font-size: 25px;
+
+        }
+
+        .acciones {
+
+            width: 100%;
+
+        }
+
+        .acciones .btn {
+
+            flex: 1;
+
+        }
+
     }
 
 </style>
@@ -502,8 +752,9 @@
 
 <div class="credencial-pagina">
 
+
     <!-- =================================================
-         ENCABEZADO DE LA PÁGINA
+         ENCABEZADO
     ================================================== -->
 
     <div class="credencial-header">
@@ -523,6 +774,7 @@
 
         <div class="acciones">
 
+
             <a
                 href="{{ url_for(
                     'ficha_jugador',
@@ -534,6 +786,18 @@
             </a>
 
 
+            <a
+                href="{{ url_for(
+                    'verificacion_jugador',
+                    jugador_id=jugador.id
+                ) }}"
+                target="_blank"
+                class="btn btn-verificar"
+            >
+                🔍 Verificar
+            </a>
+
+
             <button
                 type="button"
                 onclick="window.print()"
@@ -541,6 +805,7 @@
             >
                 🖨️ Imprimir credencial
             </button>
+
 
         </div>
 
@@ -553,25 +818,39 @@
 
     <div class="zona-credencial">
 
+
         <div class="credencial">
 
+
+            <!-- DECORACIONES -->
 
             <div class="decoracion-superior"></div>
 
             <div class="decoracion-inferior"></div>
 
+            <div class="linea-decorativa"></div>
+
 
             <div class="contenido">
 
 
-                <!-- CABECERA -->
+                <!-- =================================================
+                     CABECERA
+                ================================================== -->
 
                 <div class="cabecera">
+
 
                     <div class="asociacion">
 
                         ASOCIACIÓN<br>
                         PRESIDENTE RÍOS
+
+                        <div class="subtitulo-asociacion">
+
+                            REGISTRO OFICIAL DEPORTIVO
+
+                        </div>
 
                     </div>
 
@@ -583,40 +862,96 @@
 
                     </div>
 
+
                 </div>
 
 
-                <!-- FOTO -->
+                <!-- =================================================
+                     FOTO + QR
+                ================================================== -->
 
-                <div class="foto-area">
+                <div class="identificacion-superior">
 
-                    {% if jugador.foto %}
 
-                        <img
-                            src="{{ url_for(
-                                'foto_jugador',
-                                jugador_id=jugador.id
-                            ) }}"
-                            class="foto"
-                            alt="Fotografía del jugador"
-                        >
+                    <!-- FOTO -->
 
-                    {% else %}
+                    <div class="foto-area">
 
-                        <div class="foto-vacia">
 
-                            📷<br>
-                            SIN<br>
-                            FOTOGRAFÍA
+                        {% if jugador.foto %}
+
+                            <img
+                                src="{{ url_for(
+                                    'foto_jugador',
+                                    jugador_id=jugador.id
+                                ) }}"
+                                class="foto"
+                                alt="Fotografía del jugador"
+                            >
+
+                        {% else %}
+
+                            <div class="foto-vacia">
+
+                                📷
+
+                                <br>
+
+                                SIN
+                                FOTOGRAFÍA
+
+                            </div>
+
+                        {% endif %}
+
+
+                    </div>
+
+
+                    <!-- QR -->
+
+                    <div class="qr-area">
+
+
+                        <div class="qr-contenedor">
+
+
+                            <img
+                                src="{{ url_for(
+                                    'qr_jugador',
+                                    jugador_id=jugador.id
+                                ) }}"
+                                class="qr-imagen"
+                                alt="Código QR de verificación"
+                            >
+
 
                         </div>
 
-                    {% endif %}
+
+                        <div class="qr-titulo">
+
+                            ESCANEAR
+
+                        </div>
+
+
+                        <div class="qr-descripcion">
+
+                            Verificación oficial
+
+                        </div>
+
+
+                    </div>
+
 
                 </div>
 
 
-                <!-- INFORMACIÓN -->
+                <!-- =================================================
+                     INFORMACIÓN
+                ================================================== -->
 
                 <div class="informacion">
 
@@ -635,7 +970,9 @@
                         </span>
 
                         <span class="dato-valor">
+
                             {{ jugador.rut }}
+
                         </span>
 
                     </div>
@@ -648,7 +985,9 @@
                         </span>
 
                         <span class="dato-valor">
+
                             {{ jugador.club }}
+
                         </span>
 
                     </div>
@@ -661,7 +1000,9 @@
                         </span>
 
                         <span class="dato-valor">
+
                             {{ jugador.serie }}
+
                         </span>
 
                     </div>
@@ -685,38 +1026,69 @@
                 </div>
 
 
-                <!-- ESTADO -->
+                <!-- =================================================
+                     ESTADO
+                ================================================== -->
 
                 {% if jugador.estado == "Vigente" %}
 
+
                     <div class="estado estado-vigente">
+
                         🟢 VIGENTE
+
                     </div>
+
 
                 {% elif jugador.estado == "Pendiente" %}
 
+
                     <div class="estado estado-pendiente">
+
                         🟡 PENDIENTE
+
                     </div>
+
 
                 {% elif jugador.estado == "Suspendido" %}
 
+
                     <div class="estado estado-suspendido">
+
                         🔴 SUSPENDIDO
+
                     </div>
+
+
+                {% elif jugador.estado == "Inhabilitado" %}
+
+
+                    <div class="estado estado-inhabilitado">
+
+                        ⚫ INHABILITADO
+
+                    </div>
+
 
                 {% else %}
 
+
                     <div class="estado estado-inhabilitado">
+
                         ⚫ INHABILITADO
+
                     </div>
+
 
                 {% endif %}
 
 
-                <!-- PIE -->
+                <!-- =================================================
+                     PIE
+                ================================================== -->
 
                 <div class="pie">
+
 
                     <div class="identificacion">
 
@@ -732,14 +1104,42 @@
 
                     </div>
 
+
                 </div>
 
 
             </div>
 
+
         </div>
 
+
     </div>
+
+
+    <!-- =================================================
+         INFORMACIÓN
+    ================================================== -->
+
+    <div class="panel-info">
+
+
+        <h3>
+            🔐 Verificación digital
+        </h3>
+
+
+        <p>
+
+            El código QR de esta credencial permite consultar
+            la ficha pública del jugador y verificar su
+            información registrada en la Asociación Presidente Ríos.
+
+        </p>
+
+
+    </div>
+
 
 </div>
 
