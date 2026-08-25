@@ -1447,7 +1447,24 @@ def credencial_jugador(jugador_id):
         "jugador_credencial.html",
         jugador=jugador
     )
+# ============================================================
+# REVERSO DE CREDENCIAL
+# ============================================================
 
+@app.route(
+    "/jugadores/<int:jugador_id>/credencial/reverso"
+)
+def credencial_reverso(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    return render_template(
+        "credencial_reverso.html",
+        jugador=jugador
+    )
 
 # ============================================================
 # DASHBOARD
