@@ -162,9 +162,6 @@ class Jugador(db.Model):
         nullable=False
     )
 
-    # IMPORTANTE:
-    # Se mantienen como texto para no alterar
-    # la base de datos existente.
     serie = db.Column(
         db.String(80),
         nullable=False
@@ -625,9 +622,7 @@ def foto_jugador(jugador_id):
 )
 def nuevo_jugador():
 
-    clubes, series = (
-        obtener_datos_formulario_jugador()
-    )
+    clubes, series = obtener_datos_formulario_jugador()
 
     if request.method == "POST":
 
@@ -825,9 +820,7 @@ def editar_jugador(jugador_id):
         jugador_id
     )
 
-    clubes, series = (
-        obtener_datos_formulario_jugador()
-    )
+    clubes, series = obtener_datos_formulario_jugador()
 
     if request.method == "POST":
 
@@ -1705,9 +1698,7 @@ def nuevo_club():
         activo=True
     )
 
-    db.session.add(
-        club
-    )
+    db.session.add(club)
 
     db.session.commit()
 
@@ -1768,9 +1759,7 @@ def nueva_serie():
         activo=True
     )
 
-    db.session.add(
-        serie
-    )
+    db.session.add(serie)
 
     db.session.commit()
 
