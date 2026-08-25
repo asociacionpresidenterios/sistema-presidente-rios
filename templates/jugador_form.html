@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
 
     <meta charset="UTF-8">
@@ -436,7 +437,9 @@
             </div>
 
 
-            <!-- RUT -->
+            <!-- ==================================================
+                 RUT
+            ================================================== -->
 
             <div class="campo">
 
@@ -460,7 +463,9 @@
             </div>
 
 
-            <!-- NOMBRE -->
+            <!-- ==================================================
+                 NOMBRE
+            ================================================== -->
 
             <div class="campo">
 
@@ -480,7 +485,9 @@
             </div>
 
 
-            <!-- FECHA -->
+            <!-- ==================================================
+                 FECHA DE NACIMIENTO
+            ================================================== -->
 
             <div class="campo">
 
@@ -500,49 +507,41 @@
 
 
             <!-- ==================================================
-                 SERIE DESDE CATÁLOGO
+                 SERIE
             ================================================== -->
 
-<div class="campo">
+            <div class="campo">
 
-    <label for="serie">
-        Serie
-    </label>
+                <label for="serie">
+                    Serie
+                </label>
 
-    <select
-        id="serie"
-        name="serie"
-        required
-    >
+                <select
+                    id="serie"
+                    name="serie"
+                    required
+                >
 
-        <option value="">
-            Seleccionar serie
-        </option>
+                    <option value="">
+                        Seleccionar serie
+                    </option>
 
-        {% for serie in series %}
+                    {% for item in series %}
 
-            <option
-                value="{{ serie.nombre }}"
-                {% if jugador and jugador.serie == serie.nombre %}
-                    selected
-                {% endif %}
-            >
-                {{ serie.nombre }}
-            </option>
+                        <option
+                            value="{{ item.nombre }}"
+                            {% if jugador and jugador.serie == item.nombre %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ item.nombre }}
+                        </option>
 
-        {% endfor %}
-
-    </select>
-
-    <div class="ayuda">
-        Solo aparecen las series activas configuradas.
-    </div>
-
-</div>
+                    {% endfor %}
 
                     <!--
-                    Permite mantener una serie antigua
-                    aunque todavía no esté en el catálogo.
+                    Mantener visible una serie antigua
+                    al editar un jugador.
                     -->
 
                     {% if jugador and jugador.serie %}
@@ -575,52 +574,27 @@
                 </select>
 
                 <div class="ayuda">
-                    Las series se administran desde Configuración.
+                    Solo aparecen las series activas configuradas.
                 </div>
 
             </div>
 
 
             <!-- ==================================================
-                 CLUB DESDE CATÁLOGO
+                 CLUB
             ================================================== -->
 
             <div class="campo campo-completo">
 
-    <label for="club">
-        Club
-    </label>
+                <label for="club">
+                    Club
+                </label>
 
-    <select
-        id="club"
-        name="club"
-        required
-    >
-
-        <option value="">
-            Seleccionar club
-        </option>
-
-        {% for club in clubes %}
-
-            <option
-                value="{{ club.nombre }}"
-                {% if jugador and jugador.club == club.nombre %}
-                    selected
-                {% endif %}
-            >
-                {{ club.nombre }}
-            </option>
-
-        {% endfor %}
-
-    </select>
-
-    <div class="ayuda">
-        Solo aparecen los clubes activos configurados.
-    </div>
-
-</div>
+                <select
+                    id="club"
+                    name="club"
+                    required
+                >
 
                     <option value="">
                         Seleccionar club
@@ -639,10 +613,9 @@
 
                     {% endfor %}
 
-
                     <!--
                     Mantener visible un club antiguo
-                    que todavía no exista en el catálogo.
+                    al editar un jugador.
                     -->
 
                     {% if jugador and jugador.club %}
@@ -675,7 +648,7 @@
                 </select>
 
                 <div class="ayuda">
-                    Los clubes se administran desde Configuración.
+                    Solo aparecen los clubes activos configurados.
                 </div>
 
             </div>
@@ -866,4 +839,5 @@
 </div>
 
 </body>
+
 </html>
