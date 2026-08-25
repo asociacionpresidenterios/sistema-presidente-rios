@@ -557,17 +557,23 @@
                 </a>
 
 
-                <a
-                    href="{{ url_for(
-                        'credencial_jugador',
-                        jugador_id=jugador.id
-                    ) }}"
-                    class="btn btn-success"
-                >
-                    🪪 Ver credencial
-                </a>
+               <div class="acciones">
 
+    <a
+        href="{{ url_for('credencial_jugador', jugador_id=jugador.id) }}"
+        class="boton boton-credencial"
+    >
+        🎫 Credencial
+    </a>
 
+    <a
+        href="{{ url_for('credencial_reverso', jugador_id=jugador.id) }}"
+        class="boton boton-reverso"
+    >
+        🔄 Reverso
+    </a>
+
+</div>
                 <button
                     type="button"
                     onclick="window.print()"
