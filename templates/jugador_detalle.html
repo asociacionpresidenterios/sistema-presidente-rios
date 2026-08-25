@@ -4,184 +4,355 @@
 
 <style>
 
-    .ficha-pagina {
-        max-width: 1100px;
-        margin: 0 auto;
-        padding: 25px 15px 50px;
+    /* ============================================================
+       FICHA OFICIAL DEL JUGADOR
+    ============================================================ */
+
+    * {
+        box-sizing: border-box;
     }
+
+    .ficha-pagina {
+        max-width: 1250px;
+        margin: 0 auto;
+        padding: 25px 18px 60px;
+    }
+
+
+    /* ============================================================
+       ENCABEZADO
+    ============================================================ */
 
     .ficha-header {
         display: flex;
         justify-content: space-between;
-        align-items: center;
-        gap: 15px;
+        align-items: flex-start;
+        gap: 20px;
         margin-bottom: 25px;
         flex-wrap: wrap;
     }
 
-    .ficha-header h1 {
+    .ficha-titulo {
+        min-width: 250px;
+    }
+
+    .ficha-titulo h1 {
         margin: 0;
-        font-size: 30px;
-        font-weight: 800;
+        color: #111827;
+        font-size: 32px;
+        font-weight: 900;
+        line-height: 1.1;
     }
 
-    .ficha-header p {
-        margin: 6px 0 0;
+    .ficha-titulo p {
+        margin: 8px 0 0;
         color: #6b7280;
+        font-size: 14px;
     }
 
-    .acciones {
+    .acciones-header {
         display: flex;
-        gap: 10px;
+        gap: 9px;
         flex-wrap: wrap;
+        justify-content: flex-end;
     }
+
+
+    /* ============================================================
+       BOTONES
+    ============================================================ */
 
     .btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 7px;
-        padding: 11px 17px;
+        min-height: 42px;
+        padding: 10px 15px;
         border-radius: 10px;
+        border: 1px solid transparent;
         text-decoration: none;
-        border: none;
         cursor: pointer;
-        font-weight: 700;
-        font-size: 14px;
-        transition: 0.2s ease;
+        font-size: 13px;
+        font-weight: 800;
+        transition: .2s ease;
+        white-space: nowrap;
     }
 
     .btn:hover {
         transform: translateY(-1px);
+        box-shadow: 0 5px 14px rgba(0,0,0,.10);
+    }
+
+    .btn-light {
+        background: white;
+        color: #111827;
+        border-color: #e5e7eb;
+    }
+
+    .btn-dark {
+        background: #111827;
+        color: white;
+        border-color: #111827;
     }
 
     .btn-primary {
-        background: #111827;
+        background: #f97316;
         color: white;
-    }
-
-    .btn-primary:hover {
-        background: #1f2937;
-    }
-
-    .btn-secondary {
-        background: #e5e7eb;
-        color: #111827;
-    }
-
-    .btn-secondary:hover {
-        background: #d1d5db;
+        border-color: #f97316;
     }
 
     .btn-success {
         background: #15803d;
         color: white;
+        border-color: #15803d;
     }
 
-    .btn-success:hover {
-        background: #166534;
-    }
-
-    .btn-reverso {
+    .btn-blue {
         background: #2563eb;
         color: white;
+        border-color: #2563eb;
     }
 
-    .btn-reverso:hover {
-        background: #1d4ed8;
+    .btn-purple {
+        background: #7c3aed;
+        color: white;
+        border-color: #7c3aed;
     }
 
     .btn-danger {
         background: #dc2626;
         color: white;
+        border-color: #dc2626;
     }
+
+
+    /* ============================================================
+       TARJETA PRINCIPAL
+    ============================================================ */
 
     .ficha-card {
         background: white;
-        border-radius: 20px;
-        box-shadow: 0 8px 30px rgba(0,0,0,.08);
-        overflow: hidden;
         border: 1px solid #e5e7eb;
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 10px 35px rgba(15,23,42,.08);
     }
 
-    .ficha-superior {
-        display: grid;
-        grid-template-columns: 260px 1fr;
-        gap: 30px;
-        padding: 30px;
-    }
 
-    .foto-contenedor {
-        width: 100%;
+    /* ============================================================
+       BANNER SUPERIOR
+    ============================================================ */
+
+    .ficha-banner {
+        background: linear-gradient(
+            135deg,
+            #111827 0%,
+            #1f2937 55%,
+            #374151 100%
+        );
+
+        color: white;
+        padding: 22px 30px;
+
         display: flex;
-        justify-content: center;
-        align-items: flex-start;
+        justify-content: space-between;
+        align-items: center;
+
+        gap: 20px;
+        flex-wrap: wrap;
     }
 
-    .foto-jugador {
-        width: 230px;
-        height: 280px;
-        object-fit: cover;
-        border-radius: 18px;
-        border: 1px solid #d1d5db;
-        background: #f3f4f6;
+    .banner-identificacion {
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
-    .foto-vacia {
-        width: 230px;
-        height: 280px;
-        border-radius: 18px;
-        background: #f3f4f6;
-        border: 1px dashed #9ca3af;
+    .banner-icono {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+
+        background: rgba(255,255,255,.12);
+
         display: flex;
         align-items: center;
         justify-content: center;
-        text-align: center;
-        color: #6b7280;
-        padding: 20px;
-        font-weight: 600;
+
+        font-size: 22px;
     }
 
-    .datos-jugador {
+    .banner-texto strong {
+        display: block;
+        font-size: 15px;
+        font-weight: 900;
+    }
+
+    .banner-texto span {
+        display: block;
+        margin-top: 3px;
+        color: #d1d5db;
+        font-size: 12px;
+    }
+
+    .banner-id {
+        font-size: 13px;
+        color: #d1d5db;
+    }
+
+    .banner-id strong {
+        color: white;
+    }
+
+
+    /* ============================================================
+       CUERPO SUPERIOR
+    ============================================================ */
+
+    .ficha-superior {
+        display: grid;
+        grid-template-columns: 280px minmax(0, 1fr);
+        gap: 35px;
+        padding: 35px;
+    }
+
+
+    /* ============================================================
+       FOTOGRAFÍA
+    ============================================================ */
+
+    .foto-seccion {
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        align-items: center;
+    }
+
+    .foto-contenedor {
+        width: 240px;
+        height: 295px;
+        position: relative;
+    }
+
+    .foto-jugador {
+        width: 240px;
+        height: 295px;
+        object-fit: cover;
+
+        border-radius: 18px;
+        border: 1px solid #d1d5db;
+
+        background: #f3f4f6;
+
+        box-shadow: 0 8px 22px rgba(0,0,0,.08);
+    }
+
+    .foto-vacia {
+        width: 240px;
+        height: 295px;
+
+        border-radius: 18px;
+        border: 2px dashed #cbd5e1;
+
+        background: #f8fafc;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+
+        text-align: center;
+
+        color: #64748b;
+        font-weight: 700;
+        font-size: 14px;
+
+        padding: 20px;
+    }
+
+    .foto-vacia-icono {
+        font-size: 48px;
+        margin-bottom: 12px;
+    }
+
+    .foto-estado {
+        margin-top: 12px;
+
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+
+        padding: 7px 12px;
+
+        border-radius: 999px;
+
+        background: #f1f5f9;
+        color: #475569;
+
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+
+    /* ============================================================
+       DATOS PRINCIPALES
+    ============================================================ */
+
+    .datos-jugador {
+        min-width: 0;
     }
 
     .nombre-jugador {
         margin: 0;
-        font-size: 34px;
-        font-weight: 900;
-        line-height: 1.1;
+
         color: #111827;
+
+        font-size: 36px;
+        line-height: 1.08;
+        font-weight: 950;
+
+        word-break: break-word;
     }
 
     .rut-jugador {
-        margin: 6px 0 0;
+        margin: 8px 0 0;
+
+        color: #64748b;
+
         font-size: 18px;
-        color: #6b7280;
-        font-weight: 600;
+        font-weight: 700;
     }
 
-    .estado-contenedor {
-        display: inline-flex;
+
+    /* ============================================================
+       ESTADO
+    ============================================================ */
+
+    .estado-fila {
+        margin-top: 22px;
+
+        display: flex;
         align-items: center;
-        gap: 10px;
-        margin-top: 5px;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 
     .estado-label {
-        font-weight: 700;
-        color: #374151;
+        color: #475569;
+        font-size: 13px;
+        font-weight: 800;
     }
 
     .estado-badge {
         display: inline-flex;
         align-items: center;
         gap: 7px;
-        padding: 9px 16px;
+
+        padding: 9px 15px;
+
         border-radius: 999px;
-        font-size: 14px;
+
+        font-size: 12px;
         font-weight: 900;
         letter-spacing: .3px;
     }
@@ -206,97 +377,462 @@
         color: #1f2937;
     }
 
+
+    /* ============================================================
+       DATOS
+    ============================================================ */
+
     .datos-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 15px;
-        margin-top: 5px;
+
+        gap: 14px;
+
+        margin-top: 25px;
     }
 
     .dato {
-        background: #f9fafb;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 15px;
+        background: #f8fafc;
+
+        border: 1px solid #e2e8f0;
+
+        border-radius: 13px;
+
+        padding: 16px;
     }
 
     .dato-label {
-        font-size: 12px;
+        margin-bottom: 7px;
+
+        color: #64748b;
+
+        font-size: 11px;
+        font-weight: 900;
+
         text-transform: uppercase;
         letter-spacing: .6px;
-        color: #6b7280;
-        font-weight: 800;
-        margin-bottom: 5px;
     }
 
     .dato-valor {
-        font-size: 17px;
-        font-weight: 800;
         color: #111827;
+
+        font-size: 16px;
+        font-weight: 850;
+
+        word-break: break-word;
     }
 
-    .ficha-footer {
+    .dato-valor.club {
+        color: #1e293b;
+    }
+
+    .dato-valor.serie {
+        color: #3730a3;
+    }
+
+
+    /* ============================================================
+       ACCIONES CENTRALES
+    ============================================================ */
+
+    .acciones-ficha {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+
+        margin-top: 25px;
+        padding-top: 22px;
+
         border-top: 1px solid #e5e7eb;
-        padding: 22px 30px;
-        background: #f9fafb;
+    }
+
+
+    /* ============================================================
+       SECCIÓN IDENTIFICACIÓN DIGITAL
+    ============================================================ */
+
+    .identificacion-digital {
+        border-top: 1px solid #e5e7eb;
+
+        background: #f8fafc;
+
+        padding: 28px 35px;
+    }
+
+    .identificacion-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
+
         gap: 15px;
+        flex-wrap: wrap;
+
+        margin-bottom: 18px;
+    }
+
+    .identificacion-header h3 {
+        margin: 0;
+
+        color: #111827;
+
+        font-size: 18px;
+        font-weight: 900;
+    }
+
+    .identificacion-header p {
+        margin: 5px 0 0;
+
+        color: #64748b;
+
+        font-size: 13px;
+    }
+
+    .identificacion-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 13px;
+    }
+
+    .identificacion-card {
+        background: white;
+
+        border: 1px solid #e5e7eb;
+
+        border-radius: 13px;
+
+        padding: 17px;
+
+        text-decoration: none;
+
+        transition: .2s ease;
+    }
+
+    .identificacion-card:hover {
+        transform: translateY(-2px);
+
+        box-shadow: 0 7px 18px rgba(15,23,42,.08);
+    }
+
+    .identificacion-icono {
+        width: 40px;
+        height: 40px;
+
+        border-radius: 10px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        margin-bottom: 11px;
+
+        font-size: 19px;
+    }
+
+    .icono-qr {
+        background: #ede9fe;
+    }
+
+    .icono-credencial {
+        background: #dcfce7;
+    }
+
+    .icono-verificacion {
+        background: #dbeafe;
+    }
+
+    .identificacion-card strong {
+        display: block;
+
+        color: #111827;
+
+        font-size: 14px;
+        font-weight: 900;
+    }
+
+    .identificacion-card span {
+        display: block;
+
+        margin-top: 4px;
+
+        color: #64748b;
+
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+
+    /* ============================================================
+       PIE
+    ============================================================ */
+
+    .ficha-footer {
+        border-top: 1px solid #e5e7eb;
+
+        padding: 22px 30px;
+
+        background: white;
+
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        gap: 15px;
+
         flex-wrap: wrap;
     }
 
-    .qr-info {
-        color: #6b7280;
-        font-size: 14px;
+    .footer-info {
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.5;
     }
 
-    .qr-info strong {
+    .footer-info strong {
         color: #111827;
     }
 
-    .zona-credencial {
+    .footer-acciones {
         display: flex;
-        gap: 10px;
+        gap: 9px;
         flex-wrap: wrap;
-        align-items: center;
     }
 
-    @media (max-width: 750px) {
+
+    /* ============================================================
+       MODAL ELIMINACIÓN
+    ============================================================ */
+
+    .modal-overlay {
+        display: none;
+
+        position: fixed;
+
+        inset: 0;
+
+        z-index: 9999;
+
+        background: rgba(15,23,42,.65);
+
+        padding: 20px;
+
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-overlay.activo {
+        display: flex;
+    }
+
+    .modal {
+        width: 100%;
+        max-width: 450px;
+
+        background: white;
+
+        border-radius: 18px;
+
+        padding: 25px;
+
+        box-shadow: 0 25px 70px rgba(0,0,0,.25);
+    }
+
+    .modal-icono {
+        width: 50px;
+        height: 50px;
+
+        border-radius: 12px;
+
+        background: #fee2e2;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-size: 24px;
+
+        margin-bottom: 15px;
+    }
+
+    .modal h3 {
+        margin: 0;
+
+        color: #111827;
+
+        font-size: 20px;
+        font-weight: 900;
+    }
+
+    .modal p {
+        margin: 9px 0 0;
+
+        color: #64748b;
+
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .modal-acciones {
+        display: flex;
+        justify-content: flex-end;
+
+        gap: 9px;
+
+        margin-top: 22px;
+    }
+
+
+    /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+
+    @media (max-width: 900px) {
+
+        .ficha-superior {
+            grid-template-columns: 220px minmax(0, 1fr);
+            gap: 25px;
+            padding: 25px;
+        }
+
+        .foto-contenedor,
+        .foto-jugador,
+        .foto-vacia {
+            width: 210px;
+            height: 265px;
+        }
+
+        .nombre-jugador {
+            font-size: 30px;
+        }
+
+        .identificacion-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .identificacion-digital {
+            padding: 25px;
+        }
+
+    }
+
+
+    @media (max-width: 700px) {
+
+        .ficha-pagina {
+            padding: 15px 10px 40px;
+        }
+
+        .ficha-header {
+            margin-bottom: 18px;
+        }
+
+        .ficha-titulo h1 {
+            font-size: 27px;
+        }
+
+        .acciones-header {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .acciones-header .btn {
+            flex: 1;
+        }
 
         .ficha-superior {
             grid-template-columns: 1fr;
             padding: 20px;
         }
 
+        .foto-seccion {
+            align-items: center;
+        }
+
+        .foto-contenedor,
         .foto-jugador,
         .foto-vacia {
-            width: 200px;
-            height: 240px;
+            width: 210px;
+            height: 260px;
+        }
+
+        .datos-jugador {
+            width: 100%;
         }
 
         .nombre-jugador {
-            font-size: 28px;
+            font-size: 27px;
+        }
+
+        .rut-jugador {
+            font-size: 16px;
         }
 
         .datos-grid {
             grid-template-columns: 1fr;
         }
 
+        .acciones-ficha .btn {
+            flex: 1;
+        }
+
+        .identificacion-digital {
+            padding: 20px;
+        }
+
         .ficha-footer {
             padding: 20px;
         }
 
-        .zona-credencial {
+        .footer-acciones {
             width: 100%;
-            flex-direction: column;
         }
 
-        .zona-credencial .btn {
-            width: 100%;
+        .footer-acciones .btn {
+            flex: 1;
         }
 
     }
+
+
+    @media (max-width: 480px) {
+
+        .acciones-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .acciones-header .btn {
+            width: 100%;
+        }
+
+        .acciones-ficha {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        .acciones-ficha .btn {
+            width: 100%;
+        }
+
+        .footer-acciones {
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        .footer-acciones .btn {
+            width: 100%;
+        }
+
+        .estado-fila {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+    }
+
+
+    /* ============================================================
+       IMPRESIÓN
+    ============================================================ */
 
     @media print {
 
@@ -304,21 +840,34 @@
             background: white !important;
         }
 
-        .ficha-header .acciones,
-        .ficha-footer,
-        nav,
-        header {
-            display: none !important;
-        }
-
         .ficha-pagina {
             max-width: none;
             padding: 0;
         }
 
+        .ficha-header .acciones-header,
+        .acciones-ficha,
+        .identificacion-digital,
+        .ficha-footer,
+        .modal-overlay,
+        nav,
+        header {
+            display: none !important;
+        }
+
         .ficha-card {
+            border: 1px solid #bbb;
             box-shadow: none;
-            border: 1px solid #ccc;
+            border-radius: 0;
+        }
+
+        .ficha-banner {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .ficha-superior {
+            padding: 25px;
         }
 
     }
@@ -329,16 +878,16 @@
 <div class="ficha-pagina">
 
 
-    <!-- =====================================================
+    <!-- ============================================================
          ENCABEZADO
-    ====================================================== -->
+    ============================================================ -->
 
     <div class="ficha-header">
 
-        <div>
+        <div class="ficha-titulo">
 
             <h1>
-                Ficha del Jugador
+                👤 Ficha del Jugador
             </h1>
 
             <p>
@@ -348,13 +897,13 @@
         </div>
 
 
-        <div class="acciones">
+        <div class="acciones-header">
 
             <a
                 href="{{ url_for('index') }}"
-                class="btn btn-secondary"
+                class="btn btn-light"
             >
-                ← Volver
+                ← Jugadores
             </a>
 
 
@@ -369,65 +918,120 @@
             </a>
 
 
-            <a
-                href="{{ url_for(
-                    'credencial_jugador',
-                    jugador_id=jugador.id
-                ) }}"
-                class="btn btn-success"
+            <button
+                type="button"
+                class="btn btn-danger"
+                onclick="abrirModalEliminar()"
             >
-                🪪 Credencial
-            </a>
-
-
-            <a
-                href="{{ url_for(
-                    'credencial_reverso',
-                    jugador_id=jugador.id
-                ) }}"
-                class="btn btn-reverso"
-            >
-                🔄 Reverso
-            </a>
+                🗑️ Eliminar
+            </button>
 
         </div>
 
     </div>
 
 
-    <!-- =====================================================
-         FICHA
-    ====================================================== -->
+    <!-- ============================================================
+         FICHA PRINCIPAL
+    ============================================================ -->
 
     <div class="ficha-card">
 
 
+        <!-- ========================================================
+             BANNER
+        ========================================================= -->
+
+        <div class="ficha-banner">
+
+            <div class="banner-identificacion">
+
+                <div class="banner-icono">
+                    🪪
+                </div>
+
+                <div class="banner-texto">
+
+                    <strong>
+                        IDENTIFICACIÓN OFICIAL
+                    </strong>
+
+                    <span>
+                        Asociación de Fútbol Presidente Ríos
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="banner-id">
+
+                ID jugador:
+                <strong>
+                    #{{ jugador.id }}
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- ========================================================
+             DATOS DEL JUGADOR
+        ========================================================= -->
+
         <div class="ficha-superior">
 
 
-            <!-- FOTO -->
+            <!-- ====================================================
+                 FOTO
+            ==================================================== -->
 
-            <div class="foto-contenedor">
+            <div class="foto-seccion">
+
+                <div class="foto-contenedor">
+
+                    {% if jugador.foto %}
+
+                        <img
+                            src="{{ url_for(
+                                'foto_jugador',
+                                jugador_id=jugador.id
+                            ) }}"
+                            alt="Fotografía de {{ jugador.nombre_completo }}"
+                            class="foto-jugador"
+                        >
+
+                    {% else %}
+
+                        <div class="foto-vacia">
+
+                            <div class="foto-vacia-icono">
+                                👤
+                            </div>
+
+                            <div>
+                                Jugador sin fotografía
+                            </div>
+
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
 
                 {% if jugador.foto %}
 
-                    <img
-                        src="{{ url_for(
-                            'foto_jugador',
-                            jugador_id=jugador.id
-                        ) }}"
-                        alt="Fotografía de {{ jugador.nombre_completo }}"
-                        class="foto-jugador"
-                    >
+                    <div class="foto-estado">
+                        📷 Fotografía registrada
+                    </div>
 
                 {% else %}
 
-                    <div class="foto-vacia">
-
-                        📷<br>
-
-                        Jugador sin fotografía
-
+                    <div class="foto-estado">
+                        ⚠️ Fotografía pendiente
                     </div>
 
                 {% endif %}
@@ -435,36 +1039,32 @@
             </div>
 
 
-            <!-- DATOS -->
+            <!-- ====================================================
+                 INFORMACIÓN
+            ==================================================== -->
 
             <div class="datos-jugador">
 
 
-                <div>
-
-                    <h2 class="nombre-jugador">
-
-                        {{ jugador.nombre_completo }}
-
-                    </h2>
+                <h2 class="nombre-jugador">
+                    {{ jugador.nombre_completo }}
+                </h2>
 
 
-                    <p class="rut-jugador">
-
-                        RUT:
-                        {{ jugador.rut }}
-
-                    </p>
-
-                </div>
+                <p class="rut-jugador">
+                    RUT:
+                    {{ jugador.rut }}
+                </p>
 
 
-                <!-- ESTADO -->
+                <!-- =================================================
+                     ESTADO
+                ================================================== -->
 
-                <div class="estado-contenedor">
+                <div class="estado-fila">
 
                     <span class="estado-label">
-                        Estado:
+                        Estado del jugador:
                     </span>
 
 
@@ -507,10 +1107,14 @@
                 </div>
 
 
-                <!-- INFORMACIÓN -->
+                <!-- =================================================
+                     INFORMACIÓN
+                ================================================== -->
 
                 <div class="datos-grid">
 
+
+                    <!-- CLUB -->
 
                     <div class="dato">
 
@@ -518,12 +1122,14 @@
                             Club
                         </div>
 
-                        <div class="dato-valor">
-                            {{ jugador.club }}
+                        <div class="dato-valor club">
+                            🏟️ {{ jugador.club or "Sin club" }}
                         </div>
 
                     </div>
 
+
+                    <!-- SERIE -->
 
                     <div class="dato">
 
@@ -531,12 +1137,14 @@
                             Serie
                         </div>
 
-                        <div class="dato-valor">
-                            {{ jugador.serie }}
+                        <div class="dato-valor serie">
+                            ⚽ {{ jugador.serie or "Sin serie" }}
                         </div>
 
                     </div>
 
+
+                    <!-- FECHA NACIMIENTO -->
 
                     <div class="dato">
 
@@ -546,22 +1154,33 @@
 
                         <div class="dato-valor">
 
-                            {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
+                            {% if jugador.fecha_nacimiento %}
+
+                                🎂
+                                {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
+
+                            {% else %}
+
+                                —
+
+                            {% endif %}
 
                         </div>
 
                     </div>
 
 
+                    <!-- ID -->
+
                     <div class="dato">
 
                         <div class="dato-label">
-                            ID Jugador
+                            Identificador interno
                         </div>
 
                         <div class="dato-valor">
 
-                            #{{ jugador.id }}
+                            🔢 #{{ jugador.id }}
 
                         </div>
 
@@ -571,34 +1190,93 @@
                 </div>
 
 
+                <!-- =================================================
+                     ACCIONES
+                ================================================== -->
+
+                <div class="acciones-ficha">
+
+
+                    <a
+                        href="{{ url_for(
+                            'credencial_jugador',
+                            jugador_id=jugador.id
+                        ) }}"
+                        class="btn btn-success"
+                    >
+                        🪪 Credencial
+                    </a>
+
+
+                    <a
+                        href="{{ url_for(
+                            'credencial_reverso',
+                            jugador_id=jugador.id
+                        ) }}"
+                        class="btn btn-blue"
+                    >
+                        🔄 Reverso
+                    </a>
+
+
+                    <a
+                        href="{{ url_for(
+                            'qr_jugador',
+                            jugador_id=jugador.id
+                        ) }}"
+                        class="btn btn-purple"
+                        target="_blank"
+                    >
+                        🔳 QR
+                    </a>
+
+
+                    <a
+                        href="{{ url_for(
+                            'verificacion_jugador',
+                            jugador_id=jugador.id
+                        ) }}"
+                        class="btn btn-dark"
+                        target="_blank"
+                    >
+                        🌐 Verificar
+                    </a>
+
+                </div>
+
             </div>
 
         </div>
 
 
-        <!-- =================================================
-             PIE DE FICHA
-        ================================================== -->
+        <!-- ========================================================
+             IDENTIFICACIÓN DIGITAL
+        ========================================================= -->
 
-        <div class="ficha-footer">
+        <div class="identificacion-digital">
 
+            <div class="identificacion-header">
 
-            <div class="qr-info">
+                <div>
 
-                <strong>
-                    Identificación digital
-                </strong>
+                    <h3>
+                        🔐 Identificación digital
+                    </h3>
 
-                <br>
+                    <p>
+                        Accesos rápidos a los elementos oficiales
+                        asociados al jugador.
+                    </p>
 
-                El jugador dispone de un código QR asociado
-                a su credencial oficial.
+                </div>
 
             </div>
 
 
-            <div class="zona-credencial">
+            <div class="identificacion-grid">
 
+
+                <!-- QR -->
 
                 <a
                     href="{{ url_for(
@@ -606,42 +1284,133 @@
                         jugador_id=jugador.id
                     ) }}"
                     target="_blank"
-                    class="btn btn-secondary"
+                    class="identificacion-card"
                 >
-                    🔳 Ver QR
+
+                    <div class="identificacion-icono icono-qr">
+                        🔳
+                    </div>
+
+                    <strong>
+                        Código QR
+                    </strong>
+
+                    <span>
+                        Código asociado a la verificación
+                        digital del jugador.
+                    </span>
+
                 </a>
 
+
+                <!-- CREDENCIAL -->
 
                 <a
                     href="{{ url_for(
                         'credencial_jugador',
                         jugador_id=jugador.id
                     ) }}"
-                    class="btn btn-success"
+                    class="identificacion-card"
                 >
-                    🪪 Credencial
+
+                    <div class="identificacion-icono icono-credencial">
+                        🪪
+                    </div>
+
+                    <strong>
+                        Credencial oficial
+                    </strong>
+
+                    <span>
+                        Visualiza la credencial digital
+                        del jugador.
+                    </span>
+
                 </a>
 
+
+                <!-- VERIFICACIÓN -->
 
                 <a
                     href="{{ url_for(
-                        'credencial_reverso',
+                        'verificacion_jugador',
                         jugador_id=jugador.id
                     ) }}"
-                    class="btn btn-reverso"
+                    target="_blank"
+                    class="identificacion-card"
                 >
-                    🔄 Reverso
+
+                    <div class="identificacion-icono icono-verificacion">
+                        🌐
+                    </div>
+
+                    <strong>
+                        Verificación pública
+                    </strong>
+
+                    <span>
+                        Consulta pública de autenticidad
+                        mediante el registro digital.
+                    </span>
+
                 </a>
+
+
+            </div>
+
+        </div>
+
+
+        <!-- ========================================================
+             PIE
+        ========================================================= -->
+
+        <div class="ficha-footer">
+
+
+            <div class="footer-info">
+
+                <strong>
+                    Registro oficial
+                </strong>
+
+                <br>
+
+                Asociación de Fútbol Presidente Ríos
+                · Jugador #{{ jugador.id }}
+
+            </div>
+
+
+            <div class="footer-acciones">
 
 
                 <button
                     type="button"
                     onclick="window.print()"
-                    class="btn btn-primary"
+                    class="btn btn-dark"
                 >
                     🖨️ Imprimir ficha
                 </button>
 
+
+                <a
+                    href="{{ url_for(
+                        'credencial_completa',
+                        jugador_id=jugador.id
+                    ) }}"
+                    class="btn btn-success"
+                >
+                    🪪 Credencial completa
+                </a>
+
+
+                <a
+                    href="{{ url_for('index') }}"
+                    class="btn btn-light"
+                >
+                    ← Volver a jugadores
+                </a>
 
             </div>
 
@@ -651,5 +1420,160 @@
     </div>
 
 </div>
+
+
+<!-- ================================================================
+     MODAL CONFIRMACIÓN ELIMINACIÓN
+================================================================ -->
+
+<div
+    id="modalEliminar"
+    class="modal-overlay"
+    onclick="cerrarModalSiFondo(event)"
+>
+
+    <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tituloEliminar"
+    >
+
+        <div class="modal-icono">
+            ⚠️
+        </div>
+
+
+        <h3 id="tituloEliminar">
+            ¿Eliminar jugador?
+        </h3>
+
+
+        <p>
+
+            Estás a punto de eliminar el registro de
+
+            <strong>
+                {{ jugador.nombre_completo }}
+            </strong>
+
+            con RUT
+
+            <strong>
+                {{ jugador.rut }}
+            </strong>.
+
+            <br><br>
+
+            Esta acción eliminará definitivamente
+            el registro de la base de datos.
+
+        </p>
+
+
+        <div class="modal-acciones">
+
+            <button
+                type="button"
+                class="btn btn-light"
+                onclick="cerrarModalEliminar()"
+            >
+                Cancelar
+            </button>
+
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'eliminar_jugador',
+                    jugador_id=jugador.id
+                ) }}"
+                style="margin:0;"
+            >
+
+                <button
+                    type="submit"
+                    class="btn btn-danger"
+                >
+                    🗑️ Sí, eliminar
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    /* ============================================================
+       MODAL ELIMINAR
+    ============================================================ */
+
+    function abrirModalEliminar() {
+
+        const modal =
+            document.getElementById("modalEliminar");
+
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.add("activo");
+
+        document.body.style.overflow = "hidden";
+    }
+
+
+    function cerrarModalEliminar() {
+
+        const modal =
+            document.getElementById("modalEliminar");
+
+        if (!modal) {
+            return;
+        }
+
+        modal.classList.remove("activo");
+
+        document.body.style.overflow = "";
+    }
+
+
+    function cerrarModalSiFondo(event) {
+
+        if (
+            event.target &&
+            event.target.id === "modalEliminar"
+        ) {
+
+            cerrarModalEliminar();
+
+        }
+
+    }
+
+
+    /* ============================================================
+       ESC PARA CERRAR MODAL
+    ============================================================ */
+
+    document.addEventListener(
+        "keydown",
+        function(event) {
+
+            if (event.key === "Escape") {
+
+                cerrarModalEliminar();
+
+            }
+
+        }
+    );
+
+</script>
 
 {% endblock %}
