@@ -38,6 +38,7 @@
             padding: 20px;
             display: flex;
             justify-content: center;
+            align-items: center;
             gap: 10px;
             flex-wrap: wrap;
         }
@@ -51,7 +52,6 @@
             padding: 12px 20px;
 
             border-radius: 10px;
-
             border: none;
 
             text-decoration: none;
@@ -59,7 +59,6 @@
             cursor: pointer;
 
             font-size: 14px;
-
             font-weight: 800;
         }
 
@@ -68,19 +67,26 @@
             color: white;
         }
 
+        .boton-imprimir:hover {
+            background: #1d4ed8;
+        }
+
         .boton-volver {
             background: #e5e7eb;
             color: #111827;
         }
 
+        .boton-volver:hover {
+            background: #d1d5db;
+        }
+
 
         /* ==================================================
-           ÁREA DE IMPRESIÓN
+           ÁREA DE CREDENCIALES
         ================================================== */
 
         .hoja {
             width: 100%;
-            min-height: calc(100vh - 80px);
 
             display: flex;
             flex-direction: column;
@@ -94,9 +100,9 @@
 
 
         /* ==================================================
-           CREDENCIAL
-           TAMAÑO CR80
-           85.60 x 53.98 mm
+           TAMAÑO EXACTO PVC CR80
+           
+           85.60 mm x 53.98 mm
         ================================================== */
 
         .credencial {
@@ -104,18 +110,22 @@
             width: 85.60mm;
             height: 53.98mm;
 
+            min-width: 85.60mm;
+            min-height: 53.98mm;
+
+            max-width: 85.60mm;
+            max-height: 53.98mm;
+
             position: relative;
 
             overflow: hidden;
 
-            border-radius: 3.2mm;
-
-            background: white;
-
-            box-shadow:
-                0 8px 25px rgba(0,0,0,.20);
+            border-radius: 3.18mm;
 
             flex-shrink: 0;
+
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
         }
 
 
@@ -145,15 +155,15 @@
 
             position: absolute;
 
-            width: 35mm;
-            height: 35mm;
+            width: 38mm;
+            height: 38mm;
 
             border-radius: 50%;
 
             background: rgba(255,255,255,.07);
 
-            right: -10mm;
-            top: -12mm;
+            right: -12mm;
+            top: -14mm;
         }
 
 
@@ -163,22 +173,26 @@
 
             position: absolute;
 
-            width: 25mm;
-            height: 25mm;
+            width: 27mm;
+            height: 27mm;
 
             border-radius: 50%;
 
             background: rgba(255,255,255,.05);
 
-            right: 12mm;
-            bottom: -16mm;
+            right: 10mm;
+            bottom: -17mm;
         }
 
+
+        /* ==================================================
+           ENCABEZADO
+        ================================================== */
 
         .encabezado-credencial {
 
             position: relative;
-            z-index: 2;
+            z-index: 5;
 
             display: flex;
 
@@ -186,7 +200,9 @@
 
             gap: 2.5mm;
 
-            margin-bottom: 3mm;
+            height: 9mm;
+
+            margin-bottom: 2.5mm;
         }
 
 
@@ -194,6 +210,8 @@
 
             width: 9mm;
             height: 9mm;
+
+            min-width: 9mm;
 
             border-radius: 50%;
 
@@ -206,7 +224,7 @@
 
             color: #1e3a8a;
 
-            font-size: 3.8mm;
+            font-size: 3.4mm;
 
             font-weight: 900;
         }
@@ -214,7 +232,7 @@
 
         .nombre-asociacion {
 
-            font-size: 3.2mm;
+            font-size: 3.15mm;
 
             font-weight: 900;
 
@@ -226,25 +244,29 @@
 
         .subtitulo-credencial {
 
-            font-size: 2.1mm;
+            font-size: 2mm;
 
             opacity: .85;
 
-            margin-top: .8mm;
+            margin-top: .7mm;
         }
 
+
+        /* ==================================================
+           CONTENIDO FRENTE
+        ================================================== */
 
         .contenido-frente {
 
             position: relative;
 
-            z-index: 2;
+            z-index: 5;
 
             display: flex;
 
-            gap: 4mm;
+            gap: 3.5mm;
 
-            height: 37mm;
+            height: 36mm;
         }
 
 
@@ -254,29 +276,31 @@
 
         .foto-frente {
 
-            width: 25mm;
-            height: 31mm;
+            width: 24mm;
+            height: 30mm;
+
+            min-width: 24mm;
 
             object-fit: cover;
 
-            border-radius: 2mm;
+            border-radius: 1.8mm;
 
-            border: .6mm solid rgba(255,255,255,.85);
+            border: .55mm solid rgba(255,255,255,.9);
 
             background: #e5e7eb;
-
-            flex-shrink: 0;
         }
 
 
         .foto-sin {
 
-            width: 25mm;
-            height: 31mm;
+            width: 24mm;
+            height: 30mm;
 
-            border-radius: 2mm;
+            min-width: 24mm;
 
-            border: .6mm solid rgba(255,255,255,.7);
+            border-radius: 1.8mm;
+
+            border: .55mm solid rgba(255,255,255,.75);
 
             background: rgba(255,255,255,.12);
 
@@ -287,13 +311,13 @@
 
             text-align: center;
 
-            font-size: 2.2mm;
+            color: white;
 
-            font-weight: 700;
+            font-size: 2.1mm;
+
+            font-weight: 800;
 
             padding: 2mm;
-
-            flex-shrink: 0;
         }
 
 
@@ -317,7 +341,7 @@
 
         .nombre-jugador {
 
-            font-size: 5mm;
+            font-size: 4.7mm;
 
             line-height: 1.05;
 
@@ -325,7 +349,7 @@
 
             text-transform: uppercase;
 
-            margin-bottom: 2.5mm;
+            margin-bottom: 2.3mm;
 
             word-break: break-word;
         }
@@ -333,31 +357,37 @@
 
         .dato {
 
-            margin-bottom: 1.6mm;
+            margin-bottom: 1.5mm;
+
+            min-width: 0;
         }
 
 
         .dato-label {
 
-            font-size: 1.8mm;
+            font-size: 1.75mm;
 
             text-transform: uppercase;
 
-            opacity: .7;
+            letter-spacing: .2mm;
+
+            opacity: .72;
 
             font-weight: 800;
 
-            margin-bottom: .4mm;
+            margin-bottom: .35mm;
         }
 
 
         .dato-valor {
 
-            font-size: 2.8mm;
+            font-size: 2.7mm;
 
             font-weight: 800;
 
             line-height: 1.1;
+
+            word-break: break-word;
         }
 
 
@@ -370,53 +400,46 @@
             display: inline-flex;
 
             align-items: center;
-
             justify-content: center;
 
-            padding: 1.4mm 2.5mm;
+            padding: 1.25mm 2.3mm;
 
-            margin-top: 1mm;
+            margin-top: .7mm;
 
             border-radius: 999px;
 
-            font-size: 2.1mm;
+            font-size: 2mm;
 
             font-weight: 900;
 
             width: fit-content;
 
             text-transform: uppercase;
+
+            white-space: nowrap;
         }
 
 
         .estado-vigente {
-
             background: #dcfce7;
-
             color: #166534;
         }
 
 
         .estado-pendiente {
-
             background: #fef3c7;
-
             color: #92400e;
         }
 
 
         .estado-suspendido {
-
             background: #fee2e2;
-
             color: #991b1b;
         }
 
 
         .estado-inhabilitado {
-
             background: #e5e7eb;
-
             color: #1f2937;
         }
 
@@ -429,17 +452,16 @@
 
             position: absolute;
 
-            bottom: 2.5mm;
-
+            bottom: 2.2mm;
             right: 4mm;
 
-            z-index: 3;
+            z-index: 10;
 
-            font-size: 1.8mm;
+            font-size: 1.7mm;
 
             font-weight: 700;
 
-            opacity: .75;
+            opacity: .7;
         }
 
 
@@ -451,15 +473,11 @@
 
             background: white;
 
-            border: .4mm solid #d1d5db;
-
-            padding: 4mm;
-
             color: #111827;
 
-            display: flex;
+            border: .3mm solid #d1d5db;
 
-            flex-direction: column;
+            padding: 4mm;
         }
 
 
@@ -473,7 +491,7 @@
 
         .reverso-titulo {
 
-            font-size: 3.3mm;
+            font-size: 3.2mm;
 
             font-weight: 900;
 
@@ -485,7 +503,7 @@
 
         .reverso-subtitulo {
 
-            font-size: 1.9mm;
+            font-size: 1.85mm;
 
             color: #6b7280;
 
@@ -495,15 +513,15 @@
 
         .reverso-contenido {
 
-            flex: 1;
+            height: 34mm;
 
             display: flex;
 
             align-items: center;
 
-            justify-content: space-between;
+            justify-content: center;
 
-            gap: 4mm;
+            gap: 5mm;
         }
 
 
@@ -516,17 +534,18 @@
             width: 29mm;
             height: 29mm;
 
+            min-width: 29mm;
+
             display: flex;
 
             align-items: center;
-
             justify-content: center;
-
-            flex-shrink: 0;
         }
 
 
         .qr-imagen {
+
+            display: block;
 
             width: 29mm;
             height: 29mm;
@@ -535,11 +554,17 @@
         }
 
 
+        /* ==================================================
+           TEXTO REVERSO
+        ================================================== */
+
         .texto-reverso {
 
             flex: 1;
 
-            font-size: 2.1mm;
+            max-width: 40mm;
+
+            font-size: 2mm;
 
             line-height: 1.35;
 
@@ -550,6 +575,8 @@
         .texto-reverso strong {
 
             color: #111827;
+
+            font-size: 2.2mm;
         }
 
 
@@ -557,7 +584,7 @@
 
             margin-top: 2mm;
 
-            padding: 2mm;
+            padding: 1.8mm;
 
             border-radius: 1.5mm;
 
@@ -567,25 +594,56 @@
 
             color: #1e40af;
 
-            font-size: 1.9mm;
+            font-size: 1.8mm;
+
+            line-height: 1.3;
 
             font-weight: 700;
         }
 
 
+        /* ==================================================
+           PIE REVERSO
+        ================================================== */
+
         .pie-reverso {
+
+            position: absolute;
+
+            left: 4mm;
+            right: 4mm;
+
+            bottom: 2.2mm;
 
             text-align: center;
 
-            border-top: .3mm solid #e5e7eb;
+            border-top: .25mm solid #e5e7eb;
 
-            padding-top: 1.8mm;
+            padding-top: 1.4mm;
 
-            margin-top: 1.5mm;
-
-            font-size: 1.7mm;
+            font-size: 1.6mm;
 
             color: #6b7280;
+
+            line-height: 1.2;
+        }
+
+
+        /* ==================================================
+           PANTALLA
+        ================================================== */
+
+        @media screen {
+
+            .credencial:hover {
+
+                transform: translateY(-2px);
+
+                box-shadow:
+                    0 12px 30px rgba(0,0,0,.25);
+
+                transition: .2s ease;
+            }
         }
 
 
@@ -597,7 +655,7 @@
 
             @page {
 
-                size: auto;
+                size: 85.60mm 53.98mm;
 
                 margin: 0;
             }
@@ -606,11 +664,13 @@
             html,
             body {
 
-                background: white !important;
+                width: 85.60mm;
+                height: auto;
 
                 margin: 0 !important;
-
                 padding: 0 !important;
+
+                background: white !important;
             }
 
 
@@ -622,40 +682,88 @@
 
             .hoja {
 
-                min-height: auto;
+                width: 85.60mm;
 
-                padding: 0;
+                display: block;
 
                 margin: 0;
+                padding: 0;
 
-                gap: 8mm;
+                background: white;
             }
 
 
             .credencial {
 
+                width: 85.60mm !important;
+                height: 53.98mm !important;
+
+                min-width: 85.60mm !important;
+                min-height: 53.98mm !important;
+
+                max-width: 85.60mm !important;
+                max-height: 53.98mm !important;
+
+                margin: 0 !important;
+
+                border-radius: 0 !important;
+
                 box-shadow: none !important;
+
+                page-break-after: always;
+
+                break-after: page;
 
                 print-color-adjust: exact;
 
                 -webkit-print-color-adjust: exact;
             }
+
+
+            .credencial:last-child {
+
+                page-break-after: auto;
+
+                break-after: auto;
+            }
+
+
+            .frente {
+
+                border: none !important;
+            }
+
+
+            .reverso {
+
+                border: none !important;
+            }
         }
 
 
         /* ==================================================
-           PANTALLAS PEQUEÑAS
+           MÓVIL
         ================================================== */
 
         @media screen and (max-width: 500px) {
 
-            .credencial {
+            .hoja {
 
-                transform: scale(.85);
+                padding: 10px;
+
+                gap: 20px;
+
+                overflow-x: hidden;
+            }
+
+
+            .credencial {
 
                 transform-origin: top center;
 
-                margin-bottom: -8mm;
+                transform: scale(.90);
+
+                margin-bottom: -5mm;
             }
 
         }
@@ -669,7 +777,7 @@
 
 
 <!-- ======================================================
-     CONTROLES
+     BOTONES
 ======================================================= -->
 
 <div class="controles">
@@ -690,7 +798,7 @@
         class="boton boton-imprimir"
         onclick="window.print()"
     >
-        🖨️ Imprimir credencial completa
+        🖨️ Imprimir credencial
     </button>
 
 </div>
@@ -735,8 +843,6 @@
         <div class="contenido-frente">
 
 
-            <!-- FOTO -->
-
             {% if jugador.foto %}
 
                 <img
@@ -751,14 +857,14 @@
             {% else %}
 
                 <div class="foto-sin">
+
                     SIN<br>
                     FOTOGRAFÍA
+
                 </div>
 
             {% endif %}
 
-
-            <!-- DATOS -->
 
             <div class="datos-frente">
 
@@ -786,7 +892,7 @@
                 <div class="dato">
 
                     <div class="dato-label">
-                        Club
+                        CLUB
                     </div>
 
                     <div class="dato-valor">
@@ -799,7 +905,7 @@
                 <div class="dato">
 
                     <div class="dato-label">
-                        Serie
+                        SERIE
                     </div>
 
                     <div class="dato-valor">
@@ -809,41 +915,38 @@
                 </div>
 
 
-                <div>
+                {% if jugador.estado == "Vigente" %}
 
-                    {% if jugador.estado == "Vigente" %}
+                    <span class="estado estado-vigente">
+                        🟢 VIGENTE
+                    </span>
 
-                        <span class="estado estado-vigente">
-                            🟢 VIGENTE
-                        </span>
+                {% elif jugador.estado == "Pendiente" %}
 
-                    {% elif jugador.estado == "Pendiente" %}
+                    <span class="estado estado-pendiente">
+                        🟡 PENDIENTE
+                    </span>
 
-                        <span class="estado estado-pendiente">
-                            🟡 PENDIENTE
-                        </span>
+                {% elif jugador.estado == "Suspendido" %}
 
-                    {% elif jugador.estado == "Suspendido" %}
+                    <span class="estado estado-suspendido">
+                        🔴 SUSPENDIDO
+                    </span>
 
-                        <span class="estado estado-suspendido">
-                            🔴 SUSPENDIDO
-                        </span>
+                {% elif jugador.estado == "Inhabilitado" %}
 
-                    {% elif jugador.estado == "Inhabilitado" %}
+                    <span class="estado estado-inhabilitado">
+                        ⚫ INHABILITADO
+                    </span>
 
-                        <span class="estado estado-inhabilitado">
-                            ⚫ INHABILITADO
-                        </span>
+                {% else %}
 
-                    {% else %}
+                    <span class="estado estado-pendiente">
+                        🟡 PENDIENTE
+                    </span>
 
-                        <span class="estado estado-pendiente">
-                            🟡 PENDIENTE
-                        </span>
+                {% endif %}
 
-                    {% endif %}
-
-                </div>
 
             </div>
 
@@ -870,11 +973,16 @@
         <div class="reverso-header">
 
             <div class="reverso-titulo">
+
                 Asociación Presidente Ríos
+
             </div>
 
+
             <div class="reverso-subtitulo">
+
                 Sistema oficial de identificación de jugadores
+
             </div>
 
         </div>
@@ -882,8 +990,6 @@
 
         <div class="reverso-contenido">
 
-
-            <!-- QR -->
 
             <div class="qr-contenedor">
 
@@ -899,12 +1005,10 @@
             </div>
 
 
-            <!-- INFORMACIÓN -->
-
             <div class="texto-reverso">
 
                 <strong>
-                    Verificación de credencial
+                    VERIFICACIÓN DE CREDENCIAL
                 </strong>
 
                 <br><br>
@@ -915,7 +1019,9 @@
 
                 <div class="verificacion">
 
-                    🔳 Código QR oficial<br>
+                    🔳 Código QR oficial
+
+                    <br>
 
                     Consulta digital de identidad,
                     club, serie y estado del jugador.
@@ -923,6 +1029,7 @@
                 </div>
 
             </div>
+
 
         </div>
 
