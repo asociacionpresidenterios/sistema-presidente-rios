@@ -1,0 +1,437 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+
+    .config-pagina {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 30px 15px 60px;
+    }
+
+    .config-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 30px;
+    }
+
+    .config-header h1 {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 900;
+        color: #111827;
+    }
+
+    .config-header p {
+        margin: 7px 0 0;
+        color: #6b7280;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 11px 17px;
+        border-radius: 10px;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        font-weight: 800;
+    }
+
+    .btn-primary {
+        background: #f97316;
+        color: white;
+    }
+
+    .btn-secondary {
+        background: #e5e7eb;
+        color: #111827;
+    }
+
+    .config-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+    }
+
+    .config-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        padding: 25px;
+        box-shadow: 0 8px 25px rgba(0,0,0,.06);
+    }
+
+    .config-card h2 {
+        margin: 0 0 5px;
+        font-size: 22px;
+        color: #111827;
+    }
+
+    .config-card > p {
+        margin: 0 0 20px;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    .form-agregar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 25px;
+    }
+
+    .form-agregar input {
+        flex: 1;
+        min-width: 0;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
+        font-size: 15px;
+        outline: none;
+    }
+
+    .form-agregar input:focus {
+        border-color: #f97316;
+        box-shadow: 0 0 0 3px rgba(249,115,22,.12);
+    }
+
+    .lista {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 13px 15px;
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 11px;
+    }
+
+    .item-nombre {
+        font-weight: 800;
+        color: #111827;
+    }
+
+    .item-estado {
+        font-size: 11px;
+        font-weight: 900;
+        padding: 5px 9px;
+        border-radius: 999px;
+    }
+
+    .activo {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .inactivo {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .btn-mini {
+        padding: 7px 10px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .btn-desactivar {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .btn-activar {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .sin-registros {
+        text-align: center;
+        padding: 25px;
+        color: #9ca3af;
+        background: #f9fafb;
+        border-radius: 10px;
+    }
+
+    @media (max-width: 750px) {
+
+        .config-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .form-agregar {
+            flex-direction: column;
+        }
+
+    }
+
+</style>
+
+
+<div class="config-pagina">
+
+    <div class="config-header">
+
+        <div>
+
+            <h1>⚙️ Configuración</h1>
+
+            <p>
+                Administración de clubes y series de la Asociación Presidente Ríos
+            </p>
+
+        </div>
+
+        <a
+            href="{{ url_for('index') }}"
+            class="btn btn-secondary"
+        >
+            ← Volver
+        </a>
+
+    </div>
+
+
+    <div class="config-grid">
+
+
+        <!-- ==================================================
+             CLUBES
+        =================================================== -->
+
+        <div class="config-card">
+
+            <h2>⚽ Clubes</h2>
+
+            <p>
+                Administra los clubes disponibles para registrar jugadores.
+            </p>
+
+
+            <form
+                action="{{ url_for('nuevo_club') }}"
+                method="POST"
+                class="form-agregar"
+            >
+
+                <input
+                    type="text"
+                    name="nombre"
+                    placeholder="Nombre del nuevo club"
+                    maxlength="120"
+                    required
+                >
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    + Agregar
+                </button>
+
+            </form>
+
+
+            <div class="lista">
+
+                {% for club in clubes %}
+
+                    <div class="item">
+
+                        <div>
+
+                            <div class="item-nombre">
+                                {{ club.nombre }}
+                            </div>
+
+                            {% if club.activo %}
+
+                                <span class="item-estado activo">
+                                    ACTIVO
+                                </span>
+
+                            {% else %}
+
+                                <span class="item-estado inactivo">
+                                    INACTIVO
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <form
+                            action="{{ url_for(
+                                'cambiar_estado_club',
+                                club_id=club.id
+                            ) }}"
+                            method="POST"
+                        >
+
+                            {% if club.activo %}
+
+                                <button
+                                    type="submit"
+                                    class="btn-mini btn-desactivar"
+                                >
+                                    Desactivar
+                                </button>
+
+                            {% else %}
+
+                                <button
+                                    type="submit"
+                                    class="btn-mini btn-activar"
+                                >
+                                    Activar
+                                </button>
+
+                            {% endif %}
+
+                        </form>
+
+                    </div>
+
+                {% else %}
+
+                    <div class="sin-registros">
+                        No hay clubes registrados.
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <!-- ==================================================
+             SERIES
+        =================================================== -->
+
+        <div class="config-card">
+
+            <h2>🏆 Series</h2>
+
+            <p>
+                Administra las series disponibles para los jugadores.
+            </p>
+
+
+            <form
+                action="{{ url_for('nueva_serie') }}"
+                method="POST"
+                class="form-agregar"
+            >
+
+                <input
+                    type="text"
+                    name="nombre"
+                    placeholder="Nombre de la nueva serie"
+                    maxlength="80"
+                    required
+                >
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    + Agregar
+                </button>
+
+            </form>
+
+
+            <div class="lista">
+
+                {% for serie in series %}
+
+                    <div class="item">
+
+                        <div>
+
+                            <div class="item-nombre">
+                                {{ serie.nombre }}
+                            </div>
+
+                            {% if serie.activo %}
+
+                                <span class="item-estado activo">
+                                    ACTIVA
+                                </span>
+
+                            {% else %}
+
+                                <span class="item-estado inactivo">
+                                    INACTIVA
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <form
+                            action="{{ url_for(
+                                'cambiar_estado_serie',
+                                serie_id=serie.id
+                            ) }}"
+                            method="POST"
+                        >
+
+                            {% if serie.activo %}
+
+                                <button
+                                    type="submit"
+                                    class="btn-mini btn-desactivar"
+                                >
+                                    Desactivar
+                                </button>
+
+                            {% else %}
+
+                                <button
+                                    type="submit"
+                                    class="btn-mini btn-activar"
+                                >
+                                    Activar
+                                </button>
+
+                            {% endif %}
+
+                        </form>
+
+                    </div>
+
+                {% else %}
+
+                    <div class="sin-registros">
+                        No hay series registradas.
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
