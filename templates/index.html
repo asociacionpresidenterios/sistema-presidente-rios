@@ -2,523 +2,966 @@
 
 {% block content %}
 
-<div class="card">
+<style>
 
-    <!-- ================================================== -->
-    <!-- ENCABEZADO -->
-    <!-- ================================================== -->
+    * {
+        box-sizing: border-box;
+    }
 
-    <div style="
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        gap:15px;
-        flex-wrap:wrap;
-        margin-bottom:20px;
-    ">
+    .jugadores-page {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 25px;
+    }
 
-        <div>
+    /* ==================================================
+       CABECERA
+    ================================================== */
 
-            <h2 style="margin:0;">
-                👥 Registro de Jugadores
-            </h2>
+    .pagina-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 25px;
+    }
 
-            <p style="
-                margin:6px 0 0;
-                color:#6b7280;
-            ">
-                Gestión y consulta de jugadores
+    .titulo h1 {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 900;
+        color: #111827;
+    }
+
+    .titulo p {
+        margin: 7px 0 0;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    .acciones-header {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 11px 17px;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        text-decoration: none;
+        cursor: pointer;
+        font-weight: 800;
+        font-size: 14px;
+        transition: .2s ease;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(0,0,0,.08);
+    }
+
+    .btn-primary {
+        background: #f97316;
+        color: white;
+        border-color: #f97316;
+    }
+
+    .btn-dark {
+        background: #111827;
+        color: white;
+        border-color: #111827;
+    }
+
+    .btn-light {
+        background: white;
+        color: #111827;
+    }
+
+    /* ==================================================
+       ESTADÍSTICAS
+    ================================================== */
+
+    .resumen-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 22px;
+    }
+
+    .resumen-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 15px;
+        padding: 18px;
+        box-shadow: 0 5px 18px rgba(15,23,42,.05);
+    }
+
+    .resumen-label {
+        color: #6b7280;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+
+    .resumen-numero {
+        font-size: 27px;
+        font-weight: 900;
+        color: #111827;
+    }
+
+    /* ==================================================
+       BUSCADOR
+    ================================================== */
+
+    .buscador-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        padding: 20px;
+        margin-bottom: 22px;
+        box-shadow: 0 5px 18px rgba(15,23,42,.05);
+    }
+
+    .buscador-form {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+    }
+
+    .buscador-input {
+        width: 100%;
+        height: 46px;
+        padding: 0 15px;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .buscador-input:focus {
+        border-color: #f97316;
+        box-shadow: 0 0 0 3px rgba(249,115,22,.10);
+    }
+
+    .btn-buscar {
+        height: 46px;
+        padding: 0 22px;
+        border: none;
+        border-radius: 10px;
+        background: #111827;
+        color: white;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .busqueda-info {
+        margin-top: 10px;
+        color: #6b7280;
+        font-size: 13px;
+    }
+
+    /* ==================================================
+       TABLA
+    ================================================== */
+
+    .tabla-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 5px 18px rgba(15,23,42,.05);
+    }
+
+    .tabla-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        padding: 20px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .tabla-header h2 {
+        margin: 0;
+        font-size: 19px;
+        font-weight: 900;
+        color: #111827;
+    }
+
+    .contador {
+        color: #6b7280;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .tabla-wrapper {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 950px;
+    }
+
+    thead {
+        background: #f8fafc;
+    }
+
+    th {
+        padding: 14px 15px;
+        text-align: left;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+        border-bottom: 1px solid #e5e7eb;
+        white-space: nowrap;
+    }
+
+    td {
+        padding: 14px 15px;
+        border-bottom: 1px solid #f1f5f9;
+        color: #334155;
+        font-size: 14px;
+        vertical-align: middle;
+    }
+
+    tbody tr {
+        transition: .15s ease;
+    }
+
+    tbody tr:hover {
+        background: #fafafa;
+    }
+
+    tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* ==================================================
+       JUGADOR
+    ================================================== */
+
+    .jugador-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 230px;
+    }
+
+    .avatar {
+        width: 43px;
+        height: 43px;
+        border-radius: 10px;
+        object-fit: cover;
+        border: 1px solid #e5e7eb;
+        background: #f1f5f9;
+        flex-shrink: 0;
+    }
+
+    .avatar-vacio {
+        width: 43px;
+        height: 43px;
+        border-radius: 10px;
+        background: #f1f5f9;
+        border: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+
+    .jugador-nombre {
+        font-weight: 900;
+        color: #111827;
+    }
+
+    .jugador-rut {
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    /* ==================================================
+       BADGES
+    ================================================== */
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .badge-vigente {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .badge-pendiente {
+        background: #fef9c3;
+        color: #854d0e;
+    }
+
+    .badge-suspendido {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .badge-inhabilitado {
+        background: #e5e7eb;
+        color: #111827;
+    }
+
+    .badge-serie {
+        background: #eef2ff;
+        color: #3730a3;
+    }
+
+    .badge-club {
+        background: #f1f5f9;
+        color: #334155;
+    }
+
+    /* ==================================================
+       ACCIONES
+    ================================================== */
+
+    .acciones {
+        display: flex;
+        gap: 7px;
+        white-space: nowrap;
+    }
+
+    .accion {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        text-decoration: none;
+        border: 1px solid #e5e7eb;
+        background: white;
+        font-size: 15px;
+        transition: .2s ease;
+    }
+
+    .accion:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0,0,0,.08);
+    }
+
+    .accion-ver {
+        color: #2563eb;
+    }
+
+    .accion-editar {
+        color: #d97706;
+    }
+
+    .accion-qr {
+        color: #7c3aed;
+    }
+
+    /* ==================================================
+       SIN RESULTADOS
+    ================================================== */
+
+    .sin-resultados {
+        padding: 60px 20px;
+        text-align: center;
+    }
+
+    .sin-resultados-icono {
+        font-size: 45px;
+        margin-bottom: 10px;
+    }
+
+    .sin-resultados h3 {
+        margin: 0 0 7px;
+        font-size: 19px;
+        color: #111827;
+    }
+
+    .sin-resultados p {
+        margin: 0;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    /* ==================================================
+       RESPONSIVE
+    ================================================== */
+
+    @media (max-width: 900px) {
+
+        .resumen-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+    }
+
+    @media (max-width: 650px) {
+
+        .jugadores-page {
+            padding: 15px;
+        }
+
+        .titulo h1 {
+            font-size: 26px;
+        }
+
+        .acciones-header {
+            width: 100%;
+        }
+
+        .acciones-header .btn {
+            flex: 1;
+        }
+
+        .resumen-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .buscador-form {
+            grid-template-columns: 1fr;
+        }
+
+        .btn-buscar {
+            width: 100%;
+        }
+
+        .tabla-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+    }
+
+</style>
+
+
+<div class="jugadores-page">
+
+
+    <!-- ==================================================
+         CABECERA
+    ================================================== -->
+
+    <div class="pagina-header">
+
+        <div class="titulo">
+
+            <h1>
+                👥 Jugadores
+            </h1>
+
+            <p>
+                Registro oficial de jugadores
+                — Asociación Presidente Ríos
             </p>
 
         </div>
 
 
-        <a
-            href="{{ url_for('nuevo_jugador') }}"
-            class="btn"
-        >
-            ➕ Nuevo jugador
-        </a>
+        <div class="acciones-header">
+
+            <a
+                href="{{ url_for('dashboard') }}"
+                class="btn btn-light"
+            >
+                📊 Dashboard
+            </a>
+
+            <a
+                href="{{ url_for('configuracion') }}"
+                class="btn btn-light"
+            >
+                ⚙️ Configuración
+            </a>
+
+            <a
+                href="{{ url_for('nuevo_jugador') }}"
+                class="btn btn-primary"
+            >
+                ➕ Nuevo jugador
+            </a>
+
+        </div>
 
     </div>
 
 
-    <!-- ================================================== -->
-    <!-- ESTADÍSTICAS -->
-    <!-- ================================================== -->
+    <!-- ==================================================
+         RESUMEN
+    ================================================== -->
 
-    <div style="
-        display:grid;
-        grid-template-columns:
-            repeat(auto-fit,minmax(180px,1fr));
-        gap:15px;
-        margin-bottom:20px;
-    ">
+    <div class="resumen-grid">
 
-        <div style="
-            padding:18px;
-            border-radius:14px;
-            background:#f8fafc;
-            border:1px solid #e5e7eb;
-        ">
+        <div class="resumen-card">
 
-            <div style="
-                font-size:13px;
-                color:#6b7280;
-            ">
-                JUGADORES REGISTRADOS
+            <div class="resumen-label">
+                Jugadores encontrados
             </div>
 
-            <div style="
-                font-size:30px;
-                font-weight:800;
-                margin-top:5px;
-            ">
+            <div class="resumen-numero">
                 {{ jugadores|length }}
             </div>
 
         </div>
 
+
+        <div class="resumen-card">
+
+            <div class="resumen-label">
+                Vigentes
+            </div>
+
+            <div class="resumen-numero">
+                {{ jugadores|selectattr("estado", "equalto", "Vigente")|list|length }}
+            </div>
+
+        </div>
+
+
+        <div class="resumen-card">
+
+            <div class="resumen-label">
+                Pendientes
+            </div>
+
+            <div class="resumen-numero">
+                {{ jugadores|selectattr("estado", "equalto", "Pendiente")|list|length }}
+            </div>
+
+        </div>
+
+
+        <div class="resumen-card">
+
+            <div class="resumen-label">
+                Suspendidos / Inhabilitados
+            </div>
+
+            <div class="resumen-numero">
+                {{
+                    jugadores
+                    |selectattr("estado", "in", ["Suspendido", "Inhabilitado"])
+                    |list
+                    |length
+                }}
+            </div>
+
+        </div>
+
     </div>
 
 
-    <!-- ================================================== -->
-    <!-- BUSCADOR -->
-    <!-- ================================================== -->
+    <!-- ==================================================
+         BUSCADOR
+    ================================================== -->
 
-    <form
-        method="get"
-        action="{{ url_for('index') }}"
-        style="margin-bottom:20px;"
-    >
+    <div class="buscador-card">
 
-        <div style="
-            display:flex;
-            gap:10px;
-            flex-wrap:wrap;
-        ">
+        <form
+            action="{{ url_for('index') }}"
+            method="GET"
+            class="buscador-form"
+        >
 
             <input
                 type="text"
                 name="q"
-                value="{{ q }}"
+                value="{{ q or '' }}"
+                class="buscador-input"
                 placeholder="🔎 Buscar por RUT, nombre o club..."
-                style="
-                    flex:1;
-                    min-width:240px;
-                "
+                autocomplete="off"
             >
 
             <button
                 type="submit"
-                class="btn"
+                class="btn-buscar"
             >
-                🔎 Buscar
+                Buscar
             </button>
 
-            {% if q %}
+        </form>
+
+
+        {% if q %}
+
+            <div class="busqueda-info">
+
+                Resultados para:
+                <strong>
+                    "{{ q }}"
+                </strong>
+
+                — {{ jugadores|length }} jugador(es).
 
                 <a
                     href="{{ url_for('index') }}"
-                    class="btn secondary"
+                    style="margin-left:8px;color:#2563eb;font-weight:700;text-decoration:none;"
                 >
-                    ✕ Limpiar
+                    Limpiar búsqueda
                 </a>
 
-            {% endif %}
+            </div>
+
+        {% else %}
+
+            <div class="busqueda-info">
+                Puedes buscar por RUT, nombre completo o club.
+            </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- ==================================================
+         TABLA
+    ================================================== -->
+
+    <div class="tabla-card">
+
+        <div class="tabla-header">
+
+            <h2>
+                Registro de jugadores
+            </h2>
+
+            <div class="contador">
+
+                {{ jugadores|length }}
+                registro(s)
+
+            </div>
 
         </div>
 
-    </form>
 
+        {% if jugadores %}
 
-    <!-- ================================================== -->
-    <!-- RESULTADO DE BÚSQUEDA -->
-    <!-- ================================================== -->
+            <div class="tabla-wrapper">
 
-    {% if q %}
+                <table>
 
-        <div style="
-            margin-bottom:15px;
-            padding:12px 15px;
-            background:#eff6ff;
-            border-radius:10px;
-            color:#1e40af;
-        ">
+                    <thead>
 
-            Resultados para:
+                        <tr>
 
-            <strong>
-                "{{ q }}"
-            </strong>
+                            <th>
+                                Jugador
+                            </th>
 
-            · {{ jugadores|length }} jugador(es)
+                            <th>
+                                Fecha nacimiento
+                            </th>
 
-        </div>
+                            <th>
+                                Serie
+                            </th>
 
-    {% endif %}
+                            <th>
+                                Club
+                            </th>
 
+                            <th>
+                                Estado
+                            </th>
 
-    <!-- ================================================== -->
-    <!-- TABLA -->
-    <!-- ================================================== -->
+                            <th>
+                                Foto
+                            </th>
 
-    {% if jugadores %}
-
-        <div style="
-            overflow-x:auto;
-        ">
-
-            <table style="
-                width:100%;
-                border-collapse:collapse;
-            ">
-
-                <thead>
-
-                    <tr style="
-                        border-bottom:2px solid #e5e7eb;
-                        text-align:left;
-                    ">
-
-                        <th style="padding:12px;">
-                            Foto
-                        </th>
-
-                        <th style="padding:12px;">
-                            RUT
-                        </th>
-
-                        <th style="padding:12px;">
-                            Nombre
-                        </th>
-
-                        <th style="padding:12px;">
-                            Fecha nacimiento
-                        </th>
-
-                        <th style="padding:12px;">
-                            Serie
-                        </th>
-
-                        <th style="padding:12px;">
-                            Club
-                        </th>
-
-                        <th style="padding:12px;">
-                            Acciones
-                        </th>
-
-                    </tr>
-
-                </thead>
-
-
-                <tbody>
-
-                    {% for jugador in jugadores %}
-
-                        <tr style="
-                            border-bottom:1px solid #e5e7eb;
-                        ">
-
-                            <!-- FOTO -->
-
-                            <td style="padding:12px;">
-
-                                {% if jugador.foto %}
-
-                                    <img
-                                        src="{{ url_for(
-                                            'foto_jugador',
-                                            jugador_id=jugador.id
-                                        ) }}"
-                                        alt="Foto"
-                                        style="
-                                            width:52px;
-                                            height:52px;
-                                            object-fit:cover;
-                                            border-radius:50%;
-                                            border:3px solid white;
-                                            box-shadow:
-                                                0 2px 8px
-                                                rgba(0,0,0,.15);
-                                        "
-                                    >
-
-                                {% else %}
-
-                                    <div style="
-                                        width:52px;
-                                        height:52px;
-                                        border-radius:50%;
-                                        background:#e5e7eb;
-                                        display:flex;
-                                        align-items:center;
-                                        justify-content:center;
-                                        font-size:23px;
-                                    ">
-                                        👤
-                                    </div>
-
-                                {% endif %}
-
-                            </td>
-
-
-                            <!-- RUT -->
-
-                            <td style="padding:12px;">
-
-                                <strong>
-                                    {{ jugador.rut }}
-                                </strong>
-
-                            </td>
-
-
-                            <!-- NOMBRE -->
-
-                            <td style="padding:12px;">
-
-                                <strong>
-                                    {{ jugador.nombre_completo }}
-                                </strong>
-
-                            </td>
-
-
-                            <!-- FECHA -->
-
-                            <td style="padding:12px;">
-
-                                {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
-
-                            </td>
-
-
-                            <!-- SERIE -->
-
-                            <td style="padding:12px;">
-
-                                <span style="
-                                    display:inline-block;
-                                    padding:5px 9px;
-                                    border-radius:8px;
-                                    background:#f1f5f9;
-                                    font-size:13px;
-                                ">
-
-                                    {{ jugador.serie }}
-
-                                </span>
-
-                            </td>
-
-
-                            <!-- CLUB -->
-
-                            <td style="padding:12px;">
-
-                                {{ jugador.club }}
-
-                            </td>
-
-
-                            <!-- ACCIONES -->
-
-                            <td style="
-                                padding:12px;
-                                white-space:nowrap;
-                            ">
-
-                                <a
-                                    href="{{ url_for(
-                                        'ficha_jugador',
-                                        jugador_id=jugador.id
-                                    ) }}"
-                                    class="btn"
-                                    style="
-                                        padding:7px 10px;
-                                        font-size:13px;
-                                    "
-                                >
-                                    👁️ Ver
-                                </a>
-
-
-                                <a
-                                    href="{{ url_for(
-                                        'credencial_jugador',
-                                        jugador_id=jugador.id
-                                    ) }}"
-                                    class="btn"
-                                    style="
-                                        padding:7px 10px;
-                                        font-size:13px;
-                                    "
-                                >
-                                    🪪 Credencial
-                                </a>
-
-
-                                <a
-                                    href="{{ url_for(
-                                        'editar_jugador',
-                                        jugador_id=jugador.id
-                                    ) }}"
-                                    class="btn secondary"
-                                    style="
-                                        padding:7px 10px;
-                                        font-size:13px;
-                                    "
-                                >
-                                    ✏️
-                                </a>
-
-
-                                <form
-                                    method="post"
-                                    action="{{ url_for(
-                                        'eliminar_jugador',
-                                        jugador_id=jugador.id
-                                    ) }}"
-                                    style="
-                                        display:inline;
-                                    "
-                                    onsubmit="
-                                        return confirm(
-                                            '¿Seguro que deseas eliminar este jugador?'
-                                        );
-                                    "
-                                >
-
-                                    <button
-                                        type="submit"
-                                        class="btn secondary"
-                                        style="
-                                            padding:7px 10px;
-                                            font-size:13px;
-                                        "
-                                    >
-                                        🗑️
-                                    </button>
-
-                                </form>
-
-                            </td>
+                            <th>
+                                Acciones
+                            </th>
 
                         </tr>
 
-                    {% endfor %}
+                    </thead>
 
-                </tbody>
 
-            </table>
+                    <tbody>
 
-        </div>
+                        {% for jugador in jugadores %}
 
-    {% else %}
+                            <tr>
 
-        <!-- ================================================== -->
-        <!-- SIN RESULTADOS -->
-        <!-- ================================================== -->
+                                <!-- JUGADOR -->
 
-        <div style="
-            text-align:center;
-            padding:50px 20px;
-            color:#6b7280;
-        ">
+                                <td>
 
-            <div style="
-                font-size:55px;
-                margin-bottom:15px;
-            ">
-                👤
+                                    <div class="jugador-info">
+
+                                        {% if jugador.foto %}
+
+                                            <img
+                                                src="{{ url_for(
+                                                    'foto_jugador',
+                                                    jugador_id=jugador.id
+                                                ) }}"
+                                                alt="Foto"
+                                                class="avatar"
+                                            >
+
+                                        {% else %}
+
+                                            <div class="avatar-vacio">
+                                                👤
+                                            </div>
+
+                                        {% endif %}
+
+
+                                        <div>
+
+                                            <div class="jugador-nombre">
+                                                {{ jugador.nombre_completo }}
+                                            </div>
+
+                                            <div class="jugador-rut">
+                                                {{ jugador.rut }}
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+                                </td>
+
+
+                                <!-- FECHA -->
+
+                                <td>
+
+                                    {% if jugador.fecha_nacimiento %}
+
+                                        {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
+
+                                    {% else %}
+
+                                        —
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- SERIE -->
+
+                                <td>
+
+                                    {% if jugador.serie %}
+
+                                        <span class="badge badge-serie">
+                                            {{ jugador.serie }}
+                                        </span>
+
+                                    {% else %}
+
+                                        —
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- CLUB -->
+
+                                <td>
+
+                                    {% if jugador.club %}
+
+                                        <span class="badge badge-club">
+                                            {{ jugador.club }}
+                                        </span>
+
+                                    {% else %}
+
+                                        —
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- ESTADO -->
+
+                                <td>
+
+                                    {% if jugador.estado == "Vigente" %}
+
+                                        <span class="badge badge-vigente">
+                                            🟢 Vigente
+                                        </span>
+
+                                    {% elif jugador.estado == "Pendiente" %}
+
+                                        <span class="badge badge-pendiente">
+                                            🟡 Pendiente
+                                        </span>
+
+                                    {% elif jugador.estado == "Suspendido" %}
+
+                                        <span class="badge badge-suspendido">
+                                            🔴 Suspendido
+                                        </span>
+
+                                    {% elif jugador.estado == "Inhabilitado" %}
+
+                                        <span class="badge badge-inhabilitado">
+                                            ⚫ Inhabilitado
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge badge-inhabilitado">
+                                            {{ jugador.estado or "Sin estado" }}
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- FOTO -->
+
+                                <td>
+
+                                    {% if jugador.foto %}
+
+                                        <span class="badge badge-vigente">
+                                            📷 Sí
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="badge badge-inhabilitado">
+                                            Sin foto
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+
+                                <!-- ACCIONES -->
+
+                                <td>
+
+                                    <div class="acciones">
+
+                                        <a
+                                            href="{{ url_for(
+                                                'ficha_jugador',
+                                                jugador_id=jugador.id
+                                            ) }}"
+                                            class="accion accion-ver"
+                                            title="Ver ficha"
+                                        >
+                                            👁️
+                                        </a>
+
+
+                                        <a
+                                            href="{{ url_for(
+                                                'editar_jugador',
+                                                jugador_id=jugador.id
+                                            ) }}"
+                                            class="accion accion-editar"
+                                            title="Editar jugador"
+                                        >
+                                            ✏️
+                                        </a>
+
+
+                                        <a
+                                            href="{{ url_for(
+                                                'qr_jugador',
+                                                jugador_id=jugador.id
+                                            ) }}"
+                                            class="accion accion-qr"
+                                            title="Ver QR"
+                                            target="_blank"
+                                        >
+                                            🔳
+                                        </a>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
             </div>
 
-            {% if q %}
+        {% else %}
+
+            <div class="sin-resultados">
+
+                <div class="sin-resultados-icono">
+                    👥
+                </div>
 
                 <h3>
-                    No encontramos jugadores
+                    No hay jugadores registrados
                 </h3>
 
-                <p>
-                    No existen jugadores que coincidan
-                    con "{{ q }}".
-                </p>
+                {% if q %}
 
-                <a
-                    href="{{ url_for('index') }}"
-                    class="btn secondary"
-                >
-                    Ver todos
-                </a>
+                    <p>
+                        No encontramos jugadores que coincidan
+                        con "{{ q }}".
+                    </p>
 
-            {% else %}
+                {% else %}
 
-                <h3>
-                    Todavía no hay jugadores registrados
-                </h3>
+                    <p>
+                        Comienza registrando el primer jugador
+                        de la Asociación Presidente Ríos.
+                    </p>
 
-                <p>
-                    Comienza agregando el primer jugador.
-                </p>
+                {% endif %}
+
+                <br>
 
                 <a
                     href="{{ url_for('nuevo_jugador') }}"
-                    class="btn"
+                    class="btn btn-primary"
                 >
                     ➕ Registrar jugador
                 </a>
 
-            {% endif %}
+            </div>
 
-        </div>
+        {% endif %}
 
-    {% endif %}
+    </div>
 
 </div>
-
-
-<!-- ====================================================== -->
-<!-- ESTILOS RESPONSIVOS -->
-<!-- ====================================================== -->
-
-<style>
-
-@media (max-width: 800px) {
-
-    table {
-        font-size:13px;
-    }
-
-    table th,
-    table td {
-        padding:8px !important;
-    }
-
-    table th:nth-child(4),
-    table td:nth-child(4) {
-        display:none;
-    }
-
-}
-
-@media (max-width: 600px) {
-
-    table th:nth-child(1),
-    table td:nth-child(1) {
-        display:none;
-    }
-
-    table th:nth-child(6),
-    table td:nth-child(6) {
-        display:none;
-    }
-
-}
-
-</style>
 
 {% endblock %}
