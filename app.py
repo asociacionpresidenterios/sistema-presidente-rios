@@ -85,11 +85,14 @@ def normalizar_estado(estado):
 
     return estado
 
+
 # ============================================================
 # MODELO CLUB
 # ============================================================
 
 class Club(db.Model):
+
+    __tablename__ = "club"
 
     id = db.Column(
         db.Integer,
@@ -115,6 +118,8 @@ class Club(db.Model):
 
 class Serie(db.Model):
 
+    __tablename__ = "serie"
+
     id = db.Column(
         db.Integer,
         primary_key=True
@@ -138,11 +143,8 @@ class Serie(db.Model):
 # ============================================================
 
 class Jugador(db.Model):
-# ============================================================
-# MODELO JUGADOR
-# ============================================================
 
-class Jugador(db.Model):
+    __tablename__ = "jugador"
 
     id = db.Column(
         db.Integer,
@@ -194,13 +196,31 @@ class Jugador(db.Model):
 
 def preparar_base_datos():
 
-    db.create_all()
-
     try:
+
+        # ----------------------------------------------------
+        # CREAR TABLAS QUE NO EXISTAN
+        # ----------------------------------------------------
+
+        db.create_all()
 
         inspector = db.inspect(
             db.engine
         )
+
+        # ----------------------------------------------------
+        # VERIFICAR TABLA JUGADOR
+        # ----------------------------------------------------
+
+        tablas = inspector.get_table_names()
+
+        if "jugador" not in tablas:
+
+            print(
+                "La tabla jugador no existe."
+            )
+
+            return
 
         columnas = [
             columna["name"]
@@ -290,6 +310,10 @@ def preparar_base_datos():
 
         db.session.commit()
 
+        print(
+            "Base de datos preparada correctamente."
+        )
+
     except Exception as error:
 
         db.session.rollback()
@@ -299,6 +323,10 @@ def preparar_base_datos():
             error
         )
 
+
+# ============================================================
+# PREPARAR BASE DE DATOS
+# ============================================================
 
 with app.app_context():
 
@@ -533,6 +561,10 @@ def index():
 
                 Jugador.club.ilike(
                     f"%{q}%"
+                ),
+
+                Jugador.serie.ilike(
+                    f"%{q}%"
                 )
             )
         )
@@ -605,6 +637,22 @@ def foto_jugador(jugador_id):
 )
 def nuevo_jugador():
 
+    # --------------------------------------------------------
+    # CATÁLOGOS ACTIVOS
+    # --------------------------------------------------------
+
+    clubes = Club.query.filter_by(
+        activo=True
+    ).order_by(
+        Club.nombre
+    ).all()
+
+    series = Serie.query.filter_by(
+        activo=True
+    ).order_by(
+        Serie.nombre
+    ).all()
+
     if request.method == "POST":
 
         rut = normalizar_rut(
@@ -656,7 +704,9 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None
+                jugador=None,
+                clubes=clubes,
+                series=series
             )
 
         if not validar_rut(rut):
@@ -668,7 +718,9 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None
+                jugador=None,
+                clubes=clubes,
+                series=series
             )
 
         try:
@@ -686,7 +738,9 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None
+                jugador=None,
+                clubes=clubes,
+                series=series
             )
 
         if Jugador.query.filter_by(
@@ -700,7 +754,9 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None
+                jugador=None,
+                clubes=clubes,
+                series=series
             )
 
         foto, error_foto = obtener_fotografia()
@@ -714,7 +770,9 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None
+                jugador=None,
+                clubes=clubes,
+                series=series
             )
 
         jugador = Jugador(
@@ -751,7 +809,9 @@ def nuevo_jugador():
 
             return render_template(
                 "jugador_form.html",
-                jugador=None
+                jugador=None,
+                clubes=clubes,
+                series=series
             )
 
         flash(
@@ -768,7 +828,9 @@ def nuevo_jugador():
 
     return render_template(
         "jugador_form.html",
-        jugador=None
+        jugador=None,
+        clubes=clubes,
+        series=series
     )
 
 
@@ -786,6 +848,18 @@ def editar_jugador(jugador_id):
         Jugador,
         jugador_id
     )
+
+    clubes = Club.query.filter_by(
+        activo=True
+    ).order_by(
+        Club.nombre
+    ).all()
+
+    series = Serie.query.filter_by(
+        activo=True
+    ).order_by(
+        Serie.nombre
+    ).all()
 
     if request.method == "POST":
 
@@ -838,7 +912,9 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador
+                jugador=jugador,
+                clubes=clubes,
+                series=series
             )
 
         if not validar_rut(rut):
@@ -850,7 +926,9 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador
+                jugador=jugador,
+                clubes=clubes,
+                series=series
             )
 
         otro_jugador = Jugador.query.filter(
@@ -867,7 +945,9 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador
+                jugador=jugador,
+                clubes=clubes,
+                series=series
             )
 
         try:
@@ -885,7 +965,9 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador
+                jugador=jugador,
+                clubes=clubes,
+                series=series
             )
 
         archivo_foto = request.files.get(
@@ -908,7 +990,9 @@ def editar_jugador(jugador_id):
 
                 return render_template(
                     "jugador_form.html",
-                    jugador=jugador
+                    jugador=jugador,
+                    clubes=clubes,
+                    series=series
                 )
 
             jugador.foto = foto
@@ -945,7 +1029,9 @@ def editar_jugador(jugador_id):
 
             return render_template(
                 "jugador_form.html",
-                jugador=jugador
+                jugador=jugador,
+                clubes=clubes,
+                series=series
             )
 
         flash(
@@ -962,7 +1048,9 @@ def editar_jugador(jugador_id):
 
     return render_template(
         "jugador_form.html",
-        jugador=jugador
+        jugador=jugador,
+        clubes=clubes,
+        series=series
     )
 
 
@@ -1319,9 +1407,14 @@ def importar_jugadores():
 
             db.session.commit()
 
-        except Exception:
+        except Exception as error:
 
             db.session.rollback()
+
+            print(
+                "Error guardando importación:",
+                error
+            )
 
             flash(
                 "Ocurrió un error al guardar "
@@ -1499,7 +1592,9 @@ def credencial_jugador(jugador_id):
         "jugador_credencial.html",
         jugador=jugador
     )
-    # ============================================================
+
+
+# ============================================================
 # CREDENCIAL COMPLETA — FRENTE + REVERSO
 # ============================================================
 
@@ -1517,6 +1612,8 @@ def credencial_completa(jugador_id):
         "credencial_completa.html",
         jugador=jugador
     )
+
+
 # ============================================================
 # REVERSO DE CREDENCIAL
 # ============================================================
@@ -1535,6 +1632,7 @@ def credencial_reverso(jugador_id):
         "credencial_reverso.html",
         jugador=jugador
     )
+
 
 # ============================================================
 # DASHBOARD
@@ -1563,19 +1661,39 @@ def dashboard():
         estado="Inhabilitado"
     ).count()
 
+    total_clubes = Club.query.count()
+
+    clubes_activos = Club.query.filter_by(
+        activo=True
+    ).count()
+
+    total_series = Serie.query.count()
+
+    series_activas = Serie.query.filter_by(
+        activo=True
+    ).count()
+
     return render_template(
         "dashboard.html",
         total_jugadores=total_jugadores,
         vigentes=vigentes,
         pendientes=pendientes,
         suspendidos=suspendidos,
-        inhabilitados=inhabilitados
+        inhabilitados=inhabilitados,
+        total_clubes=total_clubes,
+        clubes_activos=clubes_activos,
+        total_series=total_series,
+        series_activas=series_activas
     )
+
+
 # ============================================================
 # ADMINISTRACIÓN DE CLUBES Y SERIES
 # ============================================================
 
-@app.route("/configuracion")
+@app.route(
+    "/configuracion"
+)
 def configuracion():
 
     clubes = Club.query.order_by(
@@ -1640,8 +1758,31 @@ def nuevo_club():
         activo=True
     )
 
-    db.session.add(club)
-    db.session.commit()
+    try:
+
+        db.session.add(
+            club
+        )
+
+        db.session.commit()
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print(
+            "Error creando club:",
+            error
+        )
+
+        flash(
+            "No fue posible crear el club.",
+            "error"
+        )
+
+        return redirect(
+            url_for("configuracion")
+        )
 
     flash(
         f"Club '{nombre}' agregado correctamente.",
@@ -1700,8 +1841,31 @@ def nueva_serie():
         activo=True
     )
 
-    db.session.add(serie)
-    db.session.commit()
+    try:
+
+        db.session.add(
+            serie
+        )
+
+        db.session.commit()
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print(
+            "Error creando serie:",
+            error
+        )
+
+        flash(
+            "No fue posible crear la serie.",
+            "error"
+        )
+
+        return redirect(
+            url_for("configuracion")
+        )
 
     flash(
         f"Serie '{nombre}' agregada correctamente.",
@@ -1728,9 +1892,29 @@ def cambiar_estado_club(club_id):
         club_id
     )
 
-    club.activo = not club.activo
+    try:
 
-    db.session.commit()
+        club.activo = not club.activo
+
+        db.session.commit()
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print(
+            "Error cambiando estado del club:",
+            error
+        )
+
+        flash(
+            "No fue posible cambiar el estado del club.",
+            "error"
+        )
+
+        return redirect(
+            url_for("configuracion")
+        )
 
     estado = (
         "activado"
@@ -1763,9 +1947,29 @@ def cambiar_estado_serie(serie_id):
         serie_id
     )
 
-    serie.activo = not serie.activo
+    try:
 
-    db.session.commit()
+        serie.activo = not serie.activo
+
+        db.session.commit()
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print(
+            "Error cambiando estado de la serie:",
+            error
+        )
+
+        flash(
+            "No fue posible cambiar el estado de la serie.",
+            "error"
+        )
+
+        return redirect(
+            url_for("configuracion")
+        )
 
     estado = (
         "activada"
@@ -1781,6 +1985,63 @@ def cambiar_estado_serie(serie_id):
     return redirect(
         url_for("configuracion")
     )
+
+
+# ============================================================
+# API DE CLUBES
+# ============================================================
+
+@app.route(
+    "/api/clubes"
+)
+def api_clubes():
+
+    clubes = Club.query.filter_by(
+        activo=True
+    ).order_by(
+        Club.nombre
+    ).all()
+
+    return jsonify([
+
+        {
+            "id": club.id,
+            "nombre": club.nombre,
+            "activo": club.activo
+        }
+
+        for club in clubes
+
+    ])
+
+
+# ============================================================
+# API DE SERIES
+# ============================================================
+
+@app.route(
+    "/api/series"
+)
+def api_series():
+
+    series = Serie.query.filter_by(
+        activo=True
+    ).order_by(
+        Serie.nombre
+    ).all()
+
+    return jsonify([
+
+        {
+            "id": serie.id,
+            "nombre": serie.nombre,
+            "activo": serie.activo
+        }
+
+        for serie in series
+
+    ])
+
 
 # ============================================================
 # HEALTH CHECK
