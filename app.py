@@ -92,8 +92,6 @@ def normalizar_estado(estado):
 
 class Club(db.Model):
 
-    __tablename__ = "club"
-
     id = db.Column(
         db.Integer,
         primary_key=True
@@ -118,8 +116,6 @@ class Club(db.Model):
 
 class Serie(db.Model):
 
-    __tablename__ = "serie"
-
     id = db.Column(
         db.Integer,
         primary_key=True
@@ -143,8 +139,6 @@ class Serie(db.Model):
 # ============================================================
 
 class Jugador(db.Model):
-
-    __tablename__ = "jugador"
 
     id = db.Column(
         db.Integer,
@@ -196,31 +190,13 @@ class Jugador(db.Model):
 
 def preparar_base_datos():
 
+    db.create_all()
+
     try:
-
-        # ----------------------------------------------------
-        # CREAR TABLAS QUE NO EXISTAN
-        # ----------------------------------------------------
-
-        db.create_all()
 
         inspector = db.inspect(
             db.engine
         )
-
-        # ----------------------------------------------------
-        # VERIFICAR TABLA JUGADOR
-        # ----------------------------------------------------
-
-        tablas = inspector.get_table_names()
-
-        if "jugador" not in tablas:
-
-            print(
-                "La tabla jugador no existe."
-            )
-
-            return
 
         columnas = [
             columna["name"]
@@ -310,10 +286,6 @@ def preparar_base_datos():
 
         db.session.commit()
 
-        print(
-            "Base de datos preparada correctamente."
-        )
-
     except Exception as error:
 
         db.session.rollback()
@@ -323,10 +295,6 @@ def preparar_base_datos():
             error
         )
 
-
-# ============================================================
-# PREPARAR BASE DE DATOS
-# ============================================================
 
 with app.app_context():
 
@@ -534,6 +502,27 @@ def obtener_fotografia():
 
 
 # ============================================================
+# DATOS PARA FORMULARIO DE JUGADORES
+# ============================================================
+
+def obtener_datos_formulario_jugador():
+
+    clubes = Club.query.filter_by(
+        activo=True
+    ).order_by(
+        Club.nombre
+    ).all()
+
+    series = Serie.query.filter_by(
+        activo=True
+    ).order_by(
+        Serie.nombre
+    ).all()
+
+    return clubes, series
+
+
+# ============================================================
 # INICIO / LISTADO
 # ============================================================
 
@@ -560,10 +549,6 @@ def index():
                 ),
 
                 Jugador.club.ilike(
-                    f"%{q}%"
-                ),
-
-                Jugador.serie.ilike(
                     f"%{q}%"
                 )
             )
@@ -637,21 +622,7 @@ def foto_jugador(jugador_id):
 )
 def nuevo_jugador():
 
-    # --------------------------------------------------------
-    # CATÁLOGOS ACTIVOS
-    # --------------------------------------------------------
-
-    clubes = Club.query.filter_by(
-        activo=True
-    ).order_by(
-        Club.nombre
-    ).all()
-
-    series = Serie.query.filter_by(
-        activo=True
-    ).order_by(
-        Serie.nombre
-    ).all()
+    clubes, series = obtener_datos_formulario_jugador()
 
     if request.method == "POST":
 
@@ -849,17 +820,7 @@ def editar_jugador(jugador_id):
         jugador_id
     )
 
-    clubes = Club.query.filter_by(
-        activo=True
-    ).order_by(
-        Club.nombre
-    ).all()
-
-    series = Serie.query.filter_by(
-        activo=True
-    ).order_by(
-        Serie.nombre
-    ).all()
+    clubes, series = obtener_datos_formulario_jugador()
 
     if request.method == "POST":
 
@@ -1407,14 +1368,9 @@ def importar_jugadores():
 
             db.session.commit()
 
-        except Exception as error:
+        except Exception:
 
             db.session.rollback()
-
-            print(
-                "Error guardando importación:",
-                error
-            )
 
             flash(
                 "Ocurrió un error al guardar "
@@ -1661,29 +1617,13 @@ def dashboard():
         estado="Inhabilitado"
     ).count()
 
-    total_clubes = Club.query.count()
-
-    clubes_activos = Club.query.filter_by(
-        activo=True
-    ).count()
-
-    total_series = Serie.query.count()
-
-    series_activas = Serie.query.filter_by(
-        activo=True
-    ).count()
-
     return render_template(
         "dashboard.html",
         total_jugadores=total_jugadores,
         vigentes=vigentes,
         pendientes=pendientes,
         suspendidos=suspendidos,
-        inhabilitados=inhabilitados,
-        total_clubes=total_clubes,
-        clubes_activos=clubes_activos,
-        total_series=total_series,
-        series_activas=series_activas
+        inhabilitados=inhabilitados
     )
 
 
@@ -1691,9 +1631,7 @@ def dashboard():
 # ADMINISTRACIÓN DE CLUBES Y SERIES
 # ============================================================
 
-@app.route(
-    "/configuracion"
-)
+@app.route("/configuracion")
 def configuracion():
 
     clubes = Club.query.order_by(
@@ -1758,31 +1696,8 @@ def nuevo_club():
         activo=True
     )
 
-    try:
-
-        db.session.add(
-            club
-        )
-
-        db.session.commit()
-
-    except Exception as error:
-
-        db.session.rollback()
-
-        print(
-            "Error creando club:",
-            error
-        )
-
-        flash(
-            "No fue posible crear el club.",
-            "error"
-        )
-
-        return redirect(
-            url_for("configuracion")
-        )
+    db.session.add(club)
+    db.session.commit()
 
     flash(
         f"Club '{nombre}' agregado correctamente.",
@@ -1841,31 +1756,8 @@ def nueva_serie():
         activo=True
     )
 
-    try:
-
-        db.session.add(
-            serie
-        )
-
-        db.session.commit()
-
-    except Exception as error:
-
-        db.session.rollback()
-
-        print(
-            "Error creando serie:",
-            error
-        )
-
-        flash(
-            "No fue posible crear la serie.",
-            "error"
-        )
-
-        return redirect(
-            url_for("configuracion")
-        )
+    db.session.add(serie)
+    db.session.commit()
 
     flash(
         f"Serie '{nombre}' agregada correctamente.",
@@ -1892,29 +1784,9 @@ def cambiar_estado_club(club_id):
         club_id
     )
 
-    try:
+    club.activo = not club.activo
 
-        club.activo = not club.activo
-
-        db.session.commit()
-
-    except Exception as error:
-
-        db.session.rollback()
-
-        print(
-            "Error cambiando estado del club:",
-            error
-        )
-
-        flash(
-            "No fue posible cambiar el estado del club.",
-            "error"
-        )
-
-        return redirect(
-            url_for("configuracion")
-        )
+    db.session.commit()
 
     estado = (
         "activado"
@@ -1947,29 +1819,9 @@ def cambiar_estado_serie(serie_id):
         serie_id
     )
 
-    try:
+    serie.activo = not serie.activo
 
-        serie.activo = not serie.activo
-
-        db.session.commit()
-
-    except Exception as error:
-
-        db.session.rollback()
-
-        print(
-            "Error cambiando estado de la serie:",
-            error
-        )
-
-        flash(
-            "No fue posible cambiar el estado de la serie.",
-            "error"
-        )
-
-        return redirect(
-            url_for("configuracion")
-        )
+    db.session.commit()
 
     estado = (
         "activada"
@@ -1985,62 +1837,6 @@ def cambiar_estado_serie(serie_id):
     return redirect(
         url_for("configuracion")
     )
-
-
-# ============================================================
-# API DE CLUBES
-# ============================================================
-
-@app.route(
-    "/api/clubes"
-)
-def api_clubes():
-
-    clubes = Club.query.filter_by(
-        activo=True
-    ).order_by(
-        Club.nombre
-    ).all()
-
-    return jsonify([
-
-        {
-            "id": club.id,
-            "nombre": club.nombre,
-            "activo": club.activo
-        }
-
-        for club in clubes
-
-    ])
-
-
-# ============================================================
-# API DE SERIES
-# ============================================================
-
-@app.route(
-    "/api/series"
-)
-def api_series():
-
-    series = Serie.query.filter_by(
-        activo=True
-    ).order_by(
-        Serie.nombre
-    ).all()
-
-    return jsonify([
-
-        {
-            "id": serie.id,
-            "nombre": serie.nombre,
-            "activo": serie.activo
-        }
-
-        for serie in series
-
-    ])
 
 
 # ============================================================
