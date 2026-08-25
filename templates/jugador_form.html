@@ -42,7 +42,7 @@
             background: white;
             border-radius: 18px;
             padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 10px 30px rgba(0,0,0,.08);
         }
 
         .encabezado {
@@ -116,8 +116,12 @@
 
         input:focus,
         select:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+            border-color: #f97316;
+            box-shadow: 0 0 0 3px rgba(249,115,22,.12);
+        }
+
+        select {
+            cursor: pointer;
         }
 
         .ayuda {
@@ -158,7 +162,7 @@
             text-align: center;
             font-weight: 800;
             font-size: 13px;
-            transition: 0.2s ease;
+            transition: .2s ease;
             margin: 0;
         }
 
@@ -166,15 +170,11 @@
             transform: translateY(-1px);
         }
 
-        /* Vigente */
-
         .estado-vigente input:checked + label {
             background: #dcfce7;
             border-color: #16a34a;
             color: #166534;
         }
-
-        /* Pendiente */
 
         .estado-pendiente input:checked + label {
             background: #fef9c3;
@@ -182,21 +182,21 @@
             color: #854d0e;
         }
 
-        /* Suspendido */
-
         .estado-suspendido input:checked + label {
             background: #fee2e2;
             border-color: #dc2626;
             color: #991b1b;
         }
 
-        /* Inhabilitado */
-
         .estado-inhabilitado input:checked + label {
             background: #e5e7eb;
             border-color: #374151;
             color: #111827;
         }
+
+        /* ==================================================
+           FOTOGRAFÍA
+        ================================================== */
 
         .foto-contenedor {
             display: flex;
@@ -229,6 +229,10 @@
             background: #f8fafc;
         }
 
+        /* ==================================================
+           BOTONES
+        ================================================== */
+
         .acciones {
             grid-column: 1 / -1;
             display: flex;
@@ -255,13 +259,17 @@
         }
 
         .boton-guardar {
-            background: #2563eb;
+            background: #f97316;
             color: white;
         }
 
         .boton-guardar:hover {
-            background: #1d4ed8;
+            background: #ea580c;
         }
+
+        /* ==================================================
+           ALERTAS
+        ================================================== */
 
         .alertas {
             margin-bottom: 20px;
@@ -284,6 +292,20 @@
             background: #dcfce7;
             color: #166534;
             border: 1px solid #bbf7d0;
+        }
+
+        /* ==================================================
+           ENCABEZADO DE SECCIÓN
+        ================================================== */
+
+        .seccion-titulo {
+            grid-column: 1 / -1;
+            margin-top: 5px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #0f172a;
+            font-size: 17px;
+            font-weight: 800;
         }
 
         @media (max-width: 700px) {
@@ -333,7 +355,7 @@
 
         <!-- ==================================================
              ENCABEZADO
-        =================================================== -->
+        ================================================== -->
 
         <div class="encabezado">
 
@@ -350,7 +372,7 @@
                 </h1>
 
                 <div class="subtitulo">
-                    Registro oficial de jugador
+                    Registro oficial de la Asociación Presidente Ríos
                 </div>
 
             </div>
@@ -367,7 +389,7 @@
 
         <!-- ==================================================
              MENSAJES
-        =================================================== -->
+        ================================================== -->
 
         {% with mensajes = get_flashed_messages(with_categories=true) %}
 
@@ -387,9 +409,7 @@
                                 {% endif %}
                             "
                         >
-
                             {{ mensaje }}
-
                         </div>
 
                     {% endfor %}
@@ -403,13 +423,18 @@
 
         <!-- ==================================================
              FORMULARIO
-        =================================================== -->
+        ================================================== -->
 
         <form
             method="POST"
             enctype="multipart/form-data"
             class="formulario"
         >
+
+            <div class="seccion-titulo">
+                📋 Datos personales
+            </div>
+
 
             <!-- RUT -->
 
@@ -455,7 +480,7 @@
             </div>
 
 
-            <!-- FECHA NACIMIENTO -->
+            <!-- FECHA -->
 
             <div class="campo">
 
@@ -467,16 +492,16 @@
                     type="date"
                     id="fecha_nacimiento"
                     name="fecha_nacimiento"
-
                     value="{% if jugador and jugador.fecha_nacimiento %}{{ jugador.fecha_nacimiento.strftime('%Y-%m-%d') }}{% endif %}"
-
                     required
                 >
 
             </div>
 
 
-            <!-- SERIE -->
+            <!-- ==================================================
+                 SERIE DESDE CATÁLOGO
+            ================================================== -->
 
             <div class="campo">
 
@@ -494,57 +519,63 @@
                         Seleccionar serie
                     </option>
 
-                    <option
-                        value="Senior"
-                        {% if jugador and jugador.serie == "Senior" %}
-                            selected
-                        {% endif %}
-                    >
-                        Senior
-                    </option>
+                    {% for item in series %}
 
-                    <option
-                        value="Super Senior"
-                        {% if jugador and jugador.serie == "Super Senior" %}
-                            selected
-                        {% endif %}
-                    >
-                        Super Senior
-                    </option>
+                        <option
+                            value="{{ item.nombre }}"
+                            {% if jugador and jugador.serie == item.nombre %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ item.nombre }}
+                        </option>
 
-                    <option
-                        value="Adultos"
-                        {% if jugador and jugador.serie == "Adultos" %}
-                            selected
-                        {% endif %}
-                    >
-                        Adultos
-                    </option>
+                    {% endfor %}
 
-                    <option
-                        value="Juvenil"
-                        {% if jugador and jugador.serie == "Juvenil" %}
-                            selected
-                        {% endif %}
-                    >
-                        Juvenil
-                    </option>
+                    <!--
+                    Permite mantener una serie antigua
+                    aunque todavía no esté en el catálogo.
+                    -->
 
-                    <option
-                        value="Otra"
-                        {% if jugador and jugador.serie == "Otra" %}
-                            selected
+                    {% if jugador and jugador.serie %}
+
+                        {% set serie_actual = namespace(existe=false) %}
+
+                        {% for item in series %}
+
+                            {% if item.nombre == jugador.serie %}
+
+                                {% set serie_actual.existe = true %}
+
+                            {% endif %}
+
+                        {% endfor %}
+
+                        {% if not serie_actual.existe %}
+
+                            <option
+                                value="{{ jugador.serie }}"
+                                selected
+                            >
+                                {{ jugador.serie }}
+                            </option>
+
                         {% endif %}
-                    >
-                        Otra
-                    </option>
+
+                    {% endif %}
 
                 </select>
+
+                <div class="ayuda">
+                    Las series se administran desde Configuración.
+                </div>
 
             </div>
 
 
-            <!-- CLUB -->
+            <!-- ==================================================
+                 CLUB DESDE CATÁLOGO
+            ================================================== -->
 
             <div class="campo campo-completo">
 
@@ -552,21 +583,74 @@
                     Club
                 </label>
 
-                <input
-                    type="text"
+                <select
                     id="club"
                     name="club"
-                    placeholder="Nombre del club"
-                    value="{% if jugador %}{{ jugador.club }}{% endif %}"
                     required
                 >
+
+                    <option value="">
+                        Seleccionar club
+                    </option>
+
+                    {% for item in clubes %}
+
+                        <option
+                            value="{{ item.nombre }}"
+                            {% if jugador and jugador.club == item.nombre %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ item.nombre }}
+                        </option>
+
+                    {% endfor %}
+
+
+                    <!--
+                    Mantener visible un club antiguo
+                    que todavía no exista en el catálogo.
+                    -->
+
+                    {% if jugador and jugador.club %}
+
+                        {% set club_actual = namespace(existe=false) %}
+
+                        {% for item in clubes %}
+
+                            {% if item.nombre == jugador.club %}
+
+                                {% set club_actual.existe = true %}
+
+                            {% endif %}
+
+                        {% endfor %}
+
+                        {% if not club_actual.existe %}
+
+                            <option
+                                value="{{ jugador.club }}"
+                                selected
+                            >
+                                {{ jugador.club }}
+                            </option>
+
+                        {% endif %}
+
+                    {% endif %}
+
+                </select>
+
+                <div class="ayuda">
+                    Los clubes se administran desde Configuración.
+                </div>
 
             </div>
 
 
             <!-- ==================================================
-                 ESTADO DEL JUGADOR
-            =================================================== -->
+                 ESTADO
+            ================================================== -->
 
             <div class="campo campo-completo">
 
@@ -576,8 +660,6 @@
 
                 <div class="estado-contenedor">
 
-                    <!-- VIGENTE -->
-
                     <div class="estado-opcion estado-vigente">
 
                         <input
@@ -585,7 +667,6 @@
                             id="estado_vigente"
                             name="estado"
                             value="Vigente"
-
                             {% if not jugador or jugador.estado == "Vigente" %}
                                 checked
                             {% endif %}
@@ -598,8 +679,6 @@
                     </div>
 
 
-                    <!-- PENDIENTE -->
-
                     <div class="estado-opcion estado-pendiente">
 
                         <input
@@ -607,7 +686,6 @@
                             id="estado_pendiente"
                             name="estado"
                             value="Pendiente"
-
                             {% if jugador and jugador.estado == "Pendiente" %}
                                 checked
                             {% endif %}
@@ -620,8 +698,6 @@
                     </div>
 
 
-                    <!-- SUSPENDIDO -->
-
                     <div class="estado-opcion estado-suspendido">
 
                         <input
@@ -629,7 +705,6 @@
                             id="estado_suspendido"
                             name="estado"
                             value="Suspendido"
-
                             {% if jugador and jugador.estado == "Suspendido" %}
                                 checked
                             {% endif %}
@@ -642,8 +717,6 @@
                     </div>
 
 
-                    <!-- INHABILITADO -->
-
                     <div class="estado-opcion estado-inhabilitado">
 
                         <input
@@ -651,7 +724,6 @@
                             id="estado_inhabilitado"
                             name="estado"
                             value="Inhabilitado"
-
                             {% if jugador and jugador.estado == "Inhabilitado" %}
                                 checked
                             {% endif %}
@@ -666,7 +738,7 @@
                 </div>
 
                 <div class="ayuda">
-                    El estado se mostrará posteriormente en la ficha y credencial del jugador.
+                    El estado aparecerá en la ficha y credencial del jugador.
                 </div>
 
             </div>
@@ -674,7 +746,7 @@
 
             <!-- ==================================================
                  FOTOGRAFÍA
-            =================================================== -->
+            ================================================== -->
 
             <div class="campo campo-completo">
 
@@ -687,7 +759,10 @@
                     {% if jugador and jugador.foto %}
 
                         <img
-                            src="{{ url_for('foto_jugador', jugador_id=jugador.id) }}"
+                            src="{{ url_for(
+                                'foto_jugador',
+                                jugador_id=jugador.id
+                            ) }}"
                             alt="Fotografía del jugador"
                             class="foto-preview"
                         >
@@ -695,6 +770,7 @@
                     {% else %}
 
                         <div class="sin-foto">
+                            📷<br>
                             Sin fotografía
                         </div>
 
@@ -723,7 +799,7 @@
 
             <!-- ==================================================
                  BOTONES
-            =================================================== -->
+            ================================================== -->
 
             <div class="acciones">
 
@@ -739,11 +815,13 @@
                     class="boton boton-guardar"
                 >
                     💾
+
                     {% if jugador %}
                         Guardar cambios
                     {% else %}
                         Registrar jugador
                     {% endif %}
+
                 </button>
 
             </div>
