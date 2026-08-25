@@ -48,6 +48,11 @@
         cursor: pointer;
         font-weight: 700;
         font-size: 14px;
+        transition: 0.2s ease;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
     }
 
     .btn-primary {
@@ -55,14 +60,35 @@
         color: white;
     }
 
+    .btn-primary:hover {
+        background: #1f2937;
+    }
+
     .btn-secondary {
         background: #e5e7eb;
         color: #111827;
     }
 
+    .btn-secondary:hover {
+        background: #d1d5db;
+    }
+
     .btn-success {
         background: #15803d;
         color: white;
+    }
+
+    .btn-success:hover {
+        background: #166534;
+    }
+
+    .btn-reverso {
+        background: #2563eb;
+        color: white;
+    }
+
+    .btn-reverso:hover {
+        background: #1d4ed8;
     }
 
     .btn-danger {
@@ -233,6 +259,7 @@
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
+        align-items: center;
     }
 
     @media (max-width: 750px) {
@@ -258,6 +285,15 @@
 
         .ficha-footer {
             padding: 20px;
+        }
+
+        .zona-credencial {
+            width: 100%;
+            flex-direction: column;
+        }
+
+        .zona-credencial .btn {
+            width: 100%;
         }
 
     }
@@ -292,6 +328,7 @@
 
 <div class="ficha-pagina">
 
+
     <!-- =====================================================
          ENCABEZADO
     ====================================================== -->
@@ -300,7 +337,9 @@
 
         <div>
 
-            <h1>Ficha del Jugador</h1>
+            <h1>
+                Ficha del Jugador
+            </h1>
 
             <p>
                 Registro oficial de la Asociación Presidente Ríos
@@ -318,6 +357,7 @@
                 ← Volver
             </a>
 
+
             <a
                 href="{{ url_for(
                     'editar_jugador',
@@ -328,6 +368,7 @@
                 ✏️ Editar
             </a>
 
+
             <a
                 href="{{ url_for(
                     'credencial_jugador',
@@ -336,6 +377,17 @@
                 class="btn btn-success"
             >
                 🪪 Credencial
+            </a>
+
+
+            <a
+                href="{{ url_for(
+                    'credencial_reverso',
+                    jugador_id=jugador.id
+                ) }}"
+                class="btn btn-reverso"
+            >
+                🔄 Reverso
             </a>
 
         </div>
@@ -373,6 +425,7 @@
                     <div class="foto-vacia">
 
                         📷<br>
+
                         Jugador sin fotografía
 
                     </div>
@@ -394,6 +447,7 @@
                         {{ jugador.nombre_completo }}
 
                     </h2>
+
 
                     <p class="rut-jugador">
 
@@ -465,9 +519,7 @@
                         </div>
 
                         <div class="dato-valor">
-
                             {{ jugador.club }}
-
                         </div>
 
                     </div>
@@ -480,9 +532,7 @@
                         </div>
 
                         <div class="dato-valor">
-
                             {{ jugador.serie }}
-
                         </div>
 
                     </div>
@@ -535,7 +585,11 @@
 
             <div class="qr-info">
 
-                <strong>Identificación digital</strong><br>
+                <strong>
+                    Identificación digital
+                </strong>
+
+                <br>
 
                 El jugador dispone de un código QR asociado
                 a su credencial oficial.
@@ -544,6 +598,7 @@
 
 
             <div class="zona-credencial">
+
 
                 <a
                     href="{{ url_for(
@@ -557,23 +612,28 @@
                 </a>
 
 
-               <div class="acciones">
+                <a
+                    href="{{ url_for(
+                        'credencial_jugador',
+                        jugador_id=jugador.id
+                    ) }}"
+                    class="btn btn-success"
+                >
+                    🪪 Credencial
+                </a>
 
-    <a
-        href="{{ url_for('credencial_jugador', jugador_id=jugador.id) }}"
-        class="boton boton-credencial"
-    >
-        🎫 Credencial
-    </a>
 
-    <a
-        href="{{ url_for('credencial_reverso', jugador_id=jugador.id) }}"
-        class="boton boton-reverso"
-    >
-        🔄 Reverso
-    </a>
+                <a
+                    href="{{ url_for(
+                        'credencial_reverso',
+                        jugador_id=jugador.id
+                    ) }}"
+                    class="btn btn-reverso"
+                >
+                    🔄 Reverso
+                </a>
 
-</div>
+
                 <button
                     type="button"
                     onclick="window.print()"
@@ -582,8 +642,8 @@
                     🖨️ Imprimir ficha
                 </button>
 
-            </div>
 
+            </div>
 
         </div>
 
