@@ -185,6 +185,116 @@ class Jugador(db.Model):
 
 
 # ============================================================
+# MODELO REGISTRO DISCIPLINARIO
+# ============================================================
+
+class RegistroDisciplinario(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    jugador_id = db.Column(
+        db.Integer,
+        db.ForeignKey("jugador.id"),
+        nullable=False,
+        index=True
+    )
+
+    fecha = db.Column(
+        db.Date,
+        nullable=False,
+        default=date.today
+    )
+
+    tipo = db.Column(
+        db.String(30),
+        nullable=False
+    )
+
+    cantidad = db.Column(
+        db.Integer,
+        nullable=False,
+        default=1
+    )
+
+    motivo = db.Column(
+        db.String(255),
+        nullable=True
+    )
+
+    campeonato = db.Column(
+        db.String(120),
+        nullable=True
+    )
+
+    observaciones = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    jugador = db.relationship(
+        "Jugador",
+        backref=db.backref(
+            "registros_disciplinarios",
+            lazy=True,
+            cascade="all, delete-orphan"
+        )
+    )
+
+
+# ============================================================
+# MODELO GOLES
+# ============================================================
+
+class Gol(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    jugador_id = db.Column(
+        db.Integer,
+        db.ForeignKey("jugador.id"),
+        nullable=False,
+        index=True
+    )
+
+    fecha = db.Column(
+        db.Date,
+        nullable=False,
+        default=date.today
+    )
+
+    cantidad = db.Column(
+        db.Integer,
+        nullable=False,
+        default=1
+    )
+
+    campeonato = db.Column(
+        db.String(120),
+        nullable=True
+    )
+
+    observaciones = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    jugador = db.relationship(
+        "Jugador",
+        backref=db.backref(
+            "goles_registrados",
+            lazy=True,
+            cascade="all, delete-orphan"
+        )
+    )
+
+
+# ============================================================
 # CREACIÓN / ACTUALIZACIÓN SEGURA DE BASE DE DATOS
 # ============================================================
 
@@ -502,6 +612,118 @@ def obtener_fotografia():
 
 
 # ============================================================
+# ESTADÍSTICAS DEPORTIVAS
+# ============================================================
+
+def obtener_amarillas(jugador_id):
+
+    registros = RegistroDisciplinario.query.filter_by(
+        jugador_id=jugador_id,
+        tipo="Amarilla"
+    ).all()
+
+    return sum(
+        registro.cantidad
+        for registro in registros
+    )
+
+
+def obtener_rojas(jugador_id):
+
+    registros = RegistroDisciplinario.query.filter_by(
+        jugador_id=jugador_id,
+        tipo="Roja"
+    ).all()
+
+    return sum(
+        registro.cantidad
+        for registro in registros
+    )
+
+
+def obtener_goles(jugador_id):
+
+    registros = Gol.query.filter_by(
+        jugador_id=jugador_id
+    ).all()
+
+    return sum(
+        registro.cantidad
+        for registro in registros
+    )
+
+
+def obtener_suspensiones(jugador_id):
+
+    registros = RegistroDisciplinario.query.filter_by(
+        jugador_id=jugador_id,
+        tipo="Suspension"
+    ).all()
+
+    return sum(
+        registro.cantidad
+        for registro in registros
+    )
+
+
+def crear_suspension_por_acumulacion(
+    jugador,
+    campeonato=None
+):
+
+    amarillas = obtener_amarillas(
+        jugador.id
+    )
+
+    suspensiones_correspondientes = (
+        amarillas // 4
+    )
+
+    suspensiones_existentes = (
+        obtener_suspensiones(
+            jugador.id
+        )
+    )
+
+    nuevas_suspensiones = (
+        suspensiones_correspondientes
+        - suspensiones_existentes
+    )
+
+    if nuevas_suspensiones <= 0:
+        return 0
+
+    for _ in range(
+        nuevas_suspensiones
+    ):
+
+        suspension = RegistroDisciplinario(
+
+            jugador_id=jugador.id,
+
+            fecha=date.today(),
+
+            tipo="Suspension",
+
+            cantidad=1,
+
+            motivo=(
+                "Suspensión automática "
+                "por acumulación de 4 "
+                "tarjetas amarillas."
+            ),
+
+            campeonato=campeonato
+        )
+
+        db.session.add(
+            suspension
+        )
+
+    return nuevas_suspensiones
+
+
+# ============================================================
 # DATOS PARA FORMULARIO DE JUGADORES
 # ============================================================
 
@@ -579,9 +801,55 @@ def ficha_jugador(jugador_id):
         jugador_id
     )
 
+    goles = obtener_goles(
+        jugador.id
+    )
+
+    amarillas = obtener_amarillas(
+        jugador.id
+    )
+
+    rojas = obtener_rojas(
+        jugador.id
+    )
+
+    suspensiones = obtener_suspensiones(
+        jugador.id
+    )
+
+    historial = (
+        RegistroDisciplinario.query
+        .filter_by(
+            jugador_id=jugador.id
+        )
+        .order_by(
+            RegistroDisciplinario.fecha.desc(),
+            RegistroDisciplinario.id.desc()
+        )
+        .all()
+    )
+
+    historial_goles = (
+        Gol.query
+        .filter_by(
+            jugador_id=jugador.id
+        )
+        .order_by(
+            Gol.fecha.desc(),
+            Gol.id.desc()
+        )
+        .all()
+    )
+
     return render_template(
         "jugador_detalle.html",
-        jugador=jugador
+        jugador=jugador,
+        goles=goles,
+        amarillas=amarillas,
+        rojas=rojas,
+        suspensiones=suspensiones,
+        historial=historial,
+        historial_goles=historial_goles
     )
 
 
@@ -1463,12 +1731,391 @@ def api_jugadores():
                 jugador.estado or "Vigente",
 
             "tiene_foto":
-                bool(jugador.foto)
+                bool(jugador.foto),
+
+            "goles":
+                obtener_goles(jugador.id),
+
+            "amarillas":
+                obtener_amarillas(jugador.id),
+
+            "rojas":
+                obtener_rojas(jugador.id),
+
+            "suspensiones":
+                obtener_suspensiones(jugador.id)
         }
 
         for jugador in jugadores
 
     ])
+
+
+# ============================================================
+# REGISTRAR GOL
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/gol",
+    methods=["POST"]
+)
+def registrar_gol(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    try:
+
+        cantidad = int(
+            request.form.get(
+                "cantidad",
+                1
+            )
+        )
+
+    except ValueError:
+
+        cantidad = 1
+
+    if cantidad < 1:
+        cantidad = 1
+
+    campeonato = request.form.get(
+        "campeonato",
+        ""
+    ).strip()
+
+    observaciones = request.form.get(
+        "observaciones",
+        ""
+    ).strip()
+
+    gol = Gol(
+        jugador_id=jugador.id,
+        fecha=date.today(),
+        cantidad=cantidad,
+        campeonato=campeonato,
+        observaciones=observaciones
+    )
+
+    try:
+
+        db.session.add(
+            gol
+        )
+
+        db.session.commit()
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print(
+            "Error registrando gol:",
+            error
+        )
+
+        flash(
+            "No fue posible registrar el gol.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
+        )
+
+    flash(
+        f"Se registraron {cantidad} gol(es).",
+        "success"
+    )
+
+    return redirect(
+        url_for(
+            "ficha_jugador",
+            jugador_id=jugador.id
+        )
+    )
+
+
+# ============================================================
+# REGISTRAR TARJETA AMARILLA
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/amarilla",
+    methods=["POST"]
+)
+def registrar_amarilla(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    campeonato = request.form.get(
+        "campeonato",
+        ""
+    ).strip()
+
+    motivo = request.form.get(
+        "motivo",
+        ""
+    ).strip()
+
+    registro = RegistroDisciplinario(
+        jugador_id=jugador.id,
+        fecha=date.today(),
+        tipo="Amarilla",
+        cantidad=1,
+        motivo=motivo,
+        campeonato=campeonato
+    )
+
+    try:
+
+        db.session.add(
+            registro
+        )
+
+        db.session.flush()
+
+        nuevas_suspensiones = (
+            crear_suspension_por_acumulacion(
+                jugador,
+                campeonato
+            )
+        )
+
+        db.session.commit()
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print(
+            "Error registrando amarilla:",
+            error
+        )
+
+        flash(
+            "No fue posible registrar la tarjeta.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
+        )
+
+    amarillas = obtener_amarillas(
+        jugador.id
+    )
+
+    if nuevas_suspensiones:
+
+        flash(
+            f"Tarjeta amarilla registrada. "
+            f"El jugador alcanzó {amarillas} "
+            f"amarillas y se generó "
+            f"automáticamente una suspensión.",
+            "warning"
+        )
+
+    else:
+
+        flash(
+            f"Tarjeta amarilla registrada. "
+            f"Acumuladas: {amarillas}/4.",
+            "success"
+        )
+
+    return redirect(
+        url_for(
+            "ficha_jugador",
+            jugador_id=jugador.id
+        )
+    )
+
+
+# ============================================================
+# REGISTRAR TARJETA ROJA
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/roja",
+    methods=["POST"]
+)
+def registrar_roja(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    campeonato = request.form.get(
+        "campeonato",
+        ""
+    ).strip()
+
+    motivo = request.form.get(
+        "motivo",
+        ""
+    ).strip()
+
+    registro = RegistroDisciplinario(
+        jugador_id=jugador.id,
+        fecha=date.today(),
+        tipo="Roja",
+        cantidad=1,
+        motivo=motivo,
+        campeonato=campeonato
+    )
+
+    try:
+
+        db.session.add(
+            registro
+        )
+
+        db.session.commit()
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print(
+            "Error registrando roja:",
+            error
+        )
+
+        flash(
+            "No fue posible registrar la tarjeta roja.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
+        )
+
+    flash(
+        "Tarjeta roja registrada correctamente.",
+        "success"
+    )
+
+    return redirect(
+        url_for(
+            "ficha_jugador",
+            jugador_id=jugador.id
+        )
+    )
+
+
+# ============================================================
+# REGISTRAR SUSPENSIÓN
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/suspension",
+    methods=["POST"]
+)
+def registrar_suspension(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    try:
+
+        cantidad = int(
+            request.form.get(
+                "cantidad",
+                1
+            )
+        )
+
+    except ValueError:
+
+        cantidad = 1
+
+    if cantidad < 1:
+        cantidad = 1
+
+    campeonato = request.form.get(
+        "campeonato",
+        ""
+    ).strip()
+
+    motivo = request.form.get(
+        "motivo",
+        ""
+    ).strip()
+
+    observaciones = request.form.get(
+        "observaciones",
+        ""
+    ).strip()
+
+    suspension = RegistroDisciplinario(
+        jugador_id=jugador.id,
+        fecha=date.today(),
+        tipo="Suspension",
+        cantidad=cantidad,
+        motivo=motivo,
+        campeonato=campeonato,
+        observaciones=observaciones
+    )
+
+    try:
+
+        db.session.add(
+            suspension
+        )
+
+        db.session.commit()
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print(
+            "Error registrando suspensión:",
+            error
+        )
+
+        flash(
+            "No fue posible registrar la suspensión.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
+        )
+
+    flash(
+        "Suspensión registrada correctamente.",
+        "success"
+    )
+
+    return redirect(
+        url_for(
+            "ficha_jugador",
+            jugador_id=jugador.id
+        )
+    )
 
 
 # ============================================================
@@ -1597,10 +2244,6 @@ def credencial_reverso(jugador_id):
 @app.route("/dashboard")
 def dashboard():
 
-    # --------------------------------------------------------
-    # INDICADORES GENERALES
-    # --------------------------------------------------------
-
     total_jugadores = Jugador.query.count()
 
     vigentes = Jugador.query.filter_by(
@@ -1619,11 +2262,6 @@ def dashboard():
         estado="Inhabilitado"
     ).count()
 
-
-    # --------------------------------------------------------
-    # JUGADORES POR CLUB
-    # --------------------------------------------------------
-
     jugadores_por_club = (
         db.session.query(
             Jugador.club,
@@ -1633,17 +2271,14 @@ def dashboard():
             Jugador.club.isnot(None),
             Jugador.club != ""
         )
-        .group_by(Jugador.club)
+        .group_by(
+            Jugador.club
+        )
         .order_by(
             db.func.count(Jugador.id).desc()
         )
         .all()
     )
-
-
-    # --------------------------------------------------------
-    # JUGADORES POR SERIE
-    # --------------------------------------------------------
 
     jugadores_por_serie = (
         db.session.query(
@@ -1654,29 +2289,63 @@ def dashboard():
             Jugador.serie.isnot(None),
             Jugador.serie != ""
         )
-        .group_by(Jugador.serie)
+        .group_by(
+            Jugador.serie
+        )
         .order_by(
             db.func.count(Jugador.id).desc()
         )
         .all()
     )
 
-
-    # --------------------------------------------------------
-    # ÚLTIMOS JUGADORES REGISTRADOS
-    # --------------------------------------------------------
-
     ultimos_jugadores = (
         Jugador.query
-        .order_by(Jugador.id.desc())
+        .order_by(
+            Jugador.id.desc()
+        )
         .limit(5)
         .all()
     )
 
+    total_goles = db.session.query(
+        db.func.coalesce(
+            db.func.sum(Gol.cantidad),
+            0
+        )
+    ).scalar()
 
-    # --------------------------------------------------------
-    # ENVIAR DATOS AL DASHBOARD
-    # --------------------------------------------------------
+    total_amarillas = db.session.query(
+        db.func.coalesce(
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ),
+            0
+        )
+    ).filter(
+        RegistroDisciplinario.tipo == "Amarilla"
+    ).scalar()
+
+    total_rojas = db.session.query(
+        db.func.coalesce(
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ),
+            0
+        )
+    ).filter(
+        RegistroDisciplinario.tipo == "Roja"
+    ).scalar()
+
+    total_suspensiones = db.session.query(
+        db.func.coalesce(
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ),
+            0
+        )
+    ).filter(
+        RegistroDisciplinario.tipo == "Suspension"
+    ).scalar()
 
     return render_template(
         "dashboard.html",
@@ -1695,7 +2364,15 @@ def dashboard():
 
         jugadores_por_serie=jugadores_por_serie,
 
-        ultimos_jugadores=ultimos_jugadores
+        ultimos_jugadores=ultimos_jugadores,
+
+        total_goles=total_goles,
+
+        total_amarillas=total_amarillas,
+
+        total_rojas=total_rojas,
+
+        total_suspensiones=total_suspensiones
     )
 
 
@@ -1770,7 +2447,9 @@ def nuevo_club():
         activo=True
     )
 
-    db.session.add(club)
+    db.session.add(
+        club
+    )
 
     db.session.commit()
 
@@ -1831,7 +2510,9 @@ def nueva_serie():
         activo=True
     )
 
-    db.session.add(serie)
+    db.session.add(
+        serie
+    )
 
     db.session.commit()
 
