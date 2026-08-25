@@ -22,6 +22,7 @@
         padding: 30px 20px 60px;
     }
 
+
     /* =====================================================
        ENCABEZADO
     ===================================================== */
@@ -86,84 +87,58 @@
         background: #166534;
     }
 
+
     /* =====================================================
        ZONA DE TARJETAS
     ===================================================== */
 
     .tarjetas-contenedor {
-
         display: flex;
-
         justify-content: center;
-
         align-items: flex-start;
-
-        gap: 45px;
-
+        gap: 42px;
         flex-wrap: wrap;
-
     }
 
     .tarjeta-zona {
-
         display: flex;
-
         flex-direction: column;
-
         align-items: center;
-
         gap: 12px;
-
     }
 
     .tarjeta-titulo {
-
         font-size: 14px;
-
         font-weight: 900;
-
         color: #334155;
-
         text-transform: uppercase;
-
         letter-spacing: .5px;
-
     }
+
 
     /* =====================================================
        CREDENCIAL
     ===================================================== */
 
     .credencial {
-
         width: 242px;
-
         height: 382px;
-
         position: relative;
-
         overflow: hidden;
-
         border-radius: 18px;
-
         color: white;
-
-        font-family:
-            Arial,
-            Helvetica,
-            sans-serif;
+        font-family: Arial, Helvetica, sans-serif;
 
         box-shadow:
             0 18px 40px rgba(15,23,42,.28);
-
     }
+
 
     /* =====================================================
        FRENTE
     ===================================================== */
 
     .credencial-frente {
-
         background:
             linear-gradient(
                 145deg,
@@ -172,223 +147,151 @@
                 #f97316 75%,
                 #c2410c 100%
             );
-
     }
 
     .decoracion-superior {
-
         position: absolute;
-
         width: 220px;
         height: 220px;
-
         border-radius: 50%;
-
-        background:
-            rgba(255,255,255,.07);
-
+        background: rgba(255,255,255,.07);
         top: -110px;
         right: -80px;
-
     }
 
     .decoracion-inferior {
-
         position: absolute;
-
         width: 180px;
         height: 180px;
-
         border-radius: 50%;
-
-        background:
-            rgba(255,255,255,.06);
-
+        background: rgba(255,255,255,.06);
         bottom: -100px;
         left: -90px;
-
     }
 
     .contenido-frente {
-
         position: relative;
-
         z-index: 2;
-
         width: 100%;
-
         height: 100%;
-
         padding: 15px;
 
         display: flex;
-
         flex-direction: column;
-
     }
+
 
     /* =====================================================
        CABECERA FRENTE
     ===================================================== */
 
     .cabecera-frente {
-
         display: flex;
-
         justify-content: space-between;
-
         align-items: flex-start;
-
         gap: 8px;
-
         padding-bottom: 10px;
 
         border-bottom:
             1px solid
             rgba(255,255,255,.28);
-
     }
 
     .asociacion {
-
         font-size: 14px;
-
         line-height: 1.05;
-
         font-weight: 900;
-
         text-transform: uppercase;
-
     }
 
     .credencial-oficial {
-
-        background:
-            rgba(255,255,255,.16);
-
+        background: rgba(255,255,255,.16);
         border-radius: 9px;
-
         padding: 7px 8px;
 
         font-size: 8px;
-
         line-height: 1.05;
-
         font-weight: 900;
 
         text-transform: uppercase;
 
         width: 72px;
-
         text-align: center;
-
     }
+
 
     /* =====================================================
        FOTO
     ===================================================== */
 
     .foto-area {
-
         display: flex;
-
         justify-content: center;
-
         margin-top: 13px;
+    }
 
+    .foto,
+    .foto-vacia {
+        width: 105px;
+        height: 118px;
+        border-radius: 10px;
     }
 
     .foto {
-
-        width: 105px;
-
-        height: 118px;
-
         object-fit: cover;
-
-        border-radius: 10px;
-
         border: 3px solid white;
-
-        background:
-            rgba(255,255,255,.15);
-
+        background: rgba(255,255,255,.15);
     }
 
     .foto-vacia {
-
-        width: 105px;
-
-        height: 118px;
-
-        border:
-            2px dashed
-            rgba(255,255,255,.75);
-
-        border-radius: 10px;
+        border: 2px dashed rgba(255,255,255,.75);
 
         display: flex;
-
         justify-content: center;
-
         align-items: center;
 
         text-align: center;
 
         font-size: 9px;
-
         font-weight: 800;
-
     }
+
 
     /* =====================================================
        INFORMACIÓN FRENTE
     ===================================================== */
 
     .informacion {
-
         margin-top: 10px;
 
         text-align: center;
 
         display: flex;
-
         flex-direction: column;
 
         gap: 5px;
-
     }
 
     .nombre {
-
         margin: 0 0 2px;
 
         font-size: 14px;
-
         line-height: 1.05;
-
         font-weight: 900;
 
         text-transform: uppercase;
 
         word-break: break-word;
-
     }
 
     .dato {
-
         display: flex;
-
         flex-direction: column;
-
         align-items: center;
-
     }
 
     .dato-label {
-
         font-size: 6.5px;
-
         line-height: 1;
 
         font-weight: 800;
@@ -398,15 +301,12 @@
         opacity: .75;
 
         letter-spacing: .5px;
-
     }
 
     .dato-valor {
-
         margin-top: 2px;
 
         font-size: 9.5px;
-
         line-height: 1.05;
 
         font-weight: 900;
@@ -414,17 +314,15 @@
         max-width: 205px;
 
         overflow-wrap: anywhere;
-
     }
 
+
     /* =====================================================
-       ESTADO FRENTE
+       ESTADO
     ===================================================== */
 
     .estado {
-
         margin-top: auto;
-
         align-self: center;
 
         padding: 5px 13px;
@@ -434,11 +332,9 @@
         background: white;
 
         font-size: 8px;
-
         font-weight: 900;
 
         white-space: nowrap;
-
     }
 
     .estado-vigente {
@@ -457,18 +353,16 @@
         color: #1f2937;
     }
 
+
     /* =====================================================
        PIE FRENTE
     ===================================================== */
 
     .pie {
-
         margin-top: 8px;
 
         margin-left: -15px;
-
         margin-right: -15px;
-
         margin-bottom: -15px;
 
         height: 38px;
@@ -485,37 +379,29 @@
         display: flex;
 
         justify-content: space-between;
-
         align-items: center;
-
     }
 
     .identificacion {
-
         font-size: 7px;
-
         line-height: 1.1;
 
         font-weight: 900;
 
         text-transform: uppercase;
-
     }
 
     .numero {
-
         font-size: 10px;
-
         font-weight: 900;
-
     }
+
 
     /* =====================================================
        REVERSO
     ===================================================== */
 
     .credencial-reverso {
-
         background:
             linear-gradient(
                 145deg,
@@ -524,15 +410,12 @@
                 #ea580c 75%,
                 #9a3412 100%
             );
-
     }
 
     .circulo-superior {
-
         position: absolute;
 
         width: 220px;
-
         height: 220px;
 
         border-radius: 50%;
@@ -541,17 +424,13 @@
             rgba(255,255,255,.06);
 
         top: -120px;
-
         left: -90px;
-
     }
 
     .circulo-inferior {
-
         position: absolute;
 
         width: 200px;
-
         height: 200px;
 
         border-radius: 50%;
@@ -560,181 +439,159 @@
             rgba(255,255,255,.06);
 
         bottom: -120px;
-
         right: -90px;
-
     }
 
     .contenido-reverso {
-
         position: relative;
 
         z-index: 2;
 
         width: 100%;
-
         height: 100%;
 
-        padding: 16px;
+        padding: 14px;
 
         display: flex;
 
         flex-direction: column;
 
         align-items: center;
-
     }
+
 
     /* =====================================================
        CABECERA REVERSO
     ===================================================== */
 
     .cabecera-reverso {
-
         width: 100%;
 
         text-align: center;
 
-        padding-bottom: 12px;
+        padding-bottom: 9px;
 
         border-bottom:
             1px solid
             rgba(255,255,255,.25);
-
     }
 
     .asociacion-reverso {
-
-        font-size: 15px;
-
-        line-height: 1.1;
+        font-size: 14px;
+        line-height: 1.05;
 
         font-weight: 900;
 
         text-transform: uppercase;
-
     }
 
     .subtitulo {
+        margin-top: 4px;
 
-        margin-top: 5px;
-
-        font-size: 7px;
+        font-size: 6.5px;
 
         font-weight: 800;
 
-        letter-spacing: .7px;
+        letter-spacing: .6px;
 
         opacity: .8;
 
         text-transform: uppercase;
-
     }
+
 
     /* =====================================================
        QR
     ===================================================== */
 
     .qr-area {
+        margin-top: 11px;
 
-        margin-top: 18px;
-
-        width: 145px;
-
-        height: 145px;
+        width: 126px;
+        height: 126px;
 
         background: white;
 
-        padding: 9px;
+        padding: 8px;
 
-        border-radius: 14px;
+        border-radius: 12px;
 
         display: flex;
 
         align-items: center;
-
         justify-content: center;
 
         box-shadow:
-            0 8px 20px rgba(0,0,0,.20);
+            0 6px 16px rgba(0,0,0,.20);
 
+        flex-shrink: 0;
     }
 
     .qr {
-
         width: 100%;
-
         height: 100%;
 
         object-fit: contain;
-
     }
 
     .qr-titulo {
+        margin-top: 7px;
 
-        margin-top: 12px;
-
-        font-size: 11px;
+        font-size: 9.5px;
 
         font-weight: 900;
 
         text-transform: uppercase;
 
         text-align: center;
-
     }
 
     .qr-descripcion {
+        margin-top: 3px;
 
-        margin-top: 5px;
+        max-width: 195px;
 
-        max-width: 190px;
+        font-size: 6.5px;
 
-        font-size: 7.5px;
-
-        line-height: 1.25;
+        line-height: 1.15;
 
         text-align: center;
 
         opacity: .85;
-
     }
+
 
     /* =====================================================
        DATOS REVERSO
     ===================================================== */
 
     .datos {
-
-        margin-top: 15px;
+        margin-top: 8px;
 
         width: 100%;
 
         background:
             rgba(0,0,0,.14);
 
-        border-radius: 11px;
+        border-radius: 9px;
 
-        padding: 10px;
-
+        padding: 6px 9px;
     }
 
     .dato-reverso {
-
         display: flex;
 
         justify-content: space-between;
 
         align-items: center;
 
-        gap: 10px;
+        gap: 7px;
 
-        padding: 5px 0;
+        padding: 3px 0;
 
         border-bottom:
             1px solid
             rgba(255,255,255,.12);
-
     }
 
     .dato-reverso:last-child {
@@ -742,8 +599,7 @@
     }
 
     .dato-label-reverso {
-
-        font-size: 7px;
+        font-size: 6.5px;
 
         font-weight: 800;
 
@@ -751,69 +607,67 @@
 
         opacity: .7;
 
+        flex-shrink: 0;
     }
 
     .dato-valor-reverso {
-
-        font-size: 8px;
+        font-size: 7px;
 
         font-weight: 900;
 
         text-align: right;
 
+        max-width: 145px;
+
+        overflow-wrap: anywhere;
     }
+
 
     /* =====================================================
        AVISO
     ===================================================== */
 
     .aviso {
-
         margin-top: auto;
 
         width: 100%;
 
         text-align: center;
 
-        padding-top: 10px;
+        padding-top: 7px;
 
         border-top:
             1px solid
             rgba(255,255,255,.22);
-
     }
 
     .aviso-principal {
-
-        font-size: 7px;
+        font-size: 6.5px;
 
         font-weight: 900;
 
         text-transform: uppercase;
-
     }
 
     .aviso-secundario {
+        margin-top: 3px;
 
-        margin-top: 4px;
+        font-size: 5.8px;
 
-        font-size: 6.5px;
-
-        line-height: 1.2;
+        line-height: 1.15;
 
         opacity: .75;
-
     }
 
+
     /* =====================================================
-       INFORMACIÓN DE IMPRESIÓN
+       NOTA IMPRESIÓN
     ===================================================== */
 
     .nota-impresion {
-
         max-width: 650px;
 
-        margin: 35px auto 0;
+        margin: 32px auto 0;
 
         padding: 15px 18px;
 
@@ -830,12 +684,12 @@
         line-height: 1.5;
 
         text-align: center;
-
     }
 
     .nota-impresion strong {
         color: #111827;
     }
+
 
     /* =====================================================
        RESPONSIVE
@@ -851,7 +705,15 @@
             gap: 30px;
         }
 
+        .credencial-completa-header {
+            margin-bottom: 25px;
+        }
+
+        .titulo h1 {
+            font-size: 25px;
+        }
     }
+
 
     /* =====================================================
        IMPRESIÓN
@@ -860,22 +722,16 @@
     @media print {
 
         @page {
-
             size: auto;
-
             margin: 0;
-
         }
 
         html,
         body {
-
             margin: 0 !important;
-
             padding: 0 !important;
 
             background: white !important;
-
         }
 
         header,
@@ -883,57 +739,43 @@
         footer,
         .credencial-completa-header,
         .nota-impresion {
-
             display: none !important;
-
         }
 
         .credencial-completa-pagina {
-
             margin: 0 !important;
-
-            padding: 0 !important;
+            padding: 15mm !important;
 
             max-width: none !important;
-
         }
 
         .tarjetas-contenedor {
-
             display: flex;
 
             justify-content: center;
-
             align-items: flex-start;
 
-            gap: 25px;
+            gap: 12mm;
 
             flex-wrap: nowrap;
-
         }
 
         .tarjeta-zona {
-
             gap: 0;
-
         }
 
         .tarjeta-titulo {
-
             display: none !important;
-
         }
 
         .credencial {
-
             box-shadow: none !important;
 
+            border-radius: 0 !important;
+
             print-color-adjust: exact;
-
             -webkit-print-color-adjust: exact;
-
         }
-
     }
 
 </style>
@@ -1016,6 +858,8 @@
                 <div class="contenido-frente">
 
 
+                    <!-- CABECERA -->
+
                     <div class="cabecera-frente">
 
                         <div class="asociacion">
@@ -1070,11 +914,8 @@
 
                     <div class="informacion">
 
-
                         <h2 class="nombre">
-
                             {{ jugador.nombre_completo }}
-
                         </h2>
 
 
@@ -1125,12 +966,15 @@
 
                             <span class="dato-valor">
 
-                                {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
+                                {% if jugador.fecha_nacimiento %}
+                                    {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
+                                {% else %}
+                                    -
+                                {% endif %}
 
                             </span>
 
                         </div>
-
 
                     </div>
 
@@ -1275,13 +1119,11 @@
                         <div class="dato-reverso">
 
                             <span class="dato-label-reverso">
-                                Jugador
+                                JUGADOR
                             </span>
 
                             <span class="dato-valor-reverso">
-
                                 {{ jugador.nombre_completo }}
-
                             </span>
 
                         </div>
@@ -1294,9 +1136,7 @@
                             </span>
 
                             <span class="dato-valor-reverso">
-
                                 {{ jugador.rut }}
-
                             </span>
 
                         </div>
@@ -1305,13 +1145,11 @@
                         <div class="dato-reverso">
 
                             <span class="dato-label-reverso">
-                                Club
+                                CLUB
                             </span>
 
                             <span class="dato-valor-reverso">
-
                                 {{ jugador.club }}
-
                             </span>
 
                         </div>
@@ -1324,9 +1162,7 @@
                             </span>
 
                             <span class="dato-valor-reverso">
-
                                 #{{ jugador.id }}
-
                             </span>
 
                         </div>
@@ -1375,6 +1211,7 @@
     <div class="nota-impresion">
 
         <strong>Impresión:</strong>
+
         esta vista reúne el frente y el reverso de la
         credencial oficial para facilitar su revisión e impresión.
 
