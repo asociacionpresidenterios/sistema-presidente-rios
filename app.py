@@ -1447,6 +1447,24 @@ def credencial_jugador(jugador_id):
         "jugador_credencial.html",
         jugador=jugador
     )
+    # ============================================================
+# CREDENCIAL COMPLETA — FRENTE + REVERSO
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/credencial-completa"
+)
+def credencial_completa(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    return render_template(
+        "credencial_completa.html",
+        jugador=jugador
+    )
 # ============================================================
 # REVERSO DE CREDENCIAL
 # ============================================================
