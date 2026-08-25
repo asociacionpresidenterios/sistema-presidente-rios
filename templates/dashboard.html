@@ -4,15 +4,19 @@
 
 <style>
 
+    /* =========================================================
+       DASHBOARD PRINCIPAL
+    ========================================================= */
+
     .dashboard-page {
-        max-width: 1400px;
+        max-width: 1450px;
         margin: 0 auto;
         padding: 25px;
     }
 
-    /* =====================================================
+    /* =========================================================
        CABECERA
-    ====================================================== */
+    ========================================================= */
 
     .dashboard-header {
         display: flex;
@@ -64,15 +68,26 @@
     }
 
     .dashboard-btn.primary {
-        background: #111827;
-        color: white;
-        border-color: #111827;
+        background: #f97316;
+        color: #ffffff;
+        border-color: #f97316;
     }
 
+    .dashboard-btn.blue {
+        background: #2563eb;
+        color: #ffffff;
+        border-color: #2563eb;
+    }
 
-    /* =====================================================
-       TARJETAS ESTADÍSTICAS
-    ====================================================== */
+    .dashboard-btn.green {
+        background: #16a34a;
+        color: #ffffff;
+        border-color: #16a34a;
+    }
+
+    /* =========================================================
+       TARJETAS DE ESTADÍSTICAS
+    ========================================================= */
 
     .stats-grid {
         display: grid;
@@ -82,13 +97,13 @@
     }
 
     .stat-card {
-        background: white;
+        position: relative;
+        overflow: hidden;
+        background: #ffffff;
         border: 1px solid #e5e7eb;
         border-radius: 18px;
         padding: 20px;
         box-shadow: 0 5px 18px rgba(15,23,42,.05);
-        position: relative;
-        overflow: hidden;
     }
 
     .stat-card::after {
@@ -121,8 +136,8 @@
     }
 
     .stat-icon {
-        width: 45px;
-        height: 45px;
+        width: 46px;
+        height: 46px;
         border-radius: 12px;
         display: flex;
         align-items: center;
@@ -159,16 +174,15 @@
     }
 
     .stat-number {
-        font-size: 30px;
+        font-size: 31px;
         font-weight: 900;
         color: #111827;
         line-height: 1;
     }
 
-
-    /* =====================================================
-       GRID
-    ====================================================== */
+    /* =========================================================
+       GRID GENERAL
+    ========================================================= */
 
     .dashboard-grid {
         display: grid;
@@ -177,7 +191,7 @@
     }
 
     .dashboard-panel {
-        background: white;
+        background: #ffffff;
         border: 1px solid #e5e7eb;
         border-radius: 18px;
         padding: 22px;
@@ -194,6 +208,7 @@
         align-items: center;
         gap: 15px;
         margin-bottom: 20px;
+        flex-wrap: wrap;
     }
 
     .panel-header h2 {
@@ -208,10 +223,9 @@
         font-size: 13px;
     }
 
-
-    /* =====================================================
+    /* =========================================================
        ESTADOS
-    ====================================================== */
+    ========================================================= */
 
     .status-list {
         display: flex;
@@ -241,8 +255,8 @@
 
     .status-fill {
         height: 100%;
-        border-radius: 20px;
         min-width: 2px;
+        border-radius: 20px;
     }
 
     .status-fill.vigente {
@@ -264,76 +278,148 @@
     .status-number {
         text-align: right;
         font-weight: 900;
+        color: #111827;
     }
 
+    /* =========================================================
+       CLUBES
+    ========================================================= */
 
-    /* =====================================================
-       LISTAS CLUB / SERIE
-    ====================================================== */
-
-    .ranking-list {
+    .club-list {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 11px;
     }
 
-    .ranking-item {
-        display: flex;
-        justify-content: space-between;
+    .club-row {
+        display: grid;
+        grid-template-columns: 30px 1fr 55px;
         align-items: center;
-        gap: 15px;
-        padding: 13px 15px;
-        background: #f8fafc;
-        border: 1px solid #e5e7eb;
+        gap: 10px;
+        padding: 10px 12px;
         border-radius: 11px;
+        background: #f8fafc;
+        border: 1px solid #eef2f7;
     }
 
-    .ranking-name {
+    .club-position {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: #111827;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+    .club-name {
+        font-size: 14px;
         font-weight: 800;
         color: #1f2937;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    .ranking-number {
-        min-width: 35px;
-        padding: 6px 9px;
-        border-radius: 999px;
-        background: #eef2ff;
-        color: #3730a3;
-        text-align: center;
+    .club-count {
+        text-align: right;
+        font-size: 14px;
         font-weight: 900;
-        font-size: 12px;
+        color: #2563eb;
     }
 
-    .empty-data {
-        padding: 25px;
+    .empty-message {
         text-align: center;
-        color: #9ca3af;
+        padding: 25px;
+        border-radius: 12px;
         background: #f8fafc;
-        border-radius: 10px;
+        color: #9ca3af;
+        font-size: 14px;
     }
 
+    /* =========================================================
+       SERIES
+    ========================================================= */
 
-    /* =====================================================
+    .series-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .serie-card {
+        padding: 15px;
+        border-radius: 13px;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+    }
+
+    .serie-card-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .serie-name {
+        font-size: 14px;
+        font-weight: 900;
+        color: #111827;
+    }
+
+    .serie-number {
+        font-size: 20px;
+        font-weight: 900;
+        color: #2563eb;
+    }
+
+    .serie-bar {
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .serie-fill {
+        height: 100%;
+        border-radius: 20px;
+        background: #2563eb;
+    }
+
+    /* =========================================================
        ÚLTIMOS JUGADORES
-    ====================================================== */
+    ========================================================= */
+
+    .players-table-wrapper {
+        overflow-x: auto;
+    }
 
     .players-table {
         width: 100%;
         border-collapse: collapse;
+        min-width: 750px;
     }
 
     .players-table th {
         text-align: left;
-        padding: 12px;
-        font-size: 12px;
+        padding: 12px 10px;
+        background: #f8fafc;
         color: #6b7280;
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
         border-bottom: 1px solid #e5e7eb;
     }
 
     .players-table td {
-        padding: 13px 12px;
+        padding: 13px 10px;
         border-bottom: 1px solid #f1f5f9;
-        font-size: 13px;
+        color: #374151;
+        font-size: 14px;
     }
 
     .players-table tr:last-child td {
@@ -341,17 +427,18 @@
     }
 
     .player-name {
-        font-weight: 800;
+        font-weight: 900;
         color: #111827;
     }
 
     .player-rut {
         font-weight: 700;
-        color: #475569;
+        color: #64748b;
     }
 
     .badge {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
         padding: 5px 9px;
         border-radius: 999px;
         font-size: 11px;
@@ -378,14 +465,30 @@
         color: #111827;
     }
 
+    .btn-ficha {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 7px 11px;
+        border-radius: 8px;
+        background: #eef2ff;
+        color: #3730a3;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 900;
+    }
 
-    /* =====================================================
+    .btn-ficha:hover {
+        background: #e0e7ff;
+    }
+
+    /* =========================================================
        ACCESOS RÁPIDOS
-    ====================================================== */
+    ========================================================= */
 
     .quick-actions {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(4, 1fr);
         gap: 12px;
     }
 
@@ -403,14 +506,14 @@
     }
 
     .quick-action:hover {
-        background: white;
+        background: #ffffff;
         box-shadow: 0 5px 15px rgba(0,0,0,.07);
         transform: translateY(-1px);
     }
 
     .quick-icon {
-        width: 40px;
-        height: 40px;
+        width: 42px;
+        height: 42px;
         border-radius: 10px;
         display: flex;
         align-items: center;
@@ -422,19 +525,18 @@
 
     .quick-text strong {
         display: block;
-        font-size: 14px;
+        font-size: 13px;
         margin-bottom: 3px;
     }
 
     .quick-text small {
         color: #6b7280;
-        font-size: 12px;
+        font-size: 11px;
     }
 
-
-    /* =====================================================
+    /* =========================================================
        BUSCADOR
-    ====================================================== */
+    ========================================================= */
 
     .dashboard-search {
         display: flex;
@@ -443,7 +545,7 @@
 
     .dashboard-search input {
         flex: 1;
-        height: 44px;
+        height: 46px;
         border: 1px solid #d1d5db;
         border-radius: 10px;
         padding: 0 14px;
@@ -457,7 +559,7 @@
     }
 
     .dashboard-search button {
-        border: none;
+        border: 0;
         border-radius: 10px;
         padding: 0 22px;
         background: #111827;
@@ -466,24 +568,64 @@
         cursor: pointer;
     }
 
+    .dashboard-search button:hover {
+        background: #1f2937;
+    }
 
-    /* =====================================================
+    /* =========================================================
+       RESUMEN
+    ========================================================= */
+
+    .info-box {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 18px;
+        border-radius: 13px;
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+    }
+
+    .info-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: #eef2ff;
+        font-size: 25px;
+        flex-shrink: 0;
+    }
+
+    .info-box strong {
+        display: block;
+        margin-bottom: 4px;
+        color: #111827;
+    }
+
+    .info-box span {
+        color: #6b7280;
+        font-size: 13px;
+    }
+
+    /* =========================================================
        RESPONSIVE
-    ====================================================== */
+    ========================================================= */
 
-    @media (max-width: 1100px) {
+    @media (max-width: 1200px) {
 
         .stats-grid {
             grid-template-columns: repeat(3, 1fr);
         }
 
-    }
-
-    @media (max-width: 800px) {
-
-        .stats-grid {
+        .quick-actions {
             grid-template-columns: repeat(2, 1fr);
         }
+
+    }
+
+    @media (max-width: 850px) {
 
         .dashboard-grid {
             grid-template-columns: 1fr;
@@ -493,23 +635,31 @@
             grid-column: auto;
         }
 
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
     }
 
-    @media (max-width: 550px) {
+    @media (max-width: 600px) {
 
         .dashboard-page {
             padding: 15px;
-        }
-
-        .stats-grid {
-            grid-template-columns: 1fr;
         }
 
         .dashboard-title h1 {
             font-size: 25px;
         }
 
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
         .quick-actions {
+            grid-template-columns: 1fr;
+        }
+
+        .series-grid {
             grid-template-columns: 1fr;
         }
 
@@ -525,13 +675,12 @@
             flex: 1;
         }
 
-        .players-table {
-            font-size: 12px;
+        .dashboard-search {
+            flex-direction: column;
         }
 
-        .players-table th:nth-child(3),
-        .players-table td:nth-child(3) {
-            display: none;
+        .dashboard-search button {
+            height: 44px;
         }
 
     }
@@ -540,7 +689,6 @@
 
 
 <div class="dashboard-page">
-
 
     <!-- =====================================================
          CABECERA
@@ -555,8 +703,8 @@
             </h1>
 
             <p>
-                Panel de control de jugadores —
-                Asociación Presidente Ríos
+                Panel de control de jugadores
+                — Asociación Presidente Ríos
             </p>
 
         </div>
@@ -568,12 +716,19 @@
                 href="{{ url_for('index') }}"
                 class="dashboard-btn"
             >
-                👥 Jugadores
+                📋 Jugadores
+            </a>
+
+            <a
+                href="{{ url_for('configuracion') }}"
+                class="dashboard-btn"
+            >
+                ⚙️ Configuración
             </a>
 
             <a
                 href="{{ url_for('importar_jugadores') }}"
-                class="dashboard-btn"
+                class="dashboard-btn blue"
             >
                 📥 Importar Excel
             </a>
@@ -591,11 +746,10 @@
 
 
     <!-- =====================================================
-         ESTADÍSTICAS
+         ESTADÍSTICAS GENERALES
     ====================================================== -->
 
     <div class="stats-grid">
-
 
         <div class="stat-card total">
 
@@ -692,7 +846,7 @@
 
 
         <!-- =================================================
-             ESTADOS
+             ESTADO DE JUGADORES
         ================================================== -->
 
         <div class="dashboard-panel">
@@ -720,7 +874,6 @@
 
 
             <div class="status-list">
-
 
                 <div class="status-row">
 
@@ -815,54 +968,6 @@
 
 
         <!-- =================================================
-             JUGADORES POR SERIE
-        ================================================== -->
-
-        <div class="dashboard-panel">
-
-            <div class="panel-header">
-
-                <h2>
-                    🏆 Jugadores por serie
-                </h2>
-
-                <span>
-                    Total registrados
-                </span>
-
-            </div>
-
-
-            <div class="ranking-list">
-
-                {% for serie, cantidad in jugadores_por_serie %}
-
-                    <div class="ranking-item">
-
-                        <div class="ranking-name">
-                            {{ serie }}
-                        </div>
-
-                        <div class="ranking-number">
-                            {{ cantidad }}
-                        </div>
-
-                    </div>
-
-                {% else %}
-
-                    <div class="empty-data">
-                        No hay jugadores registrados por serie.
-                    </div>
-
-                {% endfor %}
-
-            </div>
-
-        </div>
-
-
-        <!-- =================================================
              JUGADORES POR CLUB
         ================================================== -->
 
@@ -875,37 +980,112 @@
                 </h2>
 
                 <span>
-                    Clubes con jugadores
+                    Ranking
                 </span>
 
             </div>
 
 
-            <div class="ranking-list">
+            {% if jugadores_por_club %}
 
-                {% for club, cantidad in jugadores_por_club %}
+                <div class="club-list">
 
-                    <div class="ranking-item">
+                    {% for club, cantidad in jugadores_por_club[:8] %}
 
-                        <div class="ranking-name">
-                            {{ club }}
+                        <div class="club-row">
+
+                            <div class="club-position">
+                                {{ loop.index }}
+                            </div>
+
+                            <div class="club-name">
+                                {{ club }}
+                            </div>
+
+                            <div class="club-count">
+                                {{ cantidad }}
+                            </div>
+
                         </div>
 
-                        <div class="ranking-number">
-                            {{ cantidad }}
-                        </div>
+                    {% endfor %}
 
-                    </div>
+                </div>
 
-                {% else %}
+            {% else %}
 
-                    <div class="empty-data">
-                        No hay jugadores registrados por club.
-                    </div>
+                <div class="empty-message">
+                    No hay jugadores registrados por club.
+                </div>
 
-                {% endfor %}
+            {% endif %}
+
+        </div>
+
+
+        <!-- =================================================
+             JUGADORES POR SERIE
+        ================================================== -->
+
+        <div class="dashboard-panel">
+
+            <div class="panel-header">
+
+                <h2>
+                    🏆 Jugadores por serie
+                </h2>
+
+                <span>
+                    Distribución
+                </span>
 
             </div>
+
+
+            {% if jugadores_por_serie %}
+
+                {% set max_serie = jugadores_por_serie[0][1] %}
+
+                <div class="series-grid">
+
+                    {% for serie, cantidad in jugadores_por_serie %}
+
+                        <div class="serie-card">
+
+                            <div class="serie-card-top">
+
+                                <div class="serie-name">
+                                    {{ serie }}
+                                </div>
+
+                                <div class="serie-number">
+                                    {{ cantidad }}
+                                </div>
+
+                            </div>
+
+                            <div class="serie-bar">
+
+                                <div
+                                    class="serie-fill"
+                                    style="width: {{ (cantidad / max_serie * 100) }}%;"
+                                ></div>
+
+                            </div>
+
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% else %}
+
+                <div class="empty-message">
+                    No hay jugadores registrados por serie.
+                </div>
+
+            {% endif %}
 
         </div>
 
@@ -930,7 +1110,6 @@
 
 
             <div class="quick-actions">
-
 
                 <a
                     href="{{ url_for('nuevo_jugador') }}"
@@ -1005,22 +1184,22 @@
 
 
                 <a
-                    href="{{ url_for('index') }}"
+                    href="{{ url_for('configuracion') }}"
                     class="quick-action"
                 >
 
                     <div class="quick-icon">
-                        🔎
+                        ⚙️
                     </div>
 
                     <div class="quick-text">
 
                         <strong>
-                            Buscar jugador
+                            Configuración
                         </strong>
 
                         <small>
-                            Buscar por RUT o nombre
+                            Clubes y series
                         </small>
 
                     </div>
@@ -1052,140 +1231,169 @@
 
                 </div>
 
+
+                <a
+                    href="{{ url_for('index') }}"
+                    class="dashboard-btn"
+                >
+                    Ver todos →
+                </a>
+
             </div>
 
 
-            <div style="overflow-x:auto;">
+            {% if ultimos_jugadores %}
 
-                <table class="players-table">
+                <div class="players-table-wrapper">
 
-                    <thead>
+                    <table class="players-table">
 
-                        <tr>
-
-                            <th>
-                                RUT
-                            </th>
-
-                            <th>
-                                Nombre
-                            </th>
-
-                            <th>
-                                Fecha nacimiento
-                            </th>
-
-                            <th>
-                                Serie
-                            </th>
-
-                            <th>
-                                Club
-                            </th>
-
-                            <th>
-                                Estado
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-
-                    <tbody>
-
-                        {% for jugador in ultimos_jugadores %}
+                        <thead>
 
                             <tr>
 
-                                <td class="player-rut">
-                                    {{ jugador.rut }}
-                                </td>
+                                <th>
+                                    Jugador
+                                </th>
 
-                                <td class="player-name">
-                                    {{ jugador.nombre_completo }}
-                                </td>
+                                <th>
+                                    RUT
+                                </th>
 
-                                <td>
+                                <th>
+                                    Club
+                                </th>
 
-                                    {% if jugador.fecha_nacimiento %}
+                                <th>
+                                    Serie
+                                </th>
 
-                                        {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
+                                <th>
+                                    Estado
+                                </th>
 
-                                    {% else %}
-
-                                        —
-
-                                    {% endif %}
-
-                                </td>
-
-                                <td>
-                                    {{ jugador.serie or '—' }}
-                                </td>
-
-                                <td>
-                                    {{ jugador.club or '—' }}
-                                </td>
-
-                                <td>
-
-                                    {% if jugador.estado == "Vigente" %}
-
-                                        <span class="badge badge-vigente">
-                                            🟢 Vigente
-                                        </span>
-
-                                    {% elif jugador.estado == "Pendiente" %}
-
-                                        <span class="badge badge-pendiente">
-                                            🟡 Pendiente
-                                        </span>
-
-                                    {% elif jugador.estado == "Suspendido" %}
-
-                                        <span class="badge badge-suspendido">
-                                            🔴 Suspendido
-                                        </span>
-
-                                    {% else %}
-
-                                        <span class="badge badge-inhabilitado">
-                                            ⚫ {{ jugador.estado }}
-                                        </span>
-
-                                    {% endif %}
-
-                                </td>
+                                <th>
+                                    Acción
+                                </th>
 
                             </tr>
 
-                        {% else %}
+                        </thead>
 
-                            <tr>
 
-                                <td
-                                    colspan="6"
-                                    style="text-align:center; padding:30px; color:#9ca3af;"
-                                >
-                                    No hay jugadores registrados todavía.
-                                </td>
+                        <tbody>
 
-                            </tr>
+                            {% for jugador in ultimos_jugadores %}
 
-                        {% endfor %}
+                                <tr>
 
-                    </tbody>
+                                    <td>
 
-                </table>
+                                        <div class="player-name">
+                                            {{ jugador.nombre_completo }}
+                                        </div>
 
-            </div>
+                                    </td>
+
+
+                                    <td>
+
+                                        <div class="player-rut">
+                                            {{ jugador.rut }}
+                                        </div>
+
+                                    </td>
+
+
+                                    <td>
+                                        {{ jugador.club or "—" }}
+                                    </td>
+
+
+                                    <td>
+                                        {{ jugador.serie or "—" }}
+                                    </td>
+
+
+                                    <td>
+
+                                        {% if jugador.estado == "Vigente" %}
+
+                                            <span class="badge badge-vigente">
+                                                🟢 Vigente
+                                            </span>
+
+                                        {% elif jugador.estado == "Pendiente" %}
+
+                                            <span class="badge badge-pendiente">
+                                                🟡 Pendiente
+                                            </span>
+
+                                        {% elif jugador.estado == "Suspendido" %}
+
+                                            <span class="badge badge-suspendido">
+                                                🔴 Suspendido
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="badge badge-inhabilitado">
+                                                ⚫ Inhabilitado
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <td>
+
+                                        <a
+                                            href="{{ url_for(
+                                                'ficha_jugador',
+                                                jugador_id=jugador.id
+                                            ) }}"
+                                            class="btn-ficha"
+                                        >
+                                            Ver ficha
+                                        </a>
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="empty-message">
+
+                    👤 Todavía no hay jugadores registrados.
+
+                    <br><br>
+
+                    <a
+                        href="{{ url_for('nuevo_jugador') }}"
+                        class="dashboard-btn primary"
+                    >
+                        ➕ Registrar primer jugador
+                    </a>
+
+                </div>
+
+            {% endif %}
 
         </div>
 
 
         <!-- =================================================
-             BÚSQUEDA
+             BÚSQUEDA RÁPIDA
         ================================================== -->
 
         <div class="dashboard-panel full">
@@ -1225,6 +1433,47 @@
                 </button>
 
             </form>
+
+        </div>
+
+
+        <!-- =================================================
+             RESUMEN DEL SISTEMA
+        ================================================== -->
+
+        <div class="dashboard-panel full">
+
+            <div class="panel-header">
+
+                <h2>
+                    📌 Resumen del sistema
+                </h2>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <div class="info-icon">
+                    🪪
+                </div>
+
+                <div>
+
+                    <strong>
+                        Sistema de jugadores — Asociación Presidente Ríos
+                    </strong>
+
+                    <span>
+                        Desde este panel puedes administrar jugadores,
+                        clubes, series, estados, fotografías,
+                        credenciales, códigos QR y registros
+                        importados desde Excel.
+                    </span>
+
+                </div>
+
+            </div>
 
         </div>
 
