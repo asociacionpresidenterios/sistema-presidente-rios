@@ -42,6 +42,7 @@
         cursor: pointer;
         text-decoration: none;
         font-weight: 800;
+        font-size: 14px;
     }
 
     .btn-primary {
@@ -49,9 +50,17 @@
         color: white;
     }
 
+    .btn-primary:hover {
+        background: #ea580c;
+    }
+
     .btn-secondary {
         background: #e5e7eb;
         color: #111827;
+    }
+
+    .btn-secondary:hover {
+        background: #d1d5db;
     }
 
     .config-grid {
@@ -65,7 +74,7 @@
         border: 1px solid #e5e7eb;
         border-radius: 18px;
         padding: 25px;
-        box-shadow: 0 8px 25px rgba(0,0,0,.06);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
     }
 
     .config-card h2 {
@@ -98,7 +107,7 @@
 
     .form-agregar input:focus {
         border-color: #f97316;
-        box-shadow: 0 0 0 3px rgba(249,115,22,.12);
+        box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.12);
     }
 
     .lista {
@@ -111,19 +120,27 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 10px;
+        gap: 15px;
         padding: 13px 15px;
         background: #f9fafb;
         border: 1px solid #e5e7eb;
         border-radius: 11px;
     }
 
+    .item-informacion {
+        min-width: 0;
+        flex: 1;
+    }
+
     .item-nombre {
         font-weight: 800;
         color: #111827;
+        margin-bottom: 5px;
+        word-break: break-word;
     }
 
     .item-estado {
+        display: inline-block;
         font-size: 11px;
         font-weight: 900;
         padding: 5px 9px;
@@ -147,6 +164,7 @@
         cursor: pointer;
         font-size: 12px;
         font-weight: 800;
+        white-space: nowrap;
     }
 
     .btn-desactivar {
@@ -154,9 +172,17 @@
         color: #991b1b;
     }
 
+    .btn-desactivar:hover {
+        background: #fecaca;
+    }
+
     .btn-activar {
         background: #dcfce7;
         color: #166534;
+    }
+
+    .btn-activar:hover {
+        background: #bbf7d0;
     }
 
     .sin-registros {
@@ -165,6 +191,17 @@
         color: #9ca3af;
         background: #f9fafb;
         border-radius: 10px;
+    }
+
+    .info-box {
+        margin-top: 25px;
+        padding: 15px 18px;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+        border-radius: 12px;
+        font-size: 13px;
+        line-height: 1.5;
     }
 
     @media (max-width: 750px) {
@@ -177,6 +214,19 @@
             flex-direction: column;
         }
 
+        .form-agregar .btn {
+            width: 100%;
+        }
+
+        .item {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .btn-mini {
+            width: 100%;
+        }
+
     }
 
 </style>
@@ -184,11 +234,17 @@
 
 <div class="config-pagina">
 
+    <!-- ==================================================
+         ENCABEZADO
+    =================================================== -->
+
     <div class="config-header">
 
         <div>
 
-            <h1>⚙️ Configuración</h1>
+            <h1>
+                ⚙️ Configuración
+            </h1>
 
             <p>
                 Administración de clubes y series de la Asociación Presidente Ríos
@@ -206,6 +262,10 @@
     </div>
 
 
+    <!-- ==================================================
+         CLUBES Y SERIES
+    =================================================== -->
+
     <div class="config-grid">
 
 
@@ -215,7 +275,9 @@
 
         <div class="config-card">
 
-            <h2>⚽ Clubes</h2>
+            <h2>
+                ⚽ Clubes
+            </h2>
 
             <p>
                 Administra los clubes disponibles para registrar jugadores.
@@ -233,6 +295,7 @@
                     name="nombre"
                     placeholder="Nombre del nuevo club"
                     maxlength="120"
+                    autocomplete="off"
                     required
                 >
 
@@ -240,7 +303,7 @@
                     type="submit"
                     class="btn btn-primary"
                 >
-                    + Agregar
+                    ➕ Agregar club
                 </button>
 
             </form>
@@ -248,72 +311,73 @@
 
             <div class="lista">
 
-                {% for club in clubes %}
+                {% if clubes %}
 
-                    <div class="item">
+                    {% for club in clubes %}
 
-                        <div>
+                        <div class="item">
 
-                            <div class="item-nombre">
-                                {{ club.nombre }}
+                            <div class="item-informacion">
+
+                                <div class="item-nombre">
+                                    {{ club.nombre }}
+                                </div>
+
+                                {% if club.activo %}
+
+                                    <span class="item-estado activo">
+                                        ACTIVO
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="item-estado inactivo">
+                                        INACTIVO
+                                    </span>
+
+                                {% endif %}
+
                             </div>
 
-                            {% if club.activo %}
 
-                                <span class="item-estado activo">
-                                    ACTIVO
-                                </span>
+                            <form
+                                action="{{ url_for('cambiar_estado_club', club_id=club.id) }}"
+                                method="POST"
+                            >
 
-                            {% else %}
+                                {% if club.activo %}
 
-                                <span class="item-estado inactivo">
-                                    INACTIVO
-                                </span>
+                                    <button
+                                        type="submit"
+                                        class="btn-mini btn-desactivar"
+                                    >
+                                        Desactivar
+                                    </button>
 
-                            {% endif %}
+                                {% else %}
+
+                                    <button
+                                        type="submit"
+                                        class="btn-mini btn-activar"
+                                    >
+                                        Activar
+                                    </button>
+
+                                {% endif %}
+
+                            </form>
 
                         </div>
 
-
-                        <form
-                            action="{{ url_for(
-                                'cambiar_estado_club',
-                                club_id=club.id
-                            ) }}"
-                            method="POST"
-                        >
-
-                            {% if club.activo %}
-
-                                <button
-                                    type="submit"
-                                    class="btn-mini btn-desactivar"
-                                >
-                                    Desactivar
-                                </button>
-
-                            {% else %}
-
-                                <button
-                                    type="submit"
-                                    class="btn-mini btn-activar"
-                                >
-                                    Activar
-                                </button>
-
-                            {% endif %}
-
-                        </form>
-
-                    </div>
+                    {% endfor %}
 
                 {% else %}
 
                     <div class="sin-registros">
-                        No hay clubes registrados.
+                        No hay clubes registrados todavía.
                     </div>
 
-                {% endfor %}
+                {% endif %}
 
             </div>
 
@@ -326,7 +390,9 @@
 
         <div class="config-card">
 
-            <h2>🏆 Series</h2>
+            <h2>
+                🏆 Series
+            </h2>
 
             <p>
                 Administra las series disponibles para los jugadores.
@@ -344,6 +410,7 @@
                     name="nombre"
                     placeholder="Nombre de la nueva serie"
                     maxlength="80"
+                    autocomplete="off"
                     required
                 >
 
@@ -351,7 +418,7 @@
                     type="submit"
                     class="btn btn-primary"
                 >
-                    + Agregar
+                    ➕ Agregar serie
                 </button>
 
             </form>
@@ -359,76 +426,92 @@
 
             <div class="lista">
 
-                {% for serie in series %}
+                {% if series %}
 
-                    <div class="item">
+                    {% for serie in series %}
 
-                        <div>
+                        <div class="item">
 
-                            <div class="item-nombre">
-                                {{ serie.nombre }}
+                            <div class="item-informacion">
+
+                                <div class="item-nombre">
+                                    {{ serie.nombre }}
+                                </div>
+
+                                {% if serie.activo %}
+
+                                    <span class="item-estado activo">
+                                        ACTIVA
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="item-estado inactivo">
+                                        INACTIVA
+                                    </span>
+
+                                {% endif %}
+
                             </div>
 
-                            {% if serie.activo %}
 
-                                <span class="item-estado activo">
-                                    ACTIVA
-                                </span>
+                            <form
+                                action="{{ url_for('cambiar_estado_serie', serie_id=serie.id) }}"
+                                method="POST"
+                            >
 
-                            {% else %}
+                                {% if serie.activo %}
 
-                                <span class="item-estado inactivo">
-                                    INACTIVA
-                                </span>
+                                    <button
+                                        type="submit"
+                                        class="btn-mini btn-desactivar"
+                                    >
+                                        Desactivar
+                                    </button>
 
-                            {% endif %}
+                                {% else %}
+
+                                    <button
+                                        type="submit"
+                                        class="btn-mini btn-activar"
+                                    >
+                                        Activar
+                                    </button>
+
+                                {% endif %}
+
+                            </form>
 
                         </div>
 
-
-                        <form
-                            action="{{ url_for(
-                                'cambiar_estado_serie',
-                                serie_id=serie.id
-                            ) }}"
-                            method="POST"
-                        >
-
-                            {% if serie.activo %}
-
-                                <button
-                                    type="submit"
-                                    class="btn-mini btn-desactivar"
-                                >
-                                    Desactivar
-                                </button>
-
-                            {% else %}
-
-                                <button
-                                    type="submit"
-                                    class="btn-mini btn-activar"
-                                >
-                                    Activar
-                                </button>
-
-                            {% endif %}
-
-                        </form>
-
-                    </div>
+                    {% endfor %}
 
                 {% else %}
 
                     <div class="sin-registros">
-                        No hay series registradas.
+                        No hay series registradas todavía.
                     </div>
 
-                {% endfor %}
+                {% endif %}
 
             </div>
 
         </div>
+
+    </div>
+
+
+    <!-- ==================================================
+         INFORMACIÓN
+    =================================================== -->
+
+    <div class="info-box">
+
+        💡 <strong>Importante:</strong>
+        estos catálogos se utilizarán posteriormente para que
+        <strong>Club</strong> y <strong>Serie</strong> aparezcan como
+        listas desplegables al registrar o editar un jugador.
+        Los datos actuales de los jugadores no serán modificados.
 
     </div>
 
