@@ -16,6 +16,7 @@
         {% else %}
             Nuevo jugador
         {% endif %}
+        | Asociación Presidente Ríos
     </title>
 
     <style>
@@ -26,25 +27,48 @@
 
         body {
             margin: 0;
-            padding: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f1f5f9;
+            min-height: 100vh;
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+            background:
+                linear-gradient(
+                    135deg,
+                    #eef2ff 0%,
+                    #f8fafc 50%,
+                    #e0f2fe 100%
+                );
             color: #1e293b;
         }
 
+        /* ==================================================
+           CONTENEDOR
+        ================================================== */
+
         .contenedor {
             width: 100%;
-            max-width: 850px;
-            margin: 40px auto;
-            padding: 20px;
+            max-width: 950px;
+            margin: 0 auto;
+            padding: 30px 20px 50px;
         }
 
+        /* ==================================================
+           TARJETA PRINCIPAL
+        ================================================== */
+
         .tarjeta {
-            background: white;
-            border-radius: 18px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,.08);
+            background: #ffffff;
+            border-radius: 22px;
+            padding: 32px;
+            box-shadow:
+                0 20px 50px rgba(15, 23, 42, .10);
+            border: 1px solid #e2e8f0;
         }
+
+        /* ==================================================
+           ENCABEZADO
+        ================================================== */
 
         .encabezado {
             display: flex;
@@ -52,44 +76,88 @@
             align-items: center;
             gap: 20px;
             margin-bottom: 30px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #e2e8f0;
             flex-wrap: wrap;
         }
 
         .titulo {
             margin: 0;
-            font-size: 28px;
-            font-weight: 800;
+            font-size: 30px;
+            line-height: 1.15;
+            font-weight: 900;
             color: #0f172a;
         }
 
         .subtitulo {
-            margin-top: 6px;
+            margin-top: 8px;
             color: #64748b;
             font-size: 14px;
+            font-weight: 500;
         }
 
         .boton-volver {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
             text-decoration: none;
-            background: #e2e8f0;
+            background: #f1f5f9;
             color: #334155;
             padding: 11px 18px;
-            border-radius: 10px;
-            font-weight: 700;
+            border-radius: 11px;
+            font-weight: 800;
+            border: 1px solid #e2e8f0;
+            transition: .2s ease;
         }
 
         .boton-volver:hover {
-            background: #cbd5e1;
+            background: #e2e8f0;
+            transform: translateY(-1px);
         }
+
+        /* ==================================================
+           ALERTAS
+        ================================================== */
+
+        .alertas {
+            margin-bottom: 24px;
+        }
+
+        .alerta {
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .alerta-error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .alerta-success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        /* ==================================================
+           FORMULARIO
+        ================================================== */
 
         .formulario {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 22px;
         }
 
         .campo {
             display: flex;
             flex-direction: column;
+            min-width: 0;
         }
 
         .campo-completo {
@@ -98,7 +166,7 @@
 
         label {
             margin-bottom: 8px;
-            font-weight: 700;
+            font-weight: 800;
             color: #334155;
             font-size: 14px;
         }
@@ -106,22 +174,35 @@
         input,
         select {
             width: 100%;
-            padding: 13px 14px;
+            min-height: 48px;
+            padding: 12px 14px;
             border: 1px solid #cbd5e1;
-            border-radius: 10px;
+            border-radius: 11px;
             font-size: 15px;
-            background: white;
+            background: #ffffff;
             color: #0f172a;
             outline: none;
+            transition: .2s ease;
+        }
+
+        input:hover,
+        select:hover {
+            border-color: #94a3b8;
         }
 
         input:focus,
         select:focus {
-            border-color: #f97316;
-            box-shadow: 0 0 0 3px rgba(249,115,22,.12);
+            border-color: #2563eb;
+            box-shadow:
+                0 0 0 3px rgba(37, 99, 235, .12);
         }
 
         select {
+            cursor: pointer;
+        }
+
+        input[type="file"] {
+            padding: 10px;
             cursor: pointer;
         }
 
@@ -129,6 +210,24 @@
             margin-top: 6px;
             color: #64748b;
             font-size: 12px;
+            line-height: 1.4;
+        }
+
+        /* ==================================================
+           TÍTULOS DE SECCIÓN
+        ================================================== */
+
+        .seccion-titulo {
+            grid-column: 1 / -1;
+            margin-top: 4px;
+            margin-bottom: 0;
+            padding: 13px 15px;
+            border-radius: 11px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #0f172a;
+            font-size: 16px;
+            font-weight: 900;
         }
 
         /* ==================================================
@@ -137,7 +236,7 @@
 
         .estado-contenedor {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 10px;
         }
 
@@ -155,20 +254,22 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 52px;
+            min-height: 54px;
             padding: 10px;
+            margin: 0;
             border: 2px solid #e2e8f0;
             border-radius: 12px;
             cursor: pointer;
             text-align: center;
-            font-weight: 800;
+            font-weight: 900;
             font-size: 13px;
             transition: .2s ease;
-            margin: 0;
+            user-select: none;
         }
 
         .estado-opcion label:hover {
             transform: translateY(-1px);
+            border-color: #94a3b8;
         }
 
         .estado-vigente input:checked + label {
@@ -202,23 +303,30 @@
         .foto-contenedor {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 22px;
             flex-wrap: wrap;
+            padding: 18px;
+            border-radius: 14px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
         }
 
         .foto-preview {
-            width: 110px;
-            height: 130px;
-            border-radius: 12px;
+            width: 120px;
+            height: 145px;
+            border-radius: 13px;
             object-fit: cover;
-            border: 2px solid #e2e8f0;
-            background: #f8fafc;
+            object-position: center;
+            border: 2px solid #cbd5e1;
+            background: #ffffff;
+            box-shadow:
+                0 5px 15px rgba(15, 23, 42, .08);
         }
 
         .sin-foto {
-            width: 110px;
-            height: 130px;
-            border-radius: 12px;
+            width: 120px;
+            height: 145px;
+            border-radius: 13px;
             border: 2px dashed #cbd5e1;
             display: flex;
             align-items: center;
@@ -226,8 +334,20 @@
             text-align: center;
             padding: 10px;
             color: #94a3b8;
-            font-size: 12px;
-            background: #f8fafc;
+            font-size: 13px;
+            line-height: 1.4;
+            background: #ffffff;
+        }
+
+        .foto-info {
+            flex: 1;
+            min-width: 220px;
+        }
+
+        .foto-titulo {
+            font-weight: 900;
+            color: #334155;
+            margin-bottom: 6px;
         }
 
         /* ==================================================
@@ -238,20 +358,31 @@
             grid-column: 1 / -1;
             display: flex;
             justify-content: flex-end;
+            align-items: center;
             gap: 12px;
-            margin-top: 15px;
-            padding-top: 20px;
+            margin-top: 10px;
+            padding-top: 24px;
             border-top: 1px solid #e2e8f0;
         }
 
         .boton {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
             border: none;
             cursor: pointer;
-            padding: 13px 22px;
-            border-radius: 10px;
+            min-height: 48px;
+            padding: 12px 22px;
+            border-radius: 11px;
             font-size: 15px;
-            font-weight: 800;
+            font-weight: 900;
             text-decoration: none;
+            transition: .2s ease;
+        }
+
+        .boton:hover {
+            transform: translateY(-1px);
         }
 
         .boton-cancelar {
@@ -259,72 +390,58 @@
             color: #334155;
         }
 
+        .boton-cancelar:hover {
+            background: #cbd5e1;
+        }
+
         .boton-guardar {
-            background: #f97316;
-            color: white;
+            background: #2563eb;
+            color: #ffffff;
+            box-shadow:
+                0 6px 16px rgba(37, 99, 235, .20);
         }
 
         .boton-guardar:hover {
-            background: #ea580c;
+            background: #1d4ed8;
         }
 
         /* ==================================================
-           ALERTAS
+           VALIDACIÓN VISUAL
         ================================================== */
 
-        .alertas {
-            margin-bottom: 20px;
-        }
-
-        .alerta {
-            padding: 14px 16px;
-            border-radius: 10px;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .alerta-error {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fecaca;
-        }
-
-        .alerta-success {
-            background: #dcfce7;
-            color: #166534;
-            border: 1px solid #bbf7d0;
+        input:invalid:not(:placeholder-shown) {
+            border-color: #fca5a5;
         }
 
         /* ==================================================
-           ENCABEZADO DE SECCIÓN
+           RESPONSIVE
         ================================================== */
 
-        .seccion-titulo {
-            grid-column: 1 / -1;
-            margin-top: 5px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #e2e8f0;
-            color: #0f172a;
-            font-size: 17px;
-            font-weight: 800;
-        }
-
-        @media (max-width: 700px) {
+        @media (max-width: 750px) {
 
             .contenedor {
-                margin: 15px auto;
-                padding: 10px;
+                padding: 15px 10px 30px;
             }
 
             .tarjeta {
-                padding: 20px;
+                padding: 22px 18px;
+                border-radius: 17px;
+            }
+
+            .titulo {
+                font-size: 25px;
             }
 
             .formulario {
                 grid-template-columns: 1fr;
+                gap: 18px;
             }
 
             .campo-completo {
+                grid-column: auto;
+            }
+
+            .seccion-titulo {
                 grid-column: auto;
             }
 
@@ -334,12 +451,34 @@
 
             .acciones {
                 grid-column: auto;
-                flex-direction: column;
+                flex-direction: column-reverse;
+                align-items: stretch;
             }
 
             .boton {
                 width: 100%;
-                text-align: center;
+            }
+
+        }
+
+        @media (max-width: 420px) {
+
+            .estado-contenedor {
+                grid-template-columns: 1fr;
+            }
+
+            .foto-contenedor {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .foto-preview,
+            .sin-foto {
+                margin: 0 auto;
+            }
+
+            .foto-info {
+                min-width: 0;
             }
 
         }
@@ -389,7 +528,7 @@
 
 
         <!-- ==================================================
-             MENSAJES
+             MENSAJES FLASH
         ================================================== -->
 
         {% with mensajes = get_flashed_messages(with_categories=true) %}
@@ -410,7 +549,9 @@
                                 {% endif %}
                             "
                         >
+
                             {{ mensaje }}
+
                         </div>
 
                     {% endfor %}
@@ -430,6 +571,7 @@
             method="POST"
             enctype="multipart/form-data"
             class="formulario"
+            id="formularioJugador"
         >
 
             <div class="seccion-titulo">
@@ -453,6 +595,8 @@
                     name="rut"
                     placeholder="12.345.678-9"
                     value="{% if jugador %}{{ jugador.rut }}{% endif %}"
+                    maxlength="12"
+                    autocomplete="off"
                     required
                 >
 
@@ -479,6 +623,8 @@
                     name="nombre_completo"
                     placeholder="Nombre y apellidos"
                     value="{% if jugador %}{{ jugador.nombre_completo }}{% endif %}"
+                    maxlength="160"
+                    autocomplete="name"
                     required
                 >
 
@@ -502,6 +648,10 @@
                     value="{% if jugador and jugador.fecha_nacimiento %}{{ jugador.fecha_nacimiento.strftime('%Y-%m-%d') }}{% endif %}"
                     required
                 >
+
+                <div class="ayuda">
+                    Selecciona la fecha de nacimiento del jugador.
+                </div>
 
             </div>
 
@@ -539,9 +689,11 @@
 
                     {% endfor %}
 
+
                     <!--
                     Mantener visible una serie antigua
-                    al editar un jugador.
+                    al editar un jugador aunque actualmente
+                    esté desactivada.
                     -->
 
                     {% if jugador and jugador.serie %}
@@ -565,6 +717,7 @@
                                 selected
                             >
                                 {{ jugador.serie }}
+                                — actual
                             </option>
 
                         {% endif %}
@@ -613,9 +766,11 @@
 
                     {% endfor %}
 
+
                     <!--
                     Mantener visible un club antiguo
-                    al editar un jugador.
+                    al editar un jugador aunque actualmente
+                    esté desactivado.
                     -->
 
                     {% if jugador and jugador.club %}
@@ -639,6 +794,7 @@
                                 selected
                             >
                                 {{ jugador.club }}
+                                — actual
                             </option>
 
                         {% endif %}
@@ -666,6 +822,8 @@
 
                 <div class="estado-contenedor">
 
+                    <!-- VIGENTE -->
+
                     <div class="estado-opcion estado-vigente">
 
                         <input
@@ -684,6 +842,8 @@
 
                     </div>
 
+
+                    <!-- PENDIENTE -->
 
                     <div class="estado-opcion estado-pendiente">
 
@@ -704,6 +864,8 @@
                     </div>
 
 
+                    <!-- SUSPENDIDO -->
+
                     <div class="estado-opcion estado-suspendido">
 
                         <input
@@ -722,6 +884,8 @@
 
                     </div>
 
+
+                    <!-- INHABILITADO -->
 
                     <div class="estado-opcion estado-inhabilitado">
 
@@ -769,7 +933,7 @@
                                 'foto_jugador',
                                 jugador_id=jugador.id
                             ) }}"
-                            alt="Fotografía del jugador"
+                            alt="Fotografía de {{ jugador.nombre_completo }}"
                             class="foto-preview"
                         >
 
@@ -783,7 +947,15 @@
                     {% endif %}
 
 
-                    <div>
+                    <div class="foto-info">
+
+                        <div class="foto-titulo">
+                            {% if jugador and jugador.foto %}
+                                Cambiar fotografía
+                            {% else %}
+                                Agregar fotografía
+                            {% endif %}
+                        </div>
 
                         <input
                             type="file"
@@ -793,7 +965,10 @@
                         >
 
                         <div class="ayuda">
-                            JPG, PNG o WEBP. Máximo 5 MB.
+                            Formatos permitidos:
+                            JPG, PNG o WEBP.
+                            <br>
+                            Tamaño máximo: 5 MB.
                         </div>
 
                     </div>
@@ -820,6 +995,7 @@
                     type="submit"
                     class="boton boton-guardar"
                 >
+
                     💾
 
                     {% if jugador %}
@@ -837,6 +1013,108 @@
     </div>
 
 </div>
+
+
+<!-- ==========================================================
+     JAVASCRIPT
+========================================================== -->
+
+<script>
+
+    /*
+     * Formateo automático del RUT.
+     * Ejemplo:
+     * 123456789 -> 12.345.678-9
+     */
+
+    const campoRut = document.getElementById("rut");
+
+    if (campoRut) {
+
+        campoRut.addEventListener("input", function () {
+
+            let valor = this.value
+                .toUpperCase()
+                .replace(/[^0-9K]/g, "");
+
+            if (valor.length > 1) {
+
+                const dv = valor.slice(-1);
+
+                let cuerpo = valor.slice(0, -1);
+
+                cuerpo = cuerpo.replace(/\D/g, "");
+
+                let cuerpoFormateado = "";
+
+                while (cuerpo.length > 3) {
+
+                    cuerpoFormateado =
+                        "." +
+                        cuerpo.slice(-3) +
+                        cuerpoFormateado;
+
+                    cuerpo = cuerpo.slice(0, -3);
+                }
+
+                cuerpoFormateado =
+                    cuerpo +
+                    cuerpoFormateado;
+
+                this.value =
+                    cuerpoFormateado +
+                    "-" +
+                    dv;
+
+            } else {
+
+                this.value = valor;
+            }
+
+        });
+
+    }
+
+
+    /*
+     * Evitar doble envío del formulario.
+     */
+
+    const formulario =
+        document.getElementById(
+            "formularioJugador"
+        );
+
+    if (formulario) {
+
+        formulario.addEventListener(
+            "submit",
+            function () {
+
+                const boton =
+                    formulario.querySelector(
+                        ".boton-guardar"
+                    );
+
+                if (boton) {
+
+                    boton.disabled = true;
+
+                    boton.style.opacity = "0.7";
+
+                    boton.style.cursor = "wait";
+
+                    boton.innerHTML =
+                        "⏳ Guardando...";
+
+                }
+
+            }
+        );
+
+    }
+
+</script>
 
 </body>
 
