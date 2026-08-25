@@ -1,532 +1,672 @@
-<!DOCTYPE html>
-<html lang="es">
+{% extends "base.html" %}
 
-<head>
+{% block content %}
 
-    <meta charset="UTF-8">
+<style>
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    /* =========================================================
+       CONFIGURACIÓN GENERAL
+    ========================================================= */
 
-    <title>
-        Credencial - {{ jugador.nombre_completo }}
-    </title>
+    * {
+        box-sizing: border-box;
+    }
 
-    <style>
+    body {
+        margin: 0;
+        background: #e8eef7;
+        font-family: Arial, Helvetica, sans-serif;
+        color: #111827;
+    }
 
-        * {
-            box-sizing: border-box;
-        }
+
+    /* =========================================================
+       PÁGINA
+    ========================================================= */
+
+    .credencial-pagina {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 25px;
+    }
+
+
+    /* =========================================================
+       ENCABEZADO
+    ========================================================= */
+
+    .credencial-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+
+    .titulo-principal {
+        margin: 0;
+        font-size: 30px;
+        font-weight: 900;
+        color: #111827;
+    }
+
+    .subtitulo {
+        margin-top: 5px;
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    .acciones-header {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+
+        padding: 12px 18px;
+
+        border-radius: 11px;
+
+        text-decoration: none;
+        border: none;
+
+        cursor: pointer;
+
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .btn-volver {
+        background: #d7e1ee;
+        color: #1e293b;
+    }
+
+    .btn-volver:hover {
+        background: #cbd5e1;
+    }
+
+    .btn-imprimir {
+        background: #2563eb;
+        color: white;
+    }
+
+    .btn-imprimir:hover {
+        background: #1d4ed8;
+    }
+
+
+    /* =========================================================
+       ÁREA DE PREVISUALIZACIÓN
+    ========================================================= */
+
+    .zona-credencial {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 10px;
+    }
+
+
+    /* =========================================================
+       CREDENCIAL CR80
+       85.60 mm × 53.98 mm
+    ========================================================= */
+
+    .credencial {
+
+        position: relative;
+
+        width: 85.60mm;
+        height: 53.98mm;
+
+        min-width: 85.60mm;
+        min-height: 53.98mm;
+
+        max-width: 85.60mm;
+        max-height: 53.98mm;
+
+        overflow: hidden;
+
+        border-radius: 3.2mm;
+
+        background:
+            radial-gradient(
+                circle at 90% 0%,
+                rgba(255,255,255,.15) 0,
+                rgba(255,255,255,.05) 22%,
+                transparent 45%
+            ),
+            linear-gradient(
+                135deg,
+                #071633 0%,
+                #163778 45%,
+                #2563eb 100%
+            );
+
+        color: white;
+
+        box-shadow:
+            0 18px 35px rgba(15,23,42,.30);
+
+        font-family: Arial, Helvetica, sans-serif;
+
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+
+    /* =========================================================
+       DECORACIÓN DE FONDO
+    ========================================================= */
+
+    .forma-1 {
+        position: absolute;
+
+        width: 42mm;
+        height: 42mm;
+
+        border-radius: 50%;
+
+        right: -17mm;
+        top: -18mm;
+
+        background: rgba(255,255,255,.08);
+
+        pointer-events: none;
+    }
+
+    .forma-2 {
+        position: absolute;
+
+        width: 38mm;
+        height: 38mm;
+
+        border-radius: 50%;
+
+        left: -18mm;
+        bottom: -20mm;
+
+        background: rgba(255,255,255,.06);
+
+        pointer-events: none;
+    }
+
+
+    /* =========================================================
+       CONTENIDO
+    ========================================================= */
+
+    .credencial-contenido {
+        position: relative;
+        z-index: 5;
+
+        width: 100%;
+        height: 100%;
+
+        padding: 3.2mm 3.4mm;
+
+        display: flex;
+        flex-direction: column;
+    }
+
+
+    /* =========================================================
+       ENCABEZADO CREDENCIAL
+    ========================================================= */
+
+    .credencial-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+
+        height: 9mm;
+    }
+
+    .asociacion {
+        font-size: 4.3mm;
+        line-height: 1.02;
+        font-weight: 900;
+        letter-spacing: .25mm;
+    }
+
+    .asociacion span {
+        display: block;
+    }
+
+    .tipo-credencial {
+        background: rgba(255,255,255,.14);
+
+        border-radius: 2.2mm;
+
+        padding: 1.7mm 2.6mm;
+
+        font-size: 3.1mm;
+        line-height: 1.05;
+
+        font-weight: 900;
+
+        text-transform: uppercase;
+
+        min-width: 27mm;
+    }
+
+    .tipo-credencial span {
+        display: block;
+    }
+
+
+    /* =========================================================
+       CUERPO
+    ========================================================= */
+
+    .credencial-cuerpo {
+        display: grid;
+
+        grid-template-columns: 22mm 1fr 18mm;
+
+        gap: 2.2mm;
+
+        flex: 1;
+
+        min-height: 0;
+    }
+
+
+    /* =========================================================
+       FOTO
+    ========================================================= */
+
+    .foto-area {
+        display: flex;
+        justify-content: flex-start;
+        align-items: flex-start;
+    }
+
+    .foto-jugador {
+
+        width: 22mm;
+        height: 27mm;
+
+        object-fit: cover;
+
+        border-radius: 2.2mm;
+
+        border: .7mm solid rgba(255,255,255,.95);
+
+        background: #e5e7eb;
+
+        display: block;
+    }
+
+    .foto-vacia {
+
+        width: 22mm;
+        height: 27mm;
+
+        border-radius: 2.2mm;
+
+        border: .5mm dashed rgba(255,255,255,.55);
+
+        background: rgba(255,255,255,.08);
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        text-align: center;
+
+        font-size: 2.3mm;
+
+        font-weight: 700;
+
+        color: rgba(255,255,255,.75);
+
+        padding: 2mm;
+    }
+
+
+    /* =========================================================
+       DATOS
+    ========================================================= */
+
+    .datos-area {
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .nombre {
+
+        font-size: 4.7mm;
+
+        line-height: 1.02;
+
+        font-weight: 900;
+
+        margin: 0 0 1.4mm;
+
+        text-transform: uppercase;
+
+        word-break: normal;
+    }
+
+    .dato {
+        margin-bottom: .8mm;
+    }
+
+    .dato-label {
+
+        font-size: 2.2mm;
+
+        line-height: 1;
+
+        font-weight: 800;
+
+        color: rgba(255,255,255,.72);
+
+        text-transform: uppercase;
+    }
+
+    .dato-valor {
+
+        font-size: 2.8mm;
+
+        line-height: 1.05;
+
+        font-weight: 900;
+
+        color: white;
+
+        white-space: nowrap;
+
+        overflow: hidden;
+
+        text-overflow: ellipsis;
+    }
+
+
+    /* =========================================================
+       QR
+    ========================================================= */
+
+    .qr-area {
+
+        display: flex;
+
+        flex-direction: column;
+
+        align-items: center;
+
+        justify-content: flex-start;
+
+        padding-top: 2mm;
+    }
+
+    .qr {
+
+        width: 16mm;
+        height: 16mm;
+
+        padding: 1mm;
+
+        background: white;
+
+        border-radius: 1.5mm;
+
+        display: block;
+    }
+
+    .qr-text {
+
+        margin-top: 1.2mm;
+
+        text-align: center;
+
+        font-size: 1.8mm;
+
+        line-height: 1.05;
+
+        font-weight: 900;
+
+        text-transform: uppercase;
+
+        color: white;
+    }
+
+
+    /* =========================================================
+       PIE
+    ========================================================= */
+
+    .credencial-footer {
+
+        height: 6mm;
+
+        margin-left: -3.4mm;
+        margin-right: -3.4mm;
+        margin-bottom: -3.2mm;
+
+        padding: 1.4mm 3.4mm;
+
+        border-top: .25mm solid rgba(255,255,255,.35);
+
+        background: rgba(5,20,55,.22);
+
+        display: flex;
+
+        justify-content: space-between;
+
+        align-items: center;
+    }
+
+    .identificacion {
+
+        font-size: 2.6mm;
+
+        font-weight: 800;
+
+        color: rgba(255,255,255,.75);
+
+        text-transform: uppercase;
+    }
+
+    .numero {
+
+        font-size: 2.9mm;
+
+        font-weight: 900;
+    }
+
+
+    /* =========================================================
+       ESTADO
+    ========================================================= */
+
+    .estado {
+
+        position: absolute;
+
+        left: 28mm;
+        bottom: 5.9mm;
+
+        z-index: 20;
+
+        padding: 1.1mm 2.7mm;
+
+        border-radius: 5mm;
+
+        background: white;
+
+        color: #166534;
+
+        font-size: 2.6mm;
+
+        font-weight: 900;
+
+        box-shadow: 0 1mm 2mm rgba(0,0,0,.15);
+
+        white-space: nowrap;
+    }
+
+    .estado::first-letter {
+        color: #22c55e;
+    }
+
+    .estado-vigente {
+        color: #166534;
+    }
+
+    .estado-pendiente {
+        color: #92400e;
+    }
+
+    .estado-suspendido {
+        color: #991b1b;
+    }
+
+    .estado-inhabilitado {
+        color: #1f2937;
+    }
+
+
+    /* =========================================================
+       IMPRESIÓN
+    ========================================================= */
+
+    @page {
+
+        size: 85.60mm 53.98mm;
+
+        margin: 0;
+    }
+
+
+    @media print {
 
         html,
         body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background: #e5ebf3;
-            color: white;
-        }
-
-        /* =====================================================
-           PÁGINA DE PRESENTACIÓN
-        ===================================================== */
-
-        .pagina {
-            min-height: 100vh;
-            padding: 22px;
-        }
-
-        .cabecera {
-            max-width: 1000px;
-            margin: 0 auto 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .titulo-principal {
-            margin: 0;
-            color: #07152e;
-            font-size: 30px;
-            font-weight: 900;
-        }
-
-        .subtitulo {
-            margin-top: 6px;
-            color: #64748b;
-            font-size: 14px;
-        }
-
-        .acciones {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 7px;
-            padding: 12px 18px;
-            border-radius: 11px;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 800;
-        }
-
-        .btn-volver {
-            background: #cbd5e1;
-            color: #1e293b;
-        }
-
-        .btn-imprimir {
-            background: #2563eb;
-            color: white;
-        }
-
-        /* =====================================================
-           TARJETA PVC CR80
-        ===================================================== */
-
-        .zona-credencial {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .credencial {
-
-            position: relative;
 
             width: 85.60mm;
             height: 53.98mm;
 
-            min-width: 85.60mm;
-            max-width: 85.60mm;
+            margin: 0 !important;
+            padding: 0 !important;
 
-            min-height: 53.98mm;
-            max-height: 53.98mm;
-
-            overflow: hidden;
-
-            border-radius: 3.2mm;
-
-            background:
-                radial-gradient(
-                    circle at 100% 0%,
-                    rgba(255,255,255,.18),
-                    transparent 28%
-                ),
-                linear-gradient(
-                    135deg,
-                    #102452 0%,
-                    #183879 45%,
-                    #2563eb 100%
-                );
-
-            box-shadow:
-                0 18px 35px rgba(15,23,42,.28);
-
+            background: white !important;
         }
 
-        /* Decoración */
+        body {
 
-        .forma-1 {
-            position: absolute;
-            width: 45mm;
-            height: 45mm;
-            border-radius: 50%;
-            background: rgba(255,255,255,.055);
-            left: -25mm;
-            bottom: -25mm;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
 
-        .forma-2 {
-            position: absolute;
-            width: 48mm;
-            height: 48mm;
-            border-radius: 50%;
-            background: rgba(255,255,255,.045);
-            right: -22mm;
-            top: -25mm;
-        }
+        .credencial-pagina {
 
-        /* =====================================================
-           ENCABEZADO TARJETA
-        ===================================================== */
+            width: 85.60mm;
+            height: 53.98mm;
+
+            max-width: none;
+
+            margin: 0 !important;
+            padding: 0 !important;
+        }
 
         .credencial-header {
-            position: absolute;
-            top: 3.3mm;
-            left: 3.5mm;
-            right: 3.5mm;
 
-            display: flex;
-            justify-content: space-between;
+            display: none !important;
+        }
+
+        .zona-credencial {
+
+            display: block;
+
+            width: 85.60mm;
+            height: 53.98mm;
+
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        .credencial {
+
+            width: 85.60mm !important;
+            height: 53.98mm !important;
+
+            min-width: 85.60mm !important;
+            min-height: 53.98mm !important;
+
+            max-width: 85.60mm !important;
+            max-height: 53.98mm !important;
+
+            margin: 0 !important;
+
+            border-radius: 0 !important;
+
+            box-shadow: none !important;
+
+            page-break-after: avoid;
+
+            break-after: avoid;
+
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .credencial-contenido {
+
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .forma-1,
+        .forma-2 {
+
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+    }
+
+
+    /* =========================================================
+       PANTALLAS PEQUEÑAS
+    ========================================================= */
+
+    @media (max-width: 650px) {
+
+        .credencial-pagina {
+            padding: 15px;
+        }
+
+        .credencial-header {
             align-items: flex-start;
-
-            z-index: 2;
         }
 
-        .asociacion {
-            font-size: 4.4mm;
-            line-height: 1.05;
-            font-weight: 900;
-            letter-spacing: .35px;
+        .titulo-principal {
+            font-size: 24px;
         }
 
-        .credencial-oficial {
-            background: rgba(255,255,255,.14);
-            border-radius: 2.3mm;
-            padding: 2.1mm 3.2mm;
-
-            font-size: 3.4mm;
-            line-height: 1.15;
-            font-weight: 900;
-            text-align: left;
+        .zona-credencial {
+            transform-origin: top center;
         }
+    }
 
-        /* =====================================================
-           FOTO
-        ===================================================== */
+</style>
 
-        .foto {
-            position: absolute;
 
-            left: 3.5mm;
-            top: 15.8mm;
+<div class="credencial-pagina">
 
-            width: 24mm;
-            height: 29mm;
-
-            object-fit: cover;
-
-            border-radius: 2.2mm;
-            border: .7mm solid white;
-
-            background: #dbe2ea;
-
-            z-index: 3;
-        }
-
-        .sin-foto {
-            position: absolute;
-
-            left: 3.5mm;
-            top: 15.8mm;
-
-            width: 24mm;
-            height: 29mm;
-
-            border-radius: 2.2mm;
-            border: .7mm solid rgba(255,255,255,.85);
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            text-align: center;
-
-            background: rgba(255,255,255,.12);
-
-            font-size: 2.5mm;
-            font-weight: 700;
-
-            z-index: 3;
-        }
-
-        /* =====================================================
-           DATOS
-        ===================================================== */
-
-        .datos {
-
-            position: absolute;
-
-            left: 29mm;
-            top: 15.7mm;
-
-            width: 35mm;
-
-            z-index: 3;
-        }
-
-        .nombre {
-
-            margin: 0 0 2.5mm;
-
-            font-size: 5mm;
-            line-height: 1.03;
-
-            font-weight: 900;
-
-            text-transform: uppercase;
-
-            word-break: break-word;
-        }
-
-        .dato {
-            margin-bottom: 1.2mm;
-        }
-
-        .dato-label {
-            display: block;
-
-            font-size: 2.6mm;
-            line-height: 1;
-
-            color: #cbd5e1;
-
-            font-weight: 800;
-
-            text-transform: uppercase;
-        }
-
-        .dato-valor {
-            display: block;
-
-            margin-top: .45mm;
-
-            font-size: 3.15mm;
-            line-height: 1.05;
-
-            color: white;
-
-            font-weight: 900;
-        }
-
-        /* =====================================================
-           QR
-        ===================================================== */
-
-        .qr-contenedor {
-
-            position: absolute;
-
-            right: 3.8mm;
-            top: 16.7mm;
-
-            width: 17mm;
-
-            text-align: center;
-
-            z-index: 5;
-        }
-
-        .qr {
-
-            width: 17mm;
-            height: 17mm;
-
-            display: block;
-
-            background: white;
-
-            border-radius: 1.2mm;
-
-            padding: 1mm;
-        }
-
-        .qr-texto {
-
-            margin-top: 1.4mm;
-
-            font-size: 2.15mm;
-            line-height: 1.05;
-
-            font-weight: 900;
-
-            text-transform: uppercase;
-        }
-
-        /* =====================================================
-           PIE
-        ===================================================== */
-
-        .pie {
-
-            position: absolute;
-
-            left: 0;
-            right: 0;
-            bottom: 0;
-
-            height: 10mm;
-
-            border-top: .25mm solid rgba(255,255,255,.25);
-
-            background: rgba(5,20,55,.20);
-
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-
-            padding: 0 3.5mm;
-
-            z-index: 6;
-        }
-
-        .pie-titulo {
-            font-size: 3.15mm;
-            font-weight: 900;
-            color: #dbeafe;
-            text-transform: uppercase;
-        }
-
-        .numero {
-            font-size: 3.6mm;
-            font-weight: 900;
-        }
-
-        /* =====================================================
-           ESTADO
-        ===================================================== */
-
-        .estado {
-
-            position: absolute;
-
-            left: 29mm;
-            bottom: 1.4mm;
-
-            padding: 1.2mm 3.2mm;
-
-            border-radius: 4mm;
-
-            background: white;
-
-            font-size: 2.7mm;
-
-            font-weight: 900;
-
-            z-index: 10;
-        }
-
-        .estado-vigente {
-            color: #166534;
-        }
-
-        .estado-pendiente {
-            color: #92400e;
-        }
-
-        .estado-suspendido {
-            color: #991b1b;
-        }
-
-        .estado-inhabilitado {
-            color: #1f2937;
-        }
-
-        /* =====================================================
-           IMPRESIÓN PVC CR80
-        ===================================================== */
-
-        @media print {
-
-            @page {
-                size: 85.60mm 53.98mm;
-                margin: 0;
-            }
-
-            html,
-            body {
-
-                width: 85.60mm !important;
-                height: 53.98mm !important;
-
-                min-width: 85.60mm !important;
-                max-width: 85.60mm !important;
-
-                min-height: 53.98mm !important;
-                max-height: 53.98mm !important;
-
-                margin: 0 !important;
-                padding: 0 !important;
-
-                background: white !important;
-
-                overflow: hidden !important;
-            }
-
-            .pagina {
-
-                width: 85.60mm !important;
-                height: 53.98mm !important;
-
-                min-height: 53.98mm !important;
-
-                margin: 0 !important;
-                padding: 0 !important;
-
-                background: white !important;
-            }
-
-            .cabecera,
-            .acciones {
-
-                display: none !important;
-            }
-
-            .zona-credencial {
-
-                width: 85.60mm !important;
-                height: 53.98mm !important;
-
-                display: block !important;
-
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-
-            .credencial {
-
-                width: 85.60mm !important;
-                height: 53.98mm !important;
-
-                min-width: 85.60mm !important;
-                max-width: 85.60mm !important;
-
-                min-height: 53.98mm !important;
-                max-height: 53.98mm !important;
-
-                margin: 0 !important;
-                padding: 0 !important;
-
-                border-radius: 0 !important;
-
-                box-shadow: none !important;
-
-                page-break-before: avoid !important;
-                page-break-after: avoid !important;
-
-                break-before: avoid !important;
-                break-after: avoid !important;
-            }
-
-        }
-
-    </style>
-
-</head>
-
-
-<body>
-
-<div class="pagina">
 
     <!-- =====================================================
-         CABECERA
+         ENCABEZADO
     ====================================================== -->
 
-    <div class="cabecera">
+    <div class="credencial-header">
 
         <div>
 
@@ -540,7 +680,8 @@
 
         </div>
 
-        <div class="acciones">
+
+        <div class="acciones-header">
 
             <a
                 href="{{ url_for(
@@ -551,6 +692,7 @@
             >
                 ← Volver
             </a>
+
 
             <button
                 type="button"
@@ -571,178 +713,234 @@
 
     <div class="zona-credencial">
 
+
         <div class="credencial">
 
+
+            <!-- FORMAS DE FONDO -->
+
             <div class="forma-1"></div>
+
             <div class="forma-2"></div>
 
 
-            <!-- ENCABEZADO -->
-
-            <div class="credencial-header">
-
-                <div class="asociacion">
-                    ASOCIACIÓN<br>
-                    PRESIDENTE RÍOS
-                </div>
-
-                <div class="credencial-oficial">
-                    CREDENCIAL<br>
-                    OFICIAL
-                </div>
-
-            </div>
+            <div class="credencial-contenido">
 
 
-            <!-- FOTO -->
+                <!-- =================================================
+                     CABECERA
+                ================================================== -->
 
-            {% if jugador.foto %}
-
-                <img
-                    src="{{ url_for(
-                        'foto_jugador',
-                        jugador_id=jugador.id
-                    ) }}"
-                    alt="Fotografía"
-                    class="foto"
-                >
-
-            {% else %}
-
-                <div class="sin-foto">
-                    SIN<br>
-                    FOTO
-                </div>
-
-            {% endif %}
+                <div class="credencial-top">
 
 
-            <!-- DATOS -->
+                    <div class="asociacion">
 
-            <div class="datos">
+                        <span>ASOCIACIÓN</span>
 
-                <div class="nombre">
-                    {{ jugador.nombre_completo }}
-                </div>
+                        <span>PRESIDENTE RÍOS</span>
+
+                    </div>
 
 
-                <div class="dato">
+                    <div class="tipo-credencial">
 
-                    <span class="dato-label">
-                        RUT
-                    </span>
+                        <span>CREDENCIAL</span>
 
-                    <span class="dato-valor">
-                        {{ jugador.rut }}
-                    </span>
+                        <span>OFICIAL</span>
+
+                    </div>
 
                 </div>
 
 
-                <div class="dato">
+                <!-- =================================================
+                     CUERPO
+                ================================================== -->
 
-                    <span class="dato-label">
-                        CLUB
-                    </span>
+                <div class="credencial-cuerpo">
 
-                    <span class="dato-valor">
-                        {{ jugador.club }}
-                    </span>
+
+                    <!-- FOTO -->
+
+                    <div class="foto-area">
+
+                        {% if jugador.foto %}
+
+                            <img
+                                src="{{ url_for(
+                                    'foto_jugador',
+                                    jugador_id=jugador.id
+                                ) }}"
+                                alt="Foto del jugador"
+                                class="foto-jugador"
+                            >
+
+                        {% else %}
+
+                            <div class="foto-vacia">
+                                SIN<br>
+                                FOTO
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+
+                    <!-- DATOS -->
+
+                    <div class="datos-area">
+
+
+                        <h2 class="nombre">
+
+                            {{ jugador.nombre_completo }}
+
+                        </h2>
+
+
+                        <div class="dato">
+
+                            <div class="dato-label">
+                                RUT
+                            </div>
+
+                            <div class="dato-valor">
+                                {{ jugador.rut }}
+                            </div>
+
+                        </div>
+
+
+                        <div class="dato">
+
+                            <div class="dato-label">
+                                CLUB
+                            </div>
+
+                            <div class="dato-valor">
+                                {{ jugador.club }}
+                            </div>
+
+                        </div>
+
+
+                        <div class="dato">
+
+                            <div class="dato-label">
+                                SERIE
+                            </div>
+
+                            <div class="dato-valor">
+                                {{ jugador.serie }}
+                            </div>
+
+                        </div>
+
+
+                        <div class="dato">
+
+                            <div class="dato-label">
+                                FECHA NACIMIENTO
+                            </div>
+
+                            <div class="dato-valor">
+
+                                {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- QR -->
+
+                    <div class="qr-area">
+
+                        <img
+                            src="{{ url_for(
+                                'qr_jugador',
+                                jugador_id=jugador.id
+                            ) }}"
+                            alt="Código QR"
+                            class="qr"
+                        >
+
+                        <div class="qr-text">
+
+                            ESCANEAR<br>
+                            PARA VERIFICAR
+
+                        </div>
+
+                    </div>
+
 
                 </div>
 
 
-                <div class="dato">
+                <!-- =================================================
+                     ESTADO
+                ================================================== -->
 
-                    <span class="dato-label">
-                        SERIE
-                    </span>
+                {% if jugador.estado == "Vigente" %}
 
-                    <span class="dato-valor">
-                        {{ jugador.serie }}
-                    </span>
+                    <div class="estado estado-vigente">
+                        🟢 VIGENTE
+                    </div>
+
+                {% elif jugador.estado == "Pendiente" %}
+
+                    <div class="estado estado-pendiente">
+                        🟡 PENDIENTE
+                    </div>
+
+                {% elif jugador.estado == "Suspendido" %}
+
+                    <div class="estado estado-suspendido">
+                        🔴 SUSPENDIDO
+                    </div>
+
+                {% elif jugador.estado == "Inhabilitado" %}
+
+                    <div class="estado estado-inhabilitado">
+                        ⚫ INHABILITADO
+                    </div>
+
+                {% else %}
+
+                    <div class="estado estado-pendiente">
+                        🟡 PENDIENTE
+                    </div>
+
+                {% endif %}
+
+
+                <!-- =================================================
+                     PIE
+                ================================================== -->
+
+                <div class="credencial-footer">
+
+
+                    <div class="identificacion">
+
+                        Identificación deportiva
+
+                    </div>
+
+
+                    <div class="numero">
+
+                        N.º {{ jugador.id }}
+
+                    </div>
 
                 </div>
 
-
-                <div class="dato">
-
-                    <span class="dato-label">
-                        FECHA NACIMIENTO
-                    </span>
-
-                    <span class="dato-valor">
-                        {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
-                    </span>
-
-                </div>
-
-            </div>
-
-
-            <!-- QR -->
-
-            <div class="qr-contenedor">
-
-                <img
-                    src="{{ url_for(
-                        'qr_jugador',
-                        jugador_id=jugador.id
-                    ) }}"
-                    alt="Código QR"
-                    class="qr"
-                >
-
-                <div class="qr-texto">
-                    ESCANEAR<br>
-                    PARA VERIFICAR
-                </div>
-
-            </div>
-
-
-            <!-- ESTADO -->
-
-            {% set estado = jugador.estado or "Vigente" %}
-
-            {% if estado == "Vigente" %}
-
-                <div class="estado estado-vigente">
-                    🟢 VIGENTE
-                </div>
-
-            {% elif estado == "Pendiente" %}
-
-                <div class="estado estado-pendiente">
-                    🟡 PENDIENTE
-                </div>
-
-            {% elif estado == "Suspendido" %}
-
-                <div class="estado estado-suspendido">
-                    🔴 SUSPENDIDO
-                </div>
-
-            {% else %}
-
-                <div class="estado estado-inhabilitado">
-                    ⚫ INHABILITADO
-                </div>
-
-            {% endif %}
-
-
-            <!-- PIE -->
-
-            <div class="pie">
-
-                <div class="pie-titulo">
-                    Identificación deportiva
-                </div>
-
-                <div class="numero">
-                    N.º {{ jugador.id }}
-                </div>
 
             </div>
 
@@ -752,6 +950,4 @@
 
 </div>
 
-</body>
-
-</html>
+{% endblock %}
