@@ -2177,6 +2177,135 @@ def registrar_suspension(jugador_id):
 
 
 # ============================================================
+# ELIMINAR REGISTRO DE GOL
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/gol/<int:gol_id>/eliminar",
+    methods=["POST"]
+)
+def eliminar_gol(jugador_id, gol_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    gol = db.get_or_404(
+        Gol,
+        gol_id
+    )
+
+    if gol.jugador_id != jugador.id:
+
+        flash(
+            "El registro de gol no pertenece a este jugador.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
+        )
+
+    try:
+
+        db.session.delete(gol)
+        db.session.commit()
+
+        flash(
+            "Registro de gol eliminado correctamente.",
+            "success"
+        )
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print("Error eliminando gol:", error)
+
+        flash(
+            "No fue posible eliminar el registro de gol.",
+            "error"
+        )
+
+    return redirect(
+        url_for(
+            "ficha_jugador",
+            jugador_id=jugador.id
+        )
+    )
+
+
+# ============================================================
+# ELIMINAR REGISTRO DISCIPLINARIO
+# ============================================================
+
+@app.route(
+    "/jugadores/<int:jugador_id>/disciplina/<int:registro_id>/eliminar",
+    methods=["POST"]
+)
+def eliminar_registro_disciplinario(jugador_id, registro_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    registro = db.get_or_404(
+        RegistroDisciplinario,
+        registro_id
+    )
+
+    if registro.jugador_id != jugador.id:
+
+        flash(
+            "El registro disciplinario no pertenece a este jugador.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
+        )
+
+    try:
+
+        db.session.delete(registro)
+        db.session.commit()
+
+        flash(
+            "Registro disciplinario eliminado correctamente.",
+            "success"
+        )
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print(
+            "Error eliminando registro disciplinario:",
+            error
+        )
+
+        flash(
+            "No fue posible eliminar el registro disciplinario.",
+            "error"
+        )
+
+    return redirect(
+        url_for(
+            "ficha_jugador",
+            jugador_id=jugador.id
+        )
+    )
+
+
+# ============================================================
 # QR DEL JUGADOR
 # ============================================================
 
