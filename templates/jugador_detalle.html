@@ -6,36 +6,453 @@ Ficha del Jugador
 
 {% block content %}
 
-<div class="container py-4">
+<style>
 
-    <!-- =====================================================
-         ENCABEZADO
-         ===================================================== -->
+    .ficha-page {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
 
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    /* ==================================================
+       CABECERA
+    ================================================== */
 
-        <div>
-            <h1 class="fw-bold mb-1">
-                Ficha del Jugador
+    .ficha-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 25px;
+    }
+
+    .ficha-titulo h1 {
+        margin: 0;
+        font-size: 32px;
+        font-weight: 900;
+        color: #111827;
+    }
+
+    .ficha-titulo p {
+        margin: 7px 0 0;
+        color: #6b7280;
+        font-size: 14px;
+    }
+
+    .ficha-acciones-header {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    /* ==================================================
+       BOTONES
+    ================================================== */
+
+    .ficha-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 11px 17px;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        text-decoration: none;
+        cursor: pointer;
+        font-weight: 800;
+        font-size: 14px;
+        transition: .2s ease;
+    }
+
+    .ficha-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 5px 15px rgba(0,0,0,.08);
+    }
+
+    .ficha-btn-primary {
+        background: #f97316;
+        color: white;
+        border-color: #f97316;
+    }
+
+    .ficha-btn-dark {
+        background: #111827;
+        color: white;
+        border-color: #111827;
+    }
+
+    .ficha-btn-light {
+        background: white;
+        color: #111827;
+    }
+
+    .ficha-btn-success {
+        background: #16a34a;
+        color: white;
+        border-color: #16a34a;
+    }
+
+    .ficha-btn-danger {
+        background: white;
+        color: #dc2626;
+        border-color: #fecaca;
+    }
+
+    .ficha-btn-danger:hover {
+        background: #fef2f2;
+    }
+
+    /* ==================================================
+       TARJETA PRINCIPAL
+    ================================================== */
+
+    .ficha-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        overflow: hidden;
+        box-shadow: 0 5px 18px rgba(15,23,42,.05);
+    }
+
+    .ficha-card-header {
+        background: #111827;
+        color: white;
+        padding: 22px 25px;
+    }
+
+    .ficha-card-header-small {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        opacity: .7;
+        font-weight: 800;
+        margin-bottom: 5px;
+    }
+
+    .ficha-card-header-name {
+        font-size: 24px;
+        font-weight: 900;
+    }
+
+    .ficha-card-body {
+        padding: 30px;
+    }
+
+    /* ==================================================
+       GRID PRINCIPAL
+    ================================================== */
+
+    .ficha-grid {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 35px;
+    }
+
+    /* ==================================================
+       FOTO
+    ================================================== */
+
+    .foto-columna {
+        text-align: center;
+    }
+
+    .foto-jugador {
+        width: 260px;
+        height: 320px;
+        object-fit: cover;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 8px 25px rgba(15,23,42,.10);
+    }
+
+    .foto-vacia {
+        width: 260px;
+        height: 320px;
+        margin: 0 auto;
+        border-radius: 14px;
+        border: 1px solid #e5e7eb;
+        background: #f8fafc;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+    }
+
+    .foto-vacia-icono {
+        font-size: 70px;
+        margin-bottom: 15px;
+    }
+
+    /* ==================================================
+       ESTADOS
+    ================================================== */
+
+    .estado-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 15px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 900;
+        margin-top: 18px;
+    }
+
+    .estado-vigente {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .estado-pendiente {
+        background: #fef9c3;
+        color: #854d0e;
+    }
+
+    .estado-suspendido {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .estado-inhabilitado {
+        background: #e5e7eb;
+        color: #111827;
+    }
+
+    /* ==================================================
+       DATOS
+    ================================================== */
+
+    .datos-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .dato-box {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 16px;
+        background: white;
+    }
+
+    .dato-box-principal {
+        grid-column: 1 / -1;
+        background: #f8fafc;
+    }
+
+    .dato-label {
+        color: #6b7280;
+        font-size: 12px;
+        font-weight: 800;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+    }
+
+    .dato-valor {
+        color: #111827;
+        font-size: 16px;
+        font-weight: 800;
+    }
+
+    .dato-valor-grande {
+        font-size: 20px;
+    }
+
+    /* ==================================================
+       ACCIONES
+    ================================================== */
+
+    .acciones-ficha {
+        margin-top: 25px;
+        padding-top: 25px;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .acciones-ficha h3 {
+        margin: 0 0 15px;
+        font-size: 17px;
+        font-weight: 900;
+        color: #111827;
+    }
+
+    .acciones-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+    }
+
+    .accion-ficha {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px 14px;
+        border-radius: 9px;
+        border: 1px solid #e5e7eb;
+        background: white;
+        color: #111827;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 800;
+        transition: .2s ease;
+    }
+
+    .accion-ficha:hover {
+        background: #f8fafc;
+        transform: translateY(-1px);
+    }
+
+    .accion-credencial {
+        color: #2563eb;
+    }
+
+    .accion-verificacion {
+        color: #16a34a;
+    }
+
+    .accion-qr {
+        color: #7c3aed;
+    }
+
+    /* ==================================================
+       PIE
+    ================================================== */
+
+    .ficha-footer {
+        padding: 18px 25px;
+        background: #f8fafc;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .ficha-footer-text {
+        color: #6b7280;
+        font-size: 12px;
+    }
+
+    /* ==================================================
+       ELIMINAR
+    ================================================== */
+
+    .eliminar-card {
+        margin-top: 20px;
+        background: white;
+        border: 1px solid #fecaca;
+        border-radius: 15px;
+        padding: 20px;
+    }
+
+    .eliminar-contenido {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .eliminar-titulo {
+        color: #dc2626;
+        font-size: 16px;
+        font-weight: 900;
+        margin-bottom: 5px;
+    }
+
+    .eliminar-texto {
+        color: #6b7280;
+        font-size: 13px;
+    }
+
+    /* ==================================================
+       RESPONSIVE
+    ================================================== */
+
+    @media (max-width: 850px) {
+
+        .ficha-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .foto-columna {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+    }
+
+    @media (max-width: 600px) {
+
+        .ficha-titulo h1 {
+            font-size: 26px;
+        }
+
+        .ficha-card-body {
+            padding: 20px;
+        }
+
+        .datos-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .dato-box-principal {
+            grid-column: auto;
+        }
+
+        .ficha-acciones-header {
+            width: 100%;
+        }
+
+        .ficha-acciones-header .ficha-btn {
+            flex: 1;
+        }
+
+        .eliminar-contenido {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+    }
+
+</style>
+
+
+<div class="ficha-page">
+
+    <!-- ==================================================
+         CABECERA
+    ================================================== -->
+
+    <div class="ficha-header">
+
+        <div class="ficha-titulo">
+
+            <h1>
+                👤 Ficha del Jugador
             </h1>
 
-            <p class="text-muted mb-0">
+            <p>
                 Información oficial del jugador registrado
             </p>
+
         </div>
 
-        <div class="mt-3 mt-md-0">
+        <div class="ficha-acciones-header">
 
             <a
                 href="{{ url_for('index') }}"
-                class="btn btn-outline-secondary me-2"
+                class="ficha-btn ficha-btn-light"
             >
                 ← Volver
             </a>
 
             <a
                 href="{{ url_for('editar_jugador', jugador_id=jugador.id) }}"
-                class="btn btn-primary"
+                class="ficha-btn ficha-btn-primary"
             >
                 ✏️ Editar jugador
             </a>
@@ -45,331 +462,196 @@ Ficha del Jugador
     </div>
 
 
-    <!-- =====================================================
-         ALERTAS
-         ===================================================== -->
+    <!-- ==================================================
+         FICHA
+    ================================================== -->
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
+    <div class="ficha-card">
 
-        {% if messages %}
+        <div class="ficha-card-header">
 
-            {% for category, message in messages %}
+            <div class="ficha-card-header-small">
+                Registro oficial
+            </div>
 
-                <div
-                    class="alert
-                    {% if category == 'success' %}
-                        alert-success
-                    {% else %}
-                        alert-danger
-                    {% endif %}
-                    alert-dismissible fade show"
-                    role="alert"
-                >
-
-                    {{ message }}
-
-                    <button
-                        type="button"
-                        class="btn-close"
-                        data-bs-dismiss="alert"
-                        aria-label="Cerrar"
-                    ></button>
-
-                </div>
-
-            {% endfor %}
-
-        {% endif %}
-
-    {% endwith %}
-
-
-    <!-- =====================================================
-         FICHA PRINCIPAL
-         ===================================================== -->
-
-    <div class="card border-0 shadow-sm overflow-hidden">
-
-        <!-- CABECERA -->
-
-        <div class="card-header bg-dark text-white py-3">
-
-            <div class="d-flex align-items-center">
-
-                <div>
-
-                    <div class="small text-uppercase opacity-75">
-                        Registro oficial
-                    </div>
-
-                    <div class="fs-4 fw-bold">
-                        {{ jugador.nombre_completo }}
-                    </div>
-
-                </div>
-
+            <div class="ficha-card-header-name">
+                {{ jugador.nombre_completo }}
             </div>
 
         </div>
 
 
-        <!-- CONTENIDO -->
+        <div class="ficha-card-body">
 
-        <div class="card-body p-4">
+            <div class="ficha-grid">
 
-            <div class="row g-4">
+                <!-- FOTO -->
 
+                <div class="foto-columna">
 
-                <!-- =================================================
-                     FOTOGRAFÍA
-                     ================================================= -->
+                    {% if jugador.foto %}
 
-                <div class="col-lg-4">
+                        <img
+                            src="{{ url_for(
+                                'foto_jugador',
+                                jugador_id=jugador.id
+                            ) }}"
+                            alt="Fotografía de {{ jugador.nombre_completo }}"
+                            class="foto-jugador"
+                        >
 
-                    <div class="text-center">
+                    {% else %}
 
-                        {% if jugador.foto %}
+                        <div class="foto-vacia">
 
-                            <img
-                                src="{{ url_for(
-                                    'foto_jugador',
-                                    jugador_id=jugador.id
-                                ) }}"
-                                alt="Fotografía de {{ jugador.nombre_completo }}"
-                                class="img-fluid rounded shadow-sm"
-                                style="
-                                    width: 260px;
-                                    height: 320px;
-                                    object-fit: cover;
-                                "
-                            >
-
-                        {% else %}
-
-                            <div
-                                class="bg-light border rounded d-flex
-                                       align-items-center justify-content-center
-                                       mx-auto"
-                                style="
-                                    width: 260px;
-                                    height: 320px;
-                                "
-                            >
-
-                                <div class="text-center text-muted">
-
-                                    <div
-                                        style="
-                                            font-size: 70px;
-                                            line-height: 1;
-                                        "
-                                    >
-                                        👤
-                                    </div>
-
-                                    <div class="mt-3">
-                                        Sin fotografía
-                                    </div>
-
-                                </div>
-
+                            <div class="foto-vacia-icono">
+                                👤
                             </div>
 
-                        {% endif %}
-
-
-                        <!-- ESTADO -->
-
-                        <div class="mt-3">
-
-                            {% if jugador.estado == "Vigente" %}
-
-                                <span class="badge bg-success fs-6 px-3 py-2">
-                                    ● Vigente
-                                </span>
-
-                            {% elif jugador.estado == "Pendiente" %}
-
-                                <span class="badge bg-warning text-dark fs-6 px-3 py-2">
-                                    ● Pendiente
-                                </span>
-
-                            {% elif jugador.estado == "Suspendido" %}
-
-                                <span class="badge bg-danger fs-6 px-3 py-2">
-                                    ● Suspendido
-                                </span>
-
-                            {% elif jugador.estado == "Inhabilitado" %}
-
-                                <span class="badge bg-dark fs-6 px-3 py-2">
-                                    ● Inhabilitado
-                                </span>
-
-                            {% else %}
-
-                                <span class="badge bg-secondary fs-6 px-3 py-2">
-                                    ● {{ jugador.estado or "Vigente" }}
-                                </span>
-
-                            {% endif %}
+                            <div>
+                                Sin fotografía
+                            </div>
 
                         </div>
 
-                    </div>
+                    {% endif %}
+
+
+                    <!-- ESTADO -->
+
+                    {% if jugador.estado == "Vigente" %}
+
+                        <span class="estado-badge estado-vigente">
+                            🟢 Vigente
+                        </span>
+
+                    {% elif jugador.estado == "Pendiente" %}
+
+                        <span class="estado-badge estado-pendiente">
+                            🟡 Pendiente
+                        </span>
+
+                    {% elif jugador.estado == "Suspendido" %}
+
+                        <span class="estado-badge estado-suspendido">
+                            🔴 Suspendido
+                        </span>
+
+                    {% elif jugador.estado == "Inhabilitado" %}
+
+                        <span class="estado-badge estado-inhabilitado">
+                            ⚫ Inhabilitado
+                        </span>
+
+                    {% else %}
+
+                        <span class="estado-badge estado-inhabilitado">
+                            ⚫ {{ jugador.estado or "Sin estado" }}
+                        </span>
+
+                    {% endif %}
 
                 </div>
 
 
-                <!-- =================================================
-                     DATOS DEL JUGADOR
-                     ================================================= -->
+                <!-- DATOS -->
 
-                <div class="col-lg-8">
+                <div>
 
-                    <div class="row g-3">
+                    <div class="datos-grid">
+
+                        <div class="dato-box dato-box-principal">
+
+                            <div class="dato-label">
+                                Nombre completo
+                            </div>
+
+                            <div class="dato-valor dato-valor-grande">
+                                {{ jugador.nombre_completo }}
+                            </div>
+
+                        </div>
 
 
-                        <!-- NOMBRE -->
+                        <div class="dato-box">
 
-                        <div class="col-md-12">
+                            <div class="dato-label">
+                                RUT
+                            </div>
 
-                            <div class="border rounded p-3 bg-light">
+                            <div class="dato-valor">
+                                {{ jugador.rut }}
+                            </div>
 
-                                <div class="small text-muted mb-1">
-                                    Nombre completo
-                                </div>
+                        </div>
 
-                                <div class="fs-5 fw-semibold">
-                                    {{ jugador.nombre_completo }}
-                                </div>
+
+                        <div class="dato-box">
+
+                            <div class="dato-label">
+                                Fecha de nacimiento
+                            </div>
+
+                            <div class="dato-valor">
+
+                                {% if jugador.fecha_nacimiento %}
+                                    {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
+                                {% else %}
+                                    —
+                                {% endif %}
 
                             </div>
 
                         </div>
 
 
-                        <!-- RUT -->
+                        <div class="dato-box">
 
-                        <div class="col-md-6">
+                            <div class="dato-label">
+                                Serie
+                            </div>
 
-                            <div class="border rounded p-3">
-
-                                <div class="small text-muted mb-1">
-                                    RUT
-                                </div>
-
-                                <div class="fw-semibold fs-5">
-                                    {{ jugador.rut }}
-                                </div>
-
+                            <div class="dato-valor">
+                                {{ jugador.serie or "—" }}
                             </div>
 
                         </div>
 
 
-                        <!-- FECHA NACIMIENTO -->
+                        <div class="dato-box">
 
-                        <div class="col-md-6">
+                            <div class="dato-label">
+                                Club
+                            </div>
 
-                            <div class="border rounded p-3">
-
-                                <div class="small text-muted mb-1">
-                                    Fecha de nacimiento
-                                </div>
-
-                                <div class="fw-semibold">
-
-                                    {% if jugador.fecha_nacimiento %}
-
-                                        {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
-
-                                    {% else %}
-
-                                        —
-
-                                    {% endif %}
-
-                                </div>
-
+                            <div class="dato-valor">
+                                {{ jugador.club or "—" }}
                             </div>
 
                         </div>
 
 
-                        <!-- SERIE -->
+                        <div class="dato-box">
 
-                        <div class="col-md-6">
+                            <div class="dato-label">
+                                ID de registro
+                            </div>
 
-                            <div class="border rounded p-3">
-
-                                <div class="small text-muted mb-1">
-                                    Serie
-                                </div>
-
-                                <div class="fw-semibold">
-                                    {{ jugador.serie }}
-                                </div>
-
+                            <div class="dato-valor">
+                                #{{ jugador.id }}
                             </div>
 
                         </div>
 
 
-                        <!-- CLUB -->
+                        <div class="dato-box">
 
-                        <div class="col-md-6">
-
-                            <div class="border rounded p-3">
-
-                                <div class="small text-muted mb-1">
-                                    Club
-                                </div>
-
-                                <div class="fw-semibold">
-                                    {{ jugador.club }}
-                                </div>
-
+                            <div class="dato-label">
+                                Estado de inscripción
                             </div>
 
-                        </div>
-
-
-                        <!-- ID -->
-
-                        <div class="col-md-6">
-
-                            <div class="border rounded p-3">
-
-                                <div class="small text-muted mb-1">
-                                    ID de registro
-                                </div>
-
-                                <div class="fw-semibold">
-                                    #{{ jugador.id }}
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        <!-- ESTADO -->
-
-                        <div class="col-md-6">
-
-                            <div class="border rounded p-3">
-
-                                <div class="small text-muted mb-1">
-                                    Estado de inscripción
-                                </div>
-
-                                <div class="fw-semibold">
-
-                                    {{ jugador.estado or "Vigente" }}
-
-                                </div>
-
+                            <div class="dato-valor">
+                                {{ jugador.estado or "Vigente" }}
                             </div>
 
                         </div>
@@ -377,83 +659,70 @@ Ficha del Jugador
                     </div>
 
 
-                    <!-- =================================================
-                         ACCIONES
-                         ================================================= -->
+                    <!-- ACCIONES -->
 
-                    <div class="border-top mt-4 pt-4">
+                    <div class="acciones-ficha">
 
-                        <h5 class="fw-bold mb-3">
-                            Acciones
-                        </h5>
+                        <h3>
+                            ⚡ Acciones
+                        </h3>
 
-                        <div class="d-flex flex-wrap gap-2">
-
-
-                            <!-- CREDENCIAL -->
+                        <div class="acciones-grid">
 
                             <a
                                 href="{{ url_for(
                                     'credencial_jugador',
                                     jugador_id=jugador.id
                                 ) }}"
-                                class="btn btn-primary"
+                                class="accion-ficha accion-credencial"
                                 target="_blank"
                             >
                                 🪪 Ver credencial
                             </a>
 
 
-                            <!-- CREDENCIAL COMPLETA -->
-
                             <a
                                 href="{{ url_for(
                                     'credencial_completa',
                                     jugador_id=jugador.id
                                 ) }}"
-                                class="btn btn-outline-primary"
+                                class="accion-ficha accion-credencial"
                                 target="_blank"
                             >
                                 🪪 Credencial completa
                             </a>
 
 
-                            <!-- REVERSO -->
-
                             <a
                                 href="{{ url_for(
                                     'credencial_reverso',
                                     jugador_id=jugador.id
                                 ) }}"
-                                class="btn btn-outline-secondary"
+                                class="accion-ficha"
                                 target="_blank"
                             >
                                 🔄 Reverso
                             </a>
 
 
-                            <!-- VERIFICACIÓN -->
-
                             <a
                                 href="{{ url_for(
                                     'verificacion_jugador',
                                     jugador_id=jugador.id
                                 ) }}"
-                                class="btn btn-outline-success"
+                                class="accion-ficha accion-verificacion"
                                 target="_blank"
                             >
                                 ✅ Verificación pública
                             </a>
 
 
-                            <!-- QR -->
-
                             <a
                                 href="{{ url_for(
                                     'qr_jugador',
                                     jugador_id=jugador.id
                                 ) }}"
-                                class="btn btn-outline-dark"
+                                class="accion-ficha accion-qr"
                                 target="_blank"
                             >
                                 📱 Ver QR
@@ -470,54 +739,42 @@ Ficha del Jugador
         </div>
 
 
-        <!-- =====================================================
-             PIE DE FICHA
-             ===================================================== -->
+        <!-- PIE -->
 
-        <div class="card-footer bg-light">
+        <div class="ficha-footer">
 
-            <div class="row align-items-center">
+            <div class="ficha-footer-text">
+                Este registro corresponde a la ficha oficial
+                del jugador dentro del sistema.
+            </div>
 
-                <div class="col-md-8">
+            <div>
 
-                    <small class="text-muted">
+                {% if jugador.estado == "Vigente" %}
 
-                        Este registro corresponde a la ficha
-                        oficial del jugador dentro del sistema.
+                    <strong style="color:#16a34a;">
+                        ✓ Registro vigente
+                    </strong>
 
-                    </small>
+                {% elif jugador.estado == "Suspendido" %}
 
-                </div>
+                    <strong style="color:#dc2626;">
+                        ⚠ Registro suspendido
+                    </strong>
 
-                <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                {% elif jugador.estado == "Pendiente" %}
 
-                    {% if jugador.estado == "Vigente" %}
+                    <strong style="color:#ca8a04;">
+                        ⚠ Registro pendiente
+                    </strong>
 
-                        <span class="text-success fw-semibold">
-                            Registro vigente
-                        </span>
+                {% elif jugador.estado == "Inhabilitado" %}
 
-                    {% elif jugador.estado == "Suspendido" %}
+                    <strong style="color:#111827;">
+                        ⛔ Registro inhabilitado
+                    </strong>
 
-                        <span class="text-danger fw-semibold">
-                            Registro suspendido
-                        </span>
-
-                    {% elif jugador.estado == "Pendiente" %}
-
-                        <span class="text-warning fw-semibold">
-                            Registro pendiente
-                        </span>
-
-                    {% elif jugador.estado == "Inhabilitado" %}
-
-                        <span class="text-dark fw-semibold">
-                            Registro inhabilitado
-                        </span>
-
-                    {% endif %}
-
-                </div>
+                {% endif %}
 
             </div>
 
@@ -526,58 +783,48 @@ Ficha del Jugador
     </div>
 
 
-    <!-- =====================================================
-         ZONA DE ELIMINACIÓN
-         ===================================================== -->
+    <!-- ==================================================
+         ELIMINAR
+    ================================================== -->
 
-    <div class="card border-danger mt-4">
+    <div class="eliminar-card">
 
-        <div class="card-body">
+        <div class="eliminar-contenido">
 
-            <div class="row align-items-center">
+            <div>
 
-                <div class="col-md-8">
-
-                    <h5 class="text-danger fw-bold mb-1">
-                        Eliminar jugador
-                    </h5>
-
-                    <p class="text-muted mb-0">
-
-                        Esta acción eliminará permanentemente
-                        el registro del jugador.
-
-                    </p>
-
+                <div class="eliminar-titulo">
+                    🗑️ Eliminar jugador
                 </div>
 
-                <div class="col-md-4 text-md-end mt-3 mt-md-0">
-
-                    <form
-                        method="POST"
-                        action="{{ url_for(
-                            'eliminar_jugador',
-                            jugador_id=jugador.id
-                        ) }}"
-                        onsubmit="
-                            return confirm(
-                                '¿Estás seguro de eliminar este jugador? Esta acción no se puede deshacer.'
-                            );
-                        "
-                    >
-
-                        <button
-                            type="submit"
-                            class="btn btn-outline-danger"
-                        >
-                            🗑️ Eliminar jugador
-                        </button>
-
-                    </form>
-
+                <div class="eliminar-texto">
+                    Esta acción eliminará permanentemente
+                    el registro del jugador.
                 </div>
 
             </div>
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'eliminar_jugador',
+                    jugador_id=jugador.id
+                ) }}"
+                onsubmit="
+                    return confirm(
+                        '¿Estás seguro de eliminar este jugador? Esta acción no se puede deshacer.'
+                    );
+                "
+            >
+
+                <button
+                    type="submit"
+                    class="ficha-btn ficha-btn-danger"
+                >
+                    🗑️ Eliminar jugador
+                </button>
+
+            </form>
 
         </div>
 
