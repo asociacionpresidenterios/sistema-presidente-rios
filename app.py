@@ -2397,6 +2397,47 @@ def dashboard():
     )
 
     # ------------------------------------------------------------
+    # INDICADORES DE PARTICIPACIÓN DEPORTIVA
+    # ------------------------------------------------------------
+
+    jugadores_con_goles = safe_scalar(
+        db.session.query(
+            db.func.count(db.func.distinct(Gol.jugador_id))
+        ),
+        0
+    )
+
+    jugadores_con_amarillas = safe_scalar(
+        db.session.query(
+            db.func.count(db.func.distinct(RegistroDisciplinario.jugador_id))
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Amarilla"
+        ),
+        0
+    )
+
+    jugadores_con_rojas = safe_scalar(
+        db.session.query(
+            db.func.count(db.func.distinct(RegistroDisciplinario.jugador_id))
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Roja"
+        ),
+        0
+    )
+
+    jugadores_suspendidos_registro = safe_scalar(
+        db.session.query(
+            db.func.count(db.func.distinct(RegistroDisciplinario.jugador_id))
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Suspension"
+        ),
+        0
+    )
+
+    # ------------------------------------------------------------
     # GOLEADORES
     # ------------------------------------------------------------
 
@@ -2541,6 +2582,10 @@ def dashboard():
         total_amarillas=total_amarillas,
         total_rojas=total_rojas,
         total_suspensiones=total_suspensiones,
+        jugadores_con_goles=jugadores_con_goles,
+        jugadores_con_amarillas=jugadores_con_amarillas,
+        jugadores_con_rojas=jugadores_con_rojas,
+        jugadores_suspendidos_registro=jugadores_suspendidos_registro,
         goleadores=goleadores,
         ranking_amarillas=ranking_amarillas,
         ranking_rojas=ranking_rojas,
