@@ -617,53 +617,97 @@ def obtener_fotografia():
 
 def obtener_amarillas(jugador_id):
 
-    registros = RegistroDisciplinario.query.filter_by(
-        jugador_id=jugador_id,
-        tipo="Amarilla"
-    ).all()
+    try:
+        registros = (
+            RegistroDisciplinario.query
+            .filter_by(
+                jugador_id=jugador_id,
+                tipo="Amarilla"
+            )
+            .all()
+        )
 
-    return sum(
-        registro.cantidad
-        for registro in registros
-    )
+        return sum(
+            registro.cantidad or 0
+            for registro in registros
+        )
+
+    except Exception as error:
+
+        db.session.rollback()
+        print("Advertencia obteniendo amarillas:", error)
+        return 0
 
 
 def obtener_rojas(jugador_id):
 
-    registros = RegistroDisciplinario.query.filter_by(
-        jugador_id=jugador_id,
-        tipo="Roja"
-    ).all()
+    try:
+        registros = (
+            RegistroDisciplinario.query
+            .filter_by(
+                jugador_id=jugador_id,
+                tipo="Roja"
+            )
+            .all()
+        )
 
-    return sum(
-        registro.cantidad
-        for registro in registros
-    )
+        return sum(
+            registro.cantidad or 0
+            for registro in registros
+        )
+
+    except Exception as error:
+
+        db.session.rollback()
+        print("Advertencia obteniendo rojas:", error)
+        return 0
 
 
 def obtener_goles(jugador_id):
 
-    registros = Gol.query.filter_by(
-        jugador_id=jugador_id
-    ).all()
+    try:
+        registros = (
+            Gol.query
+            .filter_by(
+                jugador_id=jugador_id
+            )
+            .all()
+        )
 
-    return sum(
-        registro.cantidad
-        for registro in registros
-    )
+        return sum(
+            registro.cantidad or 0
+            for registro in registros
+        )
+
+    except Exception as error:
+
+        db.session.rollback()
+        print("Advertencia obteniendo goles:", error)
+        return 0
 
 
 def obtener_suspensiones(jugador_id):
 
-    registros = RegistroDisciplinario.query.filter_by(
-        jugador_id=jugador_id,
-        tipo="Suspension"
-    ).all()
+    try:
+        registros = (
+            RegistroDisciplinario.query
+            .filter_by(
+                jugador_id=jugador_id,
+                tipo="Suspension"
+            )
+            .all()
+        )
 
-    return sum(
-        registro.cantidad
-        for registro in registros
-    )
+        return sum(
+            registro.cantidad or 0
+            for registro in registros
+        )
+
+    except Exception as error:
+
+        db.session.rollback()
+        print("Advertencia obteniendo suspensiones:", error)
+        return 0
 
 
 def crear_suspension_por_acumulacion(
@@ -819,29 +863,39 @@ def ficha_jugador(jugador_id):
         jugador.id
     )
 
-    historial = (
-        RegistroDisciplinario.query
-        .filter_by(
-            jugador_id=jugador.id
+    try:
+        historial = (
+            RegistroDisciplinario.query
+            .filter_by(
+                jugador_id=jugador.id
+            )
+            .order_by(
+                RegistroDisciplinario.fecha.desc(),
+                RegistroDisciplinario.id.desc()
+            )
+            .all()
         )
-        .order_by(
-            RegistroDisciplinario.fecha.desc(),
-            RegistroDisciplinario.id.desc()
-        )
-        .all()
-    )
+    except Exception as error:
+        db.session.rollback()
+        print("Advertencia obteniendo historial disciplinario:", error)
+        historial = []
 
-    historial_goles = (
-        Gol.query
-        .filter_by(
-            jugador_id=jugador.id
+    try:
+        historial_goles = (
+            Gol.query
+            .filter_by(
+                jugador_id=jugador.id
+            )
+            .order_by(
+                Gol.fecha.desc(),
+                Gol.id.desc()
+            )
+            .all()
         )
-        .order_by(
-            Gol.fecha.desc(),
-            Gol.id.desc()
-        )
-        .all()
-    )
+    except Exception as error:
+        db.session.rollback()
+        print("Advertencia obteniendo historial de goles:", error)
+        historial_goles = []
 
     return render_template(
         "jugador_detalle.html",
