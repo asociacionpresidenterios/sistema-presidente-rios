@@ -1961,8 +1961,7 @@ def registrar_amarilla(jugador_id):
         )
 
         flash(
-            "No fue posible registrar la tarjeta amarilla. "
-            "Revise el registro del servidor.",
+            "No fue posible registrar la tarjeta amarilla.",
             "error"
         )
 
@@ -2000,6 +1999,8 @@ def registrar_amarilla(jugador_id):
             jugador_id=jugador.id
         )
     )
+
+
 # ============================================================
 # REGISTRAR TARJETA ROJA
 # ============================================================
@@ -2025,20 +2026,24 @@ def registrar_roja(jugador_id):
         ""
     ).strip()
 
-    registro = RegistroDisciplinario(
-        jugador_id=jugador.id,
-        fecha=date.today(),
-        tipo="Roja",
-        cantidad=1,
-        motivo=motivo,
-        campeonato=campeonato
-    )
+    observaciones = request.form.get(
+        "observaciones",
+        ""
+    ).strip()
 
     try:
 
-        db.session.add(
-            registro
+        registro = RegistroDisciplinario(
+            jugador_id=jugador.id,
+            fecha=date.today(),
+            tipo="Roja",
+            cantidad=1,
+            motivo=motivo,
+            campeonato=campeonato,
+            observaciones=observaciones
         )
+
+        db.session.add(registro)
 
         db.session.commit()
 
@@ -2047,8 +2052,8 @@ def registrar_roja(jugador_id):
         db.session.rollback()
 
         print(
-            "Error registrando roja:",
-            error
+            "ERROR REGISTRANDO TARJETA ROJA:",
+            repr(error)
         )
 
         flash(
@@ -2085,6 +2090,94 @@ def registrar_roja(jugador_id):
     methods=["POST"]
 )
 def registrar_suspension(jugador_id):
+
+    jugador = db.get_or_404(
+        Jugador,
+        jugador_id
+    )
+
+    try:
+
+        cantidad = int(
+            request.form.get(
+                "cantidad",
+                1
+            )
+        )
+
+    except (ValueError, TypeError):
+
+        cantidad = 1
+
+    if cantidad < 1:
+        cantidad = 1
+
+    campeonato = request.form.get(
+        "campeonato",
+        ""
+    ).strip()
+
+    motivo = request.form.get(
+        "motivo",
+        ""
+    ).strip()
+
+    observaciones = request.form.get(
+        "observaciones",
+        ""
+    ).strip()
+
+    try:
+
+        suspension = RegistroDisciplinario(
+            jugador_id=jugador.id,
+            fecha=date.today(),
+            tipo="Suspension",
+            cantidad=cantidad,
+            motivo=motivo,
+            campeonato=campeonato,
+            observaciones=observaciones
+        )
+
+        db.session.add(suspension)
+
+        jugador.estado = "Suspendido"
+
+        db.session.commit()
+
+    except Exception as error:
+
+        db.session.rollback()
+
+        print(
+            "ERROR REGISTRANDO SUSPENSION:",
+            repr(error)
+        )
+
+        flash(
+            "No fue posible registrar la suspensión.",
+            "error"
+        )
+
+        return redirect(
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
+        )
+
+    flash(
+        f"Suspensión registrada correctamente. "
+        f"Cantidad: {cantidad}.",
+        "success"
+    )
+
+    return redirect(
+        url_for(
+            "ficha_jugador",
+            jugador_id=jugador.id
+        )
+    )
 
     jugador = db.get_or_404(
         Jugador,
