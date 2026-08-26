@@ -788,7 +788,7 @@ def index():
 
 
 # ============================================================
-# FICHA INDIVIDUAL
+# FICHA INDIVIDUAL DEL JUGADOR
 # ============================================================
 
 @app.route(
@@ -801,57 +801,163 @@ def ficha_jugador(jugador_id):
         jugador_id
     )
 
-    goles = obtener_goles(
-        jugador.id
-    )
+    # --------------------------------------------------------
+    # VALORES POR DEFECTO
+    # --------------------------------------------------------
 
-    amarillas = obtener_amarillas(
-        jugador.id
-    )
+    goles = 0
+    amarillas = 0
+    rojas = 0
+    suspensiones = 0
 
-    rojas = obtener_rojas(
-        jugador.id
-    )
+    historial = []
+    historial_goles = []
 
-    suspensiones = obtener_suspensiones(
-        jugador.id
-    )
+    # --------------------------------------------------------
+    # ESTADÍSTICAS
+    # --------------------------------------------------------
 
-    historial = (
-        RegistroDisciplinario.query
-        .filter_by(
-            jugador_id=jugador.id
+    try:
+
+        goles = obtener_goles(
+            jugador.id
         )
-        .order_by(
-            RegistroDisciplinario.fecha.desc(),
-            RegistroDisciplinario.id.desc()
-        )
-        .all()
-    )
 
-    historial_goles = (
-        Gol.query
-        .filter_by(
-            jugador_id=jugador.id
+    except Exception as error:
+
+        print(
+            "Error obteniendo goles:",
+            error
         )
-        .order_by(
-            Gol.fecha.desc(),
-            Gol.id.desc()
+
+        goles = 0
+
+
+    try:
+
+        amarillas = obtener_amarillas(
+            jugador.id
         )
-        .all()
-    )
+
+    except Exception as error:
+
+        print(
+            "Error obteniendo tarjetas amarillas:",
+            error
+        )
+
+        amarillas = 0
+
+
+    try:
+
+        rojas = obtener_rojas(
+            jugador.id
+        )
+
+    except Exception as error:
+
+        print(
+            "Error obteniendo tarjetas rojas:",
+            error
+        )
+
+        rojas = 0
+
+
+    try:
+
+        suspensiones = obtener_suspensiones(
+            jugador.id
+        )
+
+    except Exception as error:
+
+        print(
+            "Error obteniendo suspensiones:",
+            error
+        )
+
+        suspensiones = 0
+
+
+    # --------------------------------------------------------
+    # HISTORIAL DISCIPLINARIO
+    # --------------------------------------------------------
+
+    try:
+
+        historial = (
+            RegistroDisciplinario.query
+            .filter_by(
+                jugador_id=jugador.id
+            )
+            .order_by(
+                RegistroDisciplinario.fecha.desc(),
+                RegistroDisciplinario.id.desc()
+            )
+            .all()
+        )
+
+    except Exception as error:
+
+        print(
+            "Error obteniendo historial disciplinario:",
+            error
+        )
+
+        historial = []
+
+
+    # --------------------------------------------------------
+    # HISTORIAL DE GOLES
+    # --------------------------------------------------------
+
+    try:
+
+        historial_goles = (
+            Gol.query
+            .filter_by(
+                jugador_id=jugador.id
+            )
+            .order_by(
+                Gol.fecha.desc(),
+                Gol.id.desc()
+            )
+            .all()
+        )
+
+    except Exception as error:
+
+        print(
+            "Error obteniendo historial de goles:",
+            error
+        )
+
+        historial_goles = []
+
+
+    # --------------------------------------------------------
+    # RENDERIZAR FICHA
+    # --------------------------------------------------------
 
     return render_template(
         "jugador_detalle.html",
+
         jugador=jugador,
+
         goles=goles,
+
         amarillas=amarillas,
+
         rojas=rojas,
+
         suspensiones=suspensiones,
+
         historial=historial,
+
         historial_goles=historial_goles
     )
-
 
 # ============================================================
 # FOTOGRAFÍA
