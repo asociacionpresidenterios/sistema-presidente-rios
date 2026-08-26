@@ -2248,9 +2248,16 @@ def credencial_reverso(jugador_id):
 @app.route("/dashboard")
 def dashboard():
 
-    # ============================================================
+    """Panel principal.
+
+    Las estadísticas deportivas son complementarias al registro de jugadores.
+    Si una tabla estadística antigua no existe todavía en producción, el
+    dashboard continúa funcionando mostrando esos indicadores en cero.
+    """
+
+    # ------------------------------------------------------------
     # INDICADORES GENERALES
-    # ============================================================
+    # ------------------------------------------------------------
 
     total_jugadores = Jugador.query.count()
 
@@ -2270,11 +2277,32 @@ def dashboard():
         estado="Inhabilitado"
     ).count()
 
-    # ============================================================
-    # JUGADORES POR CLUB
-    # ============================================================
+    # ------------------------------------------------------------
+    # CONSULTAS SEGURAS
+    # ------------------------------------------------------------
+    # Las tablas Gol y RegistroDisciplinario pueden no existir en una
+    # base de datos antigua. Nunca deben impedir que cargue el Dashboard.
 
-    jugadores_por_club = (
+    def safe_all(query, default=None):
+        try:
+            return query.all()
+        except Exception:
+            db.session.rollback()
+            return [] if default is None else default
+
+    def safe_scalar(query, default=0):
+        try:
+            value = query.scalar()
+            return value if value is not None else default
+        except Exception:
+            db.session.rollback()
+            return default
+
+    # ------------------------------------------------------------
+    # JUGADORES POR CLUB
+    # ------------------------------------------------------------
+
+    jugadores_por_club = safe_all(
         db.session.query(
             Jugador.club,
             db.func.count(Jugador.id)
@@ -2287,14 +2315,13 @@ def dashboard():
         .order_by(
             db.func.count(Jugador.id).desc()
         )
-        .all()
     )
 
-    # ============================================================
+    # ------------------------------------------------------------
     # JUGADORES POR SERIE
-    # ============================================================
+    # ------------------------------------------------------------
 
-    jugadores_por_serie = (
+    jugadores_por_serie = safe_all(
         db.session.query(
             Jugador.serie,
             db.func.count(Jugador.id)
@@ -2307,12 +2334,11 @@ def dashboard():
         .order_by(
             db.func.count(Jugador.id).desc()
         )
-        .all()
     )
 
-    # ============================================================
+    # ------------------------------------------------------------
     # ÚLTIMOS JUGADORES
-    # ============================================================
+    # ------------------------------------------------------------
 
     ultimos_jugadores = (
         Jugador.query
@@ -2321,49 +2347,60 @@ def dashboard():
         .all()
     )
 
-    # ============================================================
-    # ESTADÍSTICAS GENERALES
-    # ============================================================
+    # ------------------------------------------------------------
+    # ESTADÍSTICAS DEPORTIVAS
+    # ------------------------------------------------------------
 
-    total_goles = db.session.query(
-        db.func.coalesce(
-            db.func.sum(Gol.cantidad),
-            0
+    total_goles = safe_scalar(
+        db.session.query(
+            db.func.coalesce(
+                db.func.sum(Gol.cantidad),
+                0
+            )
         )
-    ).scalar() or 0
+    )
 
-    total_amarillas = db.session.query(
-        db.func.coalesce(
-            db.func.sum(RegistroDisciplinario.cantidad),
-            0
+    total_amarillas = safe_scalar(
+        db.session.query(
+            db.func.coalesce(
+                db.func.sum(RegistroDisciplinario.cantidad),
+                0
+            )
         )
-    ).filter(
-        RegistroDisciplinario.tipo == "Amarilla"
-    ).scalar() or 0
-
-    total_rojas = db.session.query(
-        db.func.coalesce(
-            db.func.sum(RegistroDisciplinario.cantidad),
-            0
+        .filter(
+            RegistroDisciplinario.tipo == "Amarilla"
         )
-    ).filter(
-        RegistroDisciplinario.tipo == "Roja"
-    ).scalar() or 0
+    )
 
-    total_suspensiones = db.session.query(
-        db.func.coalesce(
-            db.func.sum(RegistroDisciplinario.cantidad),
-            0
+    total_rojas = safe_scalar(
+        db.session.query(
+            db.func.coalesce(
+                db.func.sum(RegistroDisciplinario.cantidad),
+                0
+            )
         )
-    ).filter(
-        RegistroDisciplinario.tipo == "Suspension"
-    ).scalar() or 0
+        .filter(
+            RegistroDisciplinario.tipo == "Roja"
+        )
+    )
 
-    # ============================================================
-    # TABLA DE GOLEADORES
-    # ============================================================
+    total_suspensiones = safe_scalar(
+        db.session.query(
+            db.func.coalesce(
+                db.func.sum(RegistroDisciplinario.cantidad),
+                0
+            )
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Suspension"
+        )
+    )
 
-    goleadores = (
+    # ------------------------------------------------------------
+    # GOLEADORES
+    # ------------------------------------------------------------
+
+    goleadores = safe_all(
         db.session.query(
             Jugador.id,
             Jugador.nombre_completo,
@@ -2386,14 +2423,13 @@ def dashboard():
             Jugador.nombre_completo.asc()
         )
         .limit(10)
-        .all()
     )
 
-    # ============================================================
-    # RANKING DISCIPLINARIO
-    # ============================================================
+    # ------------------------------------------------------------
+    # RANKING AMARILLAS
+    # ------------------------------------------------------------
 
-    ranking_amarillas = (
+    ranking_amarillas = safe_all(
         db.session.query(
             Jugador.id,
             Jugador.nombre_completo,
@@ -2421,10 +2457,13 @@ def dashboard():
             Jugador.nombre_completo.asc()
         )
         .limit(10)
-        .all()
     )
 
-    ranking_rojas = (
+    # ------------------------------------------------------------
+    # RANKING ROJAS
+    # ------------------------------------------------------------
+
+    ranking_rojas = safe_all(
         db.session.query(
             Jugador.id,
             Jugador.nombre_completo,
@@ -2452,10 +2491,13 @@ def dashboard():
             Jugador.nombre_completo.asc()
         )
         .limit(10)
-        .all()
     )
 
-    ranking_suspensiones = (
+    # ------------------------------------------------------------
+    # RANKING SUSPENSIONES
+    # ------------------------------------------------------------
+
+    ranking_suspensiones = safe_all(
         db.session.query(
             Jugador.id,
             Jugador.nombre_completo,
@@ -2483,7 +2525,6 @@ def dashboard():
             Jugador.nombre_completo.asc()
         )
         .limit(10)
-        .all()
     )
 
     return render_template(
