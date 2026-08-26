@@ -1,835 +1,248 @@
 {% extends "base.html" %}
 
-{% block title %}
-Ficha del Jugador
-{% endblock %}
+{% block title %}Ficha del Jugador{% endblock %}
 
 {% block content %}
-
 <style>
-
-    .ficha-page {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-
-    /* ==================================================
-       CABECERA
-    ================================================== */
-
-    .ficha-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 20px;
-        flex-wrap: wrap;
-        margin-bottom: 25px;
-    }
-
-    .ficha-titulo h1 {
-        margin: 0;
-        font-size: 32px;
-        font-weight: 900;
-        color: #111827;
-    }
-
-    .ficha-titulo p {
-        margin: 7px 0 0;
-        color: #6b7280;
-        font-size: 14px;
-    }
-
-    .ficha-acciones-header {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    /* ==================================================
-       BOTONES
-    ================================================== */
-
-    .ficha-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 7px;
-        padding: 11px 17px;
-        border-radius: 10px;
-        border: 1px solid #e5e7eb;
-        text-decoration: none;
-        cursor: pointer;
-        font-weight: 800;
-        font-size: 14px;
-        transition: .2s ease;
-    }
-
-    .ficha-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 5px 15px rgba(0,0,0,.08);
-    }
-
-    .ficha-btn-primary {
-        background: #f97316;
-        color: white;
-        border-color: #f97316;
-    }
-
-    .ficha-btn-dark {
-        background: #111827;
-        color: white;
-        border-color: #111827;
-    }
-
-    .ficha-btn-light {
-        background: white;
-        color: #111827;
-    }
-
-    .ficha-btn-success {
-        background: #16a34a;
-        color: white;
-        border-color: #16a34a;
-    }
-
-    .ficha-btn-danger {
-        background: white;
-        color: #dc2626;
-        border-color: #fecaca;
-    }
-
-    .ficha-btn-danger:hover {
-        background: #fef2f2;
-    }
-
-    /* ==================================================
-       TARJETA PRINCIPAL
-    ================================================== */
-
-    .ficha-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 18px;
-        overflow: hidden;
-        box-shadow: 0 5px 18px rgba(15,23,42,.05);
-    }
-
-    .ficha-card-header {
-        background: #111827;
-        color: white;
-        padding: 22px 25px;
-    }
-
-    .ficha-card-header-small {
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: .08em;
-        opacity: .7;
-        font-weight: 800;
-        margin-bottom: 5px;
-    }
-
-    .ficha-card-header-name {
-        font-size: 24px;
-        font-weight: 900;
-    }
-
-    .ficha-card-body {
-        padding: 30px;
-    }
-
-    /* ==================================================
-       GRID PRINCIPAL
-    ================================================== */
-
-    .ficha-grid {
-        display: grid;
-        grid-template-columns: 300px 1fr;
-        gap: 35px;
-    }
-
-    /* ==================================================
-       FOTO
-    ================================================== */
-
-    .foto-columna {
-        text-align: center;
-    }
-
-    .foto-jugador {
-        width: 260px;
-        height: 320px;
-        object-fit: cover;
-        border-radius: 14px;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 8px 25px rgba(15,23,42,.10);
-    }
-
-    .foto-vacia {
-        width: 260px;
-        height: 320px;
-        margin: 0 auto;
-        border-radius: 14px;
-        border: 1px solid #e5e7eb;
-        background: #f8fafc;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: #94a3b8;
-    }
-
-    .foto-vacia-icono {
-        font-size: 70px;
-        margin-bottom: 15px;
-    }
-
-    /* ==================================================
-       ESTADOS
-    ================================================== */
-
-    .estado-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 15px;
-        border-radius: 999px;
-        font-size: 13px;
-        font-weight: 900;
-        margin-top: 18px;
-    }
-
-    .estado-vigente {
-        background: #dcfce7;
-        color: #166534;
-    }
-
-    .estado-pendiente {
-        background: #fef9c3;
-        color: #854d0e;
-    }
-
-    .estado-suspendido {
-        background: #fee2e2;
-        color: #991b1b;
-    }
-
-    .estado-inhabilitado {
-        background: #e5e7eb;
-        color: #111827;
-    }
-
-    /* ==================================================
-       DATOS
-    ================================================== */
-
-    .datos-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-    }
-
-    .dato-box {
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 16px;
-        background: white;
-    }
-
-    .dato-box-principal {
-        grid-column: 1 / -1;
-        background: #f8fafc;
-    }
-
-    .dato-label {
-        color: #6b7280;
-        font-size: 12px;
-        font-weight: 800;
-        margin-bottom: 6px;
-        text-transform: uppercase;
-        letter-spacing: .03em;
-    }
-
-    .dato-valor {
-        color: #111827;
-        font-size: 16px;
-        font-weight: 800;
-    }
-
-    .dato-valor-grande {
-        font-size: 20px;
-    }
-
-    /* ==================================================
-       ACCIONES
-    ================================================== */
-
-    .acciones-ficha {
-        margin-top: 25px;
-        padding-top: 25px;
-        border-top: 1px solid #e5e7eb;
-    }
-
-    .acciones-ficha h3 {
-        margin: 0 0 15px;
-        font-size: 17px;
-        font-weight: 900;
-        color: #111827;
-    }
-
-    .acciones-grid {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 9px;
-    }
-
-    .accion-ficha {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        padding: 10px 14px;
-        border-radius: 9px;
-        border: 1px solid #e5e7eb;
-        background: white;
-        color: #111827;
-        text-decoration: none;
-        font-size: 13px;
-        font-weight: 800;
-        transition: .2s ease;
-    }
-
-    .accion-ficha:hover {
-        background: #f8fafc;
-        transform: translateY(-1px);
-    }
-
-    .accion-credencial {
-        color: #2563eb;
-    }
-
-    .accion-verificacion {
-        color: #16a34a;
-    }
-
-    .accion-qr {
-        color: #7c3aed;
-    }
-
-    /* ==================================================
-       PIE
-    ================================================== */
-
-    .ficha-footer {
-        padding: 18px 25px;
-        background: #f8fafc;
-        border-top: 1px solid #e5e7eb;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 15px;
-        flex-wrap: wrap;
-    }
-
-    .ficha-footer-text {
-        color: #6b7280;
-        font-size: 12px;
-    }
-
-    /* ==================================================
-       ELIMINAR
-    ================================================== */
-
-    .eliminar-card {
-        margin-top: 20px;
-        background: white;
-        border: 1px solid #fecaca;
-        border-radius: 15px;
-        padding: 20px;
-    }
-
-    .eliminar-contenido {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 20px;
-    }
-
-    .eliminar-titulo {
-        color: #dc2626;
-        font-size: 16px;
-        font-weight: 900;
-        margin-bottom: 5px;
-    }
-
-    .eliminar-texto {
-        color: #6b7280;
-        font-size: 13px;
-    }
-
-    /* ==================================================
-       RESPONSIVE
-    ================================================== */
-
-    @media (max-width: 850px) {
-
-        .ficha-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .foto-columna {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-    }
-
-    @media (max-width: 600px) {
-
-        .ficha-titulo h1 {
-            font-size: 26px;
-        }
-
-        .ficha-card-body {
-            padding: 20px;
-        }
-
-        .datos-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .dato-box-principal {
-            grid-column: auto;
-        }
-
-        .ficha-acciones-header {
-            width: 100%;
-        }
-
-        .ficha-acciones-header .ficha-btn {
-            flex: 1;
-        }
-
-        .eliminar-contenido {
-            flex-direction: column;
-            align-items: stretch;
-        }
-
-    }
-
+    .player-page{max-width:1250px;margin:0 auto;padding:25px;}
+    .player-head{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:22px;}
+    .player-head h1{margin:0;font-size:30px;font-weight:800;}
+    .player-head p{margin:6px 0 0;color:#6b7280;font-size:14px;}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;}
+    .btnx{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border-radius:10px;text-decoration:none;border:1px solid #d1d5db;background:#fff;color:#111827;font-size:13px;font-weight:800;cursor:pointer;}
+    .btnx.primary{background:#111827;color:#fff;border-color:#111827;}
+    .btnx.blue{background:#2563eb;color:#fff;border-color:#2563eb;}
+    .btnx.green{background:#16a34a;color:#fff;border-color:#16a34a;}
+    .btnx.red{background:#dc2626;color:#fff;border-color:#dc2626;}
+    .btnx.yellow{background:#f59e0b;color:#111827;border-color:#f59e0b;}
+    .btnx.dark{background:#374151;color:#fff;border-color:#374151;}
+
+    .player-grid{display:grid;grid-template-columns:330px 1fr;gap:20px;}
+    .cardx{background:#fff;border:1px solid #e5e7eb;border-radius:17px;box-shadow:0 5px 18px rgba(15,23,42,.05);overflow:hidden;}
+    .cardx-head{padding:17px 20px;background:#111827;color:#fff;}
+    .cardx-head small{display:block;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:700;letter-spacing:.04em;}
+    .cardx-head strong{display:block;font-size:20px;margin-top:3px;}
+    .cardx-body{padding:20px;}
+
+    .photo{width:100%;max-width:260px;height:320px;object-fit:cover;border-radius:12px;display:block;margin:0 auto;}
+    .photo-empty{width:260px;height:320px;max-width:100%;margin:auto;border:1px dashed #d1d5db;border-radius:12px;background:#f9fafb;display:flex;align-items:center;justify-content:center;color:#9ca3af;text-align:center;}
+    .photo-empty div:first-child{font-size:65px;}
+    .state{text-align:center;margin-top:13px;}
+    .state-badge{display:inline-flex;padding:7px 13px;border-radius:999px;font-size:12px;font-weight:800;}
+    .state-vigente{background:#dcfce7;color:#166534;}
+    .state-pendiente{background:#fef3c7;color:#92400e;}
+    .state-suspendido{background:#fee2e2;color:#991b1b;}
+    .state-inhabilitado{background:#e5e7eb;color:#374151;}
+
+    .data-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    .data-box{border:1px solid #e5e7eb;border-radius:11px;padding:13px;background:#fff;}
+    .data-box.full{grid-column:1/-1;background:#f8fafc;}
+    .data-label{display:block;color:#6b7280;font-size:10px;font-weight:800;text-transform:uppercase;margin-bottom:5px;}
+    .data-value{font-size:15px;font-weight:800;color:#111827;word-break:break-word;}
+
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:17px;}
+    .mini-stat{padding:13px;border:1px solid #e5e7eb;border-radius:11px;text-align:center;background:#fafafa;}
+    .mini-stat .n{font-size:24px;font-weight:900;line-height:1.1;}
+    .mini-stat .l{font-size:10px;color:#6b7280;font-weight:800;margin-top:4px;}
+    .mini-stat.blue .n{color:#2563eb}.mini-stat.yellow .n{color:#ca8a04}.mini-stat.red .n{color:#dc2626}.mini-stat.orange .n{color:#ea580c}
+
+    .section{margin-top:20px;}
+    .section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;}
+    .section-title h2{margin:0;font-size:18px;font-weight:800;}
+    .section-title span{color:#6b7280;font-size:11px;}
+
+    .forms-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+    .form-card{border:1px solid #e5e7eb;border-radius:12px;padding:15px;background:#fafafa;}
+    .form-card h3{margin:0 0 4px;font-size:14px;font-weight:800;}
+    .form-card p{margin:0 0 12px;color:#6b7280;font-size:11px;}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .form-card label{display:block;font-size:10px;font-weight:800;color:#374151;margin:0 0 4px;}
+    .form-card input,.form-card textarea{width:100%;padding:9px 10px;border:1px solid #d1d5db;border-radius:8px;background:#fff;font-family:inherit;font-size:12px;outline:none;}
+    .form-card textarea{min-height:58px;resize:vertical;margin-top:8px;}
+    .form-card button{margin-top:9px;width:100%;border:0;border-radius:8px;padding:9px;font-weight:800;cursor:pointer;}
+    .form-card.gol button{background:#2563eb;color:#fff}.form-card.amarilla button{background:#facc15;color:#111827}.form-card.roja button{background:#dc2626;color:#fff}.form-card.suspension button{background:#111827;color:#fff}
+
+    .history{width:100%;border-collapse:collapse;}
+    .history th{text-align:left;padding:9px;background:#f9fafb;border-bottom:1px solid #e5e7eb;font-size:10px;color:#6b7280;}
+    .history td{padding:10px 9px;border-bottom:1px solid #f0f0f0;font-size:11px;vertical-align:top;}
+    .history tr:last-child td{border-bottom:0;}
+    .tag{display:inline-flex;padding:4px 7px;border-radius:999px;font-size:9px;font-weight:900;}
+    .tag.amarilla{background:#fef3c7;color:#92400e}.tag.roja{background:#fee2e2;color:#991b1b}.tag.suspension{background:#e5e7eb;color:#374151}
+    .goals-list{display:flex;flex-direction:column;gap:8px;}
+    .goal-row{display:flex;justify-content:space-between;gap:10px;padding:10px;border:1px solid #eef0f3;border-radius:9px;background:#fafafa;font-size:11px;}
+
+    .danger{border-color:#fecaca;margin-top:20px;}
+    .danger .cardx-body{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;}
+    .danger h3{margin:0 0 4px;color:#991b1b;font-size:15px}.danger p{margin:0;color:#6b7280;font-size:11px;}
+
+    @media(max-width:900px){.player-grid{grid-template-columns:1fr}.forms-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:550px){.player-page{padding:15px}.data-grid{grid-template-columns:1fr}.data-box.full{grid-column:auto}.stats-grid{grid-template-columns:1fr 1fr}.form-row{grid-template-columns:1fr}.player-head h1{font-size:25px}}
 </style>
 
+<div class="player-page">
 
-<div class="ficha-page">
-
-    <!-- ==================================================
-         CABECERA
-    ================================================== -->
-
-    <div class="ficha-header">
-
-        <div class="ficha-titulo">
-
-            <h1>
-                👤 Ficha del Jugador
-            </h1>
-
-            <p>
-                Información oficial del jugador registrado
-            </p>
-
+    <div class="player-head">
+        <div>
+            <h1>Ficha del Jugador</h1>
+            <p>Información oficial y estadísticas deportivas del jugador registrado</p>
         </div>
-
-        <div class="ficha-acciones-header">
-
-            <a
-                href="{{ url_for('index') }}"
-                class="ficha-btn ficha-btn-light"
-            >
-                ← Volver
-            </a>
-
-            <a
-                href="{{ url_for('editar_jugador', jugador_id=jugador.id) }}"
-                class="ficha-btn ficha-btn-primary"
-            >
-                ✏️ Editar jugador
-            </a>
-
+        <div class="actions">
+            <a href="{{ url_for('index') }}" class="btnx">← Volver</a>
+            <a href="{{ url_for('editar_jugador', jugador_id=jugador.id) }}" class="btnx primary">✏️ Editar jugador</a>
         </div>
-
     </div>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="cardx" style="padding:12px 15px;margin-bottom:10px;background:{% if category == 'success' %}#f0fdf4{% elif category == 'warning' %}#fffbeb{% else %}#fef2f2{% endif %};color:{% if category == 'success' %}#166534{% elif category == 'warning' %}#92400e{% else %}#991b1b{% endif %};font-size:12px;font-weight:800;">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
-    <!-- ==================================================
-         FICHA
-    ================================================== -->
-
-    <div class="ficha-card">
-
-        <div class="ficha-card-header">
-
-            <div class="ficha-card-header-small">
-                Registro oficial
+    <div class="player-grid">
+        <div class="cardx">
+            <div class="cardx-head">
+                <small>Registro oficial</small>
+                <strong>{{ jugador.nombre_completo }}</strong>
             </div>
-
-            <div class="ficha-card-header-name">
-                {{ jugador.nombre_completo }}
-            </div>
-
-        </div>
-
-
-        <div class="ficha-card-body">
-
-            <div class="ficha-grid">
-
-                <!-- FOTO -->
-
-                <div class="foto-columna">
-
-                    {% if jugador.foto %}
-
-                        <img
-                            src="{{ url_for(
-                                'foto_jugador',
-                                jugador_id=jugador.id
-                            ) }}"
-                            alt="Fotografía de {{ jugador.nombre_completo }}"
-                            class="foto-jugador"
-                        >
-
-                    {% else %}
-
-                        <div class="foto-vacia">
-
-                            <div class="foto-vacia-icono">
-                                👤
-                            </div>
-
-                            <div>
-                                Sin fotografía
-                            </div>
-
-                        </div>
-
-                    {% endif %}
-
-
-                    <!-- ESTADO -->
-
-                    {% if jugador.estado == "Vigente" %}
-
-                        <span class="estado-badge estado-vigente">
-                            🟢 Vigente
-                        </span>
-
-                    {% elif jugador.estado == "Pendiente" %}
-
-                        <span class="estado-badge estado-pendiente">
-                            🟡 Pendiente
-                        </span>
-
-                    {% elif jugador.estado == "Suspendido" %}
-
-                        <span class="estado-badge estado-suspendido">
-                            🔴 Suspendido
-                        </span>
-
-                    {% elif jugador.estado == "Inhabilitado" %}
-
-                        <span class="estado-badge estado-inhabilitado">
-                            ⚫ Inhabilitado
-                        </span>
-
-                    {% else %}
-
-                        <span class="estado-badge estado-inhabilitado">
-                            ⚫ {{ jugador.estado or "Sin estado" }}
-                        </span>
-
-                    {% endif %}
-
-                </div>
-
-
-                <!-- DATOS -->
-
-                <div>
-
-                    <div class="datos-grid">
-
-                        <div class="dato-box dato-box-principal">
-
-                            <div class="dato-label">
-                                Nombre completo
-                            </div>
-
-                            <div class="dato-valor dato-valor-grande">
-                                {{ jugador.nombre_completo }}
-                            </div>
-
-                        </div>
-
-
-                        <div class="dato-box">
-
-                            <div class="dato-label">
-                                RUT
-                            </div>
-
-                            <div class="dato-valor">
-                                {{ jugador.rut }}
-                            </div>
-
-                        </div>
-
-
-                        <div class="dato-box">
-
-                            <div class="dato-label">
-                                Fecha de nacimiento
-                            </div>
-
-                            <div class="dato-valor">
-
-                                {% if jugador.fecha_nacimiento %}
-                                    {{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}
-                                {% else %}
-                                    —
-                                {% endif %}
-
-                            </div>
-
-                        </div>
-
-
-                        <div class="dato-box">
-
-                            <div class="dato-label">
-                                Serie
-                            </div>
-
-                            <div class="dato-valor">
-                                {{ jugador.serie or "—" }}
-                            </div>
-
-                        </div>
-
-
-                        <div class="dato-box">
-
-                            <div class="dato-label">
-                                Club
-                            </div>
-
-                            <div class="dato-valor">
-                                {{ jugador.club or "—" }}
-                            </div>
-
-                        </div>
-
-
-                        <div class="dato-box">
-
-                            <div class="dato-label">
-                                ID de registro
-                            </div>
-
-                            <div class="dato-valor">
-                                #{{ jugador.id }}
-                            </div>
-
-                        </div>
-
-
-                        <div class="dato-box">
-
-                            <div class="dato-label">
-                                Estado de inscripción
-                            </div>
-
-                            <div class="dato-valor">
-                                {{ jugador.estado or "Vigente" }}
-                            </div>
-
-                        </div>
-
-                    </div>
-
-
-                    <!-- ACCIONES -->
-
-                    <div class="acciones-ficha">
-
-                        <h3>
-                            ⚡ Acciones
-                        </h3>
-
-                        <div class="acciones-grid">
-
-                            <a
-                                href="{{ url_for(
-                                    'credencial_jugador',
-                                    jugador_id=jugador.id
-                                ) }}"
-                                class="accion-ficha accion-credencial"
-                                target="_blank"
-                            >
-                                🪪 Ver credencial
-                            </a>
-
-
-                            <a
-                                href="{{ url_for(
-                                    'credencial_completa',
-                                    jugador_id=jugador.id
-                                ) }}"
-                                class="accion-ficha accion-credencial"
-                                target="_blank"
-                            >
-                                🪪 Credencial completa
-                            </a>
-
-
-                            <a
-                                href="{{ url_for(
-                                    'credencial_reverso',
-                                    jugador_id=jugador.id
-                                ) }}"
-                                class="accion-ficha"
-                                target="_blank"
-                            >
-                                🔄 Reverso
-                            </a>
-
-
-                            <a
-                                href="{{ url_for(
-                                    'verificacion_jugador',
-                                    jugador_id=jugador.id
-                                ) }}"
-                                class="accion-ficha accion-verificacion"
-                                target="_blank"
-                            >
-                                ✅ Verificación pública
-                            </a>
-
-
-                            <a
-                                href="{{ url_for(
-                                    'qr_jugador',
-                                    jugador_id=jugador.id
-                                ) }}"
-                                class="accion-ficha accion-qr"
-                                target="_blank"
-                            >
-                                📱 Ver QR
-                            </a>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <!-- PIE -->
-
-        <div class="ficha-footer">
-
-            <div class="ficha-footer-text">
-                Este registro corresponde a la ficha oficial
-                del jugador dentro del sistema.
-            </div>
-
-            <div>
-
-                {% if jugador.estado == "Vigente" %}
-
-                    <strong style="color:#16a34a;">
-                        ✓ Registro vigente
-                    </strong>
-
-                {% elif jugador.estado == "Suspendido" %}
-
-                    <strong style="color:#dc2626;">
-                        ⚠ Registro suspendido
-                    </strong>
-
-                {% elif jugador.estado == "Pendiente" %}
-
-                    <strong style="color:#ca8a04;">
-                        ⚠ Registro pendiente
-                    </strong>
-
-                {% elif jugador.estado == "Inhabilitado" %}
-
-                    <strong style="color:#111827;">
-                        ⛔ Registro inhabilitado
-                    </strong>
-
+            <div class="cardx-body">
+                {% if jugador.foto %}
+                    <img src="{{ url_for('foto_jugador', jugador_id=jugador.id) }}" class="photo" alt="Fotografía de {{ jugador.nombre_completo }}">
+                {% else %}
+                    <div class="photo-empty"><div>👤<br><small>Sin fotografía</small></div></div>
                 {% endif %}
 
-            </div>
+                <div class="state">
+                    {% set estado = jugador.estado or 'Vigente' %}
+                    <span class="state-badge {% if estado == 'Vigente' %}state-vigente{% elif estado == 'Pendiente' %}state-pendiente{% elif estado == 'Suspendido' %}state-suspendido{% else %}state-inhabilitado{% endif %}">● {{ estado }}</span>
+                </div>
 
+                <div class="stats-grid">
+                    <div class="mini-stat blue"><div class="n">{{ goles }}</div><div class="l">⚽ GOLES</div></div>
+                    <div class="mini-stat yellow"><div class="n">{{ amarillas }}</div><div class="l">🟨 AMARILLAS</div></div>
+                    <div class="mini-stat red"><div class="n">{{ rojas }}</div><div class="l">🟥 ROJAS</div></div>
+                    <div class="mini-stat orange"><div class="n">{{ suspensiones }}</div><div class="l">⛔ SUSPENSIONES</div></div>
+                </div>
+            </div>
         </div>
 
+        <div>
+            <div class="cardx">
+                <div class="cardx-body">
+                    <div class="data-grid">
+                        <div class="data-box full"><span class="data-label">Nombre completo</span><span class="data-value">{{ jugador.nombre_completo }}</span></div>
+                        <div class="data-box"><span class="data-label">RUT</span><span class="data-value">{{ jugador.rut }}</span></div>
+                        <div class="data-box"><span class="data-label">Fecha de nacimiento</span><span class="data-value">{% if jugador.fecha_nacimiento %}{{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') }}{% else %}—{% endif %}</span></div>
+                        <div class="data-box"><span class="data-label">Serie</span><span class="data-value">{{ jugador.serie }}</span></div>
+                        <div class="data-box"><span class="data-label">Club</span><span class="data-value">{{ jugador.club }}</span></div>
+                        <div class="data-box"><span class="data-label">ID de registro</span><span class="data-value">#{{ jugador.id }}</span></div>
+                        <div class="data-box"><span class="data-label">Estado de inscripción</span><span class="data-value">{{ estado }}</span></div>
+                    </div>
+
+                    <div class="section">
+                        <div class="section-title"><h2>🪪 Credencial y verificación</h2><span>Documentación</span></div>
+                        <div class="actions">
+                            <a href="{{ url_for('credencial_jugador', jugador_id=jugador.id) }}" class="btnx primary" target="_blank">🪪 Credencial</a>
+                            <a href="{{ url_for('credencial_completa', jugador_id=jugador.id) }}" class="btnx blue" target="_blank">🪪 Completa</a>
+                            <a href="{{ url_for('credencial_reverso', jugador_id=jugador.id) }}" class="btnx" target="_blank">🔄 Reverso</a>
+                            <a href="{{ url_for('verificacion_jugador', jugador_id=jugador.id) }}" class="btnx green" target="_blank">✅ Verificar</a>
+                            <a href="{{ url_for('qr_jugador', jugador_id=jugador.id) }}" class="btnx" target="_blank">📱 QR</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title"><h2>⚽ Registrar actividad</h2><span>Se guarda en el historial del jugador</span></div>
+                <div class="forms-grid">
+                    <form method="POST" action="{{ url_for('registrar_gol', jugador_id=jugador.id) }}" class="form-card gol">
+                        <h3>⚽ Registrar goles</h3><p>Agrega uno o más goles al jugador.</p>
+                        <div class="form-row"><div><label>Cantidad</label><input type="number" name="cantidad" min="1" value="1"></div><div><label>Campeonato</label><input type="text" name="campeonato" placeholder="Ej. Apertura 2026"></div></div>
+                        <textarea name="observaciones" placeholder="Observaciones (opcional)"></textarea>
+                        <button type="submit">Registrar gol</button>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('registrar_amarilla', jugador_id=jugador.id) }}" class="form-card amarilla">
+                        <h3>🟨 Tarjeta amarilla</h3><p>Al llegar a 4 amarillas se genera suspensión automática.</p>
+                        <label>Campeonato</label><input type="text" name="campeonato" placeholder="Ej. Apertura 2026">
+                        <textarea name="motivo" placeholder="Motivo de la tarjeta (opcional)"></textarea>
+                        <button type="submit">Registrar amarilla</button>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('registrar_roja', jugador_id=jugador.id) }}" class="form-card roja">
+                        <h3>🟥 Tarjeta roja</h3><p>Registra una expulsión directa.</p>
+                        <label>Campeonato</label><input type="text" name="campeonato" placeholder="Ej. Apertura 2026">
+                        <textarea name="motivo" placeholder="Motivo de la expulsión"></textarea>
+                        <button type="submit">Registrar roja</button>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('registrar_suspension', jugador_id=jugador.id) }}" class="form-card suspension">
+                        <h3>⛔ Registrar suspensión</h3><p>Permite registrar una suspensión manual.</p>
+                        <div class="form-row"><div><label>Cantidad</label><input type="number" name="cantidad" min="1" value="1"></div><div><label>Campeonato</label><input type="text" name="campeonato" placeholder="Ej. Apertura 2026"></div></div>
+                        <textarea name="motivo" placeholder="Motivo de la suspensión"></textarea>
+                        <textarea name="observaciones" placeholder="Observaciones (opcional)"></textarea>
+                        <button type="submit">Registrar suspensión</button>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
 
-
-    <!-- ==================================================
-         ELIMINAR
-    ================================================== -->
-
-    <div class="eliminar-card">
-
-        <div class="eliminar-contenido">
-
-            <div>
-
-                <div class="eliminar-titulo">
-                    🗑️ Eliminar jugador
-                </div>
-
-                <div class="eliminar-texto">
-                    Esta acción eliminará permanentemente
-                    el registro del jugador.
-                </div>
-
+    <div class="section">
+        <div class="cardx">
+            <div class="cardx-body">
+                <div class="section-title"><h2>📋 Historial disciplinario</h2><span>{{ historial|length }} registros</span></div>
+                {% if historial %}
+                    <div style="overflow-x:auto;">
+                        <table class="history">
+                            <thead><tr><th>FECHA</th><th>TIPO</th><th>CANT.</th><th>CAMPEONATO</th><th>MOTIVO</th><th>OBSERVACIONES</th></tr></thead>
+                            <tbody>
+                                {% for registro in historial %}
+                                    <tr>
+                                        <td>{% if registro.fecha %}{{ registro.fecha.strftime('%d/%m/%Y') }}{% else %}—{% endif %}</td>
+                                        <td><span class="tag {{ registro.tipo|lower }}">{% if registro.tipo == 'Amarilla' %}🟨{% elif registro.tipo == 'Roja' %}🟥{% else %}⛔{% endif %} {{ registro.tipo }}</span></td>
+                                        <td><strong>{{ registro.cantidad }}</strong></td>
+                                        <td>{{ registro.campeonato or '—' }}</td>
+                                        <td>{{ registro.motivo or '—' }}</td>
+                                        <td>{{ registro.observaciones or '—' }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty">No existen registros disciplinarios para este jugador.</div>
+                {% endif %}
             </div>
-
-            <form
-                method="POST"
-                action="{{ url_for(
-                    'eliminar_jugador',
-                    jugador_id=jugador.id
-                ) }}"
-                onsubmit="
-                    return confirm(
-                        '¿Estás seguro de eliminar este jugador? Esta acción no se puede deshacer.'
-                    );
-                "
-            >
-
-                <button
-                    type="submit"
-                    class="ficha-btn ficha-btn-danger"
-                >
-                    🗑️ Eliminar jugador
-                </button>
-
-            </form>
-
         </div>
+    </div>
 
+    <div class="section">
+        <div class="cardx">
+            <div class="cardx-body">
+                <div class="section-title"><h2>⚽ Historial de goles</h2><span>{{ historial_goles|length }} registros</span></div>
+                {% if historial_goles %}
+                    <div class="goals-list">
+                        {% for gol in historial_goles %}
+                            <div class="goal-row"><span><strong>⚽ {{ gol.cantidad }} gol(es)</strong> · {% if gol.fecha %}{{ gol.fecha.strftime('%d/%m/%Y') }}{% endif %}</span><span>{{ gol.campeonato or 'Sin campeonato' }}</span></div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty">No existen goles registrados para este jugador.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="cardx danger">
+        <div class="cardx-body">
+            <div><h3>Eliminar jugador</h3><p>Esta acción eliminará permanentemente el registro y sus estadísticas asociadas.</p></div>
+            <form method="POST" action="{{ url_for('eliminar_jugador', jugador_id=jugador.id) }}" onsubmit="return confirm('¿Estás seguro de eliminar este jugador? Esta acción no se puede deshacer.');">
+                <button type="submit" class="btnx red">🗑️ Eliminar jugador</button>
+            </form>
+        </div>
     </div>
 
 </div>
-
 {% endblock %}
