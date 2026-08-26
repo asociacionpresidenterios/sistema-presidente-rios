@@ -122,6 +122,87 @@
     .stat-label { font-size:12px; color:#6b7280; font-weight:700; margin-bottom:5px; }
     .stat-number { font-size:27px; font-weight:800; color:#111827; line-height:1; }
 
+    .sports-summary {
+        background:#fff;
+        border:1px solid #e5e7eb;
+        border-radius:17px;
+        padding:20px;
+        margin-bottom:20px;
+        box-shadow:0 5px 18px rgba(15,23,42,.05);
+    }
+
+    .sports-summary-header {
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:15px;
+        margin-bottom:15px;
+    }
+
+    .sports-summary-header h2 {
+        margin:0;
+        font-size:18px;
+        font-weight:800;
+        color:#111827;
+    }
+
+    .sports-summary-header p {
+        margin:4px 0 0;
+        color:#6b7280;
+        font-size:12px;
+    }
+
+    .sports-live {
+        font-size:11px;
+        font-weight:800;
+        color:#16a34a;
+        white-space:nowrap;
+    }
+
+    .sports-summary-grid {
+        display:grid;
+        grid-template-columns:repeat(4,1fr);
+        gap:10px;
+    }
+
+    .sports-mini-card {
+        display:flex;
+        align-items:center;
+        gap:11px;
+        padding:13px;
+        border:1px solid #eef0f3;
+        border-radius:12px;
+        background:#fafafa;
+    }
+
+    .sports-mini-icon {
+        width:38px;
+        height:38px;
+        border-radius:10px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:#f3f4f6;
+        font-size:18px;
+        flex-shrink:0;
+    }
+
+    .sports-mini-card strong {
+        display:block;
+        font-size:20px;
+        line-height:1;
+        font-weight:800;
+        color:#111827;
+    }
+
+    .sports-mini-card span {
+        display:block;
+        margin-top:4px;
+        font-size:10px;
+        color:#6b7280;
+        font-weight:700;
+    }
+
     .dashboard-grid {
         display:grid;
         grid-template-columns:1fr 1fr;
@@ -259,11 +340,15 @@
     }
 
     @media(max-width:800px){
+        .sports-summary-grid { grid-template-columns:repeat(2,1fr); }
+        .sports-summary-header { align-items:flex-start; }
         .dashboard-grid { grid-template-columns:1fr; }
         .dashboard-panel.full { grid-column:auto; }
     }
 
     @media(max-width:600px){
+        .sports-summary-grid { grid-template-columns:1fr; }
+        .sports-summary-header { flex-direction:column; }
         .dashboard-page { padding:15px; }
         .stats-grid,.stats-grid.stats-secondary { grid-template-columns:1fr; }
         .dashboard-title h1 { font-size:25px; }
@@ -339,6 +424,58 @@
             <div class="stat-label">Suspensiones</div>
             <div class="stat-number">{{ total_suspensiones }}</div>
         </div>
+    </div>
+
+    <!-- =====================================================
+         RESUMEN DEPORTIVO
+         ===================================================== -->
+
+    <div class="sports-summary">
+
+        <div class="sports-summary-header">
+            <div>
+                <h2>🏆 Resumen deportivo</h2>
+                <p>Jugadores que ya tienen actividad registrada en el sistema</p>
+            </div>
+            <span class="sports-live">● Datos del registro</span>
+        </div>
+
+        <div class="sports-summary-grid">
+
+            <div class="sports-mini-card">
+                <div class="sports-mini-icon">⚽</div>
+                <div>
+                    <strong>{{ jugadores_con_goles }}</strong>
+                    <span>Jugadores con goles</span>
+                </div>
+            </div>
+
+            <div class="sports-mini-card">
+                <div class="sports-mini-icon">🟨</div>
+                <div>
+                    <strong>{{ jugadores_con_amarillas }}</strong>
+                    <span>Jugadores amonestados</span>
+                </div>
+            </div>
+
+            <div class="sports-mini-card">
+                <div class="sports-mini-icon">🟥</div>
+                <div>
+                    <strong>{{ jugadores_con_rojas }}</strong>
+                    <span>Jugadores expulsados</span>
+                </div>
+            </div>
+
+            <div class="sports-mini-card">
+                <div class="sports-mini-icon">⛔</div>
+                <div>
+                    <strong>{{ jugadores_suspendidos_registro }}</strong>
+                    <span>Jugadores con suspensión</span>
+                </div>
+            </div>
+
+        </div>
+
     </div>
 
     <div class="dashboard-grid">
