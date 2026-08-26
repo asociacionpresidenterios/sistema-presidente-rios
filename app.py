@@ -2368,6 +2368,11 @@ def dashboard():
         estado="Inhabilitado"
     ).count()
 
+
+    # =====================================================
+    # JUGADORES POR CLUB
+    # =====================================================
+
     jugadores_por_club = (
         db.session.query(
             Jugador.club,
@@ -2385,6 +2390,11 @@ def dashboard():
         )
         .all()
     )
+
+
+    # =====================================================
+    # JUGADORES POR SERIE
+    # =====================================================
 
     jugadores_por_serie = (
         db.session.query(
@@ -2404,6 +2414,11 @@ def dashboard():
         .all()
     )
 
+
+    # =====================================================
+    # ÚLTIMOS JUGADORES
+    # =====================================================
+
     ultimos_jugadores = (
         Jugador.query
         .order_by(
@@ -2413,45 +2428,23 @@ def dashboard():
         .all()
     )
 
-    total_goles = db.session.query(
-        db.func.coalesce(
-            db.func.sum(Gol.cantidad),
-            0
-        )
-    ).scalar()
 
-    total_amarillas = db.session.query(
-        db.func.coalesce(
-            db.func.sum(
-                RegistroDisciplinario.cantidad
-            ),
-            0
-        )
-    ).filter(
-        RegistroDisciplinario.tipo == "Amarilla"
-    ).scalar()
+    # =====================================================
+    # ESTADÍSTICAS DISCIPLINARIAS
+    # =====================================================
+    # Se dejan en 0 temporalmente para evitar que el
+    # dashboard se caiga si los modelos Gol o
+    # RegistroDisciplinario todavía no están configurados.
 
-    total_rojas = db.session.query(
-        db.func.coalesce(
-            db.func.sum(
-                RegistroDisciplinario.cantidad
-            ),
-            0
-        )
-    ).filter(
-        RegistroDisciplinario.tipo == "Roja"
-    ).scalar()
+    total_goles = 0
+    total_amarillas = 0
+    total_rojas = 0
+    total_suspensiones = 0
 
-    total_suspensiones = db.session.query(
-        db.func.coalesce(
-            db.func.sum(
-                RegistroDisciplinario.cantidad
-            ),
-            0
-        )
-    ).filter(
-        RegistroDisciplinario.tipo == "Suspension"
-    ).scalar()
+
+    # =====================================================
+    # RENDER
+    # =====================================================
 
     return render_template(
         "dashboard.html",
