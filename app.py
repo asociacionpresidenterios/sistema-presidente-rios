@@ -1923,28 +1923,30 @@ def registrar_amarilla(jugador_id):
         ""
     ).strip()
 
-    registro = RegistroDisciplinario(
-        jugador_id=jugador.id,
-        fecha=date.today(),
-        tipo="Amarilla",
-        cantidad=1,
-        motivo=motivo,
-        campeonato=campeonato
-    )
+    observaciones = request.form.get(
+        "observaciones",
+        ""
+    ).strip()
 
     try:
 
-        db.session.add(
-            registro
+        registro = RegistroDisciplinario(
+            jugador_id=jugador.id,
+            fecha=date.today(),
+            tipo="Amarilla",
+            cantidad=1,
+            motivo=motivo,
+            campeonato=campeonato,
+            observaciones=observaciones
         )
+
+        db.session.add(registro)
 
         db.session.flush()
 
-        nuevas_suspensiones = (
-            crear_suspension_por_acumulacion(
-                jugador,
-                campeonato
-            )
+        nuevas_suspensiones = crear_suspension_por_acumulacion(
+            jugador,
+            campeonato
         )
 
         db.session.commit()
@@ -1954,12 +1956,13 @@ def registrar_amarilla(jugador_id):
         db.session.rollback()
 
         print(
-            "Error registrando amarilla:",
-            error
+            "ERROR REGISTRANDO TARJETA AMARILLA:",
+            repr(error)
         )
 
         flash(
-            "No fue posible registrar la tarjeta.",
+            "No fue posible registrar la tarjeta amarilla. "
+            "Revise el registro del servidor.",
             "error"
         )
 
@@ -1978,16 +1981,15 @@ def registrar_amarilla(jugador_id):
 
         flash(
             f"Tarjeta amarilla registrada. "
-            f"El jugador alcanzó {amarillas} "
-            f"amarillas y se generó "
-            f"automáticamente una suspensión.",
+            f"El jugador alcanzó {amarillas} amarillas "
+            f"y se generó automáticamente una suspensión.",
             "warning"
         )
 
     else:
 
         flash(
-            f"Tarjeta amarilla registrada. "
+            f"Tarjeta amarilla registrada correctamente. "
             f"Acumuladas: {amarillas}/4.",
             "success"
         )
@@ -1998,8 +2000,6 @@ def registrar_amarilla(jugador_id):
             jugador_id=jugador.id
         )
     )
-
-
 # ============================================================
 # REGISTRAR TARJETA ROJA
 # ============================================================
