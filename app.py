@@ -2369,9 +2369,9 @@ def dashboard():
     ).count()
 
 
-    # =====================================================
+    # ==================================================
     # JUGADORES POR CLUB
-    # =====================================================
+    # ==================================================
 
     jugadores_por_club = (
         db.session.query(
@@ -2392,9 +2392,9 @@ def dashboard():
     )
 
 
-    # =====================================================
+    # ==================================================
     # JUGADORES POR SERIE
-    # =====================================================
+    # ==================================================
 
     jugadores_por_serie = (
         db.session.query(
@@ -2415,9 +2415,9 @@ def dashboard():
     )
 
 
-    # =====================================================
+    # ==================================================
     # ÚLTIMOS JUGADORES
-    # =====================================================
+    # ==================================================
 
     ultimos_jugadores = (
         Jugador.query
@@ -2429,12 +2429,13 @@ def dashboard():
     )
 
 
-    # =====================================================
+    # ==================================================
     # ESTADÍSTICAS DISCIPLINARIAS
-    # =====================================================
-    # Se dejan en 0 temporalmente para evitar que el
-    # dashboard se caiga si los modelos Gol o
-    # RegistroDisciplinario todavía no están configurados.
+    #
+    # Por ahora se dejan en 0 hasta que tengamos
+    # implementados correctamente los modelos
+    # Gol y RegistroDisciplinario.
+    # ==================================================
 
     total_goles = 0
     total_amarillas = 0
@@ -2442,9 +2443,9 @@ def dashboard():
     total_suspensiones = 0
 
 
-    # =====================================================
-    # RENDER
-    # =====================================================
+    # ==================================================
+    # DASHBOARD
+    # ==================================================
 
     return render_template(
         "dashboard.html",
@@ -2473,7 +2474,6 @@ def dashboard():
 
         total_suspensiones=total_suspensiones
     )
-
 
 # ============================================================
 # ADMINISTRACIÓN DE CLUBES Y SERIES
