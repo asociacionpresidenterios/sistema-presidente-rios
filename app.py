@@ -2591,6 +2591,14 @@ def dashboard():
         .all()
     )
 
+    jugadores_suspendidos = (
+        Jugador.query
+        .filter_by(estado="Suspendido")
+        .order_by(Jugador.nombre_completo.asc())
+        .limit(10)
+        .all()
+    )
+
     # ------------------------------------------------------------
     # ESTADÍSTICAS DEPORTIVAS
     # ------------------------------------------------------------
@@ -2822,6 +2830,7 @@ def dashboard():
         jugadores_por_club=jugadores_por_club,
         jugadores_por_serie=jugadores_por_serie,
         ultimos_jugadores=ultimos_jugadores,
+        jugadores_suspendidos=jugadores_suspendidos,
         total_goles=total_goles,
         total_amarillas=total_amarillas,
         total_rojas=total_rojas,
