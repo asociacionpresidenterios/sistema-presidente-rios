@@ -2049,24 +2049,28 @@ def registrar_roja(jugador_id):
 
     except Exception as error:
 
-        db.session.rollback()
+    db.session.rollback()
 
-        print(
-            "ERROR REGISTRANDO TARJETA ROJA:",
-            repr(error)
-        )
+    import traceback
 
-        flash(
-            "No fue posible registrar la tarjeta roja.",
-            "error"
-        )
+    print("==============================================")
+    print("ERROR REGISTRANDO TARJETA ROJA")
+    print("==============================================")
+    print(repr(error))
+    traceback.print_exc()
+    print("==============================================")
 
-        return redirect(
-            url_for(
-                "ficha_jugador",
-                jugador_id=jugador.id
-            )
+    flash(
+        f"Error al registrar tarjeta roja: {error}",
+        "error"
+    )
+
+    return redirect(
+        url_for(
+            "ficha_jugador",
+            jugador_id=jugador.id
         )
+    )
 
     flash(
         "Tarjeta roja registrada correctamente.",
