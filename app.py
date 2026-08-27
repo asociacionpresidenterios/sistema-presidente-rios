@@ -3797,6 +3797,103 @@ def marcar_partido_programado(campeonato_id, partido_id):
         url_for("resultados_campeonato", campeonato_id=campeonato.id)
     )
 
+
+# ============================================================
+# PASO 7 — TABLA DE POSICIONES AUTOMÁTICA
+# ============================================================
+
+@app.route("/campeonatos/<int:campeonato_id>/tabla")
+def tabla_campeonato(campeonato_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+
+    clubes_participantes = (
+        CampeonatoClub.query
+        .filter_by(campeonato_id=campeonato.id)
+        .join(Club, CampeonatoClub.club_id == Club.id)
+        .order_by(Club.nombre)
+        .all()
+    )
+
+    partidos_finalizados = (
+        Partido.query
+        .filter_by(campeonato_id=campeonato.id, estado="Finalizado")
+        .all()
+    )
+
+    tabla = {}
+    for registro in clubes_participantes:
+        club = registro.club
+        tabla[club.id] = {
+            "club": club,
+            "pj": 0,
+            "pg": 0,
+            "pe": 0,
+            "pp": 0,
+            "gf": 0,
+            "gc": 0,
+            "dg": 0,
+            "pts": 0,
+        }
+
+    for partido in partidos_finalizados:
+        # Solo contabilizamos partidos cuyos clubes siguen inscritos
+        # en este campeonato.
+        if partido.local_club_id not in tabla or partido.visitante_club_id not in tabla:
+            continue
+
+        gl = partido.goles_local if partido.goles_local is not None else 0
+        gv = partido.goles_visitante if partido.goles_visitante is not None else 0
+
+        local = tabla[partido.local_club_id]
+        visitante = tabla[partido.visitante_club_id]
+
+        local["pj"] += 1
+        visitante["pj"] += 1
+        local["gf"] += gl
+        local["gc"] += gv
+        visitante["gf"] += gv
+        visitante["gc"] += gl
+
+        if gl > gv:
+            local["pg"] += 1
+            visitante["pp"] += 1
+            local["pts"] += 3
+        elif gl < gv:
+            visitante["pg"] += 1
+            local["pp"] += 1
+            visitante["pts"] += 3
+        else:
+            local["pe"] += 1
+            visitante["pe"] += 1
+            local["pts"] += 1
+            visitante["pts"] += 1
+
+    filas = list(tabla.values())
+    for fila in filas:
+        fila["dg"] = fila["gf"] - fila["gc"]
+
+    # Orden oficial de clasificación: puntos, diferencia de goles,
+    # goles a favor y nombre del club como desempate final.
+    filas.sort(
+        key=lambda fila: (
+            -fila["pts"],
+            -fila["dg"],
+            -fila["gf"],
+            fila["club"].nombre.lower(),
+        )
+    )
+
+    for posicion, fila in enumerate(filas, start=1):
+        fila["pos"] = posicion
+
+    return render_template(
+        "campeonato_tabla.html",
+        campeonato=campeonato,
+        filas=filas,
+        partidos_finalizados=len(partidos_finalizados),
+        partidos_totales=Partido.query.filter_by(campeonato_id=campeonato.id).count(),
+    )
+
 # ============================================================
 # HEALTH CHECK
 # ============================================================
