@@ -295,6 +295,55 @@ class Gol(db.Model):
 
 
 # ============================================================
+# MODELO CAMPEONATO
+# ============================================================
+
+class Campeonato(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    nombre = db.Column(
+        db.String(160),
+        nullable=False
+    )
+
+    temporada = db.Column(
+        db.String(20),
+        nullable=False
+    )
+
+    serie = db.Column(
+        db.String(80),
+        nullable=False
+    )
+
+    fecha_inicio = db.Column(
+        db.Date,
+        nullable=True
+    )
+
+    fecha_termino = db.Column(
+        db.Date,
+        nullable=True
+    )
+
+    estado = db.Column(
+        db.String(30),
+        nullable=False,
+        default="Activo"
+    )
+
+    descripcion = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+
+
+# ============================================================
 # CREACIÓN / ACTUALIZACIÓN SEGURA DE BASE DE DATOS
 # ============================================================
 
@@ -3244,6 +3293,139 @@ def health():
 # ============================================================
 # EJECUCIÓN LOCAL
 # ============================================================
+
+# ============================================================
+# MÓDULO DE CAMPEONATOS — PASOS 1, 2 Y 3
+# ============================================================
+
+@app.route("/campeonatos")
+def campeonatos():
+
+    campeonatos_registrados = (
+        Campeonato.query
+        .order_by(
+            Campeonato.temporada.desc(),
+            Campeonato.id.desc()
+        )
+        .all()
+    )
+
+    return render_template(
+        "campeonatos.html",
+        campeonatos=campeonatos_registrados
+    )
+
+
+@app.route("/campeonatos/nuevo", methods=["GET", "POST"])
+def nuevo_campeonato():
+
+    series = (
+        Serie.query
+        .filter_by(activo=True)
+        .order_by(Serie.nombre)
+        .all()
+    )
+
+    if request.method == "POST":
+
+        nombre = request.form.get("nombre", "").strip()
+        temporada = request.form.get("temporada", "").strip()
+        serie = request.form.get("serie", "").strip()
+        estado = request.form.get("estado", "Activo").strip() or "Activo"
+        descripcion = request.form.get("descripcion", "").strip()
+
+        fecha_inicio = convertir_fecha(
+            request.form.get("fecha_inicio", "").strip()
+        )
+
+        fecha_termino = convertir_fecha(
+            request.form.get("fecha_termino", "").strip()
+        )
+
+        if not nombre or not temporada or not serie:
+            flash(
+                "Debes completar nombre, temporada y serie.",
+                "error"
+            )
+            return render_template(
+                "campeonato_form.html",
+                series=series
+            )
+
+        if estado not in {"Activo", "Finalizado"}:
+            estado = "Activo"
+
+        if fecha_inicio and fecha_termino and fecha_termino < fecha_inicio:
+            flash(
+                "La fecha de término no puede ser anterior a la fecha de inicio.",
+                "error"
+            )
+            return render_template(
+                "campeonato_form.html",
+                series=series
+            )
+
+        campeonato = Campeonato(
+            nombre=nombre,
+            temporada=temporada,
+            serie=serie,
+            fecha_inicio=fecha_inicio,
+            fecha_termino=fecha_termino,
+            estado=estado,
+            descripcion=descripcion
+        )
+
+        try:
+            db.session.add(campeonato)
+            db.session.commit()
+
+        except Exception as error:
+            db.session.rollback()
+            print(
+                "ERROR CREANDO CAMPEONATO:",
+                repr(error)
+            )
+            flash(
+                "No fue posible crear el campeonato. Revise el registro del servidor.",
+                "error"
+            )
+            return render_template(
+                "campeonato_form.html",
+                series=series
+            )
+
+        flash(
+            f"Campeonato '{nombre}' creado correctamente.",
+            "success"
+        )
+
+        return redirect(
+            url_for(
+                "detalle_campeonato",
+                campeonato_id=campeonato.id
+            )
+        )
+
+    return render_template(
+        "campeonato_form.html",
+        series=series
+    )
+
+
+@app.route("/campeonatos/<int:campeonato_id>")
+def detalle_campeonato(campeonato_id):
+
+    campeonato = db.get_or_404(
+        Campeonato,
+        campeonato_id
+    )
+
+    return render_template(
+        "campeonato_detalle.html",
+        campeonato=campeonato
+    )
+
+
 
 if __name__ == "__main__":
 
