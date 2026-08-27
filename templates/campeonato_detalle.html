@@ -1,22 +1,146 @@
 {% extends "base.html" %}
+
 {% block title %}{{ campeonato.nombre }}{% endblock %}
+
 {% block content %}
-<div style="max-width:1100px;margin:0 auto;padding:25px">
-  <div style="display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:25px">
-    <div><h1 style="margin:0;font-size:30px;font-weight:900">🏆 {{ campeonato.nombre }}</h1><p style="color:#6b7280">{{ campeonato.serie }} · Temporada {{ campeonato.temporada }}</p></div>
-    <a href="{{ url_for('campeonatos') }}" style="padding:11px 17px;border:1px solid #d1d5db;border-radius:10px;text-decoration:none;color:#111827;font-weight:800;background:white">← Campeonatos</a>
-  </div>
-  <div style="background:white;border:1px solid #e5e7eb;border-radius:18px;padding:25px;box-shadow:0 5px 18px rgba(15,23,42,.05)">
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:15px">
-      <div><small style="color:#6b7280">Serie</small><div style="font-weight:800;margin-top:5px">{{ campeonato.serie }}</div></div>
-      <div><small style="color:#6b7280">Temporada</small><div style="font-weight:800;margin-top:5px">{{ campeonato.temporada }}</div></div>
-      <div><small style="color:#6b7280">Estado</small><div style="font-weight:800;margin-top:5px">{{ campeonato.estado }}</div></div>
-      <div><small style="color:#6b7280">Inicio</small><div style="font-weight:800;margin-top:5px">{{ campeonato.fecha_inicio.strftime('%d/%m/%Y') if campeonato.fecha_inicio else '—' }}</div></div>
-      <div><small style="color:#6b7280">Término</small><div style="font-weight:800;margin-top:5px">{{ campeonato.fecha_termino.strftime('%d/%m/%Y') if campeonato.fecha_termino else '—' }}</div></div>
-      <div><small style="color:#6b7280">ID</small><div style="font-weight:800;margin-top:5px">#{{ campeonato.id }}</div></div>
+<style>
+  .camp-detail{max-width:1200px;margin:0 auto;padding:25px}
+  .camp-head{display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:22px}
+  .camp-head h1{margin:0;font-size:30px;font-weight:900;color:#111827}
+  .camp-head p{margin:6px 0 0;color:#6b7280}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border-radius:10px;text-decoration:none;font-weight:800;border:1px solid #e5e7eb;background:#111827;color:#fff;cursor:pointer}
+  .btn.light{background:#fff;color:#111827}
+  .btn.success{background:#16a34a;border-color:#16a34a}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:22px;box-shadow:0 5px 18px rgba(15,23,42,.05);margin-bottom:18px}
+  .card h2{margin:0 0 5px;font-size:19px;color:#111827}
+  .sub{margin:0 0 18px;color:#6b7280;font-size:13px}
+  .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .info{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px}
+  .info small{display:block;color:#6b7280;font-size:11px;text-transform:uppercase;font-weight:800}
+  .info strong{display:block;margin-top:5px;color:#111827}
+  .club-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .club-option{display:flex;align-items:center;gap:10px;border:1px solid #e5e7eb;border-radius:12px;padding:13px;background:#fff;cursor:pointer;transition:.15s}
+  .club-option:hover{background:#f8fafc;border-color:#cbd5e1}
+  .club-option.selected{background:#eff6ff;border-color:#93c5fd}
+  .club-option input{width:18px;height:18px;accent-color:#2563eb}
+  .club-name{font-weight:800;color:#1f2937}
+  .club-count{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:12px 14px;border-radius:10px;background:#f8fafc;border:1px solid #e5e7eb}
+  .club-count strong{font-size:22px;color:#2563eb}
+  .actions{display:flex;justify-content:flex-end;margin-top:18px;gap:10px}
+  .empty{padding:25px;text-align:center;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b}
+  .participants{display:flex;flex-wrap:wrap;gap:8px}
+  .pill{display:inline-flex;padding:7px 11px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:800;font-size:12px}
+  .next{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;padding:16px;color:#475569}
+  @media(max-width:800px){.info-grid,.club-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:520px){.camp-detail{padding:15px}.info-grid,.club-grid{grid-template-columns:1fr}.actions{justify-content:stretch}.actions .btn{width:100%;justify-content:center}}
+</style>
+
+<div class="camp-detail">
+
+  <div class="camp-head">
+    <div>
+      <h1>🏆 {{ campeonato.nombre }}</h1>
+      <p>{{ campeonato.serie }} · Temporada {{ campeonato.temporada }}</p>
     </div>
-    {% if campeonato.descripcion %}<div style="border-top:1px solid #e5e7eb;margin-top:25px;padding-top:20px"><small style="color:#6b7280">Descripción</small><p>{{ campeonato.descripcion }}</p></div>{% endif %}
-    <div style="margin-top:25px;padding:20px;border-radius:12px;background:#f8fafc;color:#475569"><strong>🚧 Próximo paso:</strong> aquí conectaremos equipos, fixture, partidos, resultados, tabla de posiciones, goleadores y disciplina.</div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <a class="btn light" href="{{ url_for('campeonatos') }}">← Campeonatos</a>
+    </div>
   </div>
+
+  <div class="card">
+    <h2>📋 Información del campeonato</h2>
+    <p class="sub">Datos generales de la competencia.</p>
+
+    <div class="info-grid">
+      <div class="info"><small>Serie</small><strong>{{ campeonato.serie }}</strong></div>
+      <div class="info"><small>Temporada</small><strong>{{ campeonato.temporada }}</strong></div>
+      <div class="info"><small>Estado</small><strong>{{ campeonato.estado }}</strong></div>
+      <div class="info"><small>Inicio</small><strong>{{ campeonato.fecha_inicio.strftime('%d/%m/%Y') if campeonato.fecha_inicio else '—' }}</strong></div>
+      <div class="info"><small>Término</small><strong>{{ campeonato.fecha_termino.strftime('%d/%m/%Y') if campeonato.fecha_termino else '—' }}</strong></div>
+      <div class="info"><small>ID campeonato</small><strong>#{{ campeonato.id }}</strong></div>
+    </div>
+
+    {% if campeonato.descripcion %}
+      <div style="margin-top:15px;padding:14px;background:#f8fafc;border-radius:12px;color:#475569">
+        <strong>Descripción:</strong> {{ campeonato.descripcion }}
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>⚽ Equipos / clubes participantes</h2>
+    <p class="sub">Selecciona los clubes que participarán en este campeonato. Los clubes se toman desde la configuración general de la Asociación.</p>
+
+    <div class="club-count">
+      <span>Clubes seleccionados</span>
+      <strong id="clubCounter">{{ clubes_participantes|length }}</strong>
+    </div>
+
+    {% if clubes %}
+      <form method="POST" action="{{ url_for('guardar_clubes_campeonato', campeonato_id=campeonato.id) }}" id="clubesForm">
+        <div class="club-grid">
+          {% for club in clubes %}
+            <label class="club-option {% if club.id in clubes_participantes_ids %}selected{% endif %}">
+              <input
+                type="checkbox"
+                name="club_ids"
+                value="{{ club.id }}"
+                {% if club.id in clubes_participantes_ids %}checked{% endif %}
+              >
+              <span class="club-name">{{ club.nombre }}</span>
+            </label>
+          {% endfor %}
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn success">💾 Guardar clubes participantes</button>
+        </div>
+      </form>
+    {% else %}
+      <div class="empty">
+        <strong>No hay clubes activos disponibles.</strong><br>
+        Ingresa a Configuración y crea o activa los clubes de la Asociación antes de continuar.
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>✅ Clubes actualmente inscritos</h2>
+    <p class="sub">Esta es la lista que utilizarán los siguientes módulos del campeonato.</p>
+
+    {% if clubes_participantes %}
+      <div class="participants">
+        {% for registro in clubes_participantes %}
+          <span class="pill">⚽ {{ registro.club.nombre }}</span>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">Todavía no hay clubes inscritos en este campeonato.</div>
+    {% endif %}
+  </div>
+
+  <div class="next">
+    <strong>🚀 PASO 4 completará la base para:</strong>
+    fixture → partidos → resultados → tabla de posiciones → goleadores → disciplina → dashboard del campeonato.
+  </div>
+
 </div>
+
+<script>
+  const form = document.getElementById('clubesForm');
+  const counter = document.getElementById('clubCounter');
+
+  if (form && counter) {
+    const boxes = form.querySelectorAll('input[name="club_ids"]');
+
+    function actualizarContador() {
+      counter.textContent = form.querySelectorAll('input[name="club_ids"]:checked').length;
+      boxes.forEach(box => {
+        box.closest('.club-option').classList.toggle('selected', box.checked);
+      });
+    }
+
+    boxes.forEach(box => box.addEventListener('change', actualizarContador));
+  }
+</script>
 {% endblock %}
