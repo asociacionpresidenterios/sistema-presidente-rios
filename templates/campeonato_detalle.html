@@ -44,6 +44,7 @@
     </div>
     <div style="display:flex;gap:9px;flex-wrap:wrap">
       <a class="btn light" href="{{ url_for('campeonatos') }}">← Campeonatos</a>
+      <a class="btn" href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">⚽ Fixture</a>
     </div>
   </div>
 
@@ -119,9 +120,20 @@
     {% endif %}
   </div>
 
+  <div class="card">
+    <h2>⚽ Fixture del campeonato</h2>
+    <p class="sub">Genera automáticamente un calendario todos-contra-todos a una rueda con los clubes inscritos.</p>
+    <div class="next">
+      <strong>📌 PASO 5:</strong> una vez inscritos los clubes, el sistema puede generar las jornadas y dejar cada partido preparado para el registro de resultados.
+    </div>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">📅 Administrar fixture</a>
+    </div>
+  </div>
+
   <div class="next">
-    <strong>🚀 PASO 4 completará la base para:</strong>
-    fixture → partidos → resultados → tabla de posiciones → goleadores → disciplina → dashboard del campeonato.
+    <strong>🚀 Ruta del módulo:</strong>
+    clubes → fixture → partidos → resultados → tabla de posiciones → goleadores → disciplina → dashboard del campeonato.
   </div>
 
 </div>
