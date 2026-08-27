@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Nuevo campeonato{% endblock %}
+
+{% block content %}
+<style>
+.form-page{max-width:950px;margin:0 auto;padding:25px}.form-card{background:white;border:1px solid #e5e7eb;border-radius:18px;padding:28px;box-shadow:0 5px 18px rgba(15,23,42,.05)}
+.form-head{margin-bottom:25px}.form-head h1{margin:0;font-size:30px;font-weight:900}.form-head p{color:#6b7280;margin:7px 0 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.full{grid-column:1/-1}.field label{display:block;font-size:13px;font-weight:800;color:#374151;margin-bottom:7px}.field input,.field select,.field textarea{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px;font:inherit;outline:none}.field input:focus,.field select:focus,.field textarea:focus{border-color:#111827;box-shadow:0 0 0 3px rgba(17,24,39,.08)}.actions{display:flex;justify-content:space-between;gap:10px;margin-top:25px;padding-top:20px;border-top:1px solid #e5e7eb}.btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 17px;border-radius:10px;text-decoration:none;font-weight:800;border:1px solid #d1d5db;background:white;color:#111827}.btn.primary{background:#111827;color:white;border-color:#111827}
+@media(max-width:650px){.form-page{padding:15px}.grid{grid-template-columns:1fr}.full{grid-column:auto}.actions{flex-direction:column}.actions .btn{width:100%}}
+</style>
+<div class="form-page">
+  <div class="form-head"><h1>🏆 Nuevo campeonato</h1><p>Define la competencia antes de comenzar a cargar su fixture y resultados.</p></div>
+  <div class="form-card">
+    <form method="POST">
+      <div class="grid">
+        <div class="field full"><label>Nombre del campeonato *</label><input name="nombre" required placeholder="Ej: Torneo Apertura 2026"></div>
+        <div class="field"><label>Temporada *</label><input name="temporada" value="2026" required></div>
+        <div class="field"><label>Serie *</label><select name="serie" required><option value="">Selecciona una serie</option>{% for serie in series %}<option value="{{ serie.nombre }}">{{ serie.nombre }}</option>{% endfor %}</select></div>
+        <div class="field"><label>Fecha de inicio</label><input type="date" name="fecha_inicio"></div>
+        <div class="field"><label>Fecha de término</label><input type="date" name="fecha_termino"></div>
+        <div class="field"><label>Estado</label><select name="estado"><option value="Activo">Activo</option><option value="Finalizado">Finalizado</option></select></div>
+        <div class="field full"><label>Descripción / observaciones</label><textarea name="descripcion" rows="4" placeholder="Información adicional del campeonato..."></textarea></div>
+      </div>
+      <div class="actions"><a class="btn" href="{{ url_for('campeonatos') }}">← Cancelar</a><button class="btn primary" type="submit">💾 Crear campeonato</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}
