@@ -29,6 +29,7 @@
 .quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.quick-action{display:flex;align-items:center;gap:12px;padding:15px;border:1px solid #e5e7eb;border-radius:13px;text-decoration:none;color:#111827;background:#fafafa}.quick-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#eef2ff;font-size:19px;flex-shrink:0}.quick-text strong{display:block;font-size:13px;margin-bottom:3px}.quick-text small{color:#6b7280;font-size:11px}
 .dashboard-search{display:flex;gap:10px}.dashboard-search input{flex:1;height:46px;border:1px solid #d1d5db;border-radius:10px;padding:0 14px;font-size:14px;outline:none}.dashboard-search button{border:0;border-radius:10px;padding:0 22px;background:#111827;color:#fff;font-weight:800;cursor:pointer}
 .empty-message{text-align:center;padding:25px;border-radius:12px;background:#f8fafc;color:#9ca3af;font-size:14px}.info-box{display:flex;align-items:center;gap:15px;padding:18px;border-radius:13px;background:#f8fafc;border:1px solid #e5e7eb}.info-icon{width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:#eef2ff;font-size:25px;flex-shrink:0}.info-box strong{display:block;margin-bottom:4px;color:#111827}.info-box span{color:#6b7280;font-size:13px}
+.comparison-wrapper{overflow-x:auto}.comparison-table{width:100%;border-collapse:collapse;min-width:850px}.comparison-table th{padding:12px 10px;background:#f8fafc;color:#64748b;font-size:11px;font-weight:900;text-transform:uppercase;border-bottom:1px solid #e5e7eb;text-align:left}.comparison-table td{padding:13px 10px;border-bottom:1px solid #f1f5f9;color:#374151;font-size:13px}.comparison-table tr:last-child td{border-bottom:0}.comparison-table .serie-cell{font-weight:900;color:#111827}.comparison-table .number-cell{font-weight:900;text-align:center}.comparison-table .good{color:#15803d}.comparison-table .warn{color:#b45309}.comparison-table .danger{color:#b91c1c}.comparison-table .purple{color:#7c3aed}.comparison-table tbody tr:hover{background:#fafafa}.comparison-highlight{background:#eef2ff!important}.comparison-note{margin-top:12px;color:#6b7280;font-size:12px}.comparison-badge{display:inline-flex;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:900;font-size:11px}
 @media(max-width:1200px){.stats-grid{grid-template-columns:repeat(3,1fr)}.sports-grid{grid-template-columns:repeat(2,1fr)}.quick-actions{grid-template-columns:repeat(2,1fr)}}@media(max-width:850px){.dashboard-grid{grid-template-columns:1fr}.dashboard-panel.full{grid-column:auto}.stats-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.dashboard-page{padding:15px}.dashboard-title h1{font-size:25px}.stats-grid,.sports-grid,.quick-actions,.series-grid{grid-template-columns:1fr}.status-row{grid-template-columns:100px 1fr 40px}.dashboard-actions{width:100%}.dashboard-btn{flex:1}.dashboard-search{flex-direction:column}.dashboard-search button{height:44px}}
 
 .filter-card{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:18px;padding:18px 20px;background:#fff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 5px 18px rgba(15,23,42,.05)}
@@ -117,6 +118,56 @@
                 {% endfor %}
             </div>
             {% else %}<div class="empty-message">No hay jugadores registrados por club.</div>{% endif %}
+        </div>
+
+        <div class="dashboard-panel full">
+            <div class="panel-header">
+                <div>
+                    <h2>Comparativa de estadísticas por serie</h2>
+                    <span>Resumen general de todas las series activas</span>
+                </div>
+                {% if serie_seleccionada %}
+                    <span class="comparison-badge">Filtro: {{ serie_seleccionada }}</span>
+                {% endif %}
+            </div>
+
+            {% if estadisticas_por_serie %}
+            <div class="comparison-wrapper">
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Serie</th>
+                            <th>Jugadores</th>
+                            <th>Vigentes</th>
+                            <th>Suspendidos</th>
+                            <th>⚽ Goles</th>
+                            <th>🟨 Amarillas</th>
+                            <th>🟥 Rojas</th>
+                            <th>⛔ Suspensiones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for item in estadisticas_por_serie %}
+                        <tr class="{% if serie_seleccionada == item.serie %}comparison-highlight{% endif %}">
+                            <td class="serie-cell">{{ item.serie }}</td>
+                            <td class="number-cell">{{ item.jugadores }}</td>
+                            <td class="number-cell good">{{ item.vigentes }}</td>
+                            <td class="number-cell danger">{{ item.suspendidos }}</td>
+                            <td class="number-cell">{{ item.goles }}</td>
+                            <td class="number-cell warn">{{ item.amarillas }}</td>
+                            <td class="number-cell danger">{{ item.rojas }}</td>
+                            <td class="number-cell purple">{{ item.suspensiones }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="comparison-note">
+                💡 Esta comparativa no cambia al seleccionar una serie: permite mantener una visión general de toda la Asociación.
+            </div>
+            {% else %}
+                <div class="empty-message">No hay series activas para comparar.</div>
+            {% endif %}
         </div>
 
         <div class="dashboard-panel">
