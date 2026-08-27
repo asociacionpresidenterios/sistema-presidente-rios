@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Fixture — {{ campeonato.nombre }}{% endblock %}
+
+{% block content %}
+<style>
+  .fixture-page{max-width:1250px;margin:0 auto;padding:25px}
+  .fixture-head{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:20px}
+  .fixture-head h1{margin:0;font-size:30px;font-weight:900;color:#111827}
+  .fixture-head p{margin:6px 0 0;color:#6b7280}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 15px;border-radius:10px;text-decoration:none;font-weight:800;border:1px solid #e5e7eb;background:#111827;color:#fff;cursor:pointer}
+  .btn.light{background:#fff;color:#111827}
+  .btn.success{background:#16a34a;border-color:#16a34a}
+  .btn.danger{background:#dc2626;border-color:#dc2626}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:22px;box-shadow:0 5px 18px rgba(15,23,42,.05);margin-bottom:18px}
+  .card h2{margin:0 0 5px;font-size:19px;color:#111827}
+  .sub{margin:0 0 18px;color:#6b7280;font-size:13px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+  .stat{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px}
+  .stat small{display:block;color:#64748b;font-size:11px;text-transform:uppercase;font-weight:900}
+  .stat strong{display:block;margin-top:5px;font-size:22px;color:#111827}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end}
+  .field label{display:block;font-size:12px;font-weight:900;color:#374151;margin-bottom:6px}
+  .field input{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:10px;background:#fff}
+  .round{border:1px solid #e5e7eb;border-radius:15px;overflow:hidden;margin-bottom:16px}
+  .round-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:#f8fafc;border-bottom:1px solid #e5e7eb}
+  .round-head strong{font-size:15px;color:#111827}
+  .round-head span{font-size:12px;color:#64748b;font-weight:800}
+  .match{display:grid;grid-template-columns:95px 1fr 1fr 105px 145px;gap:10px;align-items:center;padding:13px 16px;border-bottom:1px solid #f1f5f9}
+  .match:last-child{border-bottom:0}
+  .match small{color:#64748b;font-weight:800}
+  .team{font-weight:900;color:#1f2937}
+  .vs{text-align:center;color:#94a3b8;font-weight:900;font-size:12px}
+  .badge{display:inline-flex;width:max-content;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:900;background:#eef2ff;color:#3730a3}
+  .empty{text-align:center;padding:45px 20px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b}
+  .club-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}.pill{padding:6px 9px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:11px;font-weight:800}
+  .warning{padding:12px 14px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:12px;margin-top:12px}
+  @media(max-width:850px){.stats{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr 1fr}.form-grid .btn{grid-column:1/-1}.match{grid-template-columns:70px 1fr 1fr;}.match .meta{grid-column:1/-1}.match .badge{grid-column:1/-1}}
+  @media(max-width:560px){.fixture-page{padding:15px}.stats{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.round-head{align-items:flex-start;flex-direction:column}.match{grid-template-columns:1fr;text-align:left}.vs{text-align:left}}
+</style>
+
+<div class="fixture-page">
+  <div class="fixture-head">
+    <div>
+      <h1>⚽ Fixture — {{ campeonato.nombre }}</h1>
+      <p>{{ campeonato.serie }} · Temporada {{ campeonato.temporada }}</p>
+    </div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <a class="btn light" href="{{ url_for('detalle_campeonato', campeonato_id=campeonato.id) }}">← Campeonato</a>
+      <a class="btn light" href="{{ url_for('campeonatos') }}">🏆 Campeonatos</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Configuración del fixture</h2>
+    <p class="sub">El sistema genera automáticamente un todos-contra-todos a una rueda. Las fechas se calculan semanalmente desde el inicio del campeonato y se ajustan al sábado.</p>
+
+    <div class="stats">
+      <div class="stat"><small>Clubes inscritos</small><strong>{{ clubes_participantes|length }}</strong></div>
+      <div class="stat"><small>Jornadas</small><strong>{{ jornadas|length if jornadas else 0 }}</strong></div>
+      <div class="stat"><small>Partidos</small><strong>{{ partidos|length }}</strong></div>
+      <div class="stat"><small>Formato</small><strong>1 rueda</strong></div>
+    </div>
+
+    {% if clubes_participantes|length >= 2 %}
+      <form method="POST" action="{{ url_for('generar_fixture_campeonato', campeonato_id=campeonato.id) }}">
+        <div class="form-grid">
+          <div class="field">
+            <label for="hora">Hora inicial por defecto</label>
+            <input id="hora" name="hora" type="text" value="17:00" placeholder="17:00">
+          </div>
+          <div class="field">
+            <label for="cancha">Cancha por defecto</label>
+            <input id="cancha" name="cancha" type="text" value="Por definir" placeholder="Mirador Viejo">
+          </div>
+          <button class="btn success" type="submit" onclick="return confirm('Esto reemplazará el fixture actual de este campeonato. ¿Deseas continuar?');">⚙️ {{ 'Regenerar fixture' if partidos else 'Generar fixture' }}</button>
+        </div>
+      </form>
+
+      {% if partidos %}
+        <div class="warning">⚠️ Si regeneras el fixture, se eliminarán los partidos actuales de este campeonato y se creará nuevamente el calendario. En este PASO 5 todavía no se modifican resultados.</div>
+      {% endif %}
+
+      <div class="club-list">
+        {% for registro in clubes_participantes %}
+          <span class="pill">⚽ {{ registro.club.nombre }}</span>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">
+        <strong>Necesitas al menos 2 clubes inscritos.</strong><br>
+        Vuelve al campeonato y completa el PASO 4 antes de generar el fixture.
+      </div>
+    {% endif %}
+  </div>
+
+  {% if partidos %}
+    {% for jornada, lista in jornadas.items() %}
+      <div class="round">
+        <div class="round-head">
+          <strong>📅 Jornada {{ jornada }}</strong>
+          <span>{% if lista and lista[0].fecha %}{{ lista[0].fecha.strftime('%d/%m/%Y') }}{% else %}Fecha por definir{% endif %} · {{ lista|length }} partidos</span>
+        </div>
+        {% for partido in lista %}
+          <div class="match">
+            <small>Partido {{ loop.index }}</small>
+            <div class="team">{{ partido.local_club.nombre }}</div>
+            <div class="team">{{ partido.visitante_club.nombre }}</div>
+            <div class="vs">VS</div>
+            <div class="meta"><span class="badge">{{ partido.hora or 'Hora por definir' }} · {{ partido.cancha or 'Cancha por definir' }}</span></div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="card">
+      <div class="empty">
+        <div style="font-size:42px;margin-bottom:10px">📅</div>
+        <strong>Aún no hay fixture generado.</strong><br>
+        Presiona “Generar fixture” para crear automáticamente las jornadas.
+      </div>
+    </div>
+  {% endif %}
+
+  {% if partidos %}
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div>
+          <h2>🧹 Administración</h2>
+          <p class="sub" style="margin-bottom:0">Puedes eliminar el fixture si necesitas reconstruirlo desde cero.</p>
+        </div>
+        <form method="POST" action="{{ url_for('eliminar_fixture_campeonato', campeonato_id=campeonato.id) }}" onsubmit="return confirm('¿Eliminar todo el fixture de este campeonato?');">
+          <button class="btn danger" type="submit">🗑️ Eliminar fixture</button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+
+  <div class="card" style="border-style:dashed">
+    <strong>🚀 PASO 5 completado:</strong> fixture → <strong>PASO 6: registrar resultados</strong> → tabla automática → goleadores → disciplina → dashboard del campeonato.
+  </div>
+</div>
+{% endblock %}
