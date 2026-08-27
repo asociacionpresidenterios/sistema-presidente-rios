@@ -295,251 +295,152 @@ class Gol(db.Model):
 
 
 # ============================================================
-# MODELO CAMPEONATO
-# ============================================================
-
-class Campeonato(db.Model):
-
-    id = db.Column(
-        db.Integer,
-        primary_key=True
-    )
-
-    nombre = db.Column(
-        db.String(160),
-        nullable=False
-    )
-
-    temporada = db.Column(
-        db.String(20),
-        nullable=False
-    )
-
-    serie = db.Column(
-        db.String(80),
-        nullable=False
-    )
-
-    fecha_inicio = db.Column(
-        db.Date,
-        nullable=True
-    )
-
-    fecha_termino = db.Column(
-        db.Date,
-        nullable=True
-    )
-
-    estado = db.Column(
-        db.String(30),
-        nullable=False,
-        default="Activo"
-    )
-
-    descripcion = db.Column(
-        db.Text,
-        nullable=True
-    )
-
-
-
-# ============================================================
 # CREACIÓN / ACTUALIZACIÓN SEGURA DE BASE DE DATOS
 # ============================================================
 
-def _columna_existe(tabla, columna):
-
-    inspector = db.inspect(db.engine)
-
-    return columna in {
-        item["name"]
-        for item in inspector.get_columns(tabla)
-    }
-
-
-def _agregar_columna_si_falta(tabla, columna, definicion):
-
-    try:
-
-        if _columna_existe(tabla, columna):
-            return False
-
-        dialecto = db.engine.dialect.name
-
-        if dialecto == "postgresql":
-
-            sql = (
-                f'ALTER TABLE "{tabla}" '
-                f'ADD COLUMN IF NOT EXISTS "{columna}" {definicion}'
-            )
-
-        elif dialecto == "sqlite":
-
-            sql = (
-                f'ALTER TABLE "{tabla}" '
-                f'ADD COLUMN "{columna}" {definicion}'
-            )
-
-        else:
-
-            sql = (
-                f'ALTER TABLE "{tabla}" '
-                f'ADD COLUMN "{columna}" {definicion}'
-            )
-
-        db.session.execute(db.text(sql))
-        db.session.commit()
-
-        print(
-            f"[BD] Columna agregada: {tabla}.{columna}"
-        )
-
-        return True
-
-    except Exception as error:
-
-        db.session.rollback()
-
-        print(
-            f"[BD] No se pudo agregar {tabla}.{columna}: {repr(error)}"
-        )
-
-        return False
-
-
 def preparar_base_datos():
-    """
-    Crea las tablas nuevas y realiza migraciones pequeñas y seguras
-    para instalaciones existentes de SQLite/PostgreSQL.
 
-    IMPORTANTE:
-    db.create_all() NO modifica tablas que ya existen. Por eso aquí
-    comprobamos columna por columna para evitar que una base antigua
-    rompa las rutas de estadísticas disciplinarias.
-    """
+    db.create_all()
 
     try:
-        db.create_all()
-    except Exception as error:
-        db.session.rollback()
-        print("[BD] Error ejecutando db.create_all():", repr(error))
-        return
 
-    # --------------------------------------------------------
-    # JUGADOR
-    # --------------------------------------------------------
+        inspector = db.inspect(
+            db.engine
+        )
 
-    _agregar_columna_si_falta(
-        "jugador",
-        "foto",
-        "BYTEA" if db.engine.dialect.name == "postgresql" else "BLOB"
-    )
+        columnas = [
+            columna["name"]
+            for columna in inspector.get_columns(
+                "jugador"
+            )
+        ]
 
-    _agregar_columna_si_falta(
-        "jugador",
-        "estado",
-        "VARCHAR(30) DEFAULT 'Vigente'"
-    )
+        # ----------------------------------------------------
+        # AGREGAR FOTO SI NO EXISTE
+        # ----------------------------------------------------
 
-    try:
+        if "foto" not in columnas:
+
+            if db.engine.dialect.name == "postgresql":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN IF NOT EXISTS foto BYTEA"
+                    )
+                )
+
+            elif db.engine.dialect.name == "sqlite":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN foto BLOB"
+                    )
+                )
+
+            db.session.commit()
+
+        # ----------------------------------------------------
+        # AGREGAR ESTADO SI NO EXISTE
+        # ----------------------------------------------------
+
+        inspector = db.inspect(
+            db.engine
+        )
+
+        columnas = [
+            columna["name"]
+            for columna in inspector.get_columns(
+                "jugador"
+            )
+        ]
+
+        if "estado" not in columnas:
+
+            if db.engine.dialect.name == "postgresql":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN IF NOT EXISTS "
+                        "estado VARCHAR(30) "
+                        "DEFAULT 'Vigente'"
+                    )
+                )
+
+            elif db.engine.dialect.name == "sqlite":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN estado VARCHAR(30) "
+                        "DEFAULT 'Vigente'"
+                    )
+                )
+
+            db.session.commit()
+
+        # ----------------------------------------------------
+        # ASEGURAR ESTADO EN REGISTROS ANTIGUOS
+        # ----------------------------------------------------
 
         db.session.execute(
             db.text(
                 "UPDATE jugador "
                 "SET estado = 'Vigente' "
-                "WHERE estado IS NULL OR estado = ''"
+                "WHERE estado IS NULL "
+                "OR estado = ''"
             )
         )
 
         db.session.commit()
 
+        # ----------------------------------------------------
+        # ASEGURAR COLUMNA OBSERVACIONES EN DISCIPLINA
+        # ----------------------------------------------------
+
+        inspector = db.inspect(
+            db.engine
+        )
+
+        columnas_disciplina = [
+            columna["name"]
+            for columna in inspector.get_columns(
+                "registro_disciplinario"
+            )
+        ]
+
+        if "observaciones" not in columnas_disciplina:
+
+            if db.engine.dialect.name == "postgresql":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE registro_disciplinario "
+                        "ADD COLUMN IF NOT EXISTS "
+                        "observaciones TEXT"
+                    )
+                )
+
+            elif db.engine.dialect.name == "sqlite":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE registro_disciplinario "
+                        "ADD COLUMN observaciones TEXT"
+                    )
+                )
+
+            db.session.commit()
+
     except Exception as error:
 
         db.session.rollback()
-        print("[BD] No se pudo normalizar estado de jugadores:", repr(error))
-
-    # --------------------------------------------------------
-    # REGISTRO DISCIPLINARIO
-    # --------------------------------------------------------
-    # Se revisan TODAS las columnas utilizadas por el modelo.
-    # Esto es importante porque create_all() no actualiza una tabla
-    # que ya existía en producción.
-
-    columnas_disciplina = [
-        ("jugador_id", "INTEGER"),
-        ("fecha", "DATE"),
-        ("tipo", "VARCHAR(30)"),
-        ("cantidad", "INTEGER DEFAULT 1"),
-        ("motivo", "VARCHAR(255)"),
-        ("campeonato", "VARCHAR(120)"),
-        ("observaciones", "TEXT")
-    ]
-
-    for nombre, definicion in columnas_disciplina:
-        _agregar_columna_si_falta(
-            "registro_disciplinario",
-            nombre,
-            definicion
-        )
-
-    # --------------------------------------------------------
-    # GOLES
-    # --------------------------------------------------------
-
-    columnas_gol = [
-        ("jugador_id", "INTEGER"),
-        ("fecha", "DATE"),
-        ("cantidad", "INTEGER DEFAULT 1"),
-        ("campeonato", "VARCHAR(120)"),
-        ("observaciones", "TEXT")
-    ]
-
-    for nombre, definicion in columnas_gol:
-        _agregar_columna_si_falta(
-            "gol",
-            nombre,
-            definicion
-        )
-
-    # --------------------------------------------------------
-    # VERIFICACIÓN FINAL
-    # --------------------------------------------------------
-
-    try:
-
-        inspector = db.inspect(db.engine)
-
-        tablas = set(inspector.get_table_names())
-
-        print("[BD] Tablas disponibles:", sorted(tablas))
-
-        if "registro_disciplinario" in tablas:
-
-            print(
-                "[BD] Columnas registro_disciplinario:",
-                [
-                    c["name"]
-                    for c in inspector.get_columns(
-                        "registro_disciplinario"
-                    )
-                ]
-            )
-
-        if "gol" in tablas:
-
-            print(
-                "[BD] Columnas gol:",
-                [
-                    c["name"]
-                    for c in inspector.get_columns("gol")
-                ]
-            )
-
-    except Exception as error:
 
         print(
-            "[BD] Advertencia verificando esquema final:",
-            repr(error)
+            "Advertencia al preparar la base de datos:",
+            error
         )
 
 
@@ -2575,232 +2476,211 @@ def credencial_reverso(jugador_id):
 @app.route("/dashboard")
 def dashboard():
 
-    # Filtro opcional por serie. Si viene vacío, muestra todas.
-    serie_seleccionada = request.args.get("serie", "").strip()
+    """Panel principal.
 
-    # Series disponibles para el selector.
-    series_disponibles = (
-        Serie.query
-        .filter_by(activo=True)
-        .order_by(Serie.nombre)
-        .all()
-    )
-
-    # Consulta base de jugadores.
-    jugadores_query = Jugador.query
-
-    if serie_seleccionada:
-        jugadores_query = jugadores_query.filter(
-            Jugador.serie == serie_seleccionada
-        )
+    Las estadísticas deportivas son complementarias al registro de jugadores.
+    Si una tabla estadística antigua no existe todavía en producción, el
+    dashboard continúa funcionando mostrando esos indicadores en cero.
+    """
 
     # ------------------------------------------------------------
     # INDICADORES GENERALES
     # ------------------------------------------------------------
 
-    total_jugadores = jugadores_query.count()
+    total_jugadores = Jugador.query.count()
 
-    vigentes = jugadores_query.filter(
-        Jugador.estado == "Vigente"
+    vigentes = Jugador.query.filter_by(
+        estado="Vigente"
     ).count()
 
-    pendientes = jugadores_query.filter(
-        Jugador.estado == "Pendiente"
+    pendientes = Jugador.query.filter_by(
+        estado="Pendiente"
     ).count()
 
-    suspendidos = jugadores_query.filter(
-        Jugador.estado == "Suspendido"
+    suspendidos = Jugador.query.filter_by(
+        estado="Suspendido"
     ).count()
 
-    inhabilitados = jugadores_query.filter(
-        Jugador.estado == "Inhabilitado"
+    inhabilitados = Jugador.query.filter_by(
+        estado="Inhabilitado"
     ).count()
 
     # ------------------------------------------------------------
     # CONSULTAS SEGURAS
     # ------------------------------------------------------------
+    # Las tablas Gol y RegistroDisciplinario pueden no existir en una
+    # base de datos antigua. Nunca deben impedir que cargue el Dashboard.
 
     def safe_all(query, default=None):
         try:
             return query.all()
-        except Exception as error:
+        except Exception:
             db.session.rollback()
-            print("Advertencia Dashboard:", repr(error))
             return [] if default is None else default
 
     def safe_scalar(query, default=0):
         try:
             value = query.scalar()
             return value if value is not None else default
-        except Exception as error:
+        except Exception:
             db.session.rollback()
-            print("Advertencia Dashboard:", repr(error))
             return default
 
     # ------------------------------------------------------------
     # JUGADORES POR CLUB
     # ------------------------------------------------------------
 
-    query_club = db.session.query(
-        Jugador.club,
-        db.func.count(Jugador.id)
-    ).filter(
-        Jugador.club.isnot(None),
-        Jugador.club != ""
-    )
-
-    if serie_seleccionada:
-        query_club = query_club.filter(
-            Jugador.serie == serie_seleccionada
-        )
-
     jugadores_por_club = safe_all(
-        query_club
+        db.session.query(
+            Jugador.club,
+            db.func.count(Jugador.id)
+        )
+        .filter(
+            Jugador.club.isnot(None),
+            Jugador.club != ""
+        )
         .group_by(Jugador.club)
-        .order_by(db.func.count(Jugador.id).desc())
+        .order_by(
+            db.func.count(Jugador.id).desc()
+        )
     )
 
     # ------------------------------------------------------------
     # JUGADORES POR SERIE
     # ------------------------------------------------------------
 
-    query_serie = db.session.query(
-        Jugador.serie,
-        db.func.count(Jugador.id)
-    ).filter(
-        Jugador.serie.isnot(None),
-        Jugador.serie != ""
-    )
-
-    if serie_seleccionada:
-        query_serie = query_serie.filter(
-            Jugador.serie == serie_seleccionada
-        )
-
     jugadores_por_serie = safe_all(
-        query_serie
+        db.session.query(
+            Jugador.serie,
+            db.func.count(Jugador.id)
+        )
+        .filter(
+            Jugador.serie.isnot(None),
+            Jugador.serie != ""
+        )
         .group_by(Jugador.serie)
-        .order_by(db.func.count(Jugador.id).desc())
+        .order_by(
+            db.func.count(Jugador.id).desc()
+        )
     )
 
     # ------------------------------------------------------------
     # ÚLTIMOS JUGADORES
     # ------------------------------------------------------------
 
-    ultimos_query = jugadores_query.order_by(
-        Jugador.id.desc()
+    ultimos_jugadores = (
+        Jugador.query
+        .order_by(Jugador.id.desc())
+        .limit(5)
+        .all()
     )
-
-    ultimos_jugadores = ultimos_query.limit(5).all()
 
     # ------------------------------------------------------------
-    # ESTADÍSTICAS DEPORTIVAS FILTRADAS POR SERIE
+    # ESTADÍSTICAS DEPORTIVAS
     # ------------------------------------------------------------
 
-    query_goles = db.session.query(
-        db.func.coalesce(db.func.sum(Gol.cantidad), 0)
-    ).join(
-        Jugador,
-        Gol.jugador_id == Jugador.id
+    total_goles = safe_scalar(
+        db.session.query(
+            db.func.coalesce(
+                db.func.sum(Gol.cantidad),
+                0
+            )
+        )
     )
 
-    query_amarillas = db.session.query(
-        db.func.coalesce(db.func.sum(RegistroDisciplinario.cantidad), 0)
-    ).join(
-        Jugador,
-        RegistroDisciplinario.jugador_id == Jugador.id
-    ).filter(
-        RegistroDisciplinario.tipo == "Amarilla"
+    total_amarillas = safe_scalar(
+        db.session.query(
+            db.func.coalesce(
+                db.func.sum(RegistroDisciplinario.cantidad),
+                0
+            )
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Amarilla"
+        )
     )
 
-    query_rojas = db.session.query(
-        db.func.coalesce(db.func.sum(RegistroDisciplinario.cantidad), 0)
-    ).join(
-        Jugador,
-        RegistroDisciplinario.jugador_id == Jugador.id
-    ).filter(
-        RegistroDisciplinario.tipo == "Roja"
+    total_rojas = safe_scalar(
+        db.session.query(
+            db.func.coalesce(
+                db.func.sum(RegistroDisciplinario.cantidad),
+                0
+            )
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Roja"
+        )
     )
 
-    query_suspensiones = db.session.query(
-        db.func.coalesce(db.func.sum(RegistroDisciplinario.cantidad), 0)
-    ).join(
-        Jugador,
-        RegistroDisciplinario.jugador_id == Jugador.id
-    ).filter(
-        RegistroDisciplinario.tipo == "Suspension"
+    total_suspensiones = safe_scalar(
+        db.session.query(
+            db.func.coalesce(
+                db.func.sum(RegistroDisciplinario.cantidad),
+                0
+            )
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Suspension"
+        )
     )
-
-    if serie_seleccionada:
-        query_goles = query_goles.filter(Jugador.serie == serie_seleccionada)
-        query_amarillas = query_amarillas.filter(Jugador.serie == serie_seleccionada)
-        query_rojas = query_rojas.filter(Jugador.serie == serie_seleccionada)
-        query_suspensiones = query_suspensiones.filter(Jugador.serie == serie_seleccionada)
-
-    total_goles = safe_scalar(query_goles)
-    total_amarillas = safe_scalar(query_amarillas)
-    total_rojas = safe_scalar(query_rojas)
-    total_suspensiones = safe_scalar(query_suspensiones)
 
     # ------------------------------------------------------------
     # INDICADORES DE PARTICIPACIÓN DEPORTIVA
     # ------------------------------------------------------------
 
-    query_jugadores_goles = db.session.query(
-        db.func.count(db.func.distinct(Gol.jugador_id))
-    ).join(Jugador, Gol.jugador_id == Jugador.id)
-
-    query_jugadores_amarillas = db.session.query(
-        db.func.count(db.func.distinct(RegistroDisciplinario.jugador_id))
-    ).join(Jugador, RegistroDisciplinario.jugador_id == Jugador.id).filter(
-        RegistroDisciplinario.tipo == "Amarilla"
+    jugadores_con_goles = safe_scalar(
+        db.session.query(
+            db.func.count(db.func.distinct(Gol.jugador_id))
+        ),
+        0
     )
 
-    query_jugadores_rojas = db.session.query(
-        db.func.count(db.func.distinct(RegistroDisciplinario.jugador_id))
-    ).join(Jugador, RegistroDisciplinario.jugador_id == Jugador.id).filter(
-        RegistroDisciplinario.tipo == "Roja"
+    jugadores_con_amarillas = safe_scalar(
+        db.session.query(
+            db.func.count(db.func.distinct(RegistroDisciplinario.jugador_id))
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Amarilla"
+        ),
+        0
     )
 
-    query_jugadores_suspendidos = db.session.query(
-        db.func.count(db.func.distinct(RegistroDisciplinario.jugador_id))
-    ).join(Jugador, RegistroDisciplinario.jugador_id == Jugador.id).filter(
-        RegistroDisciplinario.tipo == "Suspension"
+    jugadores_con_rojas = safe_scalar(
+        db.session.query(
+            db.func.count(db.func.distinct(RegistroDisciplinario.jugador_id))
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Roja"
+        ),
+        0
     )
 
-    if serie_seleccionada:
-        query_jugadores_goles = query_jugadores_goles.filter(Jugador.serie == serie_seleccionada)
-        query_jugadores_amarillas = query_jugadores_amarillas.filter(Jugador.serie == serie_seleccionada)
-        query_jugadores_rojas = query_jugadores_rojas.filter(Jugador.serie == serie_seleccionada)
-        query_jugadores_suspendidos = query_jugadores_suspendidos.filter(Jugador.serie == serie_seleccionada)
-
-    jugadores_con_goles = safe_scalar(query_jugadores_goles)
-    jugadores_con_amarillas = safe_scalar(query_jugadores_amarillas)
-    jugadores_con_rojas = safe_scalar(query_jugadores_rojas)
-    jugadores_suspendidos_registro = safe_scalar(query_jugadores_suspendidos)
+    jugadores_suspendidos_registro = safe_scalar(
+        db.session.query(
+            db.func.count(db.func.distinct(RegistroDisciplinario.jugador_id))
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Suspension"
+        ),
+        0
+    )
 
     # ------------------------------------------------------------
     # GOLEADORES
     # ------------------------------------------------------------
 
-    query_goleadores = db.session.query(
-        Jugador.id,
-        Jugador.nombre_completo,
-        Jugador.club,
-        Jugador.serie,
-        db.func.sum(Gol.cantidad).label("total")
-    ).join(
-        Gol,
-        Gol.jugador_id == Jugador.id
-    )
-
-    if serie_seleccionada:
-        query_goleadores = query_goleadores.filter(
-            Jugador.serie == serie_seleccionada
-        )
-
     goleadores = safe_all(
-        query_goleadores
+        db.session.query(
+            Jugador.id,
+            Jugador.nombre_completo,
+            Jugador.club,
+            Jugador.serie,
+            db.func.sum(Gol.cantidad).label("total")
+        )
+        .join(
+            Gol,
+            Gol.jugador_id == Jugador.id
+        )
         .group_by(
             Jugador.id,
             Jugador.nombre_completo,
@@ -2818,34 +2698,31 @@ def dashboard():
     # RANKING AMARILLAS
     # ------------------------------------------------------------
 
-    query_ranking_amarillas = db.session.query(
-        Jugador.id,
-        Jugador.nombre_completo,
-        Jugador.club,
-        Jugador.serie,
-        db.func.sum(RegistroDisciplinario.cantidad).label("total")
-    ).join(
-        RegistroDisciplinario,
-        RegistroDisciplinario.jugador_id == Jugador.id
-    ).filter(
-        RegistroDisciplinario.tipo == "Amarilla"
-    )
-
-    if serie_seleccionada:
-        query_ranking_amarillas = query_ranking_amarillas.filter(
-            Jugador.serie == serie_seleccionada
-        )
-
     ranking_amarillas = safe_all(
-        query_ranking_amarillas
-        .group_by(
+        db.session.query(
             Jugador.id,
             Jugador.nombre_completo,
             Jugador.club,
-            Jugador.serie
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ).label("total")
+        )
+        .join(
+            RegistroDisciplinario,
+            RegistroDisciplinario.jugador_id == Jugador.id
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Amarilla"
+        )
+        .group_by(
+            Jugador.id,
+            Jugador.nombre_completo,
+            Jugador.club
         )
         .order_by(
-            db.func.sum(RegistroDisciplinario.cantidad).desc(),
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ).desc(),
             Jugador.nombre_completo.asc()
         )
         .limit(10)
@@ -2855,34 +2732,31 @@ def dashboard():
     # RANKING ROJAS
     # ------------------------------------------------------------
 
-    query_ranking_rojas = db.session.query(
-        Jugador.id,
-        Jugador.nombre_completo,
-        Jugador.club,
-        Jugador.serie,
-        db.func.sum(RegistroDisciplinario.cantidad).label("total")
-    ).join(
-        RegistroDisciplinario,
-        RegistroDisciplinario.jugador_id == Jugador.id
-    ).filter(
-        RegistroDisciplinario.tipo == "Roja"
-    )
-
-    if serie_seleccionada:
-        query_ranking_rojas = query_ranking_rojas.filter(
-            Jugador.serie == serie_seleccionada
-        )
-
     ranking_rojas = safe_all(
-        query_ranking_rojas
-        .group_by(
+        db.session.query(
             Jugador.id,
             Jugador.nombre_completo,
             Jugador.club,
-            Jugador.serie
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ).label("total")
+        )
+        .join(
+            RegistroDisciplinario,
+            RegistroDisciplinario.jugador_id == Jugador.id
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Roja"
+        )
+        .group_by(
+            Jugador.id,
+            Jugador.nombre_completo,
+            Jugador.club
         )
         .order_by(
-            db.func.sum(RegistroDisciplinario.cantidad).desc(),
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ).desc(),
             Jugador.nombre_completo.asc()
         )
         .limit(10)
@@ -2892,140 +2766,35 @@ def dashboard():
     # RANKING SUSPENSIONES
     # ------------------------------------------------------------
 
-    query_ranking_suspensiones = db.session.query(
-        Jugador.id,
-        Jugador.nombre_completo,
-        Jugador.club,
-        Jugador.serie,
-        db.func.sum(RegistroDisciplinario.cantidad).label("total")
-    ).join(
-        RegistroDisciplinario,
-        RegistroDisciplinario.jugador_id == Jugador.id
-    ).filter(
-        RegistroDisciplinario.tipo == "Suspension"
-    )
-
-    if serie_seleccionada:
-        query_ranking_suspensiones = query_ranking_suspensiones.filter(
-            Jugador.serie == serie_seleccionada
-        )
-
     ranking_suspensiones = safe_all(
-        query_ranking_suspensiones
-        .group_by(
+        db.session.query(
             Jugador.id,
             Jugador.nombre_completo,
             Jugador.club,
-            Jugador.serie
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ).label("total")
+        )
+        .join(
+            RegistroDisciplinario,
+            RegistroDisciplinario.jugador_id == Jugador.id
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Suspension"
+        )
+        .group_by(
+            Jugador.id,
+            Jugador.nombre_completo,
+            Jugador.club
         )
         .order_by(
-            db.func.sum(RegistroDisciplinario.cantidad).desc(),
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ).desc(),
             Jugador.nombre_completo.asc()
         )
         .limit(10)
     )
-
-    # ------------------------------------------------------------
-    # COMPARATIVA GENERAL POR SERIE
-    # ------------------------------------------------------------
-
-    # Esta tabla se calcula para todas las series activas,
-    # independiente del filtro actualmente seleccionado.
-    estadisticas_por_serie = []
-
-    for serie_item in series_disponibles:
-
-        nombre_serie = serie_item.nombre
-
-        jugadores_serie = Jugador.query.filter(
-            Jugador.serie == nombre_serie
-        )
-
-        goles_serie = safe_scalar(
-            db.session.query(
-                db.func.coalesce(db.func.sum(Gol.cantidad), 0)
-            ).join(
-                Jugador,
-                Gol.jugador_id == Jugador.id
-            ).filter(
-                Jugador.serie == nombre_serie
-            )
-        )
-
-        amarillas_serie = safe_scalar(
-            db.session.query(
-                db.func.coalesce(
-                    db.func.sum(RegistroDisciplinario.cantidad),
-                    0
-                )
-            ).join(
-                Jugador,
-                RegistroDisciplinario.jugador_id == Jugador.id
-            ).filter(
-                Jugador.serie == nombre_serie,
-                RegistroDisciplinario.tipo == "Amarilla"
-            )
-        )
-
-        rojas_serie = safe_scalar(
-            db.session.query(
-                db.func.coalesce(
-                    db.func.sum(RegistroDisciplinario.cantidad),
-                    0
-                )
-            ).join(
-                Jugador,
-                RegistroDisciplinario.jugador_id == Jugador.id
-            ).filter(
-                Jugador.serie == nombre_serie,
-                RegistroDisciplinario.tipo == "Roja"
-            )
-        )
-
-        suspensiones_serie = safe_scalar(
-            db.session.query(
-                db.func.coalesce(
-                    db.func.sum(RegistroDisciplinario.cantidad),
-                    0
-                )
-            ).join(
-                Jugador,
-                RegistroDisciplinario.jugador_id == Jugador.id
-            ).filter(
-                Jugador.serie == nombre_serie,
-                RegistroDisciplinario.tipo == "Suspension"
-            )
-        )
-
-        estadisticas_por_serie.append({
-            "serie": nombre_serie,
-            "jugadores": jugadores_serie.count(),
-            "vigentes": jugadores_serie.filter(
-                Jugador.estado == "Vigente"
-            ).count(),
-            "suspendidos": jugadores_serie.filter(
-                Jugador.estado == "Suspendido"
-            ).count(),
-            "goles": goles_serie,
-            "amarillas": amarillas_serie,
-            "rojas": rojas_serie,
-            "suspensiones": suspensiones_serie
-        })
-
-    estadisticas_por_serie.sort(
-        key=lambda item: item["jugadores"],
-        reverse=True
-    )
-
-    # ------------------------------------------------------------
-    # SUSPENDIDOS ACTUALMENTE
-    # ------------------------------------------------------------
-
-    suspendidos_query = jugadores_query.filter(
-        Jugador.estado == "Suspendido"
-    ).order_by(Jugador.nombre_completo.asc())
-
-    jugadores_suspendidos = suspendidos_query.limit(10).all()
 
     return render_template(
         "dashboard.html",
@@ -3048,11 +2817,7 @@ def dashboard():
         goleadores=goleadores,
         ranking_amarillas=ranking_amarillas,
         ranking_rojas=ranking_rojas,
-        ranking_suspensiones=ranking_suspensiones,
-        jugadores_suspendidos=jugadores_suspendidos,
-        estadisticas_por_serie=estadisticas_por_serie,
-        series_disponibles=series_disponibles,
-        serie_seleccionada=serie_seleccionada
+        ranking_suspensiones=ranking_suspensiones
     )
 
 
@@ -3293,139 +3058,6 @@ def health():
 # ============================================================
 # EJECUCIÓN LOCAL
 # ============================================================
-
-# ============================================================
-# MÓDULO DE CAMPEONATOS — PASOS 1, 2 Y 3
-# ============================================================
-
-@app.route("/campeonatos")
-def campeonatos():
-
-    campeonatos_registrados = (
-        Campeonato.query
-        .order_by(
-            Campeonato.temporada.desc(),
-            Campeonato.id.desc()
-        )
-        .all()
-    )
-
-    return render_template(
-        "campeonatos.html",
-        campeonatos=campeonatos_registrados
-    )
-
-
-@app.route("/campeonatos/nuevo", methods=["GET", "POST"])
-def nuevo_campeonato():
-
-    series = (
-        Serie.query
-        .filter_by(activo=True)
-        .order_by(Serie.nombre)
-        .all()
-    )
-
-    if request.method == "POST":
-
-        nombre = request.form.get("nombre", "").strip()
-        temporada = request.form.get("temporada", "").strip()
-        serie = request.form.get("serie", "").strip()
-        estado = request.form.get("estado", "Activo").strip() or "Activo"
-        descripcion = request.form.get("descripcion", "").strip()
-
-        fecha_inicio = convertir_fecha(
-            request.form.get("fecha_inicio", "").strip()
-        )
-
-        fecha_termino = convertir_fecha(
-            request.form.get("fecha_termino", "").strip()
-        )
-
-        if not nombre or not temporada or not serie:
-            flash(
-                "Debes completar nombre, temporada y serie.",
-                "error"
-            )
-            return render_template(
-                "campeonato_form.html",
-                series=series
-            )
-
-        if estado not in {"Activo", "Finalizado"}:
-            estado = "Activo"
-
-        if fecha_inicio and fecha_termino and fecha_termino < fecha_inicio:
-            flash(
-                "La fecha de término no puede ser anterior a la fecha de inicio.",
-                "error"
-            )
-            return render_template(
-                "campeonato_form.html",
-                series=series
-            )
-
-        campeonato = Campeonato(
-            nombre=nombre,
-            temporada=temporada,
-            serie=serie,
-            fecha_inicio=fecha_inicio,
-            fecha_termino=fecha_termino,
-            estado=estado,
-            descripcion=descripcion
-        )
-
-        try:
-            db.session.add(campeonato)
-            db.session.commit()
-
-        except Exception as error:
-            db.session.rollback()
-            print(
-                "ERROR CREANDO CAMPEONATO:",
-                repr(error)
-            )
-            flash(
-                "No fue posible crear el campeonato. Revise el registro del servidor.",
-                "error"
-            )
-            return render_template(
-                "campeonato_form.html",
-                series=series
-            )
-
-        flash(
-            f"Campeonato '{nombre}' creado correctamente.",
-            "success"
-        )
-
-        return redirect(
-            url_for(
-                "detalle_campeonato",
-                campeonato_id=campeonato.id
-            )
-        )
-
-    return render_template(
-        "campeonato_form.html",
-        series=series
-    )
-
-
-@app.route("/campeonatos/<int:campeonato_id>")
-def detalle_campeonato(campeonato_id):
-
-    campeonato = db.get_or_404(
-        Campeonato,
-        campeonato_id
-    )
-
-    return render_template(
-        "campeonato_detalle.html",
-        campeonato=campeonato
-    )
-
-
 
 if __name__ == "__main__":
 
