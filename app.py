@@ -298,199 +298,149 @@ class Gol(db.Model):
 # CREACIÓN / ACTUALIZACIÓN SEGURA DE BASE DE DATOS
 # ============================================================
 
-def _columna_existe(tabla, columna):
-
-    inspector = db.inspect(db.engine)
-
-    return columna in {
-        item["name"]
-        for item in inspector.get_columns(tabla)
-    }
-
-
-def _agregar_columna_si_falta(tabla, columna, definicion):
-
-    try:
-
-        if _columna_existe(tabla, columna):
-            return False
-
-        dialecto = db.engine.dialect.name
-
-        if dialecto == "postgresql":
-
-            sql = (
-                f'ALTER TABLE "{tabla}" '
-                f'ADD COLUMN IF NOT EXISTS "{columna}" {definicion}'
-            )
-
-        elif dialecto == "sqlite":
-
-            sql = (
-                f'ALTER TABLE "{tabla}" '
-                f'ADD COLUMN "{columna}" {definicion}'
-            )
-
-        else:
-
-            sql = (
-                f'ALTER TABLE "{tabla}" '
-                f'ADD COLUMN "{columna}" {definicion}'
-            )
-
-        db.session.execute(db.text(sql))
-        db.session.commit()
-
-        print(
-            f"[BD] Columna agregada: {tabla}.{columna}"
-        )
-
-        return True
-
-    except Exception as error:
-
-        db.session.rollback()
-
-        print(
-            f"[BD] No se pudo agregar {tabla}.{columna}: {repr(error)}"
-        )
-
-        return False
-
-
 def preparar_base_datos():
-    """
-    Crea las tablas nuevas y realiza migraciones pequeñas y seguras
-    para instalaciones existentes de SQLite/PostgreSQL.
 
-    IMPORTANTE:
-    db.create_all() NO modifica tablas que ya existen. Por eso aquí
-    comprobamos columna por columna para evitar que una base antigua
-    rompa las rutas de estadísticas disciplinarias.
-    """
+    db.create_all()
 
     try:
-        db.create_all()
-    except Exception as error:
-        db.session.rollback()
-        print("[BD] Error ejecutando db.create_all():", repr(error))
-        return
 
-    # --------------------------------------------------------
-    # JUGADOR
-    # --------------------------------------------------------
+        inspector = db.inspect(
+            db.engine
+        )
 
-    _agregar_columna_si_falta(
-        "jugador",
-        "foto",
-        "BYTEA" if db.engine.dialect.name == "postgresql" else "BLOB"
-    )
+        columnas = [
+            columna["name"]
+            for columna in inspector.get_columns(
+                "jugador"
+            )
+        ]
 
-    _agregar_columna_si_falta(
-        "jugador",
-        "estado",
-        "VARCHAR(30) DEFAULT 'Vigente'"
-    )
+        # ----------------------------------------------------
+        # AGREGAR FOTO SI NO EXISTE
+        # ----------------------------------------------------
 
-    try:
+        if "foto" not in columnas:
+
+            if db.engine.dialect.name == "postgresql":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN IF NOT EXISTS foto BYTEA"
+                    )
+                )
+
+            elif db.engine.dialect.name == "sqlite":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN foto BLOB"
+                    )
+                )
+
+            db.session.commit()
+
+        # ----------------------------------------------------
+        # AGREGAR ESTADO SI NO EXISTE
+        # ----------------------------------------------------
+
+        inspector = db.inspect(
+            db.engine
+        )
+
+        columnas = [
+            columna["name"]
+            for columna in inspector.get_columns(
+                "jugador"
+            )
+        ]
+
+        if "estado" not in columnas:
+
+            if db.engine.dialect.name == "postgresql":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN IF NOT EXISTS "
+                        "estado VARCHAR(30) "
+                        "DEFAULT 'Vigente'"
+                    )
+                )
+
+            elif db.engine.dialect.name == "sqlite":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE jugador "
+                        "ADD COLUMN estado VARCHAR(30) "
+                        "DEFAULT 'Vigente'"
+                    )
+                )
+
+            db.session.commit()
+
+        # ----------------------------------------------------
+        # ASEGURAR ESTADO EN REGISTROS ANTIGUOS
+        # ----------------------------------------------------
 
         db.session.execute(
             db.text(
                 "UPDATE jugador "
                 "SET estado = 'Vigente' "
-                "WHERE estado IS NULL OR estado = ''"
+                "WHERE estado IS NULL "
+                "OR estado = ''"
             )
         )
 
         db.session.commit()
 
+        # ----------------------------------------------------
+        # ASEGURAR COLUMNA OBSERVACIONES EN DISCIPLINA
+        # ----------------------------------------------------
+
+        inspector = db.inspect(
+            db.engine
+        )
+
+        columnas_disciplina = [
+            columna["name"]
+            for columna in inspector.get_columns(
+                "registro_disciplinario"
+            )
+        ]
+
+        if "observaciones" not in columnas_disciplina:
+
+            if db.engine.dialect.name == "postgresql":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE registro_disciplinario "
+                        "ADD COLUMN IF NOT EXISTS "
+                        "observaciones TEXT"
+                    )
+                )
+
+            elif db.engine.dialect.name == "sqlite":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE registro_disciplinario "
+                        "ADD COLUMN observaciones TEXT"
+                    )
+                )
+
+            db.session.commit()
+
     except Exception as error:
 
         db.session.rollback()
-        print("[BD] No se pudo normalizar estado de jugadores:", repr(error))
-
-    # --------------------------------------------------------
-    # REGISTRO DISCIPLINARIO
-    # --------------------------------------------------------
-    # Se revisan TODAS las columnas utilizadas por el modelo.
-    # Esto es importante porque create_all() no actualiza una tabla
-    # que ya existía en producción.
-
-    columnas_disciplina = [
-        ("jugador_id", "INTEGER"),
-        ("fecha", "DATE"),
-        ("tipo", "VARCHAR(30)"),
-        ("cantidad", "INTEGER DEFAULT 1"),
-        ("motivo", "VARCHAR(255)"),
-        ("campeonato", "VARCHAR(120)"),
-        ("observaciones", "TEXT")
-    ]
-
-    for nombre, definicion in columnas_disciplina:
-        _agregar_columna_si_falta(
-            "registro_disciplinario",
-            nombre,
-            definicion
-        )
-
-    # --------------------------------------------------------
-    # GOLES
-    # --------------------------------------------------------
-
-    columnas_gol = [
-        ("jugador_id", "INTEGER"),
-        ("fecha", "DATE"),
-        ("cantidad", "INTEGER DEFAULT 1"),
-        ("campeonato", "VARCHAR(120)"),
-        ("observaciones", "TEXT")
-    ]
-
-    for nombre, definicion in columnas_gol:
-        _agregar_columna_si_falta(
-            "gol",
-            nombre,
-            definicion
-        )
-
-    # --------------------------------------------------------
-    # VERIFICACIÓN FINAL
-    # --------------------------------------------------------
-
-    try:
-
-        inspector = db.inspect(db.engine)
-
-        tablas = set(inspector.get_table_names())
-
-        print("[BD] Tablas disponibles:", sorted(tablas))
-
-        if "registro_disciplinario" in tablas:
-
-            print(
-                "[BD] Columnas registro_disciplinario:",
-                [
-                    c["name"]
-                    for c in inspector.get_columns(
-                        "registro_disciplinario"
-                    )
-                ]
-            )
-
-        if "gol" in tablas:
-
-            print(
-                "[BD] Columnas gol:",
-                [
-                    c["name"]
-                    for c in inspector.get_columns("gol")
-                ]
-            )
-
-    except Exception as error:
 
         print(
-            "[BD] Advertencia verificando esquema final:",
-            repr(error)
+            "Advertencia al preparar la base de datos:",
+            error
         )
 
 
