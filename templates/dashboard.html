@@ -30,13 +30,16 @@
 .dashboard-search{display:flex;gap:10px}.dashboard-search input{flex:1;height:46px;border:1px solid #d1d5db;border-radius:10px;padding:0 14px;font-size:14px;outline:none}.dashboard-search button{border:0;border-radius:10px;padding:0 22px;background:#111827;color:#fff;font-weight:800;cursor:pointer}
 .empty-message{text-align:center;padding:25px;border-radius:12px;background:#f8fafc;color:#9ca3af;font-size:14px}.info-box{display:flex;align-items:center;gap:15px;padding:18px;border-radius:13px;background:#f8fafc;border:1px solid #e5e7eb}.info-icon{width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:#eef2ff;font-size:25px;flex-shrink:0}.info-box strong{display:block;margin-bottom:4px;color:#111827}.info-box span{color:#6b7280;font-size:13px}
 @media(max-width:1200px){.stats-grid{grid-template-columns:repeat(3,1fr)}.sports-grid{grid-template-columns:repeat(2,1fr)}.quick-actions{grid-template-columns:repeat(2,1fr)}}@media(max-width:850px){.dashboard-grid{grid-template-columns:1fr}.dashboard-panel.full{grid-column:auto}.stats-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.dashboard-page{padding:15px}.dashboard-title h1{font-size:25px}.stats-grid,.sports-grid,.quick-actions,.series-grid{grid-template-columns:1fr}.status-row{grid-template-columns:100px 1fr 40px}.dashboard-actions{width:100%}.dashboard-btn{flex:1}.dashboard-search{flex-direction:column}.dashboard-search button{height:44px}}
+
+.filter-card{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:18px;padding:18px 20px;background:#fff;border:1px solid #e5e7eb;border-radius:18px;box-shadow:0 5px 18px rgba(15,23,42,.05)}
+.filter-info strong{display:block;font-size:15px;font-weight:900;color:#111827;margin-bottom:4px}.filter-info span{display:block;color:#6b7280;font-size:13px}.serie-filter-form{display:flex;align-items:center;gap:10px;min-width:320px}.serie-filter-form select{height:44px;min-width:240px;padding:0 12px;border:1px solid #d1d5db;border-radius:10px;background:#fff;color:#111827;font-weight:700;outline:none}.serie-filter-form select:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}.clear-filter{height:44px;display:inline-flex;align-items:center;padding:0 13px;border-radius:10px;background:#f3f4f6;color:#374151;text-decoration:none;font-size:13px;font-weight:800;white-space:nowrap}.active-filter{margin:-5px 0 20px;padding:11px 14px;border-radius:10px;background:#eef2ff;color:#3730a3;border:1px solid #c7d2fe;font-size:13px}.active-filter strong{font-weight:900}
 </style>
 
 <div class="dashboard-page">
     <div class="dashboard-header">
         <div class="dashboard-title">
             <h1>Dashboard</h1>
-            <p>Panel general de gestión futbolística — Asociación Presidente Ríos</p>
+            <p>Panel general de gestión futbolística — Asociación Presidente Ríos{% if serie_seleccionada %} · <strong>{{ serie_seleccionada }}</strong>{% endif %}</p>
         </div>
         <div class="dashboard-actions">
             <a href="{{ url_for('index') }}" class="dashboard-btn">Jugadores</a>
@@ -45,6 +48,28 @@
             <a href="{{ url_for('nuevo_jugador') }}" class="dashboard-btn primary">Nuevo jugador</a>
         </div>
     </div>
+
+    <div class="filter-card">
+        <div class="filter-info">
+            <strong>Filtrar estadísticas por serie</strong>
+            <span>Selecciona una serie para ver jugadores y estadísticas exclusivamente de esa categoría.</span>
+        </div>
+        <form method="GET" action="{{ url_for('dashboard') }}" class="serie-filter-form">
+            <select name="serie" onchange="this.form.submit()" aria-label="Seleccionar serie">
+                <option value="">Todas las series</option>
+                {% for serie in series_disponibles %}
+                    <option value="{{ serie.nombre }}" {% if serie_seleccionada == serie.nombre %}selected{% endif %}>{{ serie.nombre }}</option>
+                {% endfor %}
+            </select>
+            {% if serie_seleccionada %}
+                <a href="{{ url_for('dashboard') }}" class="clear-filter">✕ Ver todas</a>
+            {% endif %}
+        </form>
+    </div>
+
+    {% if serie_seleccionada %}
+        <div class="active-filter">📌 Mostrando estadísticas de la serie: <strong>{{ serie_seleccionada }}</strong></div>
+    {% endif %}
 
     <div class="section-title">Estado de registros</div>
     <div class="stats-grid">
