@@ -757,52 +757,68 @@ def crear_suspension_por_acumulacion(
         jugador.id
     )
 
+    # Cada 4 tarjetas amarillas generan
+    # una suspension automatica.
     suspensiones_correspondientes = (
         amarillas // 4
     )
 
-    suspensiones_existentes = (
-        obtener_suspensiones(
-            jugador.id
+    # Solo contamos las suspensiones que fueron
+    # generadas automaticamente por acumulacion.
+    suspensiones_automaticas = (
+        RegistroDisciplinario.query
+        .filter_by(
+            jugador_id=jugador.id,
+            tipo="Suspension"
         )
+        .filter(
+            RegistroDisciplinario.motivo.ilike(
+                "%Suspension automatica%"
+            )
+        )
+        .all()
+    )
+
+    suspensiones_automaticas_existentes = sum(
+        registro.cantidad
+        for registro in suspensiones_automaticas
     )
 
     nuevas_suspensiones = (
         suspensiones_correspondientes
-        - suspensiones_existentes
+        - suspensiones_automaticas_existentes
     )
 
     if nuevas_suspensiones <= 0:
         return 0
-
-    jugador.estado = "Suspendido"
 
     for _ in range(
         nuevas_suspensiones
     ):
 
         suspension = RegistroDisciplinario(
-
             jugador_id=jugador.id,
-
             fecha=date.today(),
-
             tipo="Suspension",
-
             cantidad=1,
-
             motivo=(
-                "Suspensión automática "
-                "por acumulación de 4 "
+                "Suspension automatica "
+                "por acumulacion de 4 "
                 "tarjetas amarillas."
             ),
-
-            campeonato=campeonato
+            campeonato=campeonato,
+            observaciones=(
+                "Generada automaticamente "
+                "por acumulacion disciplinaria."
+            )
         )
 
         db.session.add(
             suspension
         )
+
+    # El jugador queda suspendido automaticamente.
+    jugador.estado = "Suspendido"
 
     return nuevas_suspensiones
 
