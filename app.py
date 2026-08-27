@@ -396,6 +396,44 @@ def preparar_base_datos():
 
         db.session.commit()
 
+        # ----------------------------------------------------
+        # ASEGURAR COLUMNA OBSERVACIONES EN DISCIPLINA
+        # ----------------------------------------------------
+
+        inspector = db.inspect(
+            db.engine
+        )
+
+        columnas_disciplina = [
+            columna["name"]
+            for columna in inspector.get_columns(
+                "registro_disciplinario"
+            )
+        ]
+
+        if "observaciones" not in columnas_disciplina:
+
+            if db.engine.dialect.name == "postgresql":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE registro_disciplinario "
+                        "ADD COLUMN IF NOT EXISTS "
+                        "observaciones TEXT"
+                    )
+                )
+
+            elif db.engine.dialect.name == "sqlite":
+
+                db.session.execute(
+                    db.text(
+                        "ALTER TABLE registro_disciplinario "
+                        "ADD COLUMN observaciones TEXT"
+                    )
+                )
+
+            db.session.commit()
+
     except Exception as error:
 
         db.session.rollback()
@@ -2049,28 +2087,28 @@ def registrar_roja(jugador_id):
 
     except Exception as error:
 
-    db.session.rollback()
+        db.session.rollback()
 
-    import traceback
+        import traceback
 
-    print("==============================================")
-    print("ERROR REGISTRANDO TARJETA ROJA")
-    print("==============================================")
-    print(repr(error))
-    traceback.print_exc()
-    print("==============================================")
+        print("==============================================")
+        print("ERROR REGISTRANDO TARJETA ROJA")
+        print("==============================================")
+        print(repr(error))
+        traceback.print_exc()
+        print("==============================================")
 
-    flash(
-        f"Error al registrar tarjeta roja: {error}",
-        "error"
-    )
-
-    return redirect(
-        url_for(
-            "ficha_jugador",
-            jugador_id=jugador.id
+        flash(
+            "No fue posible registrar la tarjeta roja.",
+            "error"
         )
-    )
+
+        return redirect(
+            url_for(
+                "ficha_jugador",
+                jugador_id=jugador.id
+            )
+        )
 
     flash(
         "Tarjeta roja registrada correctamente.",
@@ -2182,96 +2220,6 @@ def registrar_suspension(jugador_id):
             jugador_id=jugador.id
         )
     )
-
-    jugador = db.get_or_404(
-        Jugador,
-        jugador_id
-    )
-
-    try:
-
-        cantidad = int(
-            request.form.get(
-                "cantidad",
-                1
-            )
-        )
-
-    except ValueError:
-
-        cantidad = 1
-
-    if cantidad < 1:
-        cantidad = 1
-
-    campeonato = request.form.get(
-        "campeonato",
-        ""
-    ).strip()
-
-    motivo = request.form.get(
-        "motivo",
-        ""
-    ).strip()
-
-    observaciones = request.form.get(
-        "observaciones",
-        ""
-    ).strip()
-
-    jugador.estado = "Suspendido"
-
-    suspension = RegistroDisciplinario(
-        jugador_id=jugador.id,
-        fecha=date.today(),
-        tipo="Suspension",
-        cantidad=cantidad,
-        motivo=motivo,
-        campeonato=campeonato,
-        observaciones=observaciones
-    )
-
-    try:
-
-        db.session.add(
-            suspension
-        )
-
-        db.session.commit()
-
-    except Exception as error:
-
-        db.session.rollback()
-
-        print(
-            "Error registrando suspensión:",
-            error
-        )
-
-        flash(
-            "No fue posible registrar la suspensión.",
-            "error"
-        )
-
-        return redirect(
-            url_for(
-                "ficha_jugador",
-                jugador_id=jugador.id
-            )
-        )
-
-    flash(
-        "Suspensión registrada correctamente.",
-        "success"
-    )
-
-    return redirect(
-        url_for(
-            "ficha_jugador",
-            jugador_id=jugador.id
-        )
-    )
-
 
 # ============================================================
 # ELIMINAR REGISTRO DE GOL
