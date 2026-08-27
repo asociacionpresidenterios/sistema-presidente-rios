@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ campeonato.nombre }}{% endblock %}
+{% block content %}
+<div style="max-width:1100px;margin:0 auto;padding:25px">
+  <div style="display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:25px">
+    <div><h1 style="margin:0;font-size:30px;font-weight:900">🏆 {{ campeonato.nombre }}</h1><p style="color:#6b7280">{{ campeonato.serie }} · Temporada {{ campeonato.temporada }}</p></div>
+    <a href="{{ url_for('campeonatos') }}" style="padding:11px 17px;border:1px solid #d1d5db;border-radius:10px;text-decoration:none;color:#111827;font-weight:800;background:white">← Campeonatos</a>
+  </div>
+  <div style="background:white;border:1px solid #e5e7eb;border-radius:18px;padding:25px;box-shadow:0 5px 18px rgba(15,23,42,.05)">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:15px">
+      <div><small style="color:#6b7280">Serie</small><div style="font-weight:800;margin-top:5px">{{ campeonato.serie }}</div></div>
+      <div><small style="color:#6b7280">Temporada</small><div style="font-weight:800;margin-top:5px">{{ campeonato.temporada }}</div></div>
+      <div><small style="color:#6b7280">Estado</small><div style="font-weight:800;margin-top:5px">{{ campeonato.estado }}</div></div>
+      <div><small style="color:#6b7280">Inicio</small><div style="font-weight:800;margin-top:5px">{{ campeonato.fecha_inicio.strftime('%d/%m/%Y') if campeonato.fecha_inicio else '—' }}</div></div>
+      <div><small style="color:#6b7280">Término</small><div style="font-weight:800;margin-top:5px">{{ campeonato.fecha_termino.strftime('%d/%m/%Y') if campeonato.fecha_termino else '—' }}</div></div>
+      <div><small style="color:#6b7280">ID</small><div style="font-weight:800;margin-top:5px">#{{ campeonato.id }}</div></div>
+    </div>
+    {% if campeonato.descripcion %}<div style="border-top:1px solid #e5e7eb;margin-top:25px;padding-top:20px"><small style="color:#6b7280">Descripción</small><p>{{ campeonato.descripcion }}</p></div>{% endif %}
+    <div style="margin-top:25px;padding:20px;border-radius:12px;background:#f8fafc;color:#475569"><strong>🚧 Próximo paso:</strong> aquí conectaremos equipos, fixture, partidos, resultados, tabla de posiciones, goleadores y disciplina.</div>
+  </div>
+</div>
+{% endblock %}
