@@ -1,5 +1,5 @@
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from io import BytesIO
 
 import qrcode
@@ -237,6 +237,97 @@ class CampeonatoClub(db.Model):
             "club_id",
             name="uq_campeonato_club"
         ),
+    )
+
+
+# ============================================================
+# MODELO PARTIDO / FIXTURE
+# ============================================================
+
+class Partido(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    campeonato_id = db.Column(
+        db.Integer,
+        db.ForeignKey("campeonato.id"),
+        nullable=False,
+        index=True
+    )
+
+    jornada = db.Column(
+        db.Integer,
+        nullable=False,
+        index=True
+    )
+
+    fecha = db.Column(
+        db.Date,
+        nullable=True
+    )
+
+    hora = db.Column(
+        db.String(20),
+        nullable=True
+    )
+
+    cancha = db.Column(
+        db.String(120),
+        nullable=True
+    )
+
+    local_club_id = db.Column(
+        db.Integer,
+        db.ForeignKey("club.id"),
+        nullable=False,
+        index=True
+    )
+
+    visitante_club_id = db.Column(
+        db.Integer,
+        db.ForeignKey("club.id"),
+        nullable=False,
+        index=True
+    )
+
+    goles_local = db.Column(
+        db.Integer,
+        nullable=True
+    )
+
+    goles_visitante = db.Column(
+        db.Integer,
+        nullable=True
+    )
+
+    estado = db.Column(
+        db.String(30),
+        nullable=False,
+        default="Programado"
+    )
+
+    campeonato = db.relationship(
+        "Campeonato",
+        backref=db.backref(
+            "partidos",
+            lazy=True,
+            cascade="all, delete-orphan"
+        )
+    )
+
+    local_club = db.relationship(
+        "Club",
+        foreign_keys=[local_club_id],
+        backref=db.backref("partidos_local", lazy=True)
+    )
+
+    visitante_club = db.relationship(
+        "Club",
+        foreign_keys=[visitante_club_id],
+        backref=db.backref("partidos_visitante", lazy=True)
     )
 
 
@@ -3371,6 +3462,228 @@ def guardar_clubes_campeonato(campeonato_id):
     return redirect(
         url_for(
             "detalle_campeonato",
+            campeonato_id=campeonato.id
+        )
+    )
+
+
+# ============================================================
+# PASO 5 — FIXTURE DEL CAMPEONATO
+# ============================================================
+
+def siguiente_sabado(fecha_base):
+
+    if not fecha_base:
+        fecha_base = date.today()
+
+    dias_hasta_sabado = (5 - fecha_base.weekday()) % 7
+
+    return fecha_base + timedelta(days=dias_hasta_sabado)
+
+
+def generar_calendario_todos_contra_todos(club_ids):
+    """Genera una rueda todos-contra-todos usando el método de rotación."""
+
+    equipos = list(club_ids)
+
+    if len(equipos) < 2:
+        return []
+
+    # Con cantidad impar se agrega un descanso (None).
+    if len(equipos) % 2:
+        equipos.append(None)
+
+    cantidad = len(equipos)
+    rondas = cantidad - 1
+    calendario = []
+
+    for jornada in range(rondas):
+
+        partidos_jornada = []
+
+        for i in range(cantidad // 2):
+
+            a = equipos[i]
+            b = equipos[cantidad - 1 - i]
+
+            if a is None or b is None:
+                continue
+
+            # Alternancia simple de localía para repartirla durante la rueda.
+            if (jornada + i) % 2 == 0:
+                local_id, visitante_id = a, b
+            else:
+                local_id, visitante_id = b, a
+
+            partidos_jornada.append((local_id, visitante_id))
+
+        calendario.append(partidos_jornada)
+
+        # El primer equipo queda fijo y los demás rotan.
+        equipos = [
+            equipos[0],
+            equipos[-1],
+            *equipos[1:-1]
+        ]
+
+    return calendario
+
+
+@app.route("/campeonatos/<int:campeonato_id>/fixture")
+def fixture_campeonato(campeonato_id):
+
+    campeonato = db.get_or_404(
+        Campeonato,
+        campeonato_id
+    )
+
+    clubes_participantes = (
+        CampeonatoClub.query
+        .filter_by(campeonato_id=campeonato.id)
+        .join(Club, CampeonatoClub.club_id == Club.id)
+        .order_by(Club.nombre)
+        .all()
+    )
+
+    partidos = (
+        Partido.query
+        .filter_by(campeonato_id=campeonato.id)
+        .order_by(Partido.jornada, Partido.id)
+        .all()
+    )
+
+    jornadas = {}
+    for partido in partidos:
+        jornadas.setdefault(partido.jornada, []).append(partido)
+
+    return render_template(
+        "campeonato_fixture.html",
+        campeonato=campeonato,
+        clubes_participantes=clubes_participantes,
+        partidos=partidos,
+        jornadas=jornadas
+    )
+
+
+@app.route(
+    "/campeonatos/<int:campeonato_id>/fixture/generar",
+    methods=["POST"]
+)
+def generar_fixture_campeonato(campeonato_id):
+
+    campeonato = db.get_or_404(
+        Campeonato,
+        campeonato_id
+    )
+
+    clubes_participantes = (
+        CampeonatoClub.query
+        .filter_by(campeonato_id=campeonato.id)
+        .order_by(CampeonatoClub.id)
+        .all()
+    )
+
+    club_ids = [registro.club_id for registro in clubes_participantes]
+
+    if len(club_ids) < 2:
+        flash(
+            "Debes tener al menos 2 clubes inscritos para generar el fixture.",
+            "error"
+        )
+        return redirect(url_for("detalle_campeonato", campeonato_id=campeonato.id))
+
+    hora = request.form.get("hora", "17:00").strip() or "17:00"
+    cancha = request.form.get("cancha", "Por definir").strip() or "Por definir"
+
+    try:
+        # Al regenerar, se eliminan solamente los partidos de este campeonato.
+        Partido.query.filter_by(
+            campeonato_id=campeonato.id
+        ).delete(synchronize_session=False)
+
+        calendario = generar_calendario_todos_contra_todos(club_ids)
+        primera_fecha = siguiente_sabado(campeonato.fecha_inicio)
+
+        contador = 0
+
+        for indice_jornada, partidos_jornada in enumerate(calendario, start=1):
+
+            fecha_jornada = primera_fecha + timedelta(days=(indice_jornada - 1) * 7)
+
+            for local_id, visitante_id in partidos_jornada:
+                db.session.add(
+                    Partido(
+                        campeonato_id=campeonato.id,
+                        jornada=indice_jornada,
+                        fecha=fecha_jornada,
+                        hora=hora,
+                        cancha=cancha,
+                        local_club_id=local_id,
+                        visitante_club_id=visitante_id,
+                        goles_local=None,
+                        goles_visitante=None,
+                        estado="Programado"
+                    )
+                )
+                contador += 1
+
+        db.session.commit()
+
+        flash(
+            f"Fixture generado correctamente: {len(calendario)} jornadas y {contador} partidos.",
+            "success"
+        )
+
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR GENERANDO FIXTURE:", repr(error))
+        flash(
+            "No fue posible generar el fixture. Revise el registro del servidor.",
+            "error"
+        )
+
+    return redirect(
+        url_for(
+            "fixture_campeonato",
+            campeonato_id=campeonato.id
+        )
+    )
+
+
+@app.route(
+    "/campeonatos/<int:campeonato_id>/fixture/eliminar",
+    methods=["POST"]
+)
+def eliminar_fixture_campeonato(campeonato_id):
+
+    campeonato = db.get_or_404(
+        Campeonato,
+        campeonato_id
+    )
+
+    try:
+        eliminados = Partido.query.filter_by(
+            campeonato_id=campeonato.id
+        ).delete(synchronize_session=False)
+
+        db.session.commit()
+
+        flash(
+            f"Fixture eliminado correctamente. Partidos eliminados: {eliminados}.",
+            "success"
+        )
+
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR ELIMINANDO FIXTURE:", repr(error))
+        flash(
+            "No fue posible eliminar el fixture.",
+            "error"
+        )
+
+    return redirect(
+        url_for(
+            "fixture_campeonato",
             campeonato_id=campeonato.id
         )
     )
