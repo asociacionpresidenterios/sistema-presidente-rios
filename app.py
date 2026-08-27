@@ -1,5 +1,5 @@
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from io import BytesIO
 
 import qrcode
@@ -109,6 +109,13 @@ class Club(db.Model):
         default=True
     )
 
+    campeonatos_participantes = db.relationship(
+        "CampeonatoClub",
+        back_populates="club",
+        cascade="all, delete-orphan",
+        lazy=True
+    )
+
 
 # ============================================================
 # MODELO SERIE
@@ -131,6 +138,196 @@ class Serie(db.Model):
         db.Boolean,
         nullable=False,
         default=True
+    )
+
+
+# ============================================================
+# MODELO CAMPEONATO
+# ============================================================
+
+class Campeonato(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    nombre = db.Column(
+        db.String(160),
+        nullable=False
+    )
+
+    temporada = db.Column(
+        db.String(20),
+        nullable=False
+    )
+
+    serie = db.Column(
+        db.String(80),
+        nullable=False
+    )
+
+    fecha_inicio = db.Column(
+        db.Date,
+        nullable=True
+    )
+
+    fecha_termino = db.Column(
+        db.Date,
+        nullable=True
+    )
+
+    estado = db.Column(
+        db.String(30),
+        nullable=False,
+        default="Activo"
+    )
+
+    descripcion = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    clubes_participantes = db.relationship(
+        "CampeonatoClub",
+        back_populates="campeonato",
+        cascade="all, delete-orphan",
+        lazy=True
+    )
+
+
+# ============================================================
+# MODELO CAMPEONATO - CLUB PARTICIPANTE
+# ============================================================
+
+class CampeonatoClub(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    campeonato_id = db.Column(
+        db.Integer,
+        db.ForeignKey("campeonato.id"),
+        nullable=False,
+        index=True
+    )
+
+    club_id = db.Column(
+        db.Integer,
+        db.ForeignKey("club.id"),
+        nullable=False,
+        index=True
+    )
+
+    campeonato = db.relationship(
+        "Campeonato",
+        back_populates="clubes_participantes"
+    )
+
+    club = db.relationship(
+        "Club",
+        back_populates="campeonatos_participantes"
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "campeonato_id",
+            "club_id",
+            name="uq_campeonato_club"
+        ),
+    )
+
+
+# ============================================================
+# MODELO PARTIDO / FIXTURE
+# ============================================================
+
+class Partido(db.Model):
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    campeonato_id = db.Column(
+        db.Integer,
+        db.ForeignKey("campeonato.id"),
+        nullable=False,
+        index=True
+    )
+
+    jornada = db.Column(
+        db.Integer,
+        nullable=False,
+        index=True
+    )
+
+    fecha = db.Column(
+        db.Date,
+        nullable=True
+    )
+
+    hora = db.Column(
+        db.String(20),
+        nullable=True
+    )
+
+    cancha = db.Column(
+        db.String(120),
+        nullable=True
+    )
+
+    local_club_id = db.Column(
+        db.Integer,
+        db.ForeignKey("club.id"),
+        nullable=False,
+        index=True
+    )
+
+    visitante_club_id = db.Column(
+        db.Integer,
+        db.ForeignKey("club.id"),
+        nullable=False,
+        index=True
+    )
+
+    goles_local = db.Column(
+        db.Integer,
+        nullable=True
+    )
+
+    goles_visitante = db.Column(
+        db.Integer,
+        nullable=True
+    )
+
+    estado = db.Column(
+        db.String(30),
+        nullable=False,
+        default="Programado"
+    )
+
+    campeonato = db.relationship(
+        "Campeonato",
+        backref=db.backref(
+            "partidos",
+            lazy=True,
+            cascade="all, delete-orphan"
+        )
+    )
+
+    local_club = db.relationship(
+        "Club",
+        foreign_keys=[local_club_id],
+        backref=db.backref("partidos_local", lazy=True)
+    )
+
+    visitante_club = db.relationship(
+        "Club",
+        foreign_keys=[visitante_club_id],
+        backref=db.backref("partidos_visitante", lazy=True)
     )
 
 
@@ -3040,6 +3237,565 @@ def cambiar_estado_serie(serie_id):
         url_for("configuracion")
     )
 
+
+# ============================================================
+# MÓDULO DE CAMPEONATOS — PASOS 1 A 4
+# ============================================================
+
+@app.route("/campeonatos")
+def campeonatos():
+
+    campeonatos_registrados = (
+        Campeonato.query
+        .order_by(
+            Campeonato.temporada.desc(),
+            Campeonato.id.desc()
+        )
+        .all()
+    )
+
+    return render_template(
+        "campeonatos.html",
+        campeonatos=campeonatos_registrados
+    )
+
+
+@app.route("/campeonatos/nuevo", methods=["GET", "POST"])
+def nuevo_campeonato():
+
+    series = (
+        Serie.query
+        .filter_by(activo=True)
+        .order_by(Serie.nombre)
+        .all()
+    )
+
+    if request.method == "POST":
+
+        nombre = request.form.get("nombre", "").strip()
+        temporada = request.form.get("temporada", "").strip()
+        serie = request.form.get("serie", "").strip()
+        estado = request.form.get("estado", "Activo").strip() or "Activo"
+        descripcion = request.form.get("descripcion", "").strip()
+
+        fecha_inicio = convertir_fecha(
+            request.form.get("fecha_inicio", "").strip()
+        )
+
+        fecha_termino = convertir_fecha(
+            request.form.get("fecha_termino", "").strip()
+        )
+
+        if not nombre or not temporada or not serie:
+            flash(
+                "Debes completar nombre, temporada y serie.",
+                "error"
+            )
+            return render_template(
+                "campeonato_form.html",
+                series=series
+            )
+
+        if estado not in {"Activo", "Finalizado"}:
+            estado = "Activo"
+
+        if fecha_inicio and fecha_termino and fecha_termino < fecha_inicio:
+            flash(
+                "La fecha de término no puede ser anterior a la fecha de inicio.",
+                "error"
+            )
+            return render_template(
+                "campeonato_form.html",
+                series=series
+            )
+
+        campeonato = Campeonato(
+            nombre=nombre,
+            temporada=temporada,
+            serie=serie,
+            fecha_inicio=fecha_inicio,
+            fecha_termino=fecha_termino,
+            estado=estado,
+            descripcion=descripcion
+        )
+
+        try:
+            db.session.add(campeonato)
+            db.session.commit()
+        except Exception as error:
+            db.session.rollback()
+            print("ERROR CREANDO CAMPEONATO:", repr(error))
+            flash(
+                "No fue posible crear el campeonato. Revise el registro del servidor.",
+                "error"
+            )
+            return render_template(
+                "campeonato_form.html",
+                series=series
+            )
+
+        flash(
+            f"Campeonato '{nombre}' creado correctamente.",
+            "success"
+        )
+
+        return redirect(
+            url_for(
+                "detalle_campeonato",
+                campeonato_id=campeonato.id
+            )
+        )
+
+    return render_template(
+        "campeonato_form.html",
+        series=series
+    )
+
+
+@app.route("/campeonatos/<int:campeonato_id>")
+def detalle_campeonato(campeonato_id):
+
+    campeonato = db.get_or_404(
+        Campeonato,
+        campeonato_id
+    )
+
+    clubes = (
+        Club.query
+        .filter_by(activo=True)
+        .order_by(Club.nombre)
+        .all()
+    )
+
+    clubes_participantes = (
+        CampeonatoClub.query
+        .filter_by(campeonato_id=campeonato.id)
+        .join(Club, CampeonatoClub.club_id == Club.id)
+        .order_by(Club.nombre)
+        .all()
+    )
+
+    clubes_participantes_ids = {
+        registro.club_id
+        for registro in clubes_participantes
+    }
+
+    return render_template(
+        "campeonato_detalle.html",
+        campeonato=campeonato,
+        clubes=clubes,
+        clubes_participantes=clubes_participantes,
+        clubes_participantes_ids=clubes_participantes_ids
+    )
+
+
+@app.route(
+    "/campeonatos/<int:campeonato_id>/clubes",
+    methods=["POST"]
+)
+def guardar_clubes_campeonato(campeonato_id):
+
+    campeonato = db.get_or_404(
+        Campeonato,
+        campeonato_id
+    )
+
+    valores = request.form.getlist("club_ids")
+    club_ids = set()
+
+    for valor in valores:
+        try:
+            club_id = int(valor)
+            if club_id > 0:
+                club_ids.add(club_id)
+        except (TypeError, ValueError):
+            continue
+
+    try:
+        clubes_validos = (
+            Club.query
+            .filter(
+                Club.id.in_(club_ids)
+            )
+            .all()
+            if club_ids else []
+        )
+
+        ids_validos = {club.id for club in clubes_validos}
+
+        # Reemplazamos la inscripción del campeonato por la selección actual.
+        CampeonatoClub.query.filter_by(
+            campeonato_id=campeonato.id
+        ).delete(
+            synchronize_session=False
+        )
+
+        for club_id in sorted(ids_validos):
+            db.session.add(
+                CampeonatoClub(
+                    campeonato_id=campeonato.id,
+                    club_id=club_id
+                )
+            )
+
+        db.session.commit()
+
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR GUARDANDO CLUBES DEL CAMPEONATO:", repr(error))
+        flash(
+            "No fue posible guardar los clubes participantes.",
+            "error"
+        )
+        return redirect(
+            url_for(
+                "detalle_campeonato",
+                campeonato_id=campeonato.id
+            )
+        )
+
+    flash(
+        f"Clubes participantes actualizados correctamente: {len(ids_validos)}.",
+        "success"
+    )
+
+    return redirect(
+        url_for(
+            "detalle_campeonato",
+            campeonato_id=campeonato.id
+        )
+    )
+
+
+# ============================================================
+# PASO 5 — FIXTURE DEL CAMPEONATO
+# ============================================================
+
+def siguiente_sabado(fecha_base):
+
+    if not fecha_base:
+        fecha_base = date.today()
+
+    dias_hasta_sabado = (5 - fecha_base.weekday()) % 7
+
+    return fecha_base + timedelta(days=dias_hasta_sabado)
+
+
+def generar_calendario_todos_contra_todos(club_ids):
+    """Genera una rueda todos-contra-todos usando el método de rotación."""
+
+    equipos = list(club_ids)
+
+    if len(equipos) < 2:
+        return []
+
+    # Con cantidad impar se agrega un descanso (None).
+    if len(equipos) % 2:
+        equipos.append(None)
+
+    cantidad = len(equipos)
+    rondas = cantidad - 1
+    calendario = []
+
+    for jornada in range(rondas):
+
+        partidos_jornada = []
+
+        for i in range(cantidad // 2):
+
+            a = equipos[i]
+            b = equipos[cantidad - 1 - i]
+
+            if a is None or b is None:
+                continue
+
+            # Alternancia simple de localía para repartirla durante la rueda.
+            if (jornada + i) % 2 == 0:
+                local_id, visitante_id = a, b
+            else:
+                local_id, visitante_id = b, a
+
+            partidos_jornada.append((local_id, visitante_id))
+
+        calendario.append(partidos_jornada)
+
+        # El primer equipo queda fijo y los demás rotan.
+        equipos = [
+            equipos[0],
+            equipos[-1],
+            *equipos[1:-1]
+        ]
+
+    return calendario
+
+
+@app.route("/campeonatos/<int:campeonato_id>/fixture")
+def fixture_campeonato(campeonato_id):
+
+    campeonato = db.get_or_404(
+        Campeonato,
+        campeonato_id
+    )
+
+    clubes_participantes = (
+        CampeonatoClub.query
+        .filter_by(campeonato_id=campeonato.id)
+        .join(Club, CampeonatoClub.club_id == Club.id)
+        .order_by(Club.nombre)
+        .all()
+    )
+
+    partidos = (
+        Partido.query
+        .filter_by(campeonato_id=campeonato.id)
+        .order_by(Partido.jornada, Partido.id)
+        .all()
+    )
+
+    jornadas = {}
+    for partido in partidos:
+        jornadas.setdefault(partido.jornada, []).append(partido)
+
+    return render_template(
+        "campeonato_fixture.html",
+        campeonato=campeonato,
+        clubes_participantes=clubes_participantes,
+        partidos=partidos,
+        jornadas=jornadas
+    )
+
+
+@app.route(
+    "/campeonatos/<int:campeonato_id>/fixture/generar",
+    methods=["POST"]
+)
+def generar_fixture_campeonato(campeonato_id):
+
+    campeonato = db.get_or_404(
+        Campeonato,
+        campeonato_id
+    )
+
+    clubes_participantes = (
+        CampeonatoClub.query
+        .filter_by(campeonato_id=campeonato.id)
+        .order_by(CampeonatoClub.id)
+        .all()
+    )
+
+    club_ids = [registro.club_id for registro in clubes_participantes]
+
+    if len(club_ids) < 2:
+        flash(
+            "Debes tener al menos 2 clubes inscritos para generar el fixture.",
+            "error"
+        )
+        return redirect(url_for("detalle_campeonato", campeonato_id=campeonato.id))
+
+    hora = request.form.get("hora", "17:00").strip() or "17:00"
+    cancha = request.form.get("cancha", "Por definir").strip() or "Por definir"
+
+    try:
+        # Al regenerar, se eliminan solamente los partidos de este campeonato.
+        Partido.query.filter_by(
+            campeonato_id=campeonato.id
+        ).delete(synchronize_session=False)
+
+        calendario = generar_calendario_todos_contra_todos(club_ids)
+        primera_fecha = siguiente_sabado(campeonato.fecha_inicio)
+
+        contador = 0
+
+        for indice_jornada, partidos_jornada in enumerate(calendario, start=1):
+
+            fecha_jornada = primera_fecha + timedelta(days=(indice_jornada - 1) * 7)
+
+            for local_id, visitante_id in partidos_jornada:
+                db.session.add(
+                    Partido(
+                        campeonato_id=campeonato.id,
+                        jornada=indice_jornada,
+                        fecha=fecha_jornada,
+                        hora=hora,
+                        cancha=cancha,
+                        local_club_id=local_id,
+                        visitante_club_id=visitante_id,
+                        goles_local=None,
+                        goles_visitante=None,
+                        estado="Programado"
+                    )
+                )
+                contador += 1
+
+        db.session.commit()
+
+        flash(
+            f"Fixture generado correctamente: {len(calendario)} jornadas y {contador} partidos.",
+            "success"
+        )
+
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR GENERANDO FIXTURE:", repr(error))
+        flash(
+            "No fue posible generar el fixture. Revise el registro del servidor.",
+            "error"
+        )
+
+    return redirect(
+        url_for(
+            "fixture_campeonato",
+            campeonato_id=campeonato.id
+        )
+    )
+
+
+@app.route(
+    "/campeonatos/<int:campeonato_id>/fixture/eliminar",
+    methods=["POST"]
+)
+def eliminar_fixture_campeonato(campeonato_id):
+
+    campeonato = db.get_or_404(
+        Campeonato,
+        campeonato_id
+    )
+
+    try:
+        eliminados = Partido.query.filter_by(
+            campeonato_id=campeonato.id
+        ).delete(synchronize_session=False)
+
+        db.session.commit()
+
+        flash(
+            f"Fixture eliminado correctamente. Partidos eliminados: {eliminados}.",
+            "success"
+        )
+
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR ELIMINANDO FIXTURE:", repr(error))
+        flash(
+            "No fue posible eliminar el fixture.",
+            "error"
+        )
+
+    return redirect(
+        url_for(
+            "fixture_campeonato",
+            campeonato_id=campeonato.id
+        )
+    )
+
+
+
+# ============================================================
+# PASO 6 — REGISTRO DE RESULTADOS DEL CAMPEONATO
+# ============================================================
+
+@app.route("/campeonatos/<int:campeonato_id>/resultados")
+def resultados_campeonato(campeonato_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+
+    partidos = (
+        Partido.query
+        .filter_by(campeonato_id=campeonato.id)
+        .order_by(Partido.jornada, Partido.id)
+        .all()
+    )
+
+    jornadas = {}
+    for partido in partidos:
+        jornadas.setdefault(partido.jornada, []).append(partido)
+
+    return render_template(
+        "campeonato_resultados.html",
+        campeonato=campeonato,
+        partidos=partidos,
+        jornadas=jornadas
+    )
+
+
+@app.route(
+    "/campeonatos/<int:campeonato_id>/resultados/<int:partido_id>",
+    methods=["POST"]
+)
+def registrar_resultado(campeonato_id, partido_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    partido = db.get_or_404(Partido, partido_id)
+
+    if partido.campeonato_id != campeonato.id:
+        flash("El partido no pertenece a este campeonato.", "error")
+        return redirect(
+            url_for("resultados_campeonato", campeonato_id=campeonato.id)
+        )
+
+    try:
+        goles_local_raw = request.form.get("goles_local", "").strip()
+        goles_visitante_raw = request.form.get("goles_visitante", "").strip()
+
+        if goles_local_raw == "" or goles_visitante_raw == "":
+            raise ValueError("Debes ingresar ambos marcadores.")
+
+        goles_local = int(goles_local_raw)
+        goles_visitante = int(goles_visitante_raw)
+
+        if goles_local < 0 or goles_visitante < 0:
+            raise ValueError("Los goles no pueden ser negativos.")
+
+        partido.goles_local = goles_local
+        partido.goles_visitante = goles_visitante
+        partido.estado = "Finalizado"
+
+        db.session.commit()
+
+        flash(
+            f"Resultado guardado: {partido.local_club.nombre} {goles_local} - {goles_visitante} {partido.visitante_club.nombre}.",
+            "success"
+        )
+
+    except (TypeError, ValueError) as error:
+        db.session.rollback()
+        flash(f"No se pudo guardar el resultado: {error}", "error")
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR REGISTRANDO RESULTADO:", repr(error))
+        flash("No fue posible guardar el resultado. Revise el registro del servidor.", "error")
+
+    return redirect(
+        url_for("resultados_campeonato", campeonato_id=campeonato.id)
+    )
+
+
+@app.route(
+    "/campeonatos/<int:campeonato_id>/resultados/<int:partido_id>/programado",
+    methods=["POST"]
+)
+def marcar_partido_programado(campeonato_id, partido_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    partido = db.get_or_404(Partido, partido_id)
+
+    if partido.campeonato_id != campeonato.id:
+        flash("El partido no pertenece a este campeonato.", "error")
+        return redirect(
+            url_for("resultados_campeonato", campeonato_id=campeonato.id)
+        )
+
+    try:
+        partido.goles_local = None
+        partido.goles_visitante = None
+        partido.estado = "Programado"
+        db.session.commit()
+        flash("El partido volvió a estado Programado.", "success")
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR RESTABLECIENDO PARTIDO:", repr(error))
+        flash("No fue posible restablecer el partido.", "error")
+
+    return redirect(
+        url_for("resultados_campeonato", campeonato_id=campeonato.id)
+    )
 
 # ============================================================
 # HEALTH CHECK
