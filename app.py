@@ -298,149 +298,199 @@ class Gol(db.Model):
 # CREACIÓN / ACTUALIZACIÓN SEGURA DE BASE DE DATOS
 # ============================================================
 
-def preparar_base_datos():
+def _columna_existe(tabla, columna):
 
-    db.create_all()
+    inspector = db.inspect(db.engine)
+
+    return columna in {
+        item["name"]
+        for item in inspector.get_columns(tabla)
+    }
+
+
+def _agregar_columna_si_falta(tabla, columna, definicion):
 
     try:
 
-        inspector = db.inspect(
-            db.engine
-        )
+        if _columna_existe(tabla, columna):
+            return False
 
-        columnas = [
-            columna["name"]
-            for columna in inspector.get_columns(
-                "jugador"
+        dialecto = db.engine.dialect.name
+
+        if dialecto == "postgresql":
+
+            sql = (
+                f'ALTER TABLE "{tabla}" '
+                f'ADD COLUMN IF NOT EXISTS "{columna}" {definicion}'
             )
-        ]
 
-        # ----------------------------------------------------
-        # AGREGAR FOTO SI NO EXISTE
-        # ----------------------------------------------------
+        elif dialecto == "sqlite":
 
-        if "foto" not in columnas:
-
-            if db.engine.dialect.name == "postgresql":
-
-                db.session.execute(
-                    db.text(
-                        "ALTER TABLE jugador "
-                        "ADD COLUMN IF NOT EXISTS foto BYTEA"
-                    )
-                )
-
-            elif db.engine.dialect.name == "sqlite":
-
-                db.session.execute(
-                    db.text(
-                        "ALTER TABLE jugador "
-                        "ADD COLUMN foto BLOB"
-                    )
-                )
-
-            db.session.commit()
-
-        # ----------------------------------------------------
-        # AGREGAR ESTADO SI NO EXISTE
-        # ----------------------------------------------------
-
-        inspector = db.inspect(
-            db.engine
-        )
-
-        columnas = [
-            columna["name"]
-            for columna in inspector.get_columns(
-                "jugador"
+            sql = (
+                f'ALTER TABLE "{tabla}" '
+                f'ADD COLUMN "{columna}" {definicion}'
             )
-        ]
 
-        if "estado" not in columnas:
+        else:
 
-            if db.engine.dialect.name == "postgresql":
-
-                db.session.execute(
-                    db.text(
-                        "ALTER TABLE jugador "
-                        "ADD COLUMN IF NOT EXISTS "
-                        "estado VARCHAR(30) "
-                        "DEFAULT 'Vigente'"
-                    )
-                )
-
-            elif db.engine.dialect.name == "sqlite":
-
-                db.session.execute(
-                    db.text(
-                        "ALTER TABLE jugador "
-                        "ADD COLUMN estado VARCHAR(30) "
-                        "DEFAULT 'Vigente'"
-                    )
-                )
-
-            db.session.commit()
-
-        # ----------------------------------------------------
-        # ASEGURAR ESTADO EN REGISTROS ANTIGUOS
-        # ----------------------------------------------------
-
-        db.session.execute(
-            db.text(
-                "UPDATE jugador "
-                "SET estado = 'Vigente' "
-                "WHERE estado IS NULL "
-                "OR estado = ''"
+            sql = (
+                f'ALTER TABLE "{tabla}" '
+                f'ADD COLUMN "{columna}" {definicion}'
             )
-        )
 
+        db.session.execute(db.text(sql))
         db.session.commit()
 
-        # ----------------------------------------------------
-        # ASEGURAR COLUMNA OBSERVACIONES EN DISCIPLINA
-        # ----------------------------------------------------
-
-        inspector = db.inspect(
-            db.engine
+        print(
+            f"[BD] Columna agregada: {tabla}.{columna}"
         )
 
-        columnas_disciplina = [
-            columna["name"]
-            for columna in inspector.get_columns(
-                "registro_disciplinario"
-            )
-        ]
-
-        if "observaciones" not in columnas_disciplina:
-
-            if db.engine.dialect.name == "postgresql":
-
-                db.session.execute(
-                    db.text(
-                        "ALTER TABLE registro_disciplinario "
-                        "ADD COLUMN IF NOT EXISTS "
-                        "observaciones TEXT"
-                    )
-                )
-
-            elif db.engine.dialect.name == "sqlite":
-
-                db.session.execute(
-                    db.text(
-                        "ALTER TABLE registro_disciplinario "
-                        "ADD COLUMN observaciones TEXT"
-                    )
-                )
-
-            db.session.commit()
+        return True
 
     except Exception as error:
 
         db.session.rollback()
 
         print(
-            "Advertencia al preparar la base de datos:",
-            error
+            f"[BD] No se pudo agregar {tabla}.{columna}: {repr(error)}"
+        )
+
+        return False
+
+
+def preparar_base_datos():
+    """
+    Crea las tablas nuevas y realiza migraciones pequeñas y seguras
+    para instalaciones existentes de SQLite/PostgreSQL.
+
+    IMPORTANTE:
+    db.create_all() NO modifica tablas que ya existen. Por eso aquí
+    comprobamos columna por columna para evitar que una base antigua
+    rompa las rutas de estadísticas disciplinarias.
+    """
+
+    try:
+        db.create_all()
+    except Exception as error:
+        db.session.rollback()
+        print("[BD] Error ejecutando db.create_all():", repr(error))
+        return
+
+    # --------------------------------------------------------
+    # JUGADOR
+    # --------------------------------------------------------
+
+    _agregar_columna_si_falta(
+        "jugador",
+        "foto",
+        "BYTEA" if db.engine.dialect.name == "postgresql" else "BLOB"
+    )
+
+    _agregar_columna_si_falta(
+        "jugador",
+        "estado",
+        "VARCHAR(30) DEFAULT 'Vigente'"
+    )
+
+    try:
+
+        db.session.execute(
+            db.text(
+                "UPDATE jugador "
+                "SET estado = 'Vigente' "
+                "WHERE estado IS NULL OR estado = ''"
+            )
+        )
+
+        db.session.commit()
+
+    except Exception as error:
+
+        db.session.rollback()
+        print("[BD] No se pudo normalizar estado de jugadores:", repr(error))
+
+    # --------------------------------------------------------
+    # REGISTRO DISCIPLINARIO
+    # --------------------------------------------------------
+    # Se revisan TODAS las columnas utilizadas por el modelo.
+    # Esto es importante porque create_all() no actualiza una tabla
+    # que ya existía en producción.
+
+    columnas_disciplina = [
+        ("jugador_id", "INTEGER"),
+        ("fecha", "DATE"),
+        ("tipo", "VARCHAR(30)"),
+        ("cantidad", "INTEGER DEFAULT 1"),
+        ("motivo", "VARCHAR(255)"),
+        ("campeonato", "VARCHAR(120)"),
+        ("observaciones", "TEXT")
+    ]
+
+    for nombre, definicion in columnas_disciplina:
+        _agregar_columna_si_falta(
+            "registro_disciplinario",
+            nombre,
+            definicion
+        )
+
+    # --------------------------------------------------------
+    # GOLES
+    # --------------------------------------------------------
+
+    columnas_gol = [
+        ("jugador_id", "INTEGER"),
+        ("fecha", "DATE"),
+        ("cantidad", "INTEGER DEFAULT 1"),
+        ("campeonato", "VARCHAR(120)"),
+        ("observaciones", "TEXT")
+    ]
+
+    for nombre, definicion in columnas_gol:
+        _agregar_columna_si_falta(
+            "gol",
+            nombre,
+            definicion
+        )
+
+    # --------------------------------------------------------
+    # VERIFICACIÓN FINAL
+    # --------------------------------------------------------
+
+    try:
+
+        inspector = db.inspect(db.engine)
+
+        tablas = set(inspector.get_table_names())
+
+        print("[BD] Tablas disponibles:", sorted(tablas))
+
+        if "registro_disciplinario" in tablas:
+
+            print(
+                "[BD] Columnas registro_disciplinario:",
+                [
+                    c["name"]
+                    for c in inspector.get_columns(
+                        "registro_disciplinario"
+                    )
+                ]
+            )
+
+        if "gol" in tablas:
+
+            print(
+                "[BD] Columnas gol:",
+                [
+                    c["name"]
+                    for c in inspector.get_columns("gol")
+                ]
+            )
+
+    except Exception as error:
+
+        print(
+            "[BD] Advertencia verificando esquema final:",
+            repr(error)
         )
 
 
@@ -757,68 +807,52 @@ def crear_suspension_por_acumulacion(
         jugador.id
     )
 
-    # Cada 4 tarjetas amarillas generan
-    # una suspension automatica.
     suspensiones_correspondientes = (
         amarillas // 4
     )
 
-    # Solo contamos las suspensiones que fueron
-    # generadas automaticamente por acumulacion.
-    suspensiones_automaticas = (
-        RegistroDisciplinario.query
-        .filter_by(
-            jugador_id=jugador.id,
-            tipo="Suspension"
+    suspensiones_existentes = (
+        obtener_suspensiones(
+            jugador.id
         )
-        .filter(
-            RegistroDisciplinario.motivo.ilike(
-                "%Suspension automatica%"
-            )
-        )
-        .all()
-    )
-
-    suspensiones_automaticas_existentes = sum(
-        registro.cantidad
-        for registro in suspensiones_automaticas
     )
 
     nuevas_suspensiones = (
         suspensiones_correspondientes
-        - suspensiones_automaticas_existentes
+        - suspensiones_existentes
     )
 
     if nuevas_suspensiones <= 0:
         return 0
+
+    jugador.estado = "Suspendido"
 
     for _ in range(
         nuevas_suspensiones
     ):
 
         suspension = RegistroDisciplinario(
+
             jugador_id=jugador.id,
+
             fecha=date.today(),
+
             tipo="Suspension",
+
             cantidad=1,
+
             motivo=(
-                "Suspension automatica "
-                "por acumulacion de 4 "
+                "Suspensión automática "
+                "por acumulación de 4 "
                 "tarjetas amarillas."
             ),
-            campeonato=campeonato,
-            observaciones=(
-                "Generada automaticamente "
-                "por acumulacion disciplinaria."
-            )
+
+            campeonato=campeonato
         )
 
         db.session.add(
             suspension
         )
-
-    # El jugador queda suspendido automaticamente.
-    jugador.estado = "Suspendido"
 
     return nuevas_suspensiones
 
@@ -2591,14 +2625,6 @@ def dashboard():
         .all()
     )
 
-    jugadores_suspendidos = (
-        Jugador.query
-        .filter_by(estado="Suspendido")
-        .order_by(Jugador.nombre_completo.asc())
-        .limit(10)
-        .all()
-    )
-
     # ------------------------------------------------------------
     # ESTADÍSTICAS DEPORTIVAS
     # ------------------------------------------------------------
@@ -2830,7 +2856,6 @@ def dashboard():
         jugadores_por_club=jugadores_por_club,
         jugadores_por_serie=jugadores_por_serie,
         ultimos_jugadores=ultimos_jugadores,
-        jugadores_suspendidos=jugadores_suspendidos,
         total_goles=total_goles,
         total_amarillas=total_amarillas,
         total_rojas=total_rojas,
