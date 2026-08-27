@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Tabla — {{ campeonato.nombre }}{% endblock %}
+
+{% block content %}
+<style>
+  .table-page{max-width:1250px;margin:0 auto;padding:25px}
+  .head{display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:20px}
+  .head h1{margin:0;font-size:30px;font-weight:900;color:#111827}
+  .head p{margin:6px 0 0;color:#6b7280}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 15px;border-radius:10px;text-decoration:none;font-weight:800;border:1px solid #e5e7eb;background:#111827;color:#fff}
+  .btn.light{background:#fff;color:#111827}
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:22px;box-shadow:0 5px 18px rgba(15,23,42,.05);margin-bottom:18px}
+  .card h2{margin:0 0 5px;font-size:19px;color:#111827}
+  .sub{margin:0 0 18px;color:#6b7280;font-size:13px}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .stat{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px}
+  .stat small{display:block;color:#64748b;font-size:11px;text-transform:uppercase;font-weight:900}
+  .stat strong{display:block;margin-top:5px;font-size:22px;color:#111827}
+  .table-wrap{overflow-x:auto;border:1px solid #e5e7eb;border-radius:14px}
+  table{width:100%;border-collapse:collapse;min-width:850px}
+  th,td{padding:13px 10px;border-bottom:1px solid #eef2f7;text-align:center;font-size:13px}
+  th{background:#f8fafc;color:#475569;font-size:11px;text-transform:uppercase;font-weight:900;white-space:nowrap}
+  td{color:#1f2937;font-weight:700}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:#f8fafc}
+  td.club{text-align:left;font-weight:900;min-width:220px}
+  td.pos{width:50px;font-weight:900}
+  td.pts{font-size:16px;font-weight:950}
+  .top{background:#eff6ff}
+  .muted{color:#64748b;font-size:12px}
+  .empty{text-align:center;padding:45px 20px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b}
+  @media(max-width:700px){.table-page{padding:15px}.stats{grid-template-columns:1fr}}
+</style>
+
+<div class="table-page">
+  <div class="head">
+    <div>
+      <h1>🏆 Tabla de posiciones — {{ campeonato.nombre }}</h1>
+      <p>{{ campeonato.serie }} · Temporada {{ campeonato.temporada }}</p>
+    </div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap">
+      <a class="btn light" href="{{ url_for('detalle_campeonato', campeonato_id=campeonato.id) }}">← Campeonato</a>
+      <a class="btn light" href="{{ url_for('resultados_campeonato', campeonato_id=campeonato.id) }}">📝 Resultados</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📊 Clasificación automática</h2>
+    <p class="sub">La tabla se calcula directamente desde los partidos Finalizados del campeonato. Los partidos Programados no suman estadísticas.</p>
+    <div class="stats">
+      <div class="stat"><small>Clubes</small><strong>{{ filas|length }}</strong></div>
+      <div class="stat"><small>Partidos finalizados</small><strong>{{ partidos_finalizados }}</strong></div>
+      <div class="stat"><small>Partidos pendientes</small><strong>{{ partidos_totales - partidos_finalizados }}</strong></div>
+    </div>
+  </div>
+
+  <div class="card">
+    {% if filas %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pos</th><th>Club</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fila in filas %}
+              <tr class="{% if fila.pos == 1 %}top{% endif %}">
+                <td class="pos">{{ fila.pos }}</td>
+                <td class="club">{% if fila.pos == 1 %}🥇 {% elif fila.pos == 2 %}🥈 {% elif fila.pos == 3 %}🥉 {% endif %}{{ fila.club.nombre }}</td>
+                <td>{{ fila.pj }}</td><td>{{ fila.pg }}</td><td>{{ fila.pe }}</td><td>{{ fila.pp }}</td>
+                <td>{{ fila.gf }}</td><td>{{ fila.gc }}</td><td>{% if fila.dg > 0 %}+{{ fila.dg }}{% else %}{{ fila.dg }}{% endif %}</td>
+                <td class="pts">{{ fila.pts }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="muted" style="margin:14px 0 0">Desempate: puntos → diferencia de goles → goles a favor → nombre del club.</p>
+    {% else %}
+      <div class="empty"><strong>No hay clubes inscritos.</strong><br>Primero asocia clubes al campeonato.</div>
+    {% endif %}
+  </div>
+
+  <div class="card" style="border-style:dashed">
+    <strong>🚀 PASO 7 completado:</strong> resultados → <strong>tabla automática</strong> → goleadores → disciplina → dashboard del campeonato.
+  </div>
+</div>
+{% endblock %}
