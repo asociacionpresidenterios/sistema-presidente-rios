@@ -531,6 +531,23 @@
 
 
             <!-- =================================================
+                 CAMPEONATOS
+                 ================================================= -->
+
+            <a
+                href="{{ url_for('campeonatos') }}"
+                class="{% if request.endpoint == 'campeonatos'
+                    or request.endpoint == 'nuevo_campeonato'
+                    or request.endpoint == 'detalle_campeonato'
+                %}
+                    active
+                {% endif %}"
+            >
+                🏆 Campeonatos
+            </a>
+
+
+            <!-- =================================================
                  CONFIGURACIÓN
                  ================================================= -->
 
