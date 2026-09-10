@@ -431,6 +431,13 @@ class RegistroDisciplinario(db.Model):
         nullable=True
     )
 
+    campeonato_id = db.Column(
+        db.Integer,
+        db.ForeignKey("campeonato.id"),
+        nullable=True,
+        index=True
+    )
+
     jugador = db.relationship(
         "Jugador",
         backref=db.backref(
@@ -479,6 +486,13 @@ class Gol(db.Model):
     observaciones = db.Column(
         db.Text,
         nullable=True
+    )
+
+    campeonato_id = db.Column(
+        db.Integer,
+        db.ForeignKey("campeonato.id"),
+        nullable=True,
+        index=True
     )
 
     jugador = db.relationship(
@@ -641,9 +655,26 @@ def preparar_base_datos():
         )
 
 
-with app.app_context():
+def preparar_vinculos_campeonato():
+    try:
+        inspector = db.inspect(db.engine)
+        for tabla in ("gol", "registro_disciplinario"):
+            columnas = [c["name"] for c in inspector.get_columns(tabla)]
+            if "campeonato_id" not in columnas:
+                sql = (
+                    f"ALTER TABLE {tabla} ADD COLUMN IF NOT EXISTS campeonato_id INTEGER"
+                    if db.engine.dialect.name == "postgresql"
+                    else f"ALTER TABLE {tabla} ADD COLUMN campeonato_id INTEGER"
+                )
+                db.session.execute(db.text(sql))
+                db.session.commit()
+    except Exception as error:
+        db.session.rollback()
+        print("Advertencia vinculando estadísticas a campeonato:", repr(error))
 
+with app.app_context():
     preparar_base_datos()
+    preparar_vinculos_campeonato()
 
 
 # ============================================================
@@ -3893,6 +3924,75 @@ def tabla_campeonato(campeonato_id):
         partidos_finalizados=len(partidos_finalizados),
         partidos_totales=Partido.query.filter_by(campeonato_id=campeonato.id).count(),
     )
+
+# ============================================================
+# PASO 8 — ESTADÍSTICAS POR CAMPEONATO
+# ============================================================
+
+def jugadores_campeonato(campeonato):
+    nombres = [r.club.nombre for r in CampeonatoClub.query.filter_by(campeonato_id=campeonato.id).join(Club).all()]
+    if not nombres: return []
+    return (Jugador.query.filter(Jugador.serie == campeonato.serie, Jugador.club.in_(nombres))
+            .order_by(Jugador.club, Jugador.nombre_completo).all())
+
+def estadisticas_campeonato_data(campeonato):
+    ids=[j.id for j in jugadores_campeonato(campeonato)]
+    if not ids: return [],[],[],[]
+    def rank(tipo=None):
+        q=(db.session.query(Jugador, db.func.coalesce(db.func.sum(RegistroDisciplinario.cantidad),0).label('total'))
+           .outerjoin(RegistroDisciplinario, db.and_(RegistroDisciplinario.jugador_id==Jugador.id,
+               *( [RegistroDisciplinario.tipo==tipo] if tipo else [] ),
+               db.or_(RegistroDisciplinario.campeonato_id==campeonato.id,
+                      db.and_(RegistroDisciplinario.campeonato_id.is_(None), RegistroDisciplinario.campeonato==campeonato.nombre)) ))
+           .filter(Jugador.id.in_(ids)).group_by(Jugador.id))
+        return q.order_by(db.desc('total'),Jugador.nombre_completo).all()
+    goles=(db.session.query(Jugador,db.func.coalesce(db.func.sum(Gol.cantidad),0).label('total'))
+      .outerjoin(Gol,db.and_(Gol.jugador_id==Jugador.id,db.or_(Gol.campeonato_id==campeonato.id,db.and_(Gol.campeonato_id.is_(None),Gol.campeonato==campeonato.nombre))))
+      .filter(Jugador.id.in_(ids)).group_by(Jugador.id).order_by(db.desc('total'),Jugador.nombre_completo).all())
+    return goles,rank('Amarilla'),rank('Roja'),rank('Suspension')
+
+@app.route('/campeonatos/<int:campeonato_id>/estadisticas')
+def estadisticas_campeonato(campeonato_id):
+    campeonato=db.get_or_404(Campeonato,campeonato_id)
+    jugadores=jugadores_campeonato(campeonato)
+    goles,amarillas,rojas,suspensiones=estadisticas_campeonato_data(campeonato)
+    return render_template('campeonato_estadisticas.html',campeonato=campeonato,jugadores=jugadores,
+        goleadores=goles,ranking_amarillas=amarillas,ranking_rojas=rojas,ranking_suspensiones=suspensiones,
+        total_goles=sum(int(x or 0) for _,x in goles),total_amarillas=sum(int(x or 0) for _,x in amarillas),
+        total_rojas=sum(int(x or 0) for _,x in rojas),total_suspensiones=sum(int(x or 0) for _,x in suspensiones))
+
+def jugador_valido_campeonato(campeonato,jugador_id):
+    return next((j for j in jugadores_campeonato(campeonato) if j.id==jugador_id),None)
+
+@app.route('/campeonatos/<int:campeonato_id>/estadisticas/gol',methods=['POST'])
+def registrar_gol_campeonato(campeonato_id):
+    campeonato=db.get_or_404(Campeonato,campeonato_id)
+    try: jugador_id=int(request.form.get('jugador_id','0')); cantidad=max(1,int(request.form.get('cantidad','1')))
+    except (TypeError,ValueError): jugador_id,cantidad=0,1
+    jugador=jugador_valido_campeonato(campeonato,jugador_id)
+    if not jugador: flash('El jugador no pertenece a la serie o clubes de este campeonato.','error'); return redirect(url_for('estadisticas_campeonato',campeonato_id=campeonato.id))
+    try:
+        db.session.add(Gol(jugador_id=jugador.id,fecha=date.today(),cantidad=cantidad,campeonato=campeonato.nombre,campeonato_id=campeonato.id,observaciones=request.form.get('observaciones','').strip()))
+        db.session.commit(); flash(f'Se registraron {cantidad} gol(es) para {jugador.nombre_completo}.','success')
+    except Exception as error:
+        db.session.rollback(); print('ERROR GOL CAMPEONATO:',repr(error)); flash('No fue posible registrar el gol.','error')
+    return redirect(url_for('estadisticas_campeonato',campeonato_id=campeonato.id))
+
+@app.route('/campeonatos/<int:campeonato_id>/estadisticas/disciplina',methods=['POST'])
+def registrar_disciplina_campeonato(campeonato_id):
+    campeonato=db.get_or_404(Campeonato,campeonato_id)
+    try: jugador_id=int(request.form.get('jugador_id','0')); cantidad=max(1,int(request.form.get('cantidad','1')))
+    except (TypeError,ValueError): jugador_id,cantidad=0,1
+    tipo=request.form.get('tipo','').strip(); jugador=jugador_valido_campeonato(campeonato,jugador_id)
+    if tipo not in {'Amarilla','Roja','Suspension'}: flash('Tipo disciplinario no válido.','error'); return redirect(url_for('estadisticas_campeonato',campeonato_id=campeonato.id))
+    if not jugador: flash('El jugador no pertenece a la serie o clubes de este campeonato.','error'); return redirect(url_for('estadisticas_campeonato',campeonato_id=campeonato.id))
+    try:
+        db.session.add(RegistroDisciplinario(jugador_id=jugador.id,fecha=date.today(),tipo=tipo,cantidad=cantidad,campeonato=campeonato.nombre,campeonato_id=campeonato.id,motivo=request.form.get('motivo','').strip(),observaciones=request.form.get('observaciones','').strip()))
+        if tipo=='Suspension': jugador.estado='Suspendido'
+        db.session.commit(); flash(f'{tipo} registrada para {jugador.nombre_completo}.','success')
+    except Exception as error:
+        db.session.rollback(); print('ERROR DISCIPLINA CAMPEONATO:',repr(error)); flash('No fue posible registrar la disciplina.','error')
+    return redirect(url_for('estadisticas_campeonato',campeonato_id=campeonato.id))
 
 # ============================================================
 # HEALTH CHECK
