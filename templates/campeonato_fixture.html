@@ -19,7 +19,7 @@
   .edit-box{margin:0 16px 14px;padding:15px;background:#f8fafc;border:1px solid #dbeafe;border-radius:12px}.edit-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr auto;gap:9px;align-items:end}.edit-grid label{display:block;font-size:10px;font-weight:900;color:#475569;margin-bottom:5px}.edit-title{font-size:12px;font-weight:900;margin-bottom:10px;color:#1e3a8a}
   .empty{text-align:center;padding:45px 20px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b}
   @media(max-width:1050px){.match{grid-template-columns:65px 1fr 35px 1fr 120px}.match-actions{grid-column:1/-1;justify-content:flex-start}.edit-grid{grid-template-columns:1fr 1fr 1fr}.edit-grid .save{grid-column:1/-1}}
-  @media(max-width:700px){.stats{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.form-grid .btn{width:100%}.match{grid-template-columns:1fr;text-align:left}.vs{text-align:left}.edit-grid{grid-template-columns:1fr}.fixture-page{padding:15px}}
+  @media(max-width:700px){.stats{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.form-grid .btn{width:100%}.match{grid-template-columns:1fr;text-align:left}.vs{text-align:left}.edit-grid{grid-template-columns:1fr}.fixture-page{padding:15px}.round-head form>div{grid-template-columns:1fr!important}.round-head form button{width:100%}}
   @media(max-width:450px){.stats{grid-template-columns:1fr}}
 </style>
 
@@ -83,7 +83,31 @@
   {% if partidos %}
     {% for jornada, lista in jornadas.items() %}
       <div class="round">
-        <div class="round-head"><strong>📅 Jornada {{ jornada }}</strong><span>{% if lista and lista[0].fecha %}{{ lista[0].fecha.strftime('%d/%m/%Y') }}{% else %}Fecha por definir{% endif %} · {{ lista|length }} partidos</span></div>
+        <div class="round-head" style="align-items:flex-start;flex-direction:column">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;flex-wrap:wrap">
+            <div>
+              <strong>📅 Jornada {{ jornada }}</strong>
+              <span style="margin-left:8px">{{ lista|length }} partidos</span>
+            </div>
+            <div>
+              {% if libres_por_jornada.get(jornada) %}
+                {% for club_libre in libres_por_jornada.get(jornada) %}
+                  <span class="badge" style="background:#fff7ed;color:#9a3412">🆓 Libre: {{ club_libre.nombre }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="badge" style="background:#f1f5f9;color:#64748b">Sin fecha libre</span>
+              {% endif %}
+            </div>
+          </div>
+          <form method="POST" action="{{ url_for('configurar_jornada_fixture', campeonato_id=campeonato.id, jornada=jornada) }}" style="width:100%;margin-top:10px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1.4fr auto;gap:9px;align-items:end">
+              <div class="field"><label style="display:block;font-size:10px;font-weight:900;color:#475569;margin-bottom:5px">Fecha de la jornada</label><input type="date" name="fecha" value="{{ lista[0].fecha.strftime('%Y-%m-%d') if lista and lista[0].fecha else '' }}" required style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;background:#fff"></div>
+              <div class="field"><label style="display:block;font-size:10px;font-weight:900;color:#475569;margin-bottom:5px">Horario</label><input type="text" name="hora" value="{{ lista[0].hora or '' }}" placeholder="17:00" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;background:#fff"></div>
+              <div class="field"><label style="display:block;font-size:10px;font-weight:900;color:#475569;margin-bottom:5px">Cancha</label><input type="text" name="cancha" value="{{ lista[0].cancha or '' }}" placeholder="Mirador Viejo" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;background:#fff"></div>
+              <button class="btn success small" type="submit">💾 Aplicar a jornada</button>
+            </div>
+          </form>
+        </div>
         {% for partido in lista %}
           <div class="match">
             <small>Partido {{ loop.index }}</small>
@@ -117,7 +141,7 @@
   {% if partidos %}
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-        <div><h2>🧹 Administración avanzada</h2><p class="sub" style="margin-bottom:0">Elimina el fixture completo solamente si necesitas reconstruirlo desde cero.</p></div>
+        <div><h2>🧹 Administración avanzada</h2><p class="sub" style="margin-bottom:0">Puedes configurar cada jornada, modificar partidos individualmente o eliminar el fixture completo si necesitas reconstruirlo desde cero.</p></div>
         <form method="POST" action="{{ url_for('eliminar_fixture_campeonato', campeonato_id=campeonato.id) }}" onsubmit="return confirm('¿Eliminar TODO el fixture de este campeonato? Esta acción eliminará también los resultados de los partidos.');"><button class="btn danger" type="submit">🗑️ Eliminar fixture</button></form>
       </div>
     </div>
