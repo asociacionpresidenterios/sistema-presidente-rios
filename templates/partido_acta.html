@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Acta · {{ partido.local_club.nombre }} vs {{ partido.visitante_club.nombre }}{% endblock %}
+{% block head %}
+<style>
+.acta-wrap{max-width:1150px;margin:22px auto}.hero{background:linear-gradient(135deg,#111827,#1f2937);color:#fff;border-radius:18px;padding:22px;box-shadow:0 10px 30px rgba(15,23,42,.14)}
+.kicker{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#fdba74}.hero h1{margin:5px 0;font-size:25px}.hero p{margin:5px 0;color:#cbd5e1;font-size:13px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.btn{display:inline-flex;align-items:center;justify-content:center;padding:10px 13px;border-radius:10px;border:0;text-decoration:none;font-size:12px;font-weight:900;background:#e5e7eb;color:#111827;cursor:pointer}.btn.primary{background:#f97316;color:#fff}.btn.dark{background:#374151;color:#fff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:15px;padding:18px;box-shadow:0 5px 18px rgba(15,23,42,.05)}.card h2{margin:0 0 13px;font-size:16px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:9px}.meta div{background:#f8fafc;border-radius:10px;padding:10px}.label{font-size:10px;font-weight:900;color:#64748b;text-transform:uppercase}.value{font-weight:800;margin-top:3px;font-size:13px}
+.score{display:grid;grid-template-columns:1fr 90px 1fr;align-items:center;gap:12px;text-align:center;margin:12px 0}.team{font-size:17px;font-weight:900}.scorebox{font-size:25px;font-weight:900;background:#f1f5f9;padding:12px;border-radius:12px}.team small{display:block;font-size:10px;color:#64748b;margin-top:4px}
+label{display:block;font-size:11px;font-weight:900;color:#475569;margin:12px 0 5px}input,textarea{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:10px;font:inherit;box-sizing:border-box}textarea{min-height:110px;resize:vertical}.hint{font-size:11px;color:#64748b;margin-top:5px}.roster{max-height:230px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px}.player{padding:8px 10px;border-bottom:1px solid #f1f5f9;font-size:12px}.player:last-child{border-bottom:0}.empty{padding:15px;color:#64748b;font-size:12px;background:#f8fafc;border-radius:10px}
+.sign{display:grid;grid-template-columns:1fr 1fr;gap:35px;margin-top:28px}.line{border-top:1px solid #94a3b8;padding-top:7px;text-align:center;font-size:11px;color:#475569}
+@media(max-width:760px){.grid,.sign{grid-template-columns:1fr}.meta{grid-template-columns:1fr}.score{grid-template-columns:1fr}.scorebox{max-width:120px;margin:auto}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="acta-wrap">
+  <div class="hero">
+    <div class="kicker">Asociación Presidente Ríos · Acta digital</div>
+    <h1>{{ partido.local_club.nombre }} vs {{ partido.visitante_club.nombre }}</h1>
+    <p>{{ campeonato.nombre }} · {{ campeonato.serie or 'Serie' }} · Jornada {{ partido.jornada }}</p>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">← Volver al fixture</a>
+      <a class="btn primary" href="{{ url_for('exportar_acta_word', campeonato_id=campeonato.id, partido_id=partido.id) }}">📄 Exportar acta a Word</a>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>⚽ Identificación del partido</h2>
+      <div class="score"><div class="team">{{ partido.local_club.nombre }}<small>LOCAL</small></div><div class="scorebox">{% if partido.goles_local is not none and partido.goles_visitante is not none %}{{ partido.goles_local }} — {{ partido.goles_visitante }}{% else %}VS{% endif %}</div><div class="team">{{ partido.visitante_club.nombre }}<small>VISITANTE</small></div></div>
+      <div class="meta">
+        <div><div class="label">Fecha</div><div class="value">{{ partido.fecha.strftime('%d/%m/%Y') if partido.fecha else 'Pendiente' }}</div></div>
+        <div><div class="label">Hora</div><div class="value">{{ partido.hora or 'Pendiente' }}</div></div>
+        <div><div class="label">Cancha</div><div class="value">{{ partido.cancha or 'Pendiente' }}</div></div>
+        <div><div class="label">Estado</div><div class="value">{{ partido.estado or 'Programado' }}</div></div>
+        <div><div class="label">Club de turno</div><div class="value">{{ partido.turno_club.nombre if partido.turno_club else 'Sin asignar' }}</div></div>
+        <div><div class="label">N° de acta</div><div class="value">{{ partido.id }}</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📝 Datos oficiales del acta</h2>
+      <form method="POST">
+        <label for="arbitro">Árbitro</label>
+        <input id="arbitro" name="arbitro" value="{{ partido.arbitro or '' }}" placeholder="Nombre completo del árbitro">
+        <label for="goles_detalle">⚽ Detalle de goles</label>
+        <textarea id="goles_detalle" name="goles_detalle" placeholder="Ej.: 12' Juan Pérez (Local)&#10;38' Pedro Soto (Visitante)">{{ partido.goles_detalle or '' }}</textarea>
+        <label for="disciplina_detalle">🟨🟥 Disciplina</label>
+        <textarea id="disciplina_detalle" name="disciplina_detalle" placeholder="Ej.: 25' Juan Pérez — Amarilla&#10;70' Pedro Soto — Roja">{{ partido.disciplina_detalle or '' }}</textarea>
+        <label for="observaciones_acta">📌 Observaciones</label>
+        <textarea id="observaciones_acta" name="observaciones_acta" placeholder="Incidencias, atrasos, reclamos u otras observaciones del partido.">{{ partido.observaciones_acta or '' }}</textarea>
+        <div class="actions"><button class="btn primary" type="submit">💾 Guardar acta</button><a class="btn" href="{{ url_for('resultados_campeonato', campeonato_id=campeonato.id) }}">📝 Ir a resultados</a></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card"><h2>👥 Nómina registrada · {{ partido.local_club.nombre }}</h2>{% if jugadores_local %}<div class="roster">{% for jugador in jugadores_local %}<div class="player">{{ jugador.nombre_completo }} <span style="color:#64748b">· {{ jugador.rut }}</span></div>{% endfor %}</div>{% else %}<div class="empty">No hay jugadores registrados con este club.</div>{% endif %}</div>
+    <div class="card"><h2>👥 Nómina registrada · {{ partido.visitante_club.nombre }}</h2>{% if jugadores_visitante %}<div class="roster">{% for jugador in jugadores_visitante %}<div class="player">{{ jugador.nombre_completo }} <span style="color:#64748b">· {{ jugador.rut }}</span></div>{% endfor %}</div>{% else %}<div class="empty">No hay jugadores registrados con este club.</div>{% endif %}</div>
+  </div>
+
+  <div class="card" style="margin-top:15px"><h2>✍️ Validación</h2><p class="hint">La firma se completa en la copia impresa del acta. La exportación Word incluye estos espacios.</p><div class="sign"><div class="line">Árbitro</div><div class="line">Club de turno</div></div></div>
+</div>
+{% endblock %}
