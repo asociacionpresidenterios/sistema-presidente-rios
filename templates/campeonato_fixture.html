@@ -28,6 +28,7 @@
     <div><h1>⚽ Fixture — {{ campeonato.nombre }}</h1><p>{{ campeonato.serie }} · Temporada {{ campeonato.temporada }}</p></div>
     <div style="display:flex;gap:9px;flex-wrap:wrap">
       <a class="btn light" href="{{ url_for('detalle_campeonato', campeonato_id=campeonato.id) }}">← Campeonato</a>
+      {% if partidos %}<a class="btn success" href="{{ url_for('exportar_fixture_word', campeonato_id=campeonato.id) }}">📄 Exportar jornadas a Word</a>{% endif %}
       <a class="btn light" href="{{ url_for('resultados_campeonato', campeonato_id=campeonato.id) }}">📝 Resultados</a>
       <a class="btn light" href="{{ url_for('campeonatos') }}">🏆 Campeonatos</a>
     </div>
@@ -42,6 +43,7 @@
       <div class="stat"><small>Partidos</small><strong>{{ partidos|length }}</strong></div>
       <div class="stat"><small>Formato</small><strong>1 rueda</strong></div>
     </div>
+    {% if partidos %}<div style="margin-top:10px;padding:10px 12px;border-radius:10px;background:#eff6ff;color:#1e3a8a;font-size:12px"><strong>📄 Exportación:</strong> el botón “Exportar jornadas a Word” genera un documento con <strong>una jornada por página</strong>, incluyendo fecha, horario, cancha, partidos, club libre y club de turno, listo para usar como base de tus afiches.</div>{% endif %}
 
     {% if clubes_participantes|length >= 2 %}
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
