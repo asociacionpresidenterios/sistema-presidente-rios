@@ -18,6 +18,14 @@ from flask import (
 from flask_sqlalchemy import SQLAlchemy
 from openpyxl import load_workbook
 
+from docx import Document
+from docx.enum.section import WD_SECTION
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
+from docx.shared import Cm, Pt
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+
 
 # ============================================================
 # CONFIGURACIÓN
@@ -3664,6 +3672,179 @@ def generar_calendario_todos_contra_todos(club_ids):
         ]
 
     return calendario
+
+
+@app.route("/campeonatos/<int:campeonato_id>/fixture/exportar-word")
+def exportar_fixture_word(campeonato_id):
+    """Exporta todas las jornadas del fixture a un documento Word, una jornada por página."""
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+
+    partidos = (
+        Partido.query
+        .filter_by(campeonato_id=campeonato.id)
+        .order_by(Partido.jornada, Partido.fecha, Partido.hora, Partido.id)
+        .all()
+    )
+
+    if not partidos:
+        flash("No hay partidos para exportar. Primero genera el fixture.", "error")
+        return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+
+    jornadas = {}
+    for partido in partidos:
+        jornadas.setdefault(partido.jornada, []).append(partido)
+
+    clubes_participantes = (
+        CampeonatoClub.query
+        .filter_by(campeonato_id=campeonato.id)
+        .join(Club, CampeonatoClub.club_id == Club.id)
+        .order_by(Club.nombre)
+        .all()
+    )
+    todos_los_clubes = {registro.club_id: registro.club for registro in clubes_participantes}
+
+    # Documento pensado como base para crear afiches: cada jornada ocupa una página.
+    doc = Document()
+    section = doc.sections[0]
+    section.top_margin = Cm(1.4)
+    section.bottom_margin = Cm(1.4)
+    section.left_margin = Cm(1.5)
+    section.right_margin = Cm(1.5)
+
+    styles = doc.styles
+    styles["Normal"].font.name = "Arial"
+    styles["Normal"].font.size = Pt(11)
+
+    def sombrear_celda(cell, fill):
+        tcPr = cell._tc.get_or_add_tcPr()
+        shd = tcPr.find(qn("w:shd"))
+        if shd is None:
+            shd = OxmlElement("w:shd")
+            tcPr.append(shd)
+        shd.set(qn("w:fill"), fill)
+
+    def bordes_celda(cell, color="D1D5DB", size="8"):
+        tc = cell._tc
+        tcPr = tc.get_or_add_tcPr()
+        borders = tcPr.first_child_found_in("w:tcBorders")
+        if borders is None:
+            borders = OxmlElement("w:tcBorders")
+            tcPr.append(borders)
+        for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+            tag = "w:" + edge
+            element = borders.find(qn(tag))
+            if element is None:
+                element = OxmlElement(tag)
+                borders.append(element)
+            element.set(qn("w:val"), "single")
+            element.set(qn("w:sz"), size)
+            element.set(qn("w:color"), color)
+
+    jornadas_items = list(jornadas.items())
+    for indice, (jornada, lista) in enumerate(jornadas_items):
+        if indice > 0:
+            doc.add_page_break()
+
+        titulo = doc.add_paragraph()
+        titulo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = titulo.add_run(f"JORNADA {jornada}")
+        run.bold = True
+        run.font.name = "Arial"
+        run.font.size = Pt(28)
+
+        subtitulo = doc.add_paragraph()
+        subtitulo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = subtitulo.add_run(campeonato.nombre)
+        run.bold = True
+        run.font.size = Pt(17)
+
+        info = doc.add_paragraph()
+        info.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        fechas = [p.fecha.strftime("%d/%m/%Y") for p in lista if p.fecha]
+        horas = [p.hora for p in lista if p.hora]
+        canchas = sorted({p.cancha for p in lista if p.cancha})
+        fecha_txt = fechas[0] if fechas and len(set(fechas)) == 1 else "Fecha por definir"
+        hora_txt = horas[0] if horas and len(set(horas)) == 1 else "Horarios según programación"
+        cancha_txt = " · ".join(canchas) if canchas else "Cancha por definir"
+        run = info.add_run(f"{campeonato.serie} · Temporada {campeonato.temporada}\n{fecha_txt} · {hora_txt} · {cancha_txt}")
+        run.font.size = Pt(12)
+
+        clubes_que_juegan = set()
+        for p in lista:
+            clubes_que_juegan.add(p.local_club_id)
+            clubes_que_juegan.add(p.visitante_club_id)
+        libres = [todos_los_clubes[cid] for cid in todos_los_clubes if cid not in clubes_que_juegan]
+
+        libre_p = doc.add_paragraph()
+        libre_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        libre_run = libre_p.add_run(
+            "🆓 LIBRE: " + ", ".join(c.nombre for c in libres) if libres else "SIN CLUB LIBRE"
+        )
+        libre_run.bold = True
+        libre_run.font.size = Pt(14)
+
+        tabla = doc.add_table(rows=1, cols=5)
+        tabla.autofit = False
+        anchos = [Cm(1.5), Cm(5.1), Cm(1.7), Cm(5.1), Cm(4.0)]
+        encabezados = ["N°", "LOCAL", "VS", "VISITANTE", "PROGRAMACIÓN"]
+        for i, texto in enumerate(encabezados):
+            cell = tabla.rows[0].cells[i]
+            cell.width = anchos[i]
+            cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+            sombrear_celda(cell, "1F2937")
+            bordes_celda(cell, "FFFFFF", "10")
+            para = cell.paragraphs[0]
+            para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            r = para.add_run(texto)
+            r.bold = True
+            r.font.size = Pt(10)
+
+        for numero, partido in enumerate(lista, start=1):
+            cells = tabla.add_row().cells
+            for i, cell in enumerate(cells):
+                cell.width = anchos[i]
+                cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+                bordes_celda(cell)
+                cell.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+            valores = [
+                str(numero),
+                partido.local_club.nombre,
+                "VS",
+                partido.visitante_club.nombre,
+                f"{partido.fecha.strftime('%d/%m/%Y') if partido.fecha else 'Sin fecha'}\n{partido.hora or 'Sin hora'}\n{partido.cancha or 'Sin cancha'}"
+            ]
+            for i, valor in enumerate(valores):
+                r = cells[i].paragraphs[0].add_run(valor)
+                r.bold = i in (1, 2, 3)
+                r.font.size = Pt(11 if i in (1, 3) else 10)
+
+            # Segunda línea opcional para el club de turno.
+            if partido.turno_club:
+                p = cells[4].add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                r = p.add_run(f"Turno: {partido.turno_club.nombre}")
+                r.bold = True
+                r.font.size = Pt(9)
+
+        nota = doc.add_paragraph()
+        nota.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = nota.add_run("Documento base para diseño de afiche · Asociación Presidente Ríos")
+        r.italic = True
+        r.font.size = Pt(9)
+
+    salida = BytesIO()
+    doc.save(salida)
+    salida.seek(0)
+
+    nombre_seguro = "".join(c if c.isalnum() or c in " _-" else "_" for c in campeonato.nombre).strip() or "fixture"
+    filename = f"Fixture_{nombre_seguro}.docx"
+
+    return Response(
+        salida.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
 
 
 @app.route("/campeonatos/<int:campeonato_id>/fixture")
