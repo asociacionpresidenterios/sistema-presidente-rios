@@ -117,37 +117,12 @@ class Club(db.Model):
         default=True
     )
 
-    logo = db.Column(
-        db.LargeBinary,
-        nullable=True
-    )
-
-    logo_mimetype = db.Column(
-        db.String(50),
-        nullable=True
-    )
-
     campeonatos_participantes = db.relationship(
         "CampeonatoClub",
         back_populates="club",
         cascade="all, delete-orphan",
         lazy=True
     )
-
-
-# ============================================================
-# IDENTIDAD DE LA ASOCIACIÓN
-# ============================================================
-
-class IdentidadAsociacion(db.Model):
-
-    id = db.Column(db.Integer, primary_key=True)
-
-    nombre = db.Column(db.String(160), nullable=False, default="Asociación Presidente Ríos")
-    subtitulo = db.Column(db.String(160), nullable=True, default="Sistema de Gestión Deportiva")
-    lema = db.Column(db.String(255), nullable=True)
-    logo = db.Column(db.LargeBinary, nullable=True)
-    logo_mimetype = db.Column(db.String(50), nullable=True)
 
 
 # ============================================================
@@ -331,26 +306,6 @@ class Partido(db.Model):
         db.ForeignKey("club.id"),
         nullable=True,
         index=True
-    )
-
-    arbitro = db.Column(
-        db.String(160),
-        nullable=True
-    )
-
-    observaciones_acta = db.Column(
-        db.Text,
-        nullable=True
-    )
-
-    goles_detalle = db.Column(
-        db.Text,
-        nullable=True
-    )
-
-    disciplina_detalle = db.Column(
-        db.Text,
-        nullable=True
     )
 
     goles_local = db.Column(
@@ -572,6 +527,37 @@ class Gol(db.Model):
 
 
 # ============================================================
+# V5.7 — ACTA DIGITAL / NÓMINA DE PARTIDO
+# ============================================================
+
+class ActaPartido(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    partido_id = db.Column(db.Integer, db.ForeignKey("partido.id"), nullable=False, unique=True, index=True)
+    numero_acta = db.Column(db.String(40), nullable=True)
+    arbitro = db.Column(db.String(160), nullable=True)
+    observaciones = db.Column(db.Text, nullable=True)
+    estado = db.Column(db.String(30), nullable=False, default="Borrador")
+    partido = db.relationship("Partido", backref=db.backref("acta", uselist=False, cascade="all, delete-orphan"))
+
+class PartidoJugador(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    partido_id = db.Column(db.Integer, db.ForeignKey("partido.id"), nullable=False, index=True)
+    jugador_id = db.Column(db.Integer, db.ForeignKey("jugador.id"), nullable=False, index=True)
+    equipo = db.Column(db.String(20), nullable=False)
+    condicion = db.Column(db.String(20), nullable=False, default="Suplente")
+    capitan = db.Column(db.Boolean, nullable=False, default=False)
+    ingreso = db.Column(db.String(10), nullable=True)
+    salida = db.Column(db.String(10), nullable=True)
+    goles = db.Column(db.Integer, nullable=False, default=0)
+    amarillas = db.Column(db.Integer, nullable=False, default=0)
+    rojas = db.Column(db.Integer, nullable=False, default=0)
+    observaciones = db.Column(db.String(255), nullable=True)
+    partido = db.relationship("Partido", backref=db.backref("nomina", lazy=True, cascade="all, delete-orphan"))
+    jugador = db.relationship("Jugador", backref=db.backref("participaciones_partidos", lazy=True))
+    __table_args__ = (db.UniqueConstraint("partido_id", "jugador_id", name="uq_partido_jugador"),)
+
+
+# ============================================================
 # CREACIÓN / ACTUALIZACIÓN SEGURA DE BASE DE DATOS
 # ============================================================
 
@@ -742,14 +728,6 @@ def preparar_vinculos_campeonato():
             },
             "partido": {
                 "turno_club_id": "INTEGER",
-                "arbitro": "VARCHAR(160)",
-                "observaciones_acta": "TEXT",
-                "goles_detalle": "TEXT",
-                "disciplina_detalle": "TEXT",
-            },
-            "club": {
-                "logo": "BYTEA",
-                "logo_mimetype": "VARCHAR(50)",
             },
         }
 
@@ -768,10 +746,9 @@ def preparar_vinculos_campeonato():
                         f"ADD COLUMN IF NOT EXISTS {nombre} {tipo}"
                     )
                 elif dialecto == "sqlite":
-                    tipo_sqlite = "BLOB" if tipo == "BYTEA" else tipo
                     sql = (
                         f"ALTER TABLE {tabla} "
-                        f"ADD COLUMN {nombre} {tipo_sqlite}"
+                        f"ADD COLUMN {nombre} {tipo}"
                     )
                 else:
                     # Para otros motores dejamos que SQLAlchemy reporte el
@@ -3324,107 +3301,6 @@ def nueva_serie():
 
 
 # ============================================================
-# IDENTIDAD VISUAL — ASOCIACIÓN Y ESCUDOS
-# ============================================================
-
-TIPOS_IMAGEN_PERMITIDOS = {"image/jpeg", "image/png", "image/webp"}
-MAX_LOGO_BYTES = 5 * 1024 * 1024
-
-def leer_logo_subido(campo="logo"):
-    archivo = request.files.get(campo)
-    if not archivo or not archivo.filename:
-        return None, None, None
-    mimetype = (archivo.mimetype or "").lower()
-    if mimetype not in TIPOS_IMAGEN_PERMITIDOS:
-        return None, None, "El logo debe ser JPG, PNG o WEBP."
-    contenido = archivo.read()
-    if not contenido:
-        return None, None, "El archivo seleccionado está vacío."
-    if len(contenido) > MAX_LOGO_BYTES:
-        return None, None, "El logo no puede superar los 5 MB."
-    return contenido, mimetype, None
-
-@app.route("/identidad")
-def identidad_visual():
-    identidad = IdentidadAsociacion.query.first()
-    if identidad is None:
-        identidad = IdentidadAsociacion()
-        db.session.add(identidad)
-        db.session.commit()
-    clubes = Club.query.order_by(Club.nombre).all()
-    return render_template("identidad.html", identidad=identidad, clubes=clubes)
-
-@app.route("/identidad/guardar", methods=["POST"])
-def guardar_identidad():
-    identidad = IdentidadAsociacion.query.first()
-    if identidad is None:
-        identidad = IdentidadAsociacion()
-        db.session.add(identidad)
-    identidad.nombre = request.form.get("nombre", "").strip() or "Asociación Presidente Ríos"
-    identidad.subtitulo = request.form.get("subtitulo", "").strip() or "Sistema de Gestión Deportiva"
-    identidad.lema = request.form.get("lema", "").strip() or None
-    logo, mimetype, error = leer_logo_subido()
-    if error:
-        flash(error, "error")
-        return redirect(url_for("identidad_visual"))
-    if logo:
-        identidad.logo = logo
-        identidad.logo_mimetype = mimetype
-    db.session.commit()
-    flash("Identidad de la asociación actualizada correctamente.", "success")
-    return redirect(url_for("identidad_visual"))
-
-@app.route("/identidad/logo/eliminar", methods=["POST"])
-def eliminar_logo_asociacion():
-    identidad = IdentidadAsociacion.query.first()
-    if identidad:
-        identidad.logo = None
-        identidad.logo_mimetype = None
-        db.session.commit()
-    flash("Logo de la asociación eliminado.", "success")
-    return redirect(url_for("identidad_visual"))
-
-@app.route("/clubes/<int:club_id>/logo", methods=["POST"])
-def guardar_logo_club(club_id):
-    club = db.get_or_404(Club, club_id)
-    logo, mimetype, error = leer_logo_subido()
-    if error:
-        flash(error, "error")
-        return redirect(url_for("identidad_visual"))
-    if not logo:
-        flash("Selecciona un archivo de imagen para el escudo.", "error")
-        return redirect(url_for("identidad_visual"))
-    club.logo = logo
-    club.logo_mimetype = mimetype
-    db.session.commit()
-    flash(f"Escudo de {club.nombre} actualizado correctamente.", "success")
-    return redirect(url_for("identidad_visual"))
-
-@app.route("/clubes/<int:club_id>/logo/eliminar", methods=["POST"])
-def eliminar_logo_club(club_id):
-    club = db.get_or_404(Club, club_id)
-    club.logo = None
-    club.logo_mimetype = None
-    db.session.commit()
-    flash(f"Escudo de {club.nombre} eliminado.", "success")
-    return redirect(url_for("identidad_visual"))
-
-@app.route("/imagenes/club/<int:club_id>")
-def imagen_logo_club(club_id):
-    club = db.get_or_404(Club, club_id)
-    if not club.logo:
-        return Response(status=404)
-    return Response(club.logo, mimetype=club.logo_mimetype or "image/png", headers={"Cache-Control": "public, max-age=3600"})
-
-@app.route("/imagenes/asociacion/logo")
-def imagen_logo_asociacion():
-    identidad = IdentidadAsociacion.query.first()
-    if not identidad or not identidad.logo:
-        return Response(status=404)
-    return Response(identidad.logo, mimetype=identidad.logo_mimetype or "image/png", headers={"Cache-Control": "public, max-age=3600"})
-
-
-# ============================================================
 # ACTIVAR / DESACTIVAR CLUB
 # ============================================================
 
@@ -3760,137 +3636,6 @@ def panel_campeonato(campeonato_id):
         total_amarillas=total_amarillas,
         total_rojas=total_rojas,
         total_suspensiones=total_suspensiones,
-    )
-
-
-@app.route("/campeonatos/<int:campeonato_id>/publicaciones")
-def publicaciones_campeonato(campeonato_id):
-    """Centro de publicaciones: programación, resultados, tabla, goleadores y disciplina."""
-    campeonato = db.get_or_404(Campeonato, campeonato_id)
-
-    clubes_participantes = (CampeonatoClub.query
-        .filter_by(campeonato_id=campeonato.id)
-        .join(Club, CampeonatoClub.club_id == Club.id)
-        .order_by(Club.nombre).all())
-    club_ids = {r.club_id for r in clubes_participantes}
-
-    partidos = (Partido.query.filter_by(campeonato_id=campeonato.id)
-        .order_by(Partido.jornada, Partido.fecha, Partido.hora, Partido.id).all())
-    jornadas = {}
-    for p in partidos:
-        jornadas.setdefault(p.jornada, []).append(p)
-
-    # Próxima jornada: primera jornada con algún partido no finalizado.
-    jornada_proxima = None
-    for j in sorted(jornadas):
-        if any((p.estado or '').lower() != 'finalizado' for p in jornadas[j]):
-            jornada_proxima = j
-            break
-    if jornada_proxima is None and jornadas:
-        jornada_proxima = max(jornadas)
-
-    # Tabla de posiciones.
-    tabla = {r.club_id: {'club': r.club, 'pj':0, 'pg':0, 'pe':0, 'pp':0, 'gf':0, 'gc':0, 'dg':0, 'pts':0}
-             for r in clubes_participantes}
-    for p in partidos:
-        if p.estado != 'Finalizado' or p.local_club_id not in tabla or p.visitante_club_id not in tabla:
-            continue
-        gl = p.goles_local if p.goles_local is not None else 0
-        gv = p.goles_visitante if p.goles_visitante is not None else 0
-        l, v = tabla[p.local_club_id], tabla[p.visitante_club_id]
-        l['pj'] += 1; v['pj'] += 1
-        l['gf'] += gl; l['gc'] += gv; v['gf'] += gv; v['gc'] += gl
-        if gl > gv: l['pg'] += 1; v['pp'] += 1; l['pts'] += 3
-        elif gv > gl: v['pg'] += 1; l['pp'] += 1; v['pts'] += 3
-        else: l['pe'] += 1; v['pe'] += 1; l['pts'] += 1; v['pts'] += 1
-    filas_tabla = list(tabla.values())
-    for f in filas_tabla: f['dg'] = f['gf'] - f['gc']
-    filas_tabla.sort(key=lambda f: (-f['pts'], -f['dg'], -f['gf'], f['club'].nombre.lower()))
-    for pos, f in enumerate(filas_tabla, 1): f['pos'] = pos
-
-    # Estadísticas por campeonato; se protegen consultas por compatibilidad con bases antiguas.
-    try:
-        goleadores, amarillas, rojas, suspensiones = estadisticas_campeonato_data(campeonato)
-    except Exception:
-        db.session.rollback()
-        goleadores, amarillas, rojas, suspensiones = [], [], [], []
-
-    identidad = IdentidadAsociacion.query.first()
-    if identidad is None:
-        identidad = IdentidadAsociacion(nombre='Asociación Presidente Ríos', subtitulo='Sistema de Gestión Deportiva')
-        db.session.add(identidad)
-        db.session.commit()
-
-    total_finalizados = sum(1 for p in partidos if p.estado == 'Finalizado')
-    return render_template(
-        'campeonato_publicaciones.html',
-        campeonato=campeonato,
-        identidad=identidad,
-        clubes_participantes=clubes_participantes,
-        partidos=partidos,
-        jornadas=jornadas,
-        jornada_proxima=jornada_proxima,
-        filas_tabla=filas_tabla,
-        goleadores=goleadores[:10],
-        amarillas=amarillas[:10],
-        rojas=rojas[:10],
-        suspensiones=suspensiones[:10],
-        total_partidos=len(partidos),
-        total_finalizados=total_finalizados,
-    )
-
-@app.route("/campeonatos/<int:campeonato_id>/afiches")
-def afiches_campeonato(campeonato_id):
-    """Generador de afiches del fixture, listo para imprimir o guardar como PDF."""
-    campeonato = db.get_or_404(Campeonato, campeonato_id)
-    clubes_participantes = (
-        CampeonatoClub.query
-        .filter_by(campeonato_id=campeonato.id)
-        .join(Club, CampeonatoClub.club_id == Club.id)
-        .order_by(Club.nombre)
-        .all()
-    )
-    partidos = (
-        Partido.query
-        .filter_by(campeonato_id=campeonato.id)
-        .order_by(Partido.jornada, Partido.fecha, Partido.hora, Partido.id)
-        .all()
-    )
-    jornadas = {}
-    for partido in partidos:
-        jornadas.setdefault(partido.jornada, []).append(partido)
-
-    todos = {r.club_id: r.club for r in clubes_participantes}
-    libres_por_jornada = {}
-    for jornada, lista in jornadas.items():
-        jugando = set()
-        for partido in lista:
-            jugando.add(partido.local_club_id)
-            jugando.add(partido.visitante_club_id)
-        libres_por_jornada[jornada] = [club for cid, club in todos.items() if cid not in jugando]
-
-    jornada_seleccionada = request.args.get("jornada", type=int)
-    if jornada_seleccionada not in jornadas and jornadas:
-        jornada_seleccionada = min(jornadas)
-
-    identidad = IdentidadAsociacion.query.first()
-    if identidad is None:
-        identidad = IdentidadAsociacion(
-            nombre="Asociación Presidente Ríos",
-            subtitulo="Sistema de Gestión Deportiva"
-        )
-        db.session.add(identidad)
-        db.session.commit()
-
-    return render_template(
-        "campeonato_afiches.html",
-        campeonato=campeonato,
-        clubes_participantes=clubes_participantes,
-        jornadas=jornadas,
-        libres_por_jornada=libres_por_jornada,
-        jornada_seleccionada=jornada_seleccionada,
-        identidad_nombre=identidad.nombre,
-        identidad_logo_disponible=bool(identidad.logo),
     )
 
 
@@ -4603,96 +4348,6 @@ def regenerar_fixture_nuevo(campeonato_id):
 
 
 # ============================================================
-# V5.6 — ACTA DIGITAL DEL PARTIDO
-# ============================================================
-
-@app.route("/campeonatos/<int:campeonato_id>/partidos/<int:partido_id>/acta", methods=["GET", "POST"])
-def acta_partido(campeonato_id, partido_id):
-    campeonato = db.get_or_404(Campeonato, campeonato_id)
-    partido = db.get_or_404(Partido, partido_id)
-
-    if partido.campeonato_id != campeonato.id:
-        flash("El partido no pertenece a este campeonato.", "error")
-        return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
-
-    if request.method == "POST":
-        partido.arbitro = request.form.get("arbitro", "").strip() or None
-        partido.goles_detalle = request.form.get("goles_detalle", "").strip() or None
-        partido.disciplina_detalle = request.form.get("disciplina_detalle", "").strip() or None
-        partido.observaciones_acta = request.form.get("observaciones_acta", "").strip() or None
-        try:
-            db.session.commit()
-            flash("Acta actualizada correctamente.", "success")
-        except Exception as error:
-            db.session.rollback()
-            print("ERROR GUARDANDO ACTA:", repr(error))
-            flash("No fue posible guardar el acta.", "error")
-        return redirect(url_for("acta_partido", campeonato_id=campeonato.id, partido_id=partido.id))
-
-    jugadores_local = Jugador.query.filter_by(club=partido.local_club.nombre).order_by(Jugador.nombre_completo).all()
-    jugadores_visitante = Jugador.query.filter_by(club=partido.visitante_club.nombre).order_by(Jugador.nombre_completo).all()
-
-    return render_template(
-        "partido_acta.html",
-        campeonato=campeonato,
-        partido=partido,
-        jugadores_local=jugadores_local,
-        jugadores_visitante=jugadores_visitante,
-    )
-
-
-@app.route("/campeonatos/<int:campeonato_id>/partidos/<int:partido_id>/acta/word")
-def exportar_acta_word(campeonato_id, partido_id):
-    campeonato = db.get_or_404(Campeonato, campeonato_id)
-    partido = db.get_or_404(Partido, partido_id)
-    if partido.campeonato_id != campeonato.id:
-        flash("El partido no pertenece a este campeonato.", "error")
-        return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
-
-    try:
-        from io import BytesIO
-        from flask import send_file
-        from docx import Document
-        from docx.enum.text import WD_ALIGN_PARAGRAPH
-        from docx.shared import Pt
-
-        doc = Document()
-        title = doc.add_paragraph()
-        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = title.add_run("ASOCIACIÓN PRESIDENTE RÍOS")
-        run.bold = True; run.font.size = Pt(16)
-        sub = doc.add_paragraph()
-        sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        r = sub.add_run("ACTA OFICIAL DE PARTIDO")
-        r.bold = True; r.font.size = Pt(13)
-
-        doc.add_paragraph(f"Campeonato: {campeonato.nombre}")
-        doc.add_paragraph(f"Serie: {campeonato.serie or '—'}   |   Jornada: {partido.jornada}")
-        doc.add_paragraph(f"Fecha: {partido.fecha.strftime('%d/%m/%Y') if partido.fecha else '—'}   |   Hora: {partido.hora or '—'}")
-        doc.add_paragraph(f"Cancha: {partido.cancha or '—'}   |   Árbitro: {partido.arbitro or 'Pendiente'}")
-        doc.add_heading("Partido", level=2)
-        score = "Pendiente" if partido.goles_local is None or partido.goles_visitante is None else f"{partido.goles_local}  —  {partido.goles_visitante}"
-        doc.add_paragraph(f"{partido.local_club.nombre}    {score}    {partido.visitante_club.nombre}")
-        doc.add_paragraph(f"Club de turno: {partido.turno_club.nombre if partido.turno_club else 'Sin asignar'}")
-        doc.add_heading("Goles / incidencias de gol", level=2)
-        doc.add_paragraph(partido.goles_detalle or "Sin detalle registrado.")
-        doc.add_heading("Disciplina", level=2)
-        doc.add_paragraph(partido.disciplina_detalle or "Sin detalle registrado.")
-        doc.add_heading("Observaciones", level=2)
-        doc.add_paragraph(partido.observaciones_acta or "Sin observaciones.")
-        doc.add_paragraph("\nFirma árbitro: ______________________________")
-        doc.add_paragraph("Firma club de turno: ________________________")
-
-        out = BytesIO(); doc.save(out); out.seek(0)
-        filename = f"acta_jornada_{partido.jornada}_partido_{partido.id}.docx"
-        return send_file(out, as_attachment=True, download_name=filename, mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-    except Exception as error:
-        print("ERROR EXPORTANDO ACTA WORD:", repr(error))
-        flash("No fue posible exportar el acta a Word.", "error")
-        return redirect(url_for("acta_partido", campeonato_id=campeonato.id, partido_id=partido.id))
-
-
-# ============================================================
 # PASO 6 — REGISTRO DE RESULTADOS DEL CAMPEONATO
 # ============================================================
 
@@ -4964,6 +4619,84 @@ def registrar_disciplina_campeonato(campeonato_id):
     except Exception as error:
         db.session.rollback(); print('ERROR DISCIPLINA CAMPEONATO:',repr(error)); flash('No fue posible registrar la disciplina.','error')
     return redirect(url_for('estadisticas_campeonato',campeonato_id=campeonato.id))
+
+# ============================================================
+# V5.7 — ACTA DIGITAL Y CONTROL DE NÓMINA
+# ============================================================
+
+def jugadores_disponibles_para_equipo(campeonato, club):
+    return (Jugador.query.filter(Jugador.serie == campeonato.serie, Jugador.club == club.nombre)
+            .order_by(Jugador.nombre_completo).all())
+
+@app.route("/campeonatos/<int:campeonato_id>/partido/<int:partido_id>/acta", methods=["GET", "POST"])
+def acta_partido(campeonato_id, partido_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    partido = db.get_or_404(Partido, partido_id)
+    if partido.campeonato_id != campeonato.id:
+        flash("El partido no pertenece a este campeonato.", "error")
+        return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+    if request.method == "POST":
+        try:
+            acta = partido.acta
+            if acta is None:
+                acta = ActaPartido(partido_id=partido.id)
+                db.session.add(acta)
+            acta.numero_acta = request.form.get("numero_acta", "").strip() or None
+            acta.arbitro = request.form.get("arbitro", "").strip() or None
+            acta.observaciones = request.form.get("observaciones", "").strip() or None
+            acta.estado = request.form.get("estado", "Borrador").strip() or "Borrador"
+            PartidoJugador.query.filter_by(partido_id=partido.id).delete(synchronize_session=False)
+            jugadores_ids = request.form.getlist("jugador_id")
+            equipos = request.form.getlist("equipo")
+            condiciones = request.form.getlist("condicion")
+            capitanes = request.form.getlist("capitan")
+            ingresos = request.form.getlist("ingreso"); salidas = request.form.getlist("salida")
+            goles = request.form.getlist("goles"); amarillas = request.form.getlist("amarillas"); rojas = request.form.getlist("rojas")
+            observs = request.form.getlist("obs_jugador")
+            permitidos = {"local": {j.id for j in jugadores_disponibles_para_equipo(campeonato, partido.local_club)},
+                          "visitante": {j.id for j in jugadores_disponibles_para_equipo(campeonato, partido.visitante_club)}}
+            for i, raw_id in enumerate(jugadores_ids):
+                if not raw_id.strip(): continue
+                jid=int(raw_id); equipo=equipos[i] if i < len(equipos) else "local"
+                if jid not in permitidos.get(equipo, set()): raise ValueError("Jugador no perteneciente al club seleccionado.")
+                def iv(lst):
+                    try: return max(0, int(lst[i])) if i < len(lst) and lst[i].strip() else 0
+                    except (ValueError, TypeError): return 0
+                db.session.add(PartidoJugador(partido_id=partido.id, jugador_id=jid, equipo=equipo,
+                    condicion=condiciones[i] if i < len(condiciones) and condiciones[i] in {"Titular","Suplente"} else "Suplente",
+                    capitan=str(jid) in capitanes, ingreso=(ingresos[i].strip() if i < len(ingresos) else None) or None,
+                    salida=(salidas[i].strip() if i < len(salidas) else None) or None, goles=iv(goles), amarillas=iv(amarillas), rojas=iv(rojas),
+                    observaciones=(observs[i].strip() if i < len(observs) else None) or None))
+            db.session.commit(); flash("Acta y nómina guardadas correctamente.", "success")
+        except Exception as error:
+            db.session.rollback(); print("ERROR GUARDANDO ACTA V5.7:", repr(error)); flash("No fue posible guardar el acta.", "error")
+        return redirect(url_for("acta_partido", campeonato_id=campeonato.id, partido_id=partido.id))
+    return render_template("partido_acta_nomina.html", campeonato=campeonato, partido=partido, acta=partido.acta, nomina=partido.nomina,
+                           locales=jugadores_disponibles_para_equipo(campeonato, partido.local_club),
+                           visitantes=jugadores_disponibles_para_equipo(campeonato, partido.visitante_club))
+
+@app.route("/campeonatos/<int:campeonato_id>/partido/<int:partido_id>/acta/word")
+def exportar_acta_word(campeonato_id, partido_id):
+    campeonato=db.get_or_404(Campeonato,campeonato_id); partido=db.get_or_404(Partido,partido_id)
+    if partido.campeonato_id != campeonato.id: return redirect(url_for("fixture_campeonato",campeonato_id=campeonato.id))
+    acta=partido.acta; doc=Document(); sec=doc.sections[0]
+    sec.top_margin=Cm(1.5); sec.bottom_margin=Cm(1.5); sec.left_margin=Cm(1.5); sec.right_margin=Cm(1.5)
+    p=doc.add_paragraph(); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; r=p.add_run("ASOCIACIÓN DE FÚTBOL PRESIDENTE RÍOS"); r.bold=True; r.font.size=Pt(16)
+    p=doc.add_paragraph(); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; r=p.add_run(f"ACTA DIGITAL · {campeonato.nombre}"); r.bold=True
+    t=doc.add_table(rows=6,cols=2); t.style="Table Grid"
+    datos=[("Acta",acta.numero_acta if acta and acta.numero_acta else "-"),("Jornada",str(partido.jornada)),("Fecha",partido.fecha.strftime("%d/%m/%Y") if partido.fecha else "-"),("Hora / Cancha",f"{partido.hora or '-'} · {partido.cancha or '-'}"),("Partido",f"{partido.local_club.nombre} vs {partido.visitante_club.nombre}"),("Árbitro",acta.arbitro if acta and acta.arbitro else "-")]
+    for row,(a,b) in zip(t.rows,datos): row.cells[0].text=a; row.cells[1].text=b
+    doc.add_paragraph("NÓMINA Y EVENTOS")
+    nt=doc.add_table(rows=1,cols=8); nt.style="Table Grid"
+    for c,h in zip(nt.rows[0].cells,["Jugador","Equipo","Condición","Capitán","Ingreso","Salida","Goles","Tarjetas"]): c.text=h
+    for n in sorted(partido.nomina,key=lambda x:(x.equipo,x.jugador.nombre_completo)):
+        vals=[n.jugador.nombre_completo,n.equipo.title(),n.condicion,"Sí" if n.capitan else "",n.ingreso or "",n.salida or "",str(n.goles),f"A:{n.amarillas} / R:{n.rojas}"]
+        for c,v in zip(nt.add_row().cells,vals): c.text=v
+    if acta and acta.observaciones: doc.add_paragraph("Observaciones: "+acta.observaciones)
+    doc.add_paragraph("\n____________________________        ____________________________\nFirma Árbitro                                      Firma Club de Turno")
+    out=BytesIO(); doc.save(out); out.seek(0); safe="".join(c if c.isalnum() or c in " _-" else "_" for c in partido.local_club.nombre+"_vs_"+partido.visitante_club.nombre)
+    return Response(out.getvalue(),mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",headers={"Content-Disposition":f'attachment; filename="Acta_{safe}.docx"'})
+
 
 # ============================================================
 # HEALTH CHECK
