@@ -1125,6 +1125,94 @@ def obtener_datos_formulario_jugador():
 
 
 # ============================================================
+# DASHBOARD GENERAL — V5 PRO
+# ============================================================
+
+@app.route("/dashboard")
+def dashboard():
+
+    hoy = date.today()
+
+    # Indicadores generales
+    total_jugadores = Jugador.query.count()
+    total_clubes = Club.query.filter_by(activo=True).count()
+    total_series = Serie.query.filter_by(activo=True).count()
+    total_campeonatos = Campeonato.query.count()
+    campeonatos_activos = Campeonato.query.filter_by(estado="Activo").count()
+    total_partidos = Partido.query.count()
+    partidos_jugados = Partido.query.filter_by(estado="Jugado").count()
+    partidos_programados = Partido.query.filter_by(estado="Programado").count()
+
+    # Campeonatos activos / recientes
+    campeonatos = (
+        Campeonato.query
+        .order_by(Campeonato.id.desc())
+        .limit(8)
+        .all()
+    )
+
+    # Próximos partidos programados. Se priorizan partidos con fecha futura,
+    # pero también se muestran los que aún no tienen fecha configurada.
+    partidos_proximos = (
+        Partido.query
+        .filter_by(estado="Programado")
+        .filter(Partido.fecha.isnot(None))
+        .filter(Partido.fecha >= hoy)
+        .order_by(Partido.fecha.asc(), Partido.hora.asc(), Partido.id.asc())
+        .limit(8)
+        .all()
+    )
+
+    if not partidos_proximos:
+        partidos_proximos = (
+            Partido.query
+            .filter_by(estado="Programado")
+            .order_by(Partido.fecha.asc(), Partido.hora.asc(), Partido.id.asc())
+            .limit(8)
+            .all()
+        )
+
+    # Últimos resultados registrados
+    ultimos_resultados = (
+        Partido.query
+        .filter(Partido.estado == "Jugado")
+        .order_by(Partido.fecha.desc(), Partido.id.desc())
+        .limit(8)
+        .all()
+    )
+
+    # Clubes con más jugadores inscritos en el registro general
+    jugadores_por_club = (
+        db.session.query(
+            Jugador.club,
+            db.func.count(Jugador.id).label("total")
+        )
+        .filter(Jugador.club.isnot(None), Jugador.club != "")
+        .group_by(Jugador.club)
+        .order_by(db.func.count(Jugador.id).desc(), Jugador.club.asc())
+        .limit(8)
+        .all()
+    )
+
+    return render_template(
+        "dashboard.html",
+        hoy=hoy,
+        total_jugadores=total_jugadores,
+        total_clubes=total_clubes,
+        total_series=total_series,
+        total_campeonatos=total_campeonatos,
+        campeonatos_activos=campeonatos_activos,
+        total_partidos=total_partidos,
+        partidos_jugados=partidos_jugados,
+        partidos_programados=partidos_programados,
+        campeonatos=campeonatos,
+        partidos_proximos=partidos_proximos,
+        ultimos_resultados=ultimos_resultados,
+        jugadores_por_club=jugadores_por_club
+    )
+
+
+# ============================================================
 # INICIO / LISTADO
 # ============================================================
 
