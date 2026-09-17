@@ -117,12 +117,37 @@ class Club(db.Model):
         default=True
     )
 
+    logo = db.Column(
+        db.LargeBinary,
+        nullable=True
+    )
+
+    logo_mimetype = db.Column(
+        db.String(50),
+        nullable=True
+    )
+
     campeonatos_participantes = db.relationship(
         "CampeonatoClub",
         back_populates="club",
         cascade="all, delete-orphan",
         lazy=True
     )
+
+
+# ============================================================
+# IDENTIDAD DE LA ASOCIACIÓN
+# ============================================================
+
+class IdentidadAsociacion(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    nombre = db.Column(db.String(160), nullable=False, default="Asociación Presidente Ríos")
+    subtitulo = db.Column(db.String(160), nullable=True, default="Sistema de Gestión Deportiva")
+    lema = db.Column(db.String(255), nullable=True)
+    logo = db.Column(db.LargeBinary, nullable=True)
+    logo_mimetype = db.Column(db.String(50), nullable=True)
 
 
 # ============================================================
@@ -698,6 +723,10 @@ def preparar_vinculos_campeonato():
             "partido": {
                 "turno_club_id": "INTEGER",
             },
+            "club": {
+                "logo": "BYTEA",
+                "logo_mimetype": "VARCHAR(50)",
+            },
         }
 
         for tabla, definiciones in columnas_nuevas.items():
@@ -715,9 +744,10 @@ def preparar_vinculos_campeonato():
                         f"ADD COLUMN IF NOT EXISTS {nombre} {tipo}"
                     )
                 elif dialecto == "sqlite":
+                    tipo_sqlite = "BLOB" if tipo == "BYTEA" else tipo
                     sql = (
                         f"ALTER TABLE {tabla} "
-                        f"ADD COLUMN {nombre} {tipo}"
+                        f"ADD COLUMN {nombre} {tipo_sqlite}"
                     )
                 else:
                     # Para otros motores dejamos que SQLAlchemy reporte el
@@ -3270,6 +3300,107 @@ def nueva_serie():
 
 
 # ============================================================
+# IDENTIDAD VISUAL — ASOCIACIÓN Y ESCUDOS
+# ============================================================
+
+TIPOS_IMAGEN_PERMITIDOS = {"image/jpeg", "image/png", "image/webp"}
+MAX_LOGO_BYTES = 5 * 1024 * 1024
+
+def leer_logo_subido(campo="logo"):
+    archivo = request.files.get(campo)
+    if not archivo or not archivo.filename:
+        return None, None, None
+    mimetype = (archivo.mimetype or "").lower()
+    if mimetype not in TIPOS_IMAGEN_PERMITIDOS:
+        return None, None, "El logo debe ser JPG, PNG o WEBP."
+    contenido = archivo.read()
+    if not contenido:
+        return None, None, "El archivo seleccionado está vacío."
+    if len(contenido) > MAX_LOGO_BYTES:
+        return None, None, "El logo no puede superar los 5 MB."
+    return contenido, mimetype, None
+
+@app.route("/identidad")
+def identidad_visual():
+    identidad = IdentidadAsociacion.query.first()
+    if identidad is None:
+        identidad = IdentidadAsociacion()
+        db.session.add(identidad)
+        db.session.commit()
+    clubes = Club.query.order_by(Club.nombre).all()
+    return render_template("identidad.html", identidad=identidad, clubes=clubes)
+
+@app.route("/identidad/guardar", methods=["POST"])
+def guardar_identidad():
+    identidad = IdentidadAsociacion.query.first()
+    if identidad is None:
+        identidad = IdentidadAsociacion()
+        db.session.add(identidad)
+    identidad.nombre = request.form.get("nombre", "").strip() or "Asociación Presidente Ríos"
+    identidad.subtitulo = request.form.get("subtitulo", "").strip() or "Sistema de Gestión Deportiva"
+    identidad.lema = request.form.get("lema", "").strip() or None
+    logo, mimetype, error = leer_logo_subido()
+    if error:
+        flash(error, "error")
+        return redirect(url_for("identidad_visual"))
+    if logo:
+        identidad.logo = logo
+        identidad.logo_mimetype = mimetype
+    db.session.commit()
+    flash("Identidad de la asociación actualizada correctamente.", "success")
+    return redirect(url_for("identidad_visual"))
+
+@app.route("/identidad/logo/eliminar", methods=["POST"])
+def eliminar_logo_asociacion():
+    identidad = IdentidadAsociacion.query.first()
+    if identidad:
+        identidad.logo = None
+        identidad.logo_mimetype = None
+        db.session.commit()
+    flash("Logo de la asociación eliminado.", "success")
+    return redirect(url_for("identidad_visual"))
+
+@app.route("/clubes/<int:club_id>/logo", methods=["POST"])
+def guardar_logo_club(club_id):
+    club = db.get_or_404(Club, club_id)
+    logo, mimetype, error = leer_logo_subido()
+    if error:
+        flash(error, "error")
+        return redirect(url_for("identidad_visual"))
+    if not logo:
+        flash("Selecciona un archivo de imagen para el escudo.", "error")
+        return redirect(url_for("identidad_visual"))
+    club.logo = logo
+    club.logo_mimetype = mimetype
+    db.session.commit()
+    flash(f"Escudo de {club.nombre} actualizado correctamente.", "success")
+    return redirect(url_for("identidad_visual"))
+
+@app.route("/clubes/<int:club_id>/logo/eliminar", methods=["POST"])
+def eliminar_logo_club(club_id):
+    club = db.get_or_404(Club, club_id)
+    club.logo = None
+    club.logo_mimetype = None
+    db.session.commit()
+    flash(f"Escudo de {club.nombre} eliminado.", "success")
+    return redirect(url_for("identidad_visual"))
+
+@app.route("/imagenes/club/<int:club_id>")
+def imagen_logo_club(club_id):
+    club = db.get_or_404(Club, club_id)
+    if not club.logo:
+        return Response(status=404)
+    return Response(club.logo, mimetype=club.logo_mimetype or "image/png", headers={"Cache-Control": "public, max-age=3600"})
+
+@app.route("/imagenes/asociacion/logo")
+def imagen_logo_asociacion():
+    identidad = IdentidadAsociacion.query.first()
+    if not identidad or not identidad.logo:
+        return Response(status=404)
+    return Response(identidad.logo, mimetype=identidad.logo_mimetype or "image/png", headers={"Cache-Control": "public, max-age=3600"})
+
+
+# ============================================================
 # ACTIVAR / DESACTIVAR CLUB
 # ============================================================
 
@@ -3642,6 +3773,15 @@ def afiches_campeonato(campeonato_id):
     if jornada_seleccionada not in jornadas and jornadas:
         jornada_seleccionada = min(jornadas)
 
+    identidad = IdentidadAsociacion.query.first()
+    if identidad is None:
+        identidad = IdentidadAsociacion(
+            nombre="Asociación Presidente Ríos",
+            subtitulo="Sistema de Gestión Deportiva"
+        )
+        db.session.add(identidad)
+        db.session.commit()
+
     return render_template(
         "campeonato_afiches.html",
         campeonato=campeonato,
@@ -3649,6 +3789,8 @@ def afiches_campeonato(campeonato_id):
         jornadas=jornadas,
         libres_por_jornada=libres_por_jornada,
         jornada_seleccionada=jornada_seleccionada,
+        identidad_nombre=identidad.nombre,
+        identidad_logo_disponible=bool(identidad.logo),
     )
 
 
