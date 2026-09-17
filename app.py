@@ -3677,12 +3677,28 @@ def fixture_campeonato(campeonato_id):
     for partido in partidos:
         jornadas.setdefault(partido.jornada, []).append(partido)
 
+    # Calculamos automáticamente el/los clubes libres de cada jornada.
+    # Para un todos-contra-todos con cantidad impar debe existir exactamente uno.
+    todos_los_clubes = {registro.club_id: registro.club for registro in clubes_participantes}
+    libres_por_jornada = {}
+    for jornada, lista_partidos in jornadas.items():
+        clubes_que_juegan = set()
+        for partido in lista_partidos:
+            clubes_que_juegan.add(partido.local_club_id)
+            clubes_que_juegan.add(partido.visitante_club_id)
+        libres_por_jornada[jornada] = [
+            todos_los_clubes[club_id]
+            for club_id in todos_los_clubes
+            if club_id not in clubes_que_juegan
+        ]
+
     return render_template(
         "campeonato_fixture.html",
         campeonato=campeonato,
         clubes_participantes=clubes_participantes,
         partidos=partidos,
-        jornadas=jornadas
+        jornadas=jornadas,
+        libres_por_jornada=libres_por_jornada
     )
 
 
@@ -3772,6 +3788,51 @@ def generar_fixture_campeonato(campeonato_id):
 
 
 @app.route(
+    "/campeonatos/<int:campeonato_id>/fixture/jornada/<int:jornada>/configurar",
+    methods=["POST"]
+)
+def configurar_jornada_fixture(campeonato_id, jornada):
+    """Asigna fecha, hora y cancha a todos los partidos de una jornada."""
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+
+    try:
+        partidos_jornada = (
+            Partido.query
+            .filter_by(campeonato_id=campeonato.id, jornada=jornada)
+            .all()
+        )
+
+        if not partidos_jornada:
+            raise ValueError("La jornada no tiene partidos.")
+
+        fecha_texto = request.form.get("fecha", "").strip()
+        if not fecha_texto:
+            raise ValueError("Debes indicar una fecha.")
+
+        fecha = datetime.strptime(fecha_texto, "%Y-%m-%d").date()
+        hora = request.form.get("hora", "").strip() or None
+        cancha = request.form.get("cancha", "").strip() or None
+
+        for partido in partidos_jornada:
+            partido.fecha = fecha
+            partido.hora = hora
+            partido.cancha = cancha
+
+        db.session.commit()
+        flash(
+            f"Jornada {jornada} actualizada: {fecha.strftime('%d/%m/%Y')} · {hora or 'sin hora'} · {cancha or 'sin cancha'}.",
+            "success"
+        )
+
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR CONFIGURANDO JORNADA DEL FIXTURE:", repr(error))
+        flash("No fue posible configurar la jornada. Revisa la fecha, horario y cancha.", "error")
+
+    return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+
+
+@app.route(
     "/campeonatos/<int:campeonato_id>/fixture/eliminar",
     methods=["POST"]
 )
@@ -3844,6 +3905,24 @@ def editar_partido_fixture(campeonato_id, partido_id):
             raise ValueError("El club local y visitante no pueden ser el mismo.")
         if local_id not in participantes or visitante_id not in participantes:
             raise ValueError("Los clubes seleccionados no pertenecen a este campeonato.")
+
+        # Evita que un club aparezca en dos partidos de la misma jornada.
+        otros_partidos = (
+            Partido.query
+            .filter(
+                Partido.campeonato_id == campeonato.id,
+                Partido.jornada == partido.jornada,
+                Partido.id != partido.id
+            )
+            .all()
+        )
+        ocupados = set()
+        for otro in otros_partidos:
+            ocupados.add(otro.local_club_id)
+            ocupados.add(otro.visitante_club_id)
+
+        if local_id in ocupados or visitante_id in ocupados:
+            raise ValueError("Uno de los clubes seleccionados ya juega en otro partido de esta jornada.")
 
         partido.local_club_id = local_id
         partido.visitante_club_id = visitante_id
