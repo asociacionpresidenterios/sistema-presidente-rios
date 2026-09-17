@@ -333,6 +333,26 @@ class Partido(db.Model):
         index=True
     )
 
+    arbitro = db.Column(
+        db.String(160),
+        nullable=True
+    )
+
+    observaciones_acta = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    goles_detalle = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    disciplina_detalle = db.Column(
+        db.Text,
+        nullable=True
+    )
+
     goles_local = db.Column(
         db.Integer,
         nullable=True
@@ -722,6 +742,10 @@ def preparar_vinculos_campeonato():
             },
             "partido": {
                 "turno_club_id": "INTEGER",
+                "arbitro": "VARCHAR(160)",
+                "observaciones_acta": "TEXT",
+                "goles_detalle": "TEXT",
+                "disciplina_detalle": "TEXT",
             },
             "club": {
                 "logo": "BYTEA",
@@ -4576,6 +4600,96 @@ def regenerar_fixture_nuevo(campeonato_id):
         flash("No fue posible generar el nuevo fixture.", "error")
 
     return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+
+
+# ============================================================
+# V5.6 — ACTA DIGITAL DEL PARTIDO
+# ============================================================
+
+@app.route("/campeonatos/<int:campeonato_id>/partidos/<int:partido_id>/acta", methods=["GET", "POST"])
+def acta_partido(campeonato_id, partido_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    partido = db.get_or_404(Partido, partido_id)
+
+    if partido.campeonato_id != campeonato.id:
+        flash("El partido no pertenece a este campeonato.", "error")
+        return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+
+    if request.method == "POST":
+        partido.arbitro = request.form.get("arbitro", "").strip() or None
+        partido.goles_detalle = request.form.get("goles_detalle", "").strip() or None
+        partido.disciplina_detalle = request.form.get("disciplina_detalle", "").strip() or None
+        partido.observaciones_acta = request.form.get("observaciones_acta", "").strip() or None
+        try:
+            db.session.commit()
+            flash("Acta actualizada correctamente.", "success")
+        except Exception as error:
+            db.session.rollback()
+            print("ERROR GUARDANDO ACTA:", repr(error))
+            flash("No fue posible guardar el acta.", "error")
+        return redirect(url_for("acta_partido", campeonato_id=campeonato.id, partido_id=partido.id))
+
+    jugadores_local = Jugador.query.filter_by(club=partido.local_club.nombre).order_by(Jugador.nombre_completo).all()
+    jugadores_visitante = Jugador.query.filter_by(club=partido.visitante_club.nombre).order_by(Jugador.nombre_completo).all()
+
+    return render_template(
+        "partido_acta.html",
+        campeonato=campeonato,
+        partido=partido,
+        jugadores_local=jugadores_local,
+        jugadores_visitante=jugadores_visitante,
+    )
+
+
+@app.route("/campeonatos/<int:campeonato_id>/partidos/<int:partido_id>/acta/word")
+def exportar_acta_word(campeonato_id, partido_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    partido = db.get_or_404(Partido, partido_id)
+    if partido.campeonato_id != campeonato.id:
+        flash("El partido no pertenece a este campeonato.", "error")
+        return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+
+    try:
+        from io import BytesIO
+        from flask import send_file
+        from docx import Document
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.shared import Pt
+
+        doc = Document()
+        title = doc.add_paragraph()
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = title.add_run("ASOCIACIÓN PRESIDENTE RÍOS")
+        run.bold = True; run.font.size = Pt(16)
+        sub = doc.add_paragraph()
+        sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = sub.add_run("ACTA OFICIAL DE PARTIDO")
+        r.bold = True; r.font.size = Pt(13)
+
+        doc.add_paragraph(f"Campeonato: {campeonato.nombre}")
+        doc.add_paragraph(f"Serie: {campeonato.serie or '—'}   |   Jornada: {partido.jornada}")
+        doc.add_paragraph(f"Fecha: {partido.fecha.strftime('%d/%m/%Y') if partido.fecha else '—'}   |   Hora: {partido.hora or '—'}")
+        doc.add_paragraph(f"Cancha: {partido.cancha or '—'}   |   Árbitro: {partido.arbitro or 'Pendiente'}")
+        doc.add_heading("Partido", level=2)
+        score = "Pendiente" if partido.goles_local is None or partido.goles_visitante is None else f"{partido.goles_local}  —  {partido.goles_visitante}"
+        doc.add_paragraph(f"{partido.local_club.nombre}    {score}    {partido.visitante_club.nombre}")
+        doc.add_paragraph(f"Club de turno: {partido.turno_club.nombre if partido.turno_club else 'Sin asignar'}")
+        doc.add_heading("Goles / incidencias de gol", level=2)
+        doc.add_paragraph(partido.goles_detalle or "Sin detalle registrado.")
+        doc.add_heading("Disciplina", level=2)
+        doc.add_paragraph(partido.disciplina_detalle or "Sin detalle registrado.")
+        doc.add_heading("Observaciones", level=2)
+        doc.add_paragraph(partido.observaciones_acta or "Sin observaciones.")
+        doc.add_paragraph("\nFirma árbitro: ______________________________")
+        doc.add_paragraph("Firma club de turno: ________________________")
+
+        out = BytesIO(); doc.save(out); out.seek(0)
+        filename = f"acta_jornada_{partido.jornada}_partido_{partido.id}.docx"
+        return send_file(out, as_attachment=True, download_name=filename, mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    except Exception as error:
+        print("ERROR EXPORTANDO ACTA WORD:", repr(error))
+        flash("No fue posible exportar el acta a Word.", "error")
+        return redirect(url_for("acta_partido", campeonato_id=campeonato.id, partido_id=partido.id))
 
 
 # ============================================================
