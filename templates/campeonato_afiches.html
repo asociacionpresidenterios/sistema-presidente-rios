@@ -106,6 +106,7 @@ toggleInfo();
     <div class="toolbar">
       <a class="btn light" href="{{ url_for('panel_campeonato', campeonato_id=campeonato.id) }}">← Centro de control</a>
       <a class="btn light" href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">⚽ Fixture</a>
+      <a class="btn light" href="{{ url_for('publicaciones_campeonato', campeonato_id=campeonato.id) }}">📢 Publicaciones</a>
       <button class="btn orange" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
     </div>
   </div>
