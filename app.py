@@ -3739,6 +3739,82 @@ def panel_campeonato(campeonato_id):
     )
 
 
+@app.route("/campeonatos/<int:campeonato_id>/publicaciones")
+def publicaciones_campeonato(campeonato_id):
+    """Centro de publicaciones: programación, resultados, tabla, goleadores y disciplina."""
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+
+    clubes_participantes = (CampeonatoClub.query
+        .filter_by(campeonato_id=campeonato.id)
+        .join(Club, CampeonatoClub.club_id == Club.id)
+        .order_by(Club.nombre).all())
+    club_ids = {r.club_id for r in clubes_participantes}
+
+    partidos = (Partido.query.filter_by(campeonato_id=campeonato.id)
+        .order_by(Partido.jornada, Partido.fecha, Partido.hora, Partido.id).all())
+    jornadas = {}
+    for p in partidos:
+        jornadas.setdefault(p.jornada, []).append(p)
+
+    # Próxima jornada: primera jornada con algún partido no finalizado.
+    jornada_proxima = None
+    for j in sorted(jornadas):
+        if any((p.estado or '').lower() != 'finalizado' for p in jornadas[j]):
+            jornada_proxima = j
+            break
+    if jornada_proxima is None and jornadas:
+        jornada_proxima = max(jornadas)
+
+    # Tabla de posiciones.
+    tabla = {r.club_id: {'club': r.club, 'pj':0, 'pg':0, 'pe':0, 'pp':0, 'gf':0, 'gc':0, 'dg':0, 'pts':0}
+             for r in clubes_participantes}
+    for p in partidos:
+        if p.estado != 'Finalizado' or p.local_club_id not in tabla or p.visitante_club_id not in tabla:
+            continue
+        gl = p.goles_local if p.goles_local is not None else 0
+        gv = p.goles_visitante if p.goles_visitante is not None else 0
+        l, v = tabla[p.local_club_id], tabla[p.visitante_club_id]
+        l['pj'] += 1; v['pj'] += 1
+        l['gf'] += gl; l['gc'] += gv; v['gf'] += gv; v['gc'] += gl
+        if gl > gv: l['pg'] += 1; v['pp'] += 1; l['pts'] += 3
+        elif gv > gl: v['pg'] += 1; l['pp'] += 1; v['pts'] += 3
+        else: l['pe'] += 1; v['pe'] += 1; l['pts'] += 1; v['pts'] += 1
+    filas_tabla = list(tabla.values())
+    for f in filas_tabla: f['dg'] = f['gf'] - f['gc']
+    filas_tabla.sort(key=lambda f: (-f['pts'], -f['dg'], -f['gf'], f['club'].nombre.lower()))
+    for pos, f in enumerate(filas_tabla, 1): f['pos'] = pos
+
+    # Estadísticas por campeonato; se protegen consultas por compatibilidad con bases antiguas.
+    try:
+        goleadores, amarillas, rojas, suspensiones = estadisticas_campeonato_data(campeonato)
+    except Exception:
+        db.session.rollback()
+        goleadores, amarillas, rojas, suspensiones = [], [], [], []
+
+    identidad = IdentidadAsociacion.query.first()
+    if identidad is None:
+        identidad = IdentidadAsociacion(nombre='Asociación Presidente Ríos', subtitulo='Sistema de Gestión Deportiva')
+        db.session.add(identidad)
+        db.session.commit()
+
+    total_finalizados = sum(1 for p in partidos if p.estado == 'Finalizado')
+    return render_template(
+        'campeonato_publicaciones.html',
+        campeonato=campeonato,
+        identidad=identidad,
+        clubes_participantes=clubes_participantes,
+        partidos=partidos,
+        jornadas=jornadas,
+        jornada_proxima=jornada_proxima,
+        filas_tabla=filas_tabla,
+        goleadores=goleadores[:10],
+        amarillas=amarillas[:10],
+        rojas=rojas[:10],
+        suspensiones=suspensiones[:10],
+        total_partidos=len(partidos),
+        total_finalizados=total_finalizados,
+    )
+
 @app.route("/campeonatos/<int:campeonato_id>/afiches")
 def afiches_campeonato(campeonato_id):
     """Generador de afiches del fixture, listo para imprimir o guardar como PDF."""
