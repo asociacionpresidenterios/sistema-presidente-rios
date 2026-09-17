@@ -293,6 +293,13 @@ class Partido(db.Model):
         index=True
     )
 
+    turno_club_id = db.Column(
+        db.Integer,
+        db.ForeignKey("club.id"),
+        nullable=True,
+        index=True
+    )
+
     goles_local = db.Column(
         db.Integer,
         nullable=True
@@ -328,6 +335,12 @@ class Partido(db.Model):
         "Club",
         foreign_keys=[visitante_club_id],
         backref=db.backref("partidos_visitante", lazy=True)
+    )
+
+    turno_club = db.relationship(
+        "Club",
+        foreign_keys=[turno_club_id],
+        backref=db.backref("partidos_turno", lazy=True)
     )
 
 
@@ -673,6 +686,9 @@ def preparar_vinculos_campeonato():
             },
             "registro_disciplinario": {
                 "campeonato_id": "INTEGER",
+            },
+            "partido": {
+                "turno_club_id": "INTEGER",
             },
         }
 
@@ -3757,6 +3773,7 @@ def generar_fixture_campeonato(campeonato_id):
                         cancha=cancha,
                         local_club_id=local_id,
                         visitante_club_id=visitante_id,
+                        turno_club_id=None,
                         goles_local=None,
                         goles_visitante=None,
                         estado="Programado"
@@ -3895,6 +3912,8 @@ def editar_partido_fixture(campeonato_id, partido_id):
 
         local_id = int(request.form.get("local_club_id", partido.local_club_id))
         visitante_id = int(request.form.get("visitante_club_id", partido.visitante_club_id))
+        turno_raw = request.form.get("turno_club_id", "").strip()
+        turno_id = int(turno_raw) if turno_raw else None
 
         participantes = {
             registro.club_id
@@ -3905,6 +3924,8 @@ def editar_partido_fixture(campeonato_id, partido_id):
             raise ValueError("El club local y visitante no pueden ser el mismo.")
         if local_id not in participantes or visitante_id not in participantes:
             raise ValueError("Los clubes seleccionados no pertenecen a este campeonato.")
+        if turno_id is not None and turno_id not in participantes:
+            raise ValueError("El club de turno seleccionado no pertenece a este campeonato.")
 
         # Evita que un club aparezca en dos partidos de la misma jornada.
         otros_partidos = (
@@ -3926,6 +3947,7 @@ def editar_partido_fixture(campeonato_id, partido_id):
 
         partido.local_club_id = local_id
         partido.visitante_club_id = visitante_id
+        partido.turno_club_id = turno_id
 
         db.session.commit()
         flash(f"Partido de la jornada {partido.jornada} actualizado correctamente.", "success")
