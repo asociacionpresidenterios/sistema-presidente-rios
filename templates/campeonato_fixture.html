@@ -116,7 +116,7 @@
             <small>Partido {{ loop.index }}</small>
             <div class="team">{{ partido.local_club.nombre }}</div><div class="vs">VS</div><div class="team">{{ partido.visitante_club.nombre }}</div>
             <div class="meta"><span class="badge">📅 {{ partido.fecha.strftime('%d/%m/%Y') if partido.fecha else 'Sin fecha' }} · {{ partido.hora or 'Sin hora' }} · {{ partido.cancha or 'Sin cancha' }}</span><div style="margin-top:6px">{% if partido.turno_club %}<span class="badge" style="background:#ecfdf5;color:#166534">🔰 Turno: {{ partido.turno_club.nombre }}</span>{% else %}<span class="badge" style="background:#f8fafc;color:#64748b">🔰 Turno: Sin asignar</span>{% endif %}</div></div>
-            <div class="match-actions"><a class="btn small" href="{{ url_for('resultados_campeonato', campeonato_id=campeonato.id) }}">📝 Resultado</a></div>
+            <div class="match-actions"><a class="btn small" href="{{ url_for('resultados_campeonato', campeonato_id=campeonato.id) }}">📝 Resultado</a><a class="btn small" href="{{ url_for('acta_partido', campeonato_id=campeonato.id, partido_id=partido.id) }}">📋 Acta</a></div>
           </div>
           <details>
             <summary style="margin:0 16px 12px;cursor:pointer;color:#2563eb;font-size:11px;font-weight:900">✏️ Modificar este partido</summary>
