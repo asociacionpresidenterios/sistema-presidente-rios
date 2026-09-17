@@ -15,7 +15,8 @@
   <section class="hero">
     <div class="hero-top">
       <div><div style="font-size:12px;color:#fb923c;font-weight:900;text-transform:uppercase;letter-spacing:.6px">Centro de Control del Campeonato</div><h1>🏆 {{ campeonato.nombre }}</h1><p>{{ campeonato.serie }} · Temporada {{ campeonato.temporada }} · Estado: {{ campeonato.estado }}</p></div>
-      <div class="hero-actions"><a class="btn dark" href="{{ url_for('detalle_campeonato', campeonato_id=campeonato.id) }}">← Administración</a><a class="btn orange" href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">⚽ Administrar fixture</a></div>
+      <div class="hero-actions"><a class="btn dark" href="{{ url_for('detalle_campeonato', campeonato_id=campeonato.id) }}">← Administración</a><a class="btn orange" href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">⚽ Administrar fixture</a>
+      <a class="btn" href="{{ url_for('afiches_campeonato', campeonato_id=campeonato.id) }}">🎨 Afiches</a></div>
     </div>
     <div class="kpis">
       <div class="kpi"><small>Clubes</small><strong>{{ clubes_participantes|length }}</strong></div>
