@@ -656,21 +656,65 @@ def preparar_base_datos():
 
 
 def preparar_vinculos_campeonato():
+    """Migra de forma segura las columnas nuevas usadas por PASO 8.
+
+    db.create_all() no agrega columnas a tablas que ya existen en Railway,
+    por eso aquí se revisa cada tabla y se agrega solamente lo que falta.
+    """
     try:
         inspector = db.inspect(db.engine)
-        for tabla in ("gol", "registro_disciplinario"):
-            columnas = [c["name"] for c in inspector.get_columns(tabla)]
-            if "campeonato_id" not in columnas:
-                sql = (
-                    f"ALTER TABLE {tabla} ADD COLUMN IF NOT EXISTS campeonato_id INTEGER"
-                    if db.engine.dialect.name == "postgresql"
-                    else f"ALTER TABLE {tabla} ADD COLUMN campeonato_id INTEGER"
-                )
+        dialecto = db.engine.dialect.name
+
+        columnas_nuevas = {
+            "gol": {
+                "campeonato": "VARCHAR(120)",
+                "observaciones": "TEXT",
+                "campeonato_id": "INTEGER",
+            },
+            "registro_disciplinario": {
+                "campeonato_id": "INTEGER",
+            },
+        }
+
+        for tabla, definiciones in columnas_nuevas.items():
+            columnas_actuales = {
+                c["name"] for c in inspector.get_columns(tabla)
+            }
+
+            for nombre, tipo in definiciones.items():
+                if nombre in columnas_actuales:
+                    continue
+
+                if dialecto == "postgresql":
+                    sql = (
+                        f"ALTER TABLE {tabla} "
+                        f"ADD COLUMN IF NOT EXISTS {nombre} {tipo}"
+                    )
+                elif dialecto == "sqlite":
+                    sql = (
+                        f"ALTER TABLE {tabla} "
+                        f"ADD COLUMN {nombre} {tipo}"
+                    )
+                else:
+                    # Para otros motores dejamos que SQLAlchemy reporte el
+                    # problema en vez de ejecutar SQL incompatible.
+                    raise RuntimeError(
+                        f"Motor de base de datos no soportado para migración: {dialecto}"
+                    )
+
+                print(f"Agregando columna {tabla}.{nombre}...")
                 db.session.execute(db.text(sql))
                 db.session.commit()
+
+                # Refrescar el inspector después de cada ALTER TABLE.
+                inspector = db.inspect(db.engine)
+
     except Exception as error:
         db.session.rollback()
-        print("Advertencia vinculando estadísticas a campeonato:", repr(error))
+        print(
+            "ERROR preparando columnas de estadísticas del campeonato:",
+            repr(error)
+        )
 
 with app.app_context():
     preparar_base_datos()
@@ -3383,6 +3427,52 @@ def nuevo_campeonato():
     )
 
 
+@app.route("/campeonatos/<int:campeonato_id>/eliminar", methods=["POST"])
+def eliminar_campeonato(campeonato_id):
+    """Elimina un campeonato y todos sus datos exclusivos, sin tocar clubes ni jugadores."""
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    nombre = campeonato.nombre
+
+    try:
+        # Primero eliminamos los datos que dependen directamente del campeonato.
+        # Se usan filtros por campeonato_id para no borrar registros de otros campeonatos.
+        partidos_eliminados = Partido.query.filter_by(
+            campeonato_id=campeonato.id
+        ).delete(synchronize_session=False)
+
+        goles_eliminados = Gol.query.filter_by(
+            campeonato_id=campeonato.id
+        ).delete(synchronize_session=False)
+
+        disciplina_eliminada = RegistroDisciplinario.query.filter_by(
+            campeonato_id=campeonato.id
+        ).delete(synchronize_session=False)
+
+        clubes_eliminados = CampeonatoClub.query.filter_by(
+            campeonato_id=campeonato.id
+        ).delete(synchronize_session=False)
+
+        db.session.delete(campeonato)
+        db.session.commit()
+
+        flash(
+            f"Campeonato '{nombre}' eliminado correctamente. "
+            f"Partidos: {partidos_eliminados}, goles: {goles_eliminados}, "
+            f"registros disciplinarios: {disciplina_eliminada}, clubes inscritos: {clubes_eliminados}.",
+            "success"
+        )
+
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR ELIMINANDO CAMPEONATO:", repr(error))
+        flash(
+            "No fue posible eliminar el campeonato. No se modificaron los datos.",
+            "error"
+        )
+
+    return redirect(url_for("campeonatos"))
+
+
 @app.route("/campeonatos/<int:campeonato_id>")
 def detalle_campeonato(campeonato_id):
 
@@ -3719,6 +3809,118 @@ def eliminar_fixture_campeonato(campeonato_id):
         )
     )
 
+
+
+@app.route(
+    "/campeonatos/<int:campeonato_id>/fixture/partido/<int:partido_id>/editar",
+    methods=["POST"]
+)
+def editar_partido_fixture(campeonato_id, partido_id):
+    """Edita fecha, hora, cancha y equipos de un partido sin regenerar el fixture."""
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    partido = db.get_or_404(Partido, partido_id)
+
+    if partido.campeonato_id != campeonato.id:
+        flash("El partido no pertenece a este campeonato.", "error")
+        return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+
+    try:
+        fecha_texto = request.form.get("fecha", "").strip()
+        if fecha_texto:
+            partido.fecha = datetime.strptime(fecha_texto, "%Y-%m-%d").date()
+
+        partido.hora = request.form.get("hora", "").strip() or None
+        partido.cancha = request.form.get("cancha", "").strip() or None
+
+        local_id = int(request.form.get("local_club_id", partido.local_club_id))
+        visitante_id = int(request.form.get("visitante_club_id", partido.visitante_club_id))
+
+        participantes = {
+            registro.club_id
+            for registro in CampeonatoClub.query.filter_by(campeonato_id=campeonato.id).all()
+        }
+
+        if local_id == visitante_id:
+            raise ValueError("El club local y visitante no pueden ser el mismo.")
+        if local_id not in participantes or visitante_id not in participantes:
+            raise ValueError("Los clubes seleccionados no pertenecen a este campeonato.")
+
+        partido.local_club_id = local_id
+        partido.visitante_club_id = visitante_id
+
+        db.session.commit()
+        flash(f"Partido de la jornada {partido.jornada} actualizado correctamente.", "success")
+
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR EDITANDO PARTIDO DEL FIXTURE:", repr(error))
+        flash("No fue posible modificar el partido. Revise los datos ingresados.", "error")
+
+    return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+
+
+@app.route(
+    "/campeonatos/<int:campeonato_id>/fixture/regenerar-nuevo",
+    methods=["POST"]
+)
+def regenerar_fixture_nuevo(campeonato_id):
+    """Regenera un fixture nuevo cambiando el orden de los clubes."""
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+
+    clubes_participantes = (
+        CampeonatoClub.query
+        .filter_by(campeonato_id=campeonato.id)
+        .order_by(CampeonatoClub.id)
+        .all()
+    )
+    club_ids = [registro.club_id for registro in clubes_participantes]
+
+    if len(club_ids) < 2:
+        flash("Debes tener al menos 2 clubes inscritos para generar el fixture.", "error")
+        return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+
+    try:
+        import random
+
+        # Un orden nuevo produce una distribución distinta de enfrentamientos/localías.
+        random.shuffle(club_ids)
+
+        hora = request.form.get("hora", "17:00").strip() or "17:00"
+        cancha = request.form.get("cancha", "Por definir").strip() or "Por definir"
+        calendario = generar_calendario_todos_contra_todos(club_ids)
+        primera_fecha = siguiente_sabado(campeonato.fecha_inicio)
+
+        Partido.query.filter_by(campeonato_id=campeonato.id).delete(synchronize_session=False)
+
+        contador = 0
+        for indice_jornada, partidos_jornada in enumerate(calendario, start=1):
+            fecha_jornada = primera_fecha + timedelta(days=(indice_jornada - 1) * 7)
+            for local_id, visitante_id in partidos_jornada:
+                db.session.add(
+                    Partido(
+                        campeonato_id=campeonato.id,
+                        jornada=indice_jornada,
+                        fecha=fecha_jornada,
+                        hora=hora,
+                        cancha=cancha,
+                        local_club_id=local_id,
+                        visitante_club_id=visitante_id,
+                        goles_local=None,
+                        goles_visitante=None,
+                        estado="Programado"
+                    )
+                )
+                contador += 1
+
+        db.session.commit()
+        flash(f"Nuevo fixture generado: {len(calendario)} jornadas y {contador} partidos.", "success")
+
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR REGENERANDO NUEVO FIXTURE:", repr(error))
+        flash("No fue posible generar el nuevo fixture.", "error")
+
+    return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
 
 
 # ============================================================
