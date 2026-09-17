@@ -10,7 +10,7 @@
   .camp-head p{margin:6px 0 0;color:#6b7280}
   .btn{display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border-radius:10px;text-decoration:none;font-weight:800;border:1px solid #e5e7eb;background:#111827;color:#fff;cursor:pointer}
   .btn.light{background:#fff;color:#111827}
-  .btn.success{background:#16a34a;border-color:#16a34a}
+  .btn.success{background:#16a34a;border-color:#16a34a}.btn.danger{background:#dc2626;border-color:#dc2626}
   .card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:22px;box-shadow:0 5px 18px rgba(15,23,42,.05);margin-bottom:18px}
   .card h2{margin:0 0 5px;font-size:19px;color:#111827}
   .sub{margin:0 0 18px;color:#6b7280;font-size:13px}
@@ -46,6 +46,10 @@
       <a class="btn light" href="{{ url_for('campeonatos') }}">← Campeonatos</a>
       <a class="btn" href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">⚽ Fixture</a>
       <a class="btn success" href="{{ url_for('resultados_campeonato', campeonato_id=campeonato.id) }}">📝 Resultados</a>
+      <a class="btn light" href="{{ url_for('estadisticas_campeonato', campeonato_id=campeonato.id) }}">📊 Estadísticas</a>
+      <form method="POST" action="{{ url_for('eliminar_campeonato', campeonato_id=campeonato.id) }}" style="margin:0" onsubmit="return confirmarEliminarCampeonato();">
+        <button class="btn danger" type="submit">🗑️ Eliminar campeonato</button>
+      </form>
     </div>
   </div>
 
@@ -132,6 +136,14 @@
     </div>
   </div>
 
+  <div class="card" style="border-color:#fecaca;background:#fff7f7">
+    <h2 style="color:#991b1b">⚠️ Zona de administración</h2>
+    <p class="sub" style="color:#7f1d1d">Eliminar el campeonato borra su fixture, resultados, clubes inscritos y estadísticas vinculadas. No elimina los clubes ni los jugadores de la Asociación.</p>
+    <form method="POST" action="{{ url_for('eliminar_campeonato', campeonato_id=campeonato.id) }}" onsubmit="return confirmarEliminarCampeonato();">
+      <button class="btn danger" type="submit">🗑️ Eliminar definitivamente este campeonato</button>
+    </form>
+  </div>
+
   <div class="next">
     <strong>🚀 Ruta del módulo:</strong>
     clubes → fixture → partidos → resultados → tabla de posiciones → goleadores → disciplina → dashboard del campeonato.
@@ -155,5 +167,12 @@
 
     boxes.forEach(box => box.addEventListener('change', actualizarContador));
   }
+  function confirmarEliminarCampeonato() {
+    const nombre = {{ campeonato.nombre|tojson }};
+    const primera = confirm('⚠️ ¿Eliminar el campeonato "' + nombre + '"?\n\nSe eliminarán su fixture, resultados, clubes inscritos y estadísticas vinculadas.');
+    if (!primera) return false;
+    return confirm('ÚLTIMA CONFIRMACIÓN: esta acción no se puede deshacer.\n\n¿Deseas eliminar definitivamente este campeonato?');
+  }
+
 </script>
 {% endblock %}
