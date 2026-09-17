@@ -16,7 +16,7 @@
   .warning{padding:12px 14px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:12px;margin-top:12px}
   .round{border:1px solid #e5e7eb;border-radius:15px;overflow:hidden;margin-bottom:16px}.round-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 16px;background:#f8fafc;border-bottom:1px solid #e5e7eb}.round-head strong{font-size:15px;color:#111827}.round-head span{font-size:12px;color:#64748b;font-weight:800}
   .match{display:grid;grid-template-columns:75px 1fr 55px 1fr 160px 115px;gap:10px;align-items:center;padding:13px 16px;border-bottom:1px solid #f1f5f9}.match:last-child{border-bottom:0}.match small{color:#64748b;font-weight:800}.team{font-weight:900;color:#1f2937}.vs{text-align:center;color:#94a3b8;font-weight:900;font-size:12px}.badge{display:inline-flex;width:max-content;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:900;background:#eef2ff;color:#3730a3}.meta{font-size:11px;color:#475569;font-weight:800}.match-actions{display:flex;justify-content:flex-end;gap:6px;flex-wrap:wrap}
-  .edit-box{margin:0 16px 14px;padding:15px;background:#f8fafc;border:1px solid #dbeafe;border-radius:12px}.edit-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr auto;gap:9px;align-items:end}.edit-grid label{display:block;font-size:10px;font-weight:900;color:#475569;margin-bottom:5px}.edit-title{font-size:12px;font-weight:900;margin-bottom:10px;color:#1e3a8a}
+  .edit-box{margin:0 16px 14px;padding:15px;background:#f8fafc;border:1px solid #dbeafe;border-radius:12px}.edit-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr auto;gap:9px;align-items:end}.edit-grid label{display:block;font-size:10px;font-weight:900;color:#475569;margin-bottom:5px}.edit-title{font-size:12px;font-weight:900;margin-bottom:10px;color:#1e3a8a}
   .empty{text-align:center;padding:45px 20px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b}
   @media(max-width:1050px){.match{grid-template-columns:65px 1fr 35px 1fr 120px}.match-actions{grid-column:1/-1;justify-content:flex-start}.edit-grid{grid-template-columns:1fr 1fr 1fr}.edit-grid .save{grid-column:1/-1}}
   @media(max-width:700px){.stats{grid-template-columns:1fr 1fr}.form-grid{grid-template-columns:1fr}.form-grid .btn{width:100%}.match{grid-template-columns:1fr;text-align:left}.vs{text-align:left}.edit-grid{grid-template-columns:1fr}.fixture-page{padding:15px}.round-head form>div{grid-template-columns:1fr!important}.round-head form button{width:100%}}
@@ -112,7 +112,7 @@
           <div class="match">
             <small>Partido {{ loop.index }}</small>
             <div class="team">{{ partido.local_club.nombre }}</div><div class="vs">VS</div><div class="team">{{ partido.visitante_club.nombre }}</div>
-            <div class="meta"><span class="badge">📅 {{ partido.fecha.strftime('%d/%m/%Y') if partido.fecha else 'Sin fecha' }} · {{ partido.hora or 'Sin hora' }} · {{ partido.cancha or 'Sin cancha' }}</span></div>
+            <div class="meta"><span class="badge">📅 {{ partido.fecha.strftime('%d/%m/%Y') if partido.fecha else 'Sin fecha' }} · {{ partido.hora or 'Sin hora' }} · {{ partido.cancha or 'Sin cancha' }}</span><div style="margin-top:6px">{% if partido.turno_club %}<span class="badge" style="background:#ecfdf5;color:#166534">🔰 Turno: {{ partido.turno_club.nombre }}</span>{% else %}<span class="badge" style="background:#f8fafc;color:#64748b">🔰 Turno: Sin asignar</span>{% endif %}</div></div>
             <div class="match-actions"><a class="btn small" href="{{ url_for('resultados_campeonato', campeonato_id=campeonato.id) }}">📝 Resultado</a></div>
           </div>
           <details>
@@ -126,6 +126,7 @@
                   <div><label>Cancha</label><input type="text" name="cancha" value="{{ partido.cancha or '' }}" placeholder="Mirador Viejo"></div>
                   <div><label>Local</label><select name="local_club_id" required>{% for registro in clubes_participantes %}<option value="{{ registro.club_id }}" {% if registro.club_id == partido.local_club_id %}selected{% endif %}>{{ registro.club.nombre }}</option>{% endfor %}</select></div>
                   <div><label>Visitante</label><select name="visitante_club_id" required>{% for registro in clubes_participantes %}<option value="{{ registro.club_id }}" {% if registro.club_id == partido.visitante_club_id %}selected{% endif %}>{{ registro.club.nombre }}</option>{% endfor %}</select></div>
+                  <div><label>🔰 Club de turno</label><select name="turno_club_id"><option value="">Sin asignar</option>{% for registro in clubes_participantes %}<option value="{{ registro.club_id }}" {% if registro.club_id == partido.turno_club_id %}selected{% endif %}>{{ registro.club.nombre }}</option>{% endfor %}</select></div>
                   <button class="btn success small save" type="submit">💾 Guardar cambios</button>
                 </div>
               </form>
