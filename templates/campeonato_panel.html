@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ campeonato.nombre }} · Centro de Control{% endblock %}
+{% block content %}
+<style>
+.panel-page{max-width:1450px;margin:0 auto;padding:24px}.hero{background:#111827;color:#fff;border-radius:22px;padding:26px;margin-bottom:20px;box-shadow:0 10px 30px rgba(15,23,42,.12)}
+.hero-top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;flex-wrap:wrap}.hero h1{margin:0;font-size:30px;font-weight:900}.hero p{margin:7px 0 0;color:#cbd5e1}.hero-actions{display:flex;gap:8px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:800;border:1px solid #e5e7eb;background:#fff;color:#111827}.btn.orange{background:#f97316;color:#fff;border-color:#f97316}.btn.dark{background:#1f2937;color:#fff;border-color:#374151}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-top:22px}.kpi{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:14px}.kpi small{display:block;color:#cbd5e1;font-size:11px;font-weight:800;text-transform:uppercase}.kpi strong{display:block;font-size:25px;margin-top:5px}
+.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:20px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px;box-shadow:0 5px 18px rgba(15,23,42,.05)}.card.full{grid-column:1/-1}.head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:15px}.head h2{margin:0;font-size:19px}.head span{font-size:12px;color:#64748b}.next{border-radius:16px;background:#f8fafc;border:1px solid #e5e7eb;padding:18px}.next .meta{color:#64748b;font-size:12px;font-weight:800;margin-bottom:10px}.teams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;text-align:center}.team{font-size:17px;font-weight:900;color:#111827}.vs{font-size:12px;font-weight:900;color:#94a3b8}.venue{margin-top:12px;text-align:center;color:#475569;font-size:13px}.turn{margin-top:10px;text-align:center;font-size:12px;font-weight:900;color:#7c3aed}.empty{text-align:center;padding:22px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b}
+.table-wrap{overflow-x:auto}.standings{width:100%;border-collapse:collapse;min-width:650px}.standings th{background:#f8fafc;color:#64748b;font-size:11px;text-transform:uppercase;padding:10px 8px;text-align:center}.standings th:nth-child(2),.standings td:nth-child(2){text-align:left}.standings td{padding:11px 8px;border-top:1px solid #eef2f7;text-align:center;font-size:13px}.standings .club{font-weight:900}.pos{font-weight:900;color:#2563eb}.pts{font-weight:900;color:#111827}
+.list{display:flex;flex-direction:column;gap:9px}.row{display:grid;grid-template-columns:32px 1fr 50px;gap:9px;align-items:center;padding:10px 12px;background:#f8fafc;border:1px solid #eef2f7;border-radius:11px}.num{width:27px;height:27px;border-radius:8px;background:#111827;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900}.name{font-weight:900;font-size:13px;color:#1f2937}.sub{display:block;color:#64748b;font-size:10px;margin-top:2px;font-weight:600}.total{text-align:right;font-weight:900}.total.blue{color:#2563eb}.total.yellow{color:#b45309}.total.red{color:#b91c1c}.total.purple{color:#7c3aed}
+.progress{height:10px;background:#e5e7eb;border-radius:20px;overflow:hidden}.progress>div{height:100%;background:#f97316;border-radius:20px}.progress-meta{display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-top:7px}.free{display:flex;flex-wrap:wrap;gap:8px}.pill{padding:7px 10px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:12px;font-weight:900}.actions{display:flex;gap:8px;flex-wrap:wrap}.small-btn{padding:8px 11px;border-radius:9px;background:#f8fafc;border:1px solid #e5e7eb;text-decoration:none;font-size:12px;font-weight:800;color:#334155}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}}@media(max-width:850px){.grid{grid-template-columns:1fr}.card.full{grid-column:auto}}@media(max-width:600px){.panel-page{padding:15px}.hero h1{font-size:24px}.kpis{grid-template-columns:repeat(2,1fr)}.teams{grid-template-columns:1fr}.vs{display:none}}
+</style>
+<div class="panel-page">
+  <section class="hero">
+    <div class="hero-top">
+      <div><div style="font-size:12px;color:#fb923c;font-weight:900;text-transform:uppercase;letter-spacing:.6px">Centro de Control del Campeonato</div><h1>🏆 {{ campeonato.nombre }}</h1><p>{{ campeonato.serie }} · Temporada {{ campeonato.temporada }} · Estado: {{ campeonato.estado }}</p></div>
+      <div class="hero-actions"><a class="btn dark" href="{{ url_for('detalle_campeonato', campeonato_id=campeonato.id) }}">← Administración</a><a class="btn orange" href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">⚽ Administrar fixture</a></div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><small>Clubes</small><strong>{{ clubes_participantes|length }}</strong></div>
+      <div class="kpi"><small>Jornadas</small><strong>{{ jornadas_count }}</strong></div>
+      <div class="kpi"><small>Partidos</small><strong>{{ partidos|length }}</strong></div>
+      <div class="kpi"><small>Jugados</small><strong>{{ partidos_finalizados|length }}</strong></div>
+      <div class="kpi"><small>Pendientes</small><strong>{{ partidos_pendientes|length }}</strong></div>
+      <div class="kpi"><small>Avance</small><strong>{{ porcentaje }}%</strong></div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <div class="head"><h2>📅 Próximo partido</h2><span>Programación</span></div>
+      {% if proximo_partido %}
+      <div class="next">
+        <div class="meta">JORNADA {{ proximo_partido.jornada }}{% if proximo_partido.fecha %} · {{ proximo_partido.fecha.strftime('%d/%m/%Y') }}{% endif %}{% if proximo_partido.hora %} · {{ proximo_partido.hora }}{% endif %}</div>
+        <div class="teams"><div class="team">{{ proximo_partido.local_club.nombre }}</div><div class="vs">VS</div><div class="team">{{ proximo_partido.visitante_club.nombre }}</div></div>
+        <div class="venue">🏟️ {{ proximo_partido.cancha or 'Cancha por definir' }}</div>
+        <div class="turn">🔰 Turno: {{ proximo_partido.turno_club.nombre if proximo_partido.turno_club else 'Sin asignar' }}</div>
+      </div>
+      {% else %}<div class="empty">No hay partidos pendientes. El campeonato puede estar finalizado.</div>{% endif %}
+    </section>
+
+    <section class="card">
+      <div class="head"><h2>📈 Progreso</h2><span>{{ partidos_finalizados|length }} de {{ partidos|length }}</span></div>
+      <div style="font-size:38px;font-weight:900;color:#111827;margin-bottom:14px">{{ porcentaje }}%</div>
+      <div class="progress"><div style="width:{{ porcentaje }}%"></div></div>
+      <div class="progress-meta"><span>Partidos jugados</span><strong>{{ partidos_finalizados|length }}</strong></div>
+      <div style="margin-top:18px" class="actions"><a class="small-btn" href="{{ url_for('resultados_campeonato', campeonato_id=campeonato.id) }}">📝 Resultados</a><a class="small-btn" href="{{ url_for('tabla_campeonato', campeonato_id=campeonato.id) }}">📊 Tabla completa</a><a class="small-btn" href="{{ url_for('estadisticas_campeonato', campeonato_id=campeonato.id) }}">🥅 Estadísticas</a></div>
+    </section>
+
+    <section class="card full">
+      <div class="head"><h2>🏅 Tabla de posiciones</h2><span>Actualizada según partidos finalizados</span></div>
+      {% if filas %}<div class="table-wrap"><table class="standings"><thead><tr><th>Pos</th><th>Club</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr></thead><tbody>{% for f in filas %}<tr><td class="pos">{{ f.pos }}</td><td class="club">{{ f.club.nombre }}</td><td>{{ f.pj }}</td><td>{{ f.pg }}</td><td>{{ f.pe }}</td><td>{{ f.pp }}</td><td>{{ f.gf }}</td><td>{{ f.gc }}</td><td>{{ f.dg }}</td><td class="pts">{{ f.pts }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty">Aún no hay clubes inscritos.</div>{% endif %}
+    </section>
+
+    <section class="card"><div class="head"><h2>🥅 Goleadores</h2><span>Top 8</span></div>{% if goleadores %}<div class="list">{% for j,total in goleadores %}<div class="row"><div class="num">{{ loop.index }}</div><div class="name">{{ j.nombre_completo }}<span class="sub">{{ j.club }}</span></div><div class="total blue">{{ total }}</div></div>{% endfor %}</div>{% else %}<div class="empty">Sin goles registrados.</div>{% endif %}</section>
+
+    <section class="card"><div class="head"><h2>🟨 Disciplina</h2><span>Top 8</span></div>{% if ranking_amarillas %}<div class="list">{% for j,total in ranking_amarillas %}<div class="row"><div class="num">{{ loop.index }}</div><div class="name">{{ j.nombre_completo }}<span class="sub">{{ j.club }}</span></div><div class="total yellow">🟨 {{ total }}</div></div>{% endfor %}</div>{% else %}<div class="empty">Sin registros de amarillas.</div>{% endif %}</section>
+
+    <section class="card"><div class="head"><h2>🆓 Próximos libres</h2><span>Por jornada</span></div>{% set ns = namespace(count=0) %}{% for jornada, libres in libres_por_jornada.items() if libres %}{% if ns.count < 4 %}<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:900;color:#64748b;margin-bottom:6px">JORNADA {{ jornada }}</div><div class="free">{% for club in libres %}<span class="pill">🆓 {{ club.nombre }}</span>{% endfor %}</div></div>{% set ns.count = ns.count + 1 %}{% endif %}{% endfor %}{% if ns.count == 0 %}<div class="empty">No hay jornadas con club libre registradas.</div>{% endif %}</section>
+
+    <section class="card"><div class="head"><h2>🟥 Rojas y suspensiones</h2><span>Disciplina</span></div>{% if ranking_rojas or ranking_suspensiones %}<div class="list">{% for j,total in ranking_rojas[:4] %}<div class="row"><div class="num">{{ loop.index }}</div><div class="name">{{ j.nombre_completo }}<span class="sub">{{ j.club }}</span></div><div class="total red">🟥 {{ total }}</div></div>{% endfor %}{% for j,total in ranking_suspensiones[:4] %}<div class="row"><div class="num">S</div><div class="name">{{ j.nombre_completo }}<span class="sub">{{ j.club }}</span></div><div class="total purple">⛔ {{ total }}</div></div>{% endfor %}</div>{% else %}<div class="empty">Sin registros disciplinarios.</div>{% endif %}</section>
+  </div>
+</div>
+{% endblock %}
