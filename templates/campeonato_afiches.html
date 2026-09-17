@@ -1,5 +1,41 @@
 {% extends "base.html" %}
-{% block title %}Afiches · {{ campeonato.nombre }}{% endblock %}
+{% block title %}Afiches · {{ campeonato.nombre }}
+<script>
+function getPoster(){ return document.getElementById('poster'); }
+function setPosterFormat(format){
+  const p=getPoster();
+  p.classList.remove('story','square','tv','print');
+  p.classList.add(format);
+}
+function toggleInfo(){
+  const turn=document.getElementById('showTurn').checked;
+  const free=document.getElementById('showFree').checked;
+  document.querySelectorAll('.turn-info').forEach(e=>e.style.display=turn?'block':'none');
+  document.querySelectorAll('.free-info').forEach(e=>e.style.display=free?'block':'none');
+}
+async function downloadPosterPNG(){
+  const poster=getPoster();
+  const old=poster.style.transform;
+  poster.style.transform='none';
+  if(!window.html2canvas){
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    document.head.appendChild(s);
+    await new Promise((resolve,reject)=>{s.onload=resolve;s.onerror=reject;});
+  }
+  try{
+    const canvas=await html2canvas(poster,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+    const link=document.createElement('a');
+    link.download='afiche-jornada-{{ jornada_seleccionada }}.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+  }catch(err){
+    alert('No fue posible generar el PNG. Puedes usar Imprimir / Guardar PDF.');
+  }finally{poster.style.transform=old;}
+}
+toggleInfo();
+</script>
+{% endblock %}
 
 {% block head %}
 <style>
@@ -12,7 +48,7 @@
   .btn.light{background:#fff;color:#111827}.btn.orange{background:#f97316;border-color:#f97316}.btn.blue{background:#2563eb;border-color:#2563eb}
   .selector{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:16px;box-shadow:0 5px 18px rgba(15,23,42,.05);margin-bottom:20px;display:flex;gap:12px;align-items:end;flex-wrap:wrap}
   .selector label{display:block;font-size:10px;font-weight:900;color:#475569;text-transform:uppercase;margin-bottom:5px}.selector select{min-width:230px;border:1px solid #cbd5e1;border-radius:9px;padding:10px;background:#fff;font-weight:800}
-  .workspace{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start}
+  .workspace{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start}.design-tools{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:14px;margin-bottom:14px;box-shadow:0 5px 18px rgba(15,23,42,.05)}.design-tools h3{margin:0 0 10px;font-size:14px}.design-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.design-row label{font-size:10px;font-weight:900;color:#475569;text-transform:uppercase}.design-row select{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;background:#fff;font-weight:800}.check{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:11px;font-weight:800;color:#334155}.check input{accent-color:#2563eb}.poster.square{aspect-ratio:1/1}.poster.story{aspect-ratio:4/5}.poster.tv{aspect-ratio:16/9}.poster.print{aspect-ratio:210/297}
   .poster-wrap{background:#e5e7eb;border-radius:18px;padding:25px;display:flex;justify-content:center;min-height:700px}
   .poster{width:min(100%,700px);aspect-ratio:4/5;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 18px 50px rgba(15,23,42,.18);display:flex;flex-direction:column}
   .poster-top{background:#111827;color:#fff;padding:26px 30px 20px;position:relative}.poster-top:after{content:"";position:absolute;left:0;right:0;bottom:0;height:6px;background:#f97316}
@@ -25,6 +61,42 @@
   @media(max-width:900px){.workspace{grid-template-columns:1fr}.side{position:static}.poster-wrap{padding:12px}.poster{width:min(100%,700px)}}
   @media print{body{background:#fff}.topbar,.footer,.flash-wrap,.poster-head,.selector,.side{display:none!important}.page-wrap{padding:0!important}.poster-page{padding:0!important;max-width:none}.workspace{display:block}.poster-wrap{padding:0;background:#fff;min-height:0}.poster{width:1080px;max-width:none;height:1350px;aspect-ratio:auto;border-radius:0;box-shadow:none}.poster-top{padding:48px 52px 38px}.poster-title{font-size:54px}.poster-sub{font-size:22px}.brand{font-size:18px}.free{margin:28px 44px 8px;padding:18px;font-size:20px}.matches{padding:18px 44px 30px;gap:14px}.match-card{padding:18px 20px}.match-time{font-size:18px}.team img{width:78px;height:78px}.team-name{font-size:25px}.match-meta,.turn{font-size:15px}.poster-foot{font-size:14px;padding:18px}}
 </style>
+
+<script>
+function getPoster(){ return document.getElementById('poster'); }
+function setPosterFormat(format){
+  const p=getPoster();
+  p.classList.remove('story','square','tv','print');
+  p.classList.add(format);
+}
+function toggleInfo(){
+  const turn=document.getElementById('showTurn').checked;
+  const free=document.getElementById('showFree').checked;
+  document.querySelectorAll('.turn-info').forEach(e=>e.style.display=turn?'block':'none');
+  document.querySelectorAll('.free-info').forEach(e=>e.style.display=free?'block':'none');
+}
+async function downloadPosterPNG(){
+  const poster=getPoster();
+  const old=poster.style.transform;
+  poster.style.transform='none';
+  if(!window.html2canvas){
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    document.head.appendChild(s);
+    await new Promise((resolve,reject)=>{s.onload=resolve;s.onerror=reject;});
+  }
+  try{
+    const canvas=await html2canvas(poster,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+    const link=document.createElement('a');
+    link.download='afiche-jornada-{{ jornada_seleccionada }}.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+  }catch(err){
+    alert('No fue posible generar el PNG. Puedes usar Imprimir / Guardar PDF.');
+  }finally{poster.style.transform=old;}
+}
+toggleInfo();
+</script>
 {% endblock %}
 
 {% block content %}
@@ -50,7 +122,7 @@
 
   <div class="workspace">
     <div class="poster-wrap">
-      <section class="poster" aria-label="Afiche de jornada">
+      <section id="poster" class="poster story" aria-label="Afiche de jornada">
         <header class="poster-top">
           <div class="brand">{% if identidad_logo_disponible %}<img src="{{ url_for('imagen_logo_asociacion') }}" alt="Logo">{% else %}⚽{% endif %}<span>{{ identidad_nombre }}</span></div>
           <div class="poster-title">JORNADA {{ jornada_seleccionada }}</div>
@@ -59,7 +131,7 @@
 
         {% set lista = jornadas.get(jornada_seleccionada, []) %}
         {% if libres_por_jornada.get(jornada_seleccionada) %}
-          {% for libre in libres_por_jornada.get(jornada_seleccionada) %}<div class="free">🆓 CLUB LIBRE · {{ libre.nombre }}</div>{% endfor %}
+          {% for libre in libres_por_jornada.get(jornada_seleccionada) %}<div class="free free-info">🆓 CLUB LIBRE · {{ libre.nombre }}</div>{% endfor %}
         {% endif %}
 
         <div class="matches">
@@ -68,7 +140,7 @@
             <div class="match-time">{{ partido.hora or 'HORA POR DEFINIR' }}</div>
             <div class="teams"><div class="team">{% if partido.local_club.logo %}<img src="{{ url_for('imagen_logo_club', club_id=partido.local_club.id) }}" alt="{{ partido.local_club.nombre }}">{% else %}<div style="width:48px;height:48px;border-radius:9px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:950;color:#334155">{{ partido.local_club.nombre[:2]|upper }}</div>{% endif %}<span class="team-name">{{ partido.local_club.nombre }}</span></div><div class="vs">VS</div><div class="team">{% if partido.visitante_club.logo %}<img src="{{ url_for('imagen_logo_club', club_id=partido.visitante_club.id) }}" alt="{{ partido.visitante_club.nombre }}">{% else %}<div style="width:48px;height:48px;border-radius:9px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:950;color:#334155">{{ partido.visitante_club.nombre[:2]|upper }}</div>{% endif %}<span class="team-name">{{ partido.visitante_club.nombre }}</span></div></div>
             <div class="match-meta">🏟️ {{ partido.cancha or 'CANCHA POR DEFINIR' }}{% if partido.fecha %} · 📅 {{ partido.fecha.strftime('%d/%m/%Y') }}{% endif %}</div>
-            {% if partido.turno_club %}<div class="turn">🔰 CLUB DE TURNO · {{ partido.turno_club.nombre }}</div>{% endif %}
+            {% if partido.turno_club %}<div class="turn turn-info">🔰 CLUB DE TURNO · {{ partido.turno_club.nombre }}</div>{% endif %}
           </article>
           {% endfor %}
         </div>
@@ -77,6 +149,20 @@
     </div>
 
     <aside class="side">
+      <div class="design-tools">
+        <h3>🎨 Formato del afiche</h3>
+        <div class="design-row">
+          <div><label>Formato</label><select id="posterFormat" onchange="setPosterFormat(this.value)">
+            <option value="story">Instagram / WhatsApp · 4:5</option>
+            <option value="square">Cuadrado · 1:1</option>
+            <option value="tv">TV / Pantalla · 16:9</option>
+            <option value="print">Impresión · A4</option>
+          </select></div>
+          <div><label>Acción</label><button type="button" class="btn blue" style="width:100%" onclick="downloadPosterPNG()">🖼️ Descargar PNG</button></div>
+        </div>
+        <label class="check"><input id="showTurn" type="checkbox" checked onchange="toggleInfo()"> Mostrar club de turno</label>
+        <label class="check"><input id="showFree" type="checkbox" checked onchange="toggleInfo()"> Mostrar club libre</label>
+      </div>
       <h2>📌 Jornadas disponibles</h2>
       <p>Selecciona una jornada para preparar su afiche. El diseño se adapta a impresión y formato vertical.</p>
       <div class="journey-list">
@@ -89,4 +175,40 @@
     <div class="side" style="position:static"><h2>⚠️ No hay jornadas</h2><p>Genera primero el fixture del campeonato para poder crear sus afiches.</p><a class="btn" href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">⚽ Ir al fixture</a></div>
   {% endif %}
 </div>
+
+<script>
+function getPoster(){ return document.getElementById('poster'); }
+function setPosterFormat(format){
+  const p=getPoster();
+  p.classList.remove('story','square','tv','print');
+  p.classList.add(format);
+}
+function toggleInfo(){
+  const turn=document.getElementById('showTurn').checked;
+  const free=document.getElementById('showFree').checked;
+  document.querySelectorAll('.turn-info').forEach(e=>e.style.display=turn?'block':'none');
+  document.querySelectorAll('.free-info').forEach(e=>e.style.display=free?'block':'none');
+}
+async function downloadPosterPNG(){
+  const poster=getPoster();
+  const old=poster.style.transform;
+  poster.style.transform='none';
+  if(!window.html2canvas){
+    const s=document.createElement('script');
+    s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+    document.head.appendChild(s);
+    await new Promise((resolve,reject)=>{s.onload=resolve;s.onerror=reject;});
+  }
+  try{
+    const canvas=await html2canvas(poster,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+    const link=document.createElement('a');
+    link.download='afiche-jornada-{{ jornada_seleccionada }}.png';
+    link.href=canvas.toDataURL('image/png');
+    link.click();
+  }catch(err){
+    alert('No fue posible generar el PNG. Puedes usar Imprimir / Guardar PDF.');
+  }finally{poster.style.transform=old;}
+}
+toggleInfo();
+</script>
 {% endblock %}
