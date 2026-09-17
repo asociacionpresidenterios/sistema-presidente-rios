@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Centro de publicaciones · {{ campeonato.nombre }}{% endblock %}
+{% block content %}
+<style>
+.pub-wrap{max-width:1280px;margin:0 auto;padding:24px}.pub-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:20px}.pub-head h1{margin:0;font-size:28px}.pub-head p{margin:5px 0 0;color:#64748b}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{border:0;border-radius:10px;padding:10px 14px;text-decoration:none;font-weight:800;cursor:pointer;background:#0f172a;color:#fff}.btn.light{background:#eef2f7;color:#1e293b}.btn.primary{background:#2563eb}.btn.green{background:#16a34a}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}.metric{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:18px;box-shadow:0 4px 16px rgba(15,23,42,.05)}.metric .n{font-size:28px;font-weight:950}.metric small{color:#64748b}.pub-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;box-shadow:0 5px 18px rgba(15,23,42,.05)}.card-head{padding:16px 18px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center}.card-head h2{margin:0;font-size:18px}.card-body{padding:18px}.next{border:2px solid #bfdbfe;background:#eff6ff}.match{padding:12px 0;border-bottom:1px solid #e5e7eb}.match:last-child{border-bottom:0}.match-top{display:flex;justify-content:space-between;gap:10px;font-weight:900}.meta{color:#64748b;font-size:12px;margin-top:5px}.teams{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-top:8px}.team{font-weight:900}.team:last-child{text-align:right}.vs{font-weight:950;color:#2563eb}.table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{padding:9px 6px;border-bottom:1px solid #e5e7eb;text-align:center}.table th:first-child,.table td:first-child,.table th:nth-child(2),.table td:nth-child(2){text-align:left}.badge{padding:4px 8px;border-radius:999px;background:#f1f5f9;font-weight:900;font-size:11px}.rank{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #e5e7eb}.rank:last-child{border-bottom:0}.rank strong{font-size:15px}.empty{padding:20px;color:#64748b;text-align:center}.full{grid-column:1/-1}.print-only{display:none}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}.pub-grid{grid-template-columns:1fr}.pub-head{align-items:flex-start;flex-direction:column}}
+@media print{body{background:#fff}.pub-wrap{padding:0}.actions,.screen-only{display:none!important}.print-only{display:block}.card{box-shadow:none;break-inside:avoid}.pub-grid{grid-template-columns:1fr}.metric{box-shadow:none}.full{display:block}.pub-head{margin-bottom:10px}.pub-head h1{font-size:22px}}
+</style>
+<div class="pub-wrap">
+  <div class="pub-head">
+    <div>
+      <h1>📢 Centro de Publicaciones</h1>
+      <p>{{ identidad.nombre }} · {{ campeonato.nombre }} · {{ campeonato.serie }} · {{ campeonato.temporada }}</p>
+    </div>
+    <div class="actions screen-only">
+      <a class="btn light" href="{{ url_for('panel_campeonato', campeonato_id=campeonato.id) }}">← Centro de control</a>
+      <a class="btn light" href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">⚽ Fixture</a>
+      <a class="btn light" href="{{ url_for('afiches_campeonato', campeonato_id=campeonato.id) }}">🎨 Afiches</a>
+      <button class="btn primary" onclick="window.print()">🖨️ Imprimir / PDF</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="metric"><div class="n">{{ clubes_participantes|length }}</div><small>Clubes participantes</small></div>
+    <div class="metric"><div class="n">{{ jornadas|length }}</div><small>Jornadas</small></div>
+    <div class="metric"><div class="n">{{ total_partidos }}</div><small>Partidos programados</small></div>
+    <div class="metric"><div class="n">{{ total_finalizados }}</div><small>Partidos finalizados</small></div>
+  </div>
+
+  <div class="pub-grid">
+    <section class="card next">
+      <div class="card-head"><h2>📅 Próxima programación</h2><span class="badge">Jornada {{ jornada_proxima or '—' }}</span></div>
+      <div class="card-body">
+        {% if jornada_proxima %}
+          {% for p in jornadas.get(jornada_proxima, []) %}
+          <div class="match"><div class="match-top"><span>{{ p.hora or 'Hora por definir' }}</span><span>{{ p.cancha or 'Cancha por definir' }}</span></div><div class="teams"><div class="team">{{ p.local_club.nombre }}</div><div class="vs">VS</div><div class="team">{{ p.visitante_club.nombre }}</div></div><div class="meta">{% if p.fecha %}📅 {{ p.fecha.strftime('%d/%m/%Y') }} · {% endif %}{% if p.turno_club %}🔰 Turno: {{ p.turno_club.nombre }}{% endif %}</div></div>
+          {% endfor %}
+        {% else %}<div class="empty">No hay jornadas programadas.</div>{% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>📊 Tabla de posiciones</h2><a class="btn light screen-only" href="{{ url_for('tabla_campeonato', campeonato_id=campeonato.id) }}">Ver completa</a></div>
+      <div class="card-body"><table class="table"><thead><tr><th>#</th><th>Club</th><th>PJ</th><th>DG</th><th>PTS</th></tr></thead><tbody>{% for f in filas_tabla[:10] %}<tr><td>{{ f.pos }}</td><td><strong>{{ f.club.nombre }}</strong></td><td>{{ f.pj }}</td><td>{{ f.dg }}</td><td><strong>{{ f.pts }}</strong></td></tr>{% endfor %}</tbody></table></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>🥅 Goleadores</h2><a class="btn light screen-only" href="{{ url_for('estadisticas_campeonato', campeonato_id=campeonato.id) }}">Ver estadísticas</a></div>
+      <div class="card-body">{% for jugador,total in goleadores %}<div class="rank"><span>{{ loop.index }}. {{ jugador.nombre_completo }}</span><strong>{{ total }}</strong></div>{% else %}<div class="empty">Sin registros de goles.</div>{% endfor %}</div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>🟨 Disciplina</h2></div>
+      <div class="card-body">
+        {% for jugador,total in amarillas %}{% if total %}<div class="rank"><span>🟨 {{ jugador.nombre_completo }}</span><strong>{{ total }}</strong></div>{% endif %}{% endfor %}
+        {% for jugador,total in rojas %}{% if total %}<div class="rank"><span>🟥 {{ jugador.nombre_completo }}</span><strong>{{ total }}</strong></div>{% endif %}{% endfor %}
+        {% if not amarillas and not rojas %}<div class="empty">Sin registros disciplinarios.</div>{% endif %}
+      </div>
+    </section>
+
+    <section class="card full">
+      <div class="card-head"><h2>📋 Programación por jornada</h2></div>
+      <div class="card-body">
+        {% for j in jornadas.keys()|sort %}
+        <h3 style="margin:14px 0 5px">Jornada {{ j }}</h3>
+        {% for p in jornadas[j] %}<div class="match"><div class="match-top"><span>{{ p.hora or 'Hora por definir' }}</span><span>{{ p.cancha or 'Cancha por definir' }}</span></div><div class="teams"><div class="team">{{ p.local_club.nombre }}</div><div class="vs">VS</div><div class="team">{{ p.visitante_club.nombre }}</div></div><div class="meta">{% if p.fecha %}📅 {{ p.fecha.strftime('%d/%m/%Y') }} · {% endif %}{% if p.estado %}{{ p.estado }} · {% endif %}{% if p.turno_club %}🔰 {{ p.turno_club.nombre }}{% endif %}</div></div>{% endfor %}
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}
