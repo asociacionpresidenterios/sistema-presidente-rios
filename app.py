@@ -3499,6 +3499,115 @@ def eliminar_campeonato(campeonato_id):
     return redirect(url_for("campeonatos"))
 
 
+@app.route("/campeonatos/<int:campeonato_id>/panel")
+def panel_campeonato(campeonato_id):
+    """Centro de control PRO de un campeonato."""
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+
+    clubes_participantes = (
+        CampeonatoClub.query
+        .filter_by(campeonato_id=campeonato.id)
+        .join(Club, CampeonatoClub.club_id == Club.id)
+        .order_by(Club.nombre)
+        .all()
+    )
+    club_ids = {r.club_id for r in clubes_participantes}
+
+    partidos = (
+        Partido.query
+        .filter_by(campeonato_id=campeonato.id)
+        .order_by(Partido.jornada, Partido.id)
+        .all()
+    )
+    partidos_finalizados = [p for p in partidos if p.estado == "Finalizado"]
+    partidos_pendientes = [p for p in partidos if p.estado != "Finalizado"]
+
+    # Tabla de posiciones
+    tabla = {}
+    for registro in clubes_participantes:
+        club = registro.club
+        tabla[club.id] = {"club": club, "pj": 0, "pg": 0, "pe": 0, "pp": 0,
+                          "gf": 0, "gc": 0, "dg": 0, "pts": 0}
+
+    for partido in partidos_finalizados:
+        if partido.local_club_id not in tabla or partido.visitante_club_id not in tabla:
+            continue
+        gl = partido.goles_local or 0
+        gv = partido.goles_visitante or 0
+        local, visitante = tabla[partido.local_club_id], tabla[partido.visitante_club_id]
+        local["pj"] += 1; visitante["pj"] += 1
+        local["gf"] += gl; local["gc"] += gv
+        visitante["gf"] += gv; visitante["gc"] += gl
+        if gl > gv:
+            local["pg"] += 1; visitante["pp"] += 1; local["pts"] += 3
+        elif gl < gv:
+            visitante["pg"] += 1; local["pp"] += 1; visitante["pts"] += 3
+        else:
+            local["pe"] += 1; visitante["pe"] += 1; local["pts"] += 1; visitante["pts"] += 1
+
+    filas = list(tabla.values())
+    for fila in filas:
+        fila["dg"] = fila["gf"] - fila["gc"]
+    filas.sort(key=lambda f: (-f["pts"], -f["dg"], -f["gf"], f["club"].nombre.lower()))
+    for pos, fila in enumerate(filas, 1):
+        fila["pos"] = pos
+
+    # Próximo partido: prioriza los programados con fecha, luego jornada.
+    proximos = [p for p in partidos if p.estado != "Finalizado"]
+    proximos.sort(key=lambda p: (p.fecha is None, p.fecha or date.max, p.jornada, p.id))
+    proximo_partido = proximos[0] if proximos else None
+
+    # Club libre por jornada
+    todos = {r.club_id: r.club for r in clubes_participantes}
+    libres_por_jornada = {}
+    jornadas = {}
+    for p in partidos:
+        jornadas.setdefault(p.jornada, []).append(p)
+    for jornada, lista in jornadas.items():
+        jugando = set()
+        for p in lista:
+            jugando.add(p.local_club_id); jugando.add(p.visitante_club_id)
+        libres_por_jornada[jornada] = [todos[cid] for cid in todos if cid not in jugando]
+
+    # Estadísticas del campeonato existentes en el sistema.
+    goles = amarillas = rojas = suspensiones = []
+    try:
+        goles, amarillas, rojas, suspensiones = estadisticas_campeonato_data(campeonato)
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR PANEL ESTADISTICAS:", repr(error))
+
+    total_goles = sum(int(x or 0) for _, x in goles)
+    total_amarillas = sum(int(x or 0) for _, x in amarillas)
+    total_rojas = sum(int(x or 0) for _, x in rojas)
+    total_suspensiones = sum(int(x or 0) for _, x in suspensiones)
+
+    jornadas_count = len(jornadas)
+    porcentaje = round((len(partidos_finalizados) / len(partidos) * 100), 1) if partidos else 0
+
+    return render_template(
+        "campeonato_panel.html",
+        campeonato=campeonato,
+        clubes_participantes=clubes_participantes,
+        partidos=partidos,
+        partidos_finalizados=partidos_finalizados,
+        partidos_pendientes=partidos_pendientes,
+        filas=filas,
+        proximo_partido=proximo_partido,
+        libres_por_jornada=libres_por_jornada,
+        jornadas_count=jornadas_count,
+        porcentaje=porcentaje,
+        goleadores=goles[:8],
+        ranking_amarillas=amarillas[:8],
+        ranking_rojas=rojas[:8],
+        ranking_suspensiones=suspensiones[:8],
+        total_goles=total_goles,
+        total_amarillas=total_amarillas,
+        total_rojas=total_rojas,
+        total_suspensiones=total_suspensiones,
+    )
+
+
 @app.route("/campeonatos/<int:campeonato_id>")
 def detalle_campeonato(campeonato_id):
 
