@@ -1167,6 +1167,8 @@ def index():
     )
 
 
+
+
 # ============================================================
 # FICHA INDIVIDUAL
 # ============================================================
@@ -2766,91 +2768,360 @@ def credencial_reverso(jugador_id):
 
 
 # ============================================================
-# DASHBOARD GENERAL — V5 PRO
+# DASHBOARD
 # ============================================================
 
 @app.route("/dashboard")
 def dashboard():
 
-    hoy = date.today()
+    """Panel principal.
 
-    # Indicadores generales
+    Las estadísticas deportivas son complementarias al registro de jugadores.
+    Si una tabla estadística antigua no existe todavía en producción, el
+    dashboard continúa funcionando mostrando esos indicadores en cero.
+    """
+
+    # ------------------------------------------------------------
+    # INDICADORES GENERALES
+    # ------------------------------------------------------------
+
     total_jugadores = Jugador.query.count()
-    total_clubes = Club.query.filter_by(activo=True).count()
-    total_series = Serie.query.filter_by(activo=True).count()
-    total_campeonatos = Campeonato.query.count()
-    campeonatos_activos = Campeonato.query.filter_by(estado="Activo").count()
-    total_partidos = Partido.query.count()
-    partidos_jugados = Partido.query.filter_by(estado="Jugado").count()
-    partidos_programados = Partido.query.filter_by(estado="Programado").count()
 
-    # Campeonatos activos / recientes
-    campeonatos = (
-        Campeonato.query
-        .order_by(Campeonato.id.desc())
-        .limit(8)
-        .all()
-    )
+    vigentes = Jugador.query.filter_by(
+        estado="Vigente"
+    ).count()
 
-    # Próximos partidos programados. Se priorizan partidos con fecha futura,
-    # pero también se muestran los que aún no tienen fecha configurada.
-    partidos_proximos = (
-        Partido.query
-        .filter_by(estado="Programado")
-        .filter(Partido.fecha.isnot(None))
-        .filter(Partido.fecha >= hoy)
-        .order_by(Partido.fecha.asc(), Partido.hora.asc(), Partido.id.asc())
-        .limit(8)
-        .all()
-    )
+    pendientes = Jugador.query.filter_by(
+        estado="Pendiente"
+    ).count()
 
-    if not partidos_proximos:
-        partidos_proximos = (
-            Partido.query
-            .filter_by(estado="Programado")
-            .order_by(Partido.fecha.asc(), Partido.hora.asc(), Partido.id.asc())
-            .limit(8)
-            .all()
-        )
+    suspendidos = Jugador.query.filter_by(
+        estado="Suspendido"
+    ).count()
 
-    # Últimos resultados registrados
-    ultimos_resultados = (
-        Partido.query
-        .filter(Partido.estado == "Jugado")
-        .order_by(Partido.fecha.desc(), Partido.id.desc())
-        .limit(8)
-        .all()
-    )
+    inhabilitados = Jugador.query.filter_by(
+        estado="Inhabilitado"
+    ).count()
 
-    # Clubes con más jugadores inscritos en el registro general
-    jugadores_por_club = (
+    # ------------------------------------------------------------
+    # CONSULTAS SEGURAS
+    # ------------------------------------------------------------
+    # Las tablas Gol y RegistroDisciplinario pueden no existir en una
+    # base de datos antigua. Nunca deben impedir que cargue el Dashboard.
+
+    def safe_all(query, default=None):
+        try:
+            return query.all()
+        except Exception:
+            db.session.rollback()
+            return [] if default is None else default
+
+    def safe_scalar(query, default=0):
+        try:
+            value = query.scalar()
+            return value if value is not None else default
+        except Exception:
+            db.session.rollback()
+            return default
+
+    # ------------------------------------------------------------
+    # JUGADORES POR CLUB
+    # ------------------------------------------------------------
+
+    jugadores_por_club = safe_all(
         db.session.query(
             Jugador.club,
-            db.func.count(Jugador.id).label("total")
+            db.func.count(Jugador.id)
         )
-        .filter(Jugador.club.isnot(None), Jugador.club != "")
+        .filter(
+            Jugador.club.isnot(None),
+            Jugador.club != ""
+        )
         .group_by(Jugador.club)
-        .order_by(db.func.count(Jugador.id).desc(), Jugador.club.asc())
-        .limit(8)
+        .order_by(
+            db.func.count(Jugador.id).desc()
+        )
+    )
+
+    # ------------------------------------------------------------
+    # JUGADORES POR SERIE
+    # ------------------------------------------------------------
+
+    jugadores_por_serie = safe_all(
+        db.session.query(
+            Jugador.serie,
+            db.func.count(Jugador.id)
+        )
+        .filter(
+            Jugador.serie.isnot(None),
+            Jugador.serie != ""
+        )
+        .group_by(Jugador.serie)
+        .order_by(
+            db.func.count(Jugador.id).desc()
+        )
+    )
+
+    # ------------------------------------------------------------
+    # ÚLTIMOS JUGADORES
+    # ------------------------------------------------------------
+
+    ultimos_jugadores = (
+        Jugador.query
+        .order_by(Jugador.id.desc())
+        .limit(5)
         .all()
+    )
+
+    # ------------------------------------------------------------
+    # ESTADÍSTICAS DEPORTIVAS
+    # ------------------------------------------------------------
+
+    total_goles = safe_scalar(
+        db.session.query(
+            db.func.coalesce(
+                db.func.sum(Gol.cantidad),
+                0
+            )
+        )
+    )
+
+    total_amarillas = safe_scalar(
+        db.session.query(
+            db.func.coalesce(
+                db.func.sum(RegistroDisciplinario.cantidad),
+                0
+            )
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Amarilla"
+        )
+    )
+
+    total_rojas = safe_scalar(
+        db.session.query(
+            db.func.coalesce(
+                db.func.sum(RegistroDisciplinario.cantidad),
+                0
+            )
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Roja"
+        )
+    )
+
+    total_suspensiones = safe_scalar(
+        db.session.query(
+            db.func.coalesce(
+                db.func.sum(RegistroDisciplinario.cantidad),
+                0
+            )
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Suspension"
+        )
+    )
+
+    # ------------------------------------------------------------
+    # INDICADORES DE PARTICIPACIÓN DEPORTIVA
+    # ------------------------------------------------------------
+
+    jugadores_con_goles = safe_scalar(
+        db.session.query(
+            db.func.count(db.func.distinct(Gol.jugador_id))
+        ),
+        0
+    )
+
+    jugadores_con_amarillas = safe_scalar(
+        db.session.query(
+            db.func.count(db.func.distinct(RegistroDisciplinario.jugador_id))
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Amarilla"
+        ),
+        0
+    )
+
+    jugadores_con_rojas = safe_scalar(
+        db.session.query(
+            db.func.count(db.func.distinct(RegistroDisciplinario.jugador_id))
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Roja"
+        ),
+        0
+    )
+
+    jugadores_suspendidos_registro = safe_scalar(
+        db.session.query(
+            db.func.count(db.func.distinct(RegistroDisciplinario.jugador_id))
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Suspension"
+        ),
+        0
+    )
+
+    # ------------------------------------------------------------
+    # GOLEADORES
+    # ------------------------------------------------------------
+
+    goleadores = safe_all(
+        db.session.query(
+            Jugador.id,
+            Jugador.nombre_completo,
+            Jugador.club,
+            Jugador.serie,
+            db.func.sum(Gol.cantidad).label("total")
+        )
+        .join(
+            Gol,
+            Gol.jugador_id == Jugador.id
+        )
+        .group_by(
+            Jugador.id,
+            Jugador.nombre_completo,
+            Jugador.club,
+            Jugador.serie
+        )
+        .order_by(
+            db.func.sum(Gol.cantidad).desc(),
+            Jugador.nombre_completo.asc()
+        )
+        .limit(10)
+    )
+
+    # ------------------------------------------------------------
+    # RANKING AMARILLAS
+    # ------------------------------------------------------------
+
+    ranking_amarillas = safe_all(
+        db.session.query(
+            Jugador.id,
+            Jugador.nombre_completo,
+            Jugador.club,
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ).label("total")
+        )
+        .join(
+            RegistroDisciplinario,
+            RegistroDisciplinario.jugador_id == Jugador.id
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Amarilla"
+        )
+        .group_by(
+            Jugador.id,
+            Jugador.nombre_completo,
+            Jugador.club
+        )
+        .order_by(
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ).desc(),
+            Jugador.nombre_completo.asc()
+        )
+        .limit(10)
+    )
+
+    # ------------------------------------------------------------
+    # RANKING ROJAS
+    # ------------------------------------------------------------
+
+    ranking_rojas = safe_all(
+        db.session.query(
+            Jugador.id,
+            Jugador.nombre_completo,
+            Jugador.club,
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ).label("total")
+        )
+        .join(
+            RegistroDisciplinario,
+            RegistroDisciplinario.jugador_id == Jugador.id
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Roja"
+        )
+        .group_by(
+            Jugador.id,
+            Jugador.nombre_completo,
+            Jugador.club
+        )
+        .order_by(
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ).desc(),
+            Jugador.nombre_completo.asc()
+        )
+        .limit(10)
+    )
+
+    # ------------------------------------------------------------
+    # RANKING SUSPENSIONES
+    # ------------------------------------------------------------
+
+    ranking_suspensiones = safe_all(
+        db.session.query(
+            Jugador.id,
+            Jugador.nombre_completo,
+            Jugador.club,
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ).label("total")
+        )
+        .join(
+            RegistroDisciplinario,
+            RegistroDisciplinario.jugador_id == Jugador.id
+        )
+        .filter(
+            RegistroDisciplinario.tipo == "Suspension"
+        )
+        .group_by(
+            Jugador.id,
+            Jugador.nombre_completo,
+            Jugador.club
+        )
+        .order_by(
+            db.func.sum(
+                RegistroDisciplinario.cantidad
+            ).desc(),
+            Jugador.nombre_completo.asc()
+        )
+        .limit(10)
     )
 
     return render_template(
         "dashboard.html",
-        hoy=hoy,
         total_jugadores=total_jugadores,
-        total_clubes=total_clubes,
-        total_series=total_series,
-        total_campeonatos=total_campeonatos,
-        campeonatos_activos=campeonatos_activos,
-        total_partidos=total_partidos,
-        partidos_jugados=partidos_jugados,
-        partidos_programados=partidos_programados,
-        campeonatos=campeonatos,
-        partidos_proximos=partidos_proximos,
-        ultimos_resultados=ultimos_resultados,
-        jugadores_por_club=jugadores_por_club
+        vigentes=vigentes,
+        pendientes=pendientes,
+        suspendidos=suspendidos,
+        inhabilitados=inhabilitados,
+        jugadores_por_club=jugadores_por_club,
+        jugadores_por_serie=jugadores_por_serie,
+        ultimos_jugadores=ultimos_jugadores,
+        total_goles=total_goles,
+        total_amarillas=total_amarillas,
+        total_rojas=total_rojas,
+        total_suspensiones=total_suspensiones,
+        jugadores_con_goles=jugadores_con_goles,
+        jugadores_con_amarillas=jugadores_con_amarillas,
+        jugadores_con_rojas=jugadores_con_rojas,
+        jugadores_suspendidos_registro=jugadores_suspendidos_registro,
+        goleadores=goleadores,
+        ranking_amarillas=ranking_amarillas,
+        ranking_rojas=ranking_rojas,
+        ranking_suspensiones=ranking_suspensiones
     )
+
+
+# ============================================================
+# ADMINISTRACIÓN DE CLUBES Y SERIES
+# ============================================================
 
 @app.route(
     "/configuracion"
