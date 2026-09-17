@@ -48,6 +48,7 @@
         <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">🏠 Inicio</a>
         <a href="{{ url_for('index') }}" class="{% if request.endpoint in ['index','nuevo_jugador','editar_jugador','ficha_jugador','importar_jugadores'] %}active{% endif %}">👥 Jugadores</a>
         <a href="{{ url_for('campeonatos') }}" class="{% if request.endpoint and request.endpoint.startswith('campeonato') or request.endpoint and ('fixture' in request.endpoint or 'resultado' in request.endpoint or 'tabla' in request.endpoint or 'estadistica' in request.endpoint) %}active{% endif %}">🏆 Campeonatos</a>
+        <a href="{{ url_for('identidad_visual') }}" class="{% if request.endpoint in ['identidad_visual','guardar_identidad','guardar_logo_club','eliminar_logo_club','eliminar_logo_asociacion'] %}active{% endif %}">🎨 Identidad</a>
         <a href="{{ url_for('configuracion') }}" class="{% if request.endpoint == 'configuracion' %}active{% endif %}">⚙️ Configuración</a>
       </nav>
     </div>
