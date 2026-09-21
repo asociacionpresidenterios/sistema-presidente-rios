@@ -5,28 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Asociación Presidente Ríos{% endblock %}</title>
   <style>
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0}
+    *{box-sizing:border-box} html,body{margin:0;padding:0}
     body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;color:#111827}
-    a{color:inherit}
-    .app-shell{min-height:100vh}
+    a{color:inherit}.app-shell{min-height:100vh}
     .topbar{position:sticky;top:0;z-index:1000;background:#111827;color:#fff;border-bottom:1px solid rgba(255,255,255,.08);box-shadow:0 3px 14px rgba(15,23,42,.14)}
     .topbar-inner{max-width:1500px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}
-    .brand{display:flex;align-items:center;gap:11px;text-decoration:none;min-width:0}
-    .brand-mark{width:42px;height:42px;border-radius:12px;background:#f97316;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-    .brand-text{min-width:0}
-    .brand-title{display:block;font-weight:900;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .brand-sub{display:block;color:#cbd5e1;font-size:11px;margin-top:2px}
-    .nav{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}
-    .nav a{padding:9px 11px;border-radius:9px;text-decoration:none;color:#dbe4ee;font-size:12px;font-weight:800;white-space:nowrap}
-    .nav a:hover,.nav a.active{background:#1f2937;color:#fff}
-    .nav a.active{box-shadow:inset 0 -2px 0 #f97316}
-    .page-wrap{max-width:1500px;margin:0 auto;padding:0 12px 35px}
-    .flash-wrap{max-width:1200px;margin:18px auto 0;padding:0 12px}
-    .flash{padding:12px 15px;border-radius:10px;margin-bottom:10px;background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;font-size:13px;font-weight:700}
-    .flash.error,.flash.danger{background:#fef2f2;border-color:#fecaca;color:#991b1b}
-    .flash.warning{background:#fffbeb;border-color:#fde68a;color:#92400e}
-    .flash.info{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+    .brand{display:flex;align-items:center;gap:11px;text-decoration:none;min-width:0}.brand-mark{width:42px;height:42px;border-radius:12px;background:#f97316;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+    .brand-text{min-width:0}.brand-title{display:block;font-weight:900;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.brand-sub{display:block;color:#cbd5e1;font-size:11px;margin-top:2px}
+    .nav{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:flex-end}.nav a{padding:9px 11px;border-radius:9px;text-decoration:none;color:#dbe4ee;font-size:12px;font-weight:800;white-space:nowrap}.nav a:hover,.nav a.active{background:#1f2937;color:#fff}.nav a.active{box-shadow:inset 0 -2px 0 #f97316}
+    .nav .public{background:#0f766e;color:#fff}.nav .login{background:#2563eb;color:#fff}.nav .logout{background:#7f1d1d;color:#fff}
+    .page-wrap{max-width:1500px;margin:0 auto;padding:0 12px 35px}.flash-wrap{max-width:1200px;margin:18px auto 0;padding:0 12px}.flash{padding:12px 15px;border-radius:10px;margin-bottom:10px;background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;font-size:13px;font-weight:700}.flash.error,.flash.danger{background:#fef2f2;border-color:#fecaca;color:#991b1b}.flash.warning{background:#fffbeb;border-color:#fde68a;color:#92400e}.flash.info{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
     .footer{max-width:1500px;margin:0 auto;padding:18px 22px 30px;color:#94a3b8;text-align:center;font-size:11px}
     @media(max-width:900px){.topbar-inner{align-items:flex-start;flex-direction:column}.nav{justify-content:flex-start;width:100%}.nav a{flex:0 0 auto}.page-wrap{padding-left:5px;padding-right:5px}}
     @media(max-width:560px){.topbar-inner{padding:10px 14px}.brand-title{font-size:14px}.nav{overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}.nav a{font-size:11px}.page-wrap{padding-bottom:20px}}
@@ -35,43 +23,27 @@
 </head>
 <body>
 <div class="app-shell">
-  <header class="topbar">
-    <div class="topbar-inner">
-      <a class="brand" href="{{ url_for('dashboard') }}">
-        <span class="brand-mark">⚽</span>
-        <span class="brand-text">
-          <span class="brand-title">Asociación Presidente Ríos</span>
-          <span class="brand-sub">Sistema de Gestión Deportiva</span>
-        </span>
-      </a>
-      <nav class="nav" aria-label="Navegación principal">
-        <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">🏠 Inicio</a>
-        <a href="{{ url_for('index') }}" class="{% if request.endpoint in ['index','nuevo_jugador','editar_jugador','ficha_jugador','importar_jugadores'] %}active{% endif %}">👥 Jugadores</a>
-        <a href="{{ url_for('campeonatos') }}" class="{% if request.endpoint and request.endpoint.startswith('campeonato') or request.endpoint and ('fixture' in request.endpoint or 'resultado' in request.endpoint or 'tabla' in request.endpoint or 'estadistica' in request.endpoint) %}active{% endif %}">🏆 Campeonatos</a>
-        <a href="{{ url_for('identidad_visual') }}" class="{% if request.endpoint in ['identidad_visual','guardar_identidad','guardar_logo_club','eliminar_logo_club','eliminar_logo_asociacion'] %}active{% endif %}">🎨 Identidad</a>
-        <a href="{{ url_for('configuracion') }}" class="{% if request.endpoint == 'configuracion' %}active{% endif %}">⚙️ Configuración</a>
-      </nav>
-    </div>
-  </header>
-
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      <div class="flash-wrap">
-        {% for category, message in messages %}
-          <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %}
-      </div>
+<header class="topbar"><div class="topbar-inner">
+  <a class="brand" href="{{ url_for('dashboard') }}"><span class="brand-mark">⚽</span><span class="brand-text"><span class="brand-title">Asociación Presidente Ríos</span><span class="brand-sub">Sistema de Gestión Deportiva</span></span></a>
+  <nav class="nav" aria-label="Navegación principal">
+    {% if session.get('admin_id') %}
+      <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">🏠 Inicio</a>
+      <a href="{{ url_for('index') }}" class="{% if request.endpoint in ['index','nuevo_jugador','editar_jugador','ficha_jugador','importar_jugadores'] %}active{% endif %}">👥 Jugadores</a>
+      <a href="{{ url_for('campeonatos') }}" class="{% if request.endpoint and (request.endpoint.startswith('campeonato') or 'fixture' in request.endpoint or 'resultado' in request.endpoint or 'tabla' in request.endpoint or 'estadistica' in request.endpoint) %}active{% endif %}">🏆 Campeonatos</a>
+      <a href="{{ url_for('identidad_visual') }}" class="{% if request.endpoint == 'identidad_visual' %}active{% endif %}">🎨 Identidad</a>
+      <a href="{{ url_for('configuracion') }}" class="{% if request.endpoint == 'configuracion' %}active{% endif %}">⚙️ Configuración</a>
+      <a href="{{ url_for('publico') }}" class="public">🌐 Portal público</a>
+      <a href="{{ url_for('mi_cuenta_admin') }}">👤 {{ session.get('admin_nombre') or session.get('admin_username') }}</a>
+      <a href="{{ url_for('logout') }}" class="logout">🚪 Salir</a>
+    {% else %}
+      <a href="{{ url_for('publico') }}" class="public">🌐 Portal público</a>
+      <a href="{{ url_for('login') }}" class="login">🔐 Iniciar sesión</a>
     {% endif %}
-  {% endwith %}
-
-  <main class="page-wrap">
-    {% block content %}{% endblock %}
-  </main>
-
-  <footer class="footer">
-    Asociación Presidente Ríos · Sistema de Gestión Deportiva
-  </footer>
+  </nav>
+</div></header>
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="flash-wrap">{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}{% endwith %}
+<main class="page-wrap">{% block content %}{% endblock %}</main>
+<footer class="footer">Asociación Presidente Ríos · Sistema de Gestión Deportiva</footer>
 </div>
 {% block scripts %}{% endblock %}
-</body>
-</html>
+</body></html>
