@@ -4647,52 +4647,216 @@ def jugadores_disponibles_para_equipo(campeonato, club):
     return (Jugador.query.filter(Jugador.serie == campeonato.serie, Jugador.club == club.nombre)
             .order_by(Jugador.nombre_completo).all())
 
+def sincronizar_estadisticas_desde_acta(campeonato, partido, nomina):
+    """Reemplaza únicamente los registros generados por esta acta.
+
+    Los registros ingresados manualmente desde el módulo de estadísticas no
+    se tocan. Así se evita duplicar goles/tarjetas cada vez que se guarda
+    el acta.
+    """
+    marcador = f"ACTA_PARTIDO:{partido.id}"
+
+    Gol.query.filter(
+        Gol.campeonato_id == campeonato.id,
+        Gol.observaciones == marcador,
+    ).delete(synchronize_session=False)
+
+    RegistroDisciplinario.query.filter(
+        RegistroDisciplinario.campeonato_id == campeonato.id,
+        RegistroDisciplinario.observaciones == marcador,
+    ).delete(synchronize_session=False)
+
+    goles_local = 0
+    goles_visitante = 0
+
+    for registro in nomina:
+        cantidad_goles = max(0, int(registro.goles or 0))
+        amarillas = max(0, int(registro.amarillas or 0))
+        rojas = max(0, int(registro.rojas or 0))
+
+        if registro.equipo == "local":
+            goles_local += cantidad_goles
+        else:
+            goles_visitante += cantidad_goles
+
+        if cantidad_goles:
+            db.session.add(Gol(
+                jugador_id=registro.jugador_id,
+                fecha=partido.fecha or date.today(),
+                cantidad=cantidad_goles,
+                campeonato=campeonato.nombre,
+                campeonato_id=campeonato.id,
+                observaciones=marcador,
+            ))
+
+        if amarillas:
+            db.session.add(RegistroDisciplinario(
+                jugador_id=registro.jugador_id,
+                fecha=partido.fecha or date.today(),
+                tipo="Amarilla",
+                cantidad=amarillas,
+                motivo=f"Acta partido #{partido.id}",
+                campeonato=campeonato.nombre,
+                campeonato_id=campeonato.id,
+                observaciones=marcador,
+            ))
+
+        if rojas:
+            db.session.add(RegistroDisciplinario(
+                jugador_id=registro.jugador_id,
+                fecha=partido.fecha or date.today(),
+                tipo="Roja",
+                cantidad=rojas,
+                motivo=f"Acta partido #{partido.id}",
+                campeonato=campeonato.nombre,
+                campeonato_id=campeonato.id,
+                observaciones=marcador,
+            ))
+
+    return goles_local, goles_visitante
+
+
 @app.route("/campeonatos/<int:campeonato_id>/partido/<int:partido_id>/acta", methods=["GET", "POST"])
 def acta_partido(campeonato_id, partido_id):
     campeonato = db.get_or_404(Campeonato, campeonato_id)
     partido = db.get_or_404(Partido, partido_id)
+
     if partido.campeonato_id != campeonato.id:
         flash("El partido no pertenece a este campeonato.", "error")
         return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+
+    acta = partido.acta
+
     if request.method == "POST":
+        accion = request.form.get("accion", "guardar").strip().lower()
+
+        # Una vez cerrada, el acta queda protegida contra modificaciones.
+        if accion == "reabrir":
+            if acta is None:
+                flash("El acta todavía no existe.", "error")
+            elif acta.estado != "Cerrada":
+                flash("El acta ya está abierta.", "info")
+            else:
+                try:
+                    acta.estado = "Borrador"
+                    db.session.commit()
+                    flash("Acta reabierta para edición.", "success")
+                except Exception as error:
+                    db.session.rollback()
+                    print("ERROR REABRIENDO ACTA V5.8:", repr(error))
+                    flash("No fue posible reabrir el acta.", "error")
+            return redirect(url_for("acta_partido", campeonato_id=campeonato.id, partido_id=partido.id))
+
+        if acta is not None and acta.estado == "Cerrada":
+            flash("El acta está cerrada. Debes reabrirla antes de modificarla.", "error")
+            return redirect(url_for("acta_partido", campeonato_id=campeonato.id, partido_id=partido.id))
+
         try:
-            acta = partido.acta
             if acta is None:
                 acta = ActaPartido(partido_id=partido.id)
                 db.session.add(acta)
+                db.session.flush()
+
+            nuevo_estado = request.form.get("estado", "Borrador").strip()
+            if nuevo_estado not in {"Borrador", "Cerrada"}:
+                nuevo_estado = "Borrador"
+
             acta.numero_acta = request.form.get("numero_acta", "").strip() or None
             acta.arbitro = request.form.get("arbitro", "").strip() or None
             acta.observaciones = request.form.get("observaciones", "").strip() or None
-            acta.estado = request.form.get("estado", "Borrador").strip() or "Borrador"
+            acta.estado = nuevo_estado
+
             PartidoJugador.query.filter_by(partido_id=partido.id).delete(synchronize_session=False)
+
             jugadores_ids = request.form.getlist("jugador_id")
             equipos = request.form.getlist("equipo")
             condiciones = request.form.getlist("condicion")
             capitanes = request.form.getlist("capitan")
-            ingresos = request.form.getlist("ingreso"); salidas = request.form.getlist("salida")
-            goles = request.form.getlist("goles"); amarillas = request.form.getlist("amarillas"); rojas = request.form.getlist("rojas")
+            ingresos = request.form.getlist("ingreso")
+            salidas = request.form.getlist("salida")
+            goles = request.form.getlist("goles")
+            amarillas = request.form.getlist("amarillas")
+            rojas = request.form.getlist("rojas")
             observs = request.form.getlist("obs_jugador")
-            permitidos = {"local": {j.id for j in jugadores_disponibles_para_equipo(campeonato, partido.local_club)},
-                          "visitante": {j.id for j in jugadores_disponibles_para_equipo(campeonato, partido.visitante_club)}}
+
+            permitidos = {
+                "local": {j.id for j in jugadores_disponibles_para_equipo(campeonato, partido.local_club)},
+                "visitante": {j.id for j in jugadores_disponibles_para_equipo(campeonato, partido.visitante_club)},
+            }
+
             for i, raw_id in enumerate(jugadores_ids):
-                if not raw_id.strip(): continue
-                jid=int(raw_id); equipo=equipos[i] if i < len(equipos) else "local"
-                if jid not in permitidos.get(equipo, set()): raise ValueError("Jugador no perteneciente al club seleccionado.")
+                if not raw_id.strip():
+                    continue
+
+                jid = int(raw_id)
+                equipo = equipos[i] if i < len(equipos) else "local"
+                if jid not in permitidos.get(equipo, set()):
+                    raise ValueError("Jugador no perteneciente al club seleccionado.")
+
                 def iv(lst):
-                    try: return max(0, int(lst[i])) if i < len(lst) and lst[i].strip() else 0
-                    except (ValueError, TypeError): return 0
-                db.session.add(PartidoJugador(partido_id=partido.id, jugador_id=jid, equipo=equipo,
-                    condicion=condiciones[i] if i < len(condiciones) and condiciones[i] in {"Titular","Suplente"} else "Suplente",
-                    capitan=str(jid) in capitanes, ingreso=(ingresos[i].strip() if i < len(ingresos) else None) or None,
-                    salida=(salidas[i].strip() if i < len(salidas) else None) or None, goles=iv(goles), amarillas=iv(amarillas), rojas=iv(rojas),
-                    observaciones=(observs[i].strip() if i < len(observs) else None) or None))
-            db.session.commit(); flash("Acta y nómina guardadas correctamente.", "success")
+                    try:
+                        return max(0, int(lst[i])) if i < len(lst) and lst[i].strip() else 0
+                    except (ValueError, TypeError):
+                        return 0
+
+                db.session.add(PartidoJugador(
+                    partido_id=partido.id,
+                    jugador_id=jid,
+                    equipo=equipo,
+                    condicion=condiciones[i] if i < len(condiciones) and condiciones[i] in {"Titular", "Suplente"} else "Suplente",
+                    capitan=str(jid) in capitanes,
+                    ingreso=(ingresos[i].strip() if i < len(ingresos) else None) or None,
+                    salida=(salidas[i].strip() if i < len(salidas) else None) or None,
+                    goles=iv(goles),
+                    amarillas=iv(amarillas),
+                    rojas=iv(rojas),
+                    observaciones=(observs[i].strip() if i < len(observs) else None) or None,
+                ))
+
+            db.session.flush()
+            nomina_actual = PartidoJugador.query.filter_by(partido_id=partido.id).all()
+            goles_local, goles_visitante = sincronizar_estadisticas_desde_acta(
+                campeonato, partido, nomina_actual
+            )
+
+            # El resultado oficial se toma de los goles registrados en el acta
+            # solamente al momento de cerrarla.
+            if acta.estado == "Cerrada":
+                partido.goles_local = goles_local
+                partido.goles_visitante = goles_visitante
+                partido.estado = "Finalizado"
+
+            db.session.commit()
+
+            if acta.estado == "Cerrada":
+                flash(
+                    f"Acta cerrada. Resultado actualizado: {partido.local_club.nombre} "
+                    f"{goles_local} - {goles_visitante} {partido.visitante_club.nombre}. "
+                    "Estadísticas y disciplina sincronizadas.",
+                    "success",
+                )
+            else:
+                flash(
+                    "Acta guardada como borrador. Goles y disciplina quedaron sincronizados.",
+                    "success",
+                )
+
         except Exception as error:
-            db.session.rollback(); print("ERROR GUARDANDO ACTA V5.7:", repr(error)); flash("No fue posible guardar el acta.", "error")
+            db.session.rollback()
+            print("ERROR GUARDANDO ACTA V5.8:", repr(error))
+            flash("No fue posible guardar el acta. Revise los datos e inténtelo nuevamente.", "error")
+
         return redirect(url_for("acta_partido", campeonato_id=campeonato.id, partido_id=partido.id))
-    return render_template("partido_acta_nomina.html", campeonato=campeonato, partido=partido, acta=partido.acta, nomina=partido.nomina,
-                           locales=jugadores_disponibles_para_equipo(campeonato, partido.local_club),
-                           visitantes=jugadores_disponibles_para_equipo(campeonato, partido.visitante_club))
+
+    return render_template(
+        "partido_acta_nomina.html",
+        campeonato=campeonato,
+        partido=partido,
+        acta=acta,
+        nomina=partido.nomina,
+        locales=jugadores_disponibles_para_equipo(campeonato, partido.local_club),
+        visitantes=jugadores_disponibles_para_equipo(campeonato, partido.visitante_club),
+    )
 
 @app.route("/campeonatos/<int:campeonato_id>/partido/<int:partido_id>/acta/word")
 def exportar_acta_word(campeonato_id, partido_id):
