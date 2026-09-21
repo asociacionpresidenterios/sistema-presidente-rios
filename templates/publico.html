@@ -1,1 +1,116 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Asociación Presidente Ríos · Portal Público</title><style>body{margin:0;background:#f1f5f9;color:#0f172a;font-family:Arial,sans-serif}.top{background:#0f172a;color:#fff;padding:18px 5%;display:flex;justify-content:space-between;align-items:center}.top a{color:#fff;text-decoration:none;font-weight:800}.wrap{max-width:1250px;margin:25px auto;padding:0 18px}.hero{background:linear-gradient(135deg,#0f172a,#1d4ed8);color:#fff;border-radius:20px;padding:28px;margin-bottom:20px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:18px}.card{background:#fff;border-radius:18px;padding:20px;box-shadow:0 6px 20px #0f172a10}.match{padding:10px 0;border-bottom:1px solid #e5e7eb}.btn{display:inline-block;padding:9px 13px;border-radius:9px;background:#2563eb;color:#fff;text-decoration:none;font-weight:800}.free{background:#ecfdf5;color:#166534;padding:10px;border-radius:10px;margin:10px 0}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:9px;border-bottom:1px solid #e5e7eb;text-align:left}.pill{display:inline-block;background:#e2e8f0;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800}.section{margin-top:25px}.small{color:#64748b}.score{font-weight:900}</style></head><body><header class="top"><div>⚽ <strong>Asociación Presidente Ríos</strong><div style="font-size:12px;opacity:.75">Portal público de resultados</div></div><a href="{{ url_for('login') }}">🔐 Administración</a></header><main class="wrap"><div class="hero"><h1>⚽ Campeonato y resultados</h1><p>Consulta tablas de posiciones, próxima jornada y goleadores.</p></div>{% if not paneles %}<div class="card"><h2>No hay campeonatos activos</h2><p class="small">Cuando exista un campeonato en estado Activo aparecerá aquí.</p></div>{% endif %}{% for p in paneles %}<section class="section"><div class="card"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><span class="pill">{{ p.campeonato.serie }}</span><h2>{{ p.campeonato.nombre }}</h2></div><a class="btn" href="{{ url_for('publico_campeonato',campeonato_id=p.campeonato.id) }}">Ver campeonato</a></div><h3>📅 Próxima jornada{% if p.jornada %} · Jornada {{ p.jornada }}{% endif %}</h3>{% for partido in p.partidos %}<div class="match"><strong>{{ partido.hora or '--:--' }}</strong> · {{ partido.local_club.nombre }} <b>vs</b> {{ partido.visitante_club.nombre }}<div class="small">🏟️ {{ partido.cancha or 'Cancha por confirmar' }}{% if partido.turno_club %} · 🔰 Turno: {{ partido.turno_club.nombre }}{% endif %}</div></div>{% else %}<p class="small">No hay partidos pendientes.</p>{% endfor %}<h3>📊 Tabla de posiciones</h3><div class="table-wrap"><table class="table"><tr><th>Pos</th><th>Club</th><th>PJ</th><th>DG</th><th>PTS</th></tr>{% for f in p.tabla %}<tr><td>{{ f.pos }}</td><td>{{ f.club.nombre }}</td><td>{{ f.pj }}</td><td>{{ f.dg }}</td><td class="score">{{ f.pts }}</td></tr>{% else %}<tr><td colspan="5">Sin tabla disponible.</td></tr>{% endfor %}</table></div><h3>🥅 Goleadores · {{ p.campeonato.serie }} · por club</h3><div class="table-wrap"><table class="table"><tr><th>Jugador</th><th>Club</th><th>Goles</th></tr>{% for jugador,total in p.goleadores %}<tr><td>{{ jugador.nombre_completo }}</td><td>{{ jugador.club }}</td><td class="score">{{ total }}</td></tr>{% else %}<tr><td colspan="3">Sin goles registrados.</td></tr>{% endfor %}</table></div></div></section>{% endfor %}</main></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Asociación Presidente Ríos · Portal Público</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f1f5f9;color:#0f172a;font-family:Arial,sans-serif}
+.top{background:#0f172a;color:#fff;padding:18px 5%;display:flex;justify-content:space-between;align-items:center;gap:20px}
+.top a{color:#fff;text-decoration:none;font-weight:800}
+.wrap{max-width:1250px;margin:25px auto;padding:0 18px}
+.hero{background:linear-gradient(135deg,#0f172a,#1d4ed8);color:#fff;border-radius:20px;padding:30px;margin-bottom:22px}
+.hero h1{margin:0 0 8px;font-size:32px}.hero p{margin:0;opacity:.9}
+.series-nav{background:#fff;border-radius:18px;padding:18px;box-shadow:0 6px 20px #0f172a10;margin-bottom:25px}
+.series-nav h2{margin:0 0 14px;font-size:18px}
+.series-buttons{display:flex;flex-wrap:wrap;gap:10px}
+.series-btn{border:0;border-radius:12px;padding:12px 18px;background:#e2e8f0;color:#0f172a;font-weight:900;cursor:pointer;font-size:14px}
+.series-btn:hover,.series-btn.active{background:#2563eb;color:#fff}
+.series-section{margin-bottom:30px}
+.series-title{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:0 0 14px;padding:12px 16px;border-left:5px solid #2563eb;background:#e8eefc;border-radius:10px}
+.series-title h2{margin:0}.series-title span{font-size:13px;color:#475569;font-weight:800}
+.champ-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px}
+.card{background:#fff;border-radius:18px;padding:20px;box-shadow:0 6px 20px #0f172a10}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.card h3{margin:8px 0 4px}.btn{display:inline-block;padding:10px 14px;border-radius:10px;background:#2563eb;color:#fff;text-decoration:none;font-weight:900}.btn:hover{background:#1d4ed8}
+.match{padding:10px 0;border-bottom:1px solid #e5e7eb}.match:last-child{border-bottom:0}
+.free{background:#ecfdf5;color:#166534;padding:10px;border-radius:10px;margin:10px 0}
+.table{width:100%;border-collapse:collapse}.table th,.table td{padding:9px;border-bottom:1px solid #e5e7eb;text-align:left}
+.pill{display:inline-block;background:#e2e8f0;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:800}.section{margin-top:18px}.small{color:#64748b}.score{font-weight:900}
+.empty{background:#fff;padding:25px;border-radius:18px;text-align:center;color:#64748b}
+@media(max-width:700px){.top{padding:14px 18px}.top a{font-size:13px}.hero h1{font-size:25px}.champ-grid{grid-template-columns:1fr}.series-btn{flex:1 1 calc(50% - 10px)}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div>⚽ <strong>Asociación Presidente Ríos</strong><div style="font-size:12px;opacity:.75">Portal público de resultados</div></div>
+  <a href="{{ url_for('login') }}">🔐 Administración</a>
+</header>
+<main class="wrap">
+  <div class="hero">
+    <h1>⚽ Campeonatos Asociación Presidente Ríos</h1>
+    <p>Selecciona una serie para consultar sus campeonatos, próxima fecha, tablas y goleadores.</p>
+  </div>
+
+  {% if campeonatos %}
+  <div class="series-nav">
+    <h2>📂 Seleccionar serie</h2>
+    <div class="series-buttons">
+      <button class="series-btn active" type="button" data-serie="todas">🏆 Todas</button>
+      {% for serie in series_publicas %}
+        <button class="series-btn" type="button" data-serie="{{ serie|lower|replace(' ','-') }}">⚽ {{ serie }}</button>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% for serie in series_publicas %}
+  {% set campeonatos_serie = campeonatos_por_serie.get(serie, []) %}
+  <section class="series-section" data-serie-section="{{ serie|lower|replace(' ','-') }}">
+    <div class="series-title">
+      <h2>⚽ {{ serie }}</h2>
+      <span>{{ campeonatos_serie|length }} campeonato{% if campeonatos_serie|length != 1 %}s{% endif %} activo{% if campeonatos_serie|length != 1 %}s{% endif %}</span>
+    </div>
+    <div class="champ-grid">
+      {% for p in campeonatos_serie %}
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <span class="pill">{{ p.campeonato.serie }}</span>
+            <h3>{{ p.campeonato.nombre }}</h3>
+            {% if p.campeonato.temporada %}<div class="small">Temporada {{ p.campeonato.temporada }}</div>{% endif %}
+          </div>
+          <a class="btn" href="{{ url_for('publico_campeonato',campeonato_id=p.campeonato.id) }}">Ver campeonato</a>
+        </div>
+        <div class="section">
+          <h3>📅 Próxima jornada{% if p.jornada %} · Jornada {{ p.jornada }}{% endif %}</h3>
+          {% for partido in p.partidos %}
+          <div class="match">
+            <strong>{{ partido.hora or '--:--' }}</strong> · {{ partido.local_club.nombre }} <b>vs</b> {{ partido.visitante_club.nombre }}
+            <div class="small">🏟️ {{ partido.cancha or 'Cancha por confirmar' }}{% if partido.turno_club %} · 🔰 Turno: {{ partido.turno_club.nombre }}{% endif %}</div>
+          </div>
+          {% else %}<p class="small">No hay partidos pendientes.</p>{% endfor %}
+        </div>
+        <div class="section">
+          <h3>📊 Tabla de posiciones</h3>
+          <table class="table"><tr><th>Pos</th><th>Club</th><th>PJ</th><th>DG</th><th>PTS</th></tr>
+          {% for f in p.tabla %}<tr><td>{{ f.pos }}</td><td>{{ f.club.nombre }}</td><td>{{ f.pj }}</td><td>{{ f.dg }}</td><td class="score">{{ f.pts }}</td></tr>
+          {% else %}<tr><td colspan="5">Sin tabla disponible.</td></tr>{% endfor %}</table>
+        </div>
+        <div class="section">
+          <h3>🥅 Goleadores</h3>
+          <table class="table"><tr><th>Jugador</th><th>Club</th><th>Goles</th></tr>
+          {% for jugador,total in p.goleadores %}<tr><td>{{ jugador.nombre_completo }}</td><td>{{ jugador.club }}</td><td class="score">{{ total }}</td></tr>
+          {% else %}<tr><td colspan="3">Sin goles registrados.</td></tr>{% endfor %}</table>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+  {% else %}
+    <div class="empty"><h2>No hay campeonatos activos</h2><p>Cuando exista un campeonato en estado Activo aparecerá aquí.</p></div>
+  {% endif %}
+</main>
+<script>
+const buttons=[...document.querySelectorAll('.series-btn')];
+const sections=[...document.querySelectorAll('[data-serie-section]')];
+buttons.forEach(btn=>btn.addEventListener('click',()=>{
+  buttons.forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const serie=btn.dataset.serie;
+  sections.forEach(sec=>{sec.style.display=(serie==='todas'||sec.dataset.serieSection===serie)?'block':'none';});
+}));
+</script>
+</body>
+</html>
