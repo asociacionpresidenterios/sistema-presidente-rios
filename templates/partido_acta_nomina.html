@@ -1,31 +1,101 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container" style="max-width:1200px;margin:25px auto;padding:0 15px;font-family:Arial,sans-serif">
-  <h1>📝 Acta Digital</h1>
-  <p><strong>{{ campeonato.nombre }}</strong> · Jornada {{ partido.jornada }}</p>
-  <div style="padding:18px;border-radius:12px;background:#f4f6f8;margin-bottom:20px">
-    <h2>{{ partido.local_club.nombre }} vs {{ partido.visitante_club.nombre }}</h2>
-    <p>📅 {{ partido.fecha.strftime('%d/%m/%Y') if partido.fecha else '-' }} · ⏰ {{ partido.hora or '-' }} · 🏟️ {{ partido.cancha or '-' }}</p>
-  </div>
-  <form method="post">
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">
-      <label>N° Acta<input name="numero_acta" value="{{ acta.numero_acta if acta else '' }}" style="width:100%;padding:9px"></label>
-      <label>Árbitro<input name="arbitro" value="{{ acta.arbitro if acta else '' }}" style="width:100%;padding:9px"></label>
-      <label>Estado<select name="estado" style="width:100%;padding:9px"><option {% if not acta or acta.estado=='Borrador' %}selected{% endif %}>Borrador</option><option {% if acta and acta.estado=='Cerrada' %}selected{% endif %}>Cerrada</option></select></label>
+<div class="container" style="max-width:1250px;margin:25px auto;padding:0 15px;font-family:Arial,sans-serif">
+  <div style="display:flex;justify-content:space-between;gap:15px;align-items:flex-start;flex-wrap:wrap">
+    <div>
+      <h1 style="margin-bottom:5px">📝 Acta Digital del Partido</h1>
+      <p style="margin-top:0"><strong>{{ campeonato.nombre }}</strong> · Jornada {{ partido.jornada }}</p>
     </div>
-    {% for equipo, jugadores in [('local',locales),('visitante',visitantes)] %}
-    <h2>{{ partido.local_club.nombre if equipo=='local' else partido.visitante_club.nombre }}</h2>
-    <div style="overflow:auto"><table style="width:100%;border-collapse:collapse"><tr><th>Jugador</th><th>Condición</th><th>Cap.</th><th>Ingreso</th><th>Salida</th><th>Goles</th><th>🟨</th><th>🟥</th><th>Observación</th></tr>
-    {% for jugador in jugadores %}{% set n = (nomina|selectattr('jugador_id','equalto',jugador.id)|selectattr('equipo','equalto',equipo)|list|first) %}
-    <tr><td style="padding:7px;border-bottom:1px solid #ddd"><input type="hidden" name="jugador_id" value="{{ jugador.id }}"><input type="hidden" name="equipo" value="{{ equipo }}"><strong>{{ jugador.nombre_completo }}</strong></td>
-    <td><select name="condicion"><option {% if n and n.condicion=='Titular' %}selected{% endif %}>Titular</option><option {% if not n or n.condicion=='Suplente' %}selected{% endif %}>Suplente</option></select></td>
-    <td><input type="checkbox" name="capitan" value="{{ jugador.id }}" {% if n and n.capitan %}checked{% endif %}></td><td><input name="ingreso" value="{{ n.ingreso if n else '' }}" size="5"></td><td><input name="salida" value="{{ n.salida if n else '' }}" size="5"></td><td><input type="number" min="0" name="goles" value="{{ n.goles if n else 0 }}" style="width:55px"></td><td><input type="number" min="0" name="amarillas" value="{{ n.amarillas if n else 0 }}" style="width:55px"></td><td><input type="number" min="0" name="rojas" value="{{ n.rojas if n else 0 }}" style="width:55px"></td><td><input name="obs_jugador" value="{{ n.observaciones if n else '' }}"></td></tr>
-    {% endfor %}</table></div>
-    {% endfor %}
-    <label style="display:block;margin:20px 0">Observaciones del partido<br><textarea name="observaciones" rows="4" style="width:100%">{{ acta.observaciones if acta else '' }}</textarea></label>
-    <button type="submit" style="padding:12px 20px">💾 Guardar acta</button>
-    <a href="{{ url_for('exportar_acta_word', campeonato_id=campeonato.id, partido_id=partido.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block">📄 Exportar Word</a>
-    <a href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}" style="padding:12px 20px;margin-left:8px">↩ Volver</a>
-  </form>
+    <div>
+      {% if acta and acta.estado == 'Cerrada' %}
+        <span style="display:inline-block;background:#dcfce7;color:#166534;padding:10px 16px;border-radius:999px;font-weight:700">🔒 ACTA CERRADA</span>
+      {% else %}
+        <span style="display:inline-block;background:#fef3c7;color:#92400e;padding:10px 16px;border-radius:999px;font-weight:700">📝 ACTA EN BORRADOR</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="padding:20px;border-radius:16px;background:#f4f6f8;margin:20px 0;box-shadow:0 3px 12px rgba(0,0,0,.06)">
+    <h2 style="margin-top:0">{{ partido.local_club.nombre }} <span style="color:#64748b">vs</span> {{ partido.visitante_club.nombre }}</h2>
+    <p style="margin-bottom:0">📅 {{ partido.fecha.strftime('%d/%m/%Y') if partido.fecha else '-' }} · ⏰ {{ partido.hora or '-' }} · 🏟️ {{ partido.cancha or '-' }}</p>
+    {% if partido.turno_club %}<p style="margin-bottom:0">🔰 Club de turno: <strong>{{ partido.turno_club.nombre }}</strong></p>{% endif %}
+    {% if partido.goles_local is not none and partido.goles_visitante is not none %}
+      <p style="font-size:22px;font-weight:800;margin:12px 0 0">Resultado: {{ partido.goles_local }} - {{ partido.goles_visitante }}</p>
+    {% endif %}
+  </div>
+
+  {% if acta and acta.estado == 'Cerrada' %}
+    <div style="background:#ecfdf5;border:1px solid #86efac;padding:16px;border-radius:12px;margin-bottom:20px">
+      <strong>🔒 Registro oficial protegido.</strong><br>
+      El acta está cerrada y sus goles, tarjetas y estadísticas fueron sincronizados con el campeonato.
+      Para corregirla debes reabrirla.
+    </div>
+
+    <form method="post" style="margin-bottom:20px">
+      <input type="hidden" name="accion" value="reabrir">
+      <button type="submit" style="padding:12px 20px;border:0;border-radius:9px;background:#f59e0b;color:white;font-weight:700;cursor:pointer">🔓 Reabrir acta para corregir</button>
+      <a href="{{ url_for('exportar_acta_word', campeonato_id=campeonato.id, partido_id=partido.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block;border-radius:9px;background:#2563eb;color:white;text-decoration:none;font-weight:700">📄 Exportar Word</a>
+      <a href="{{ url_for('estadisticas_campeonato', campeonato_id=campeonato.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block;border-radius:9px;background:#7c3aed;color:white;text-decoration:none;font-weight:700">📊 Ver estadísticas</a>
+      <a href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}" style="padding:12px 20px;margin-left:8px">↩ Volver</a>
+    </form>
+
+    <div style="overflow:auto"><table style="width:100%;border-collapse:collapse;background:white">
+      <tr style="background:#111827;color:white"><th style="padding:10px;text-align:left">Jugador</th><th>Equipo</th><th>Condición</th><th>Cap.</th><th>Ingreso</th><th>Salida</th><th>Goles</th><th>🟨</th><th>🟥</th></tr>
+      {% for n in nomina %}
+      <tr style="border-bottom:1px solid #e5e7eb"><td style="padding:9px">{{ n.jugador.nombre_completo }}</td><td>{{ partido.local_club.nombre if n.equipo=='local' else partido.visitante_club.nombre }}</td><td>{{ n.condicion }}</td><td>{{ 'Sí' if n.capitan else '' }}</td><td>{{ n.ingreso or '' }}</td><td>{{ n.salida or '' }}</td><td>{{ n.goles }}</td><td>{{ n.amarillas }}</td><td>{{ n.rojas }}</td></tr>
+      {% endfor %}
+    </table></div>
+  {% else %}
+    <form method="post">
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:22px">
+        <label>N° Acta
+          <input name="numero_acta" value="{{ acta.numero_acta if acta else '' }}" style="width:100%;padding:10px;box-sizing:border-box">
+        </label>
+        <label>Árbitro
+          <input name="arbitro" value="{{ acta.arbitro if acta else '' }}" style="width:100%;padding:10px;box-sizing:border-box">
+        </label>
+      </div>
+
+      {% for equipo, jugadores in [('local',locales),('visitante',visitantes)] %}
+        <h2 style="margin-top:25px">{{ partido.local_club.nombre if equipo=='local' else partido.visitante_club.nombre }}</h2>
+        <div style="overflow:auto;background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.05)">
+          <table style="width:100%;border-collapse:collapse;min-width:1000px">
+            <tr style="background:#111827;color:white">
+              <th style="padding:10px;text-align:left">Jugador</th><th>Condición</th><th>Cap.</th><th>Ingreso</th><th>Salida</th><th>Goles</th><th>🟨</th><th>🟥</th><th>Observación</th>
+            </tr>
+            {% for jugador in jugadores %}
+              {% set n = (nomina|selectattr('jugador_id','equalto',jugador.id)|selectattr('equipo','equalto',equipo)|list|first) %}
+              <tr style="border-bottom:1px solid #e5e7eb">
+                <td style="padding:8px"><input type="hidden" name="jugador_id" value="{{ jugador.id }}"><input type="hidden" name="equipo" value="{{ equipo }}"><strong>{{ jugador.nombre_completo }}</strong></td>
+                <td><select name="condicion"><option {% if n and n.condicion=='Titular' %}selected{% endif %}>Titular</option><option {% if not n or n.condicion=='Suplente' %}selected{% endif %}>Suplente</option></select></td>
+                <td style="text-align:center"><input type="checkbox" name="capitan" value="{{ jugador.id }}" {% if n and n.capitan %}checked{% endif %}></td>
+                <td><input name="ingreso" value="{{ n.ingreso if n else '' }}" size="5"></td>
+                <td><input name="salida" value="{{ n.salida if n else '' }}" size="5"></td>
+                <td><input type="number" min="0" name="goles" value="{{ n.goles if n else 0 }}" style="width:55px"></td>
+                <td><input type="number" min="0" name="amarillas" value="{{ n.amarillas if n else 0 }}" style="width:55px"></td>
+                <td><input type="number" min="0" name="rojas" value="{{ n.rojas if n else 0 }}" style="width:55px"></td>
+                <td><input name="obs_jugador" value="{{ n.observaciones if n else '' }}" style="min-width:180px"></td>
+              </tr>
+            {% endfor %}
+          </table>
+        </div>
+      {% endfor %}
+
+      <label style="display:block;margin:22px 0">Observaciones del partido<br>
+        <textarea name="observaciones" rows="4" style="width:100%;box-sizing:border-box">{{ acta.observaciones if acta else '' }}</textarea>
+      </label>
+
+      <div style="background:#eff6ff;border:1px solid #93c5fd;padding:15px;border-radius:12px;margin-bottom:20px">
+        <strong>💡 Automatización V5.8</strong><br>
+        Los goles y tarjetas ingresados aquí alimentan automáticamente las estadísticas del campeonato. Al cerrar el acta, el resultado del partido se actualiza con la suma de goles registrada por jugador.
+      </div>
+
+      <button type="submit" name="estado" value="Borrador" style="padding:12px 20px;border:0;border-radius:9px;background:#64748b;color:white;font-weight:700;cursor:pointer">💾 Guardar borrador</button>
+      <button type="submit" name="estado" value="Cerrada" style="padding:12px 20px;border:0;border-radius:9px;background:#16a34a;color:white;font-weight:700;cursor:pointer;margin-left:8px" onclick="return confirm('¿Cerrar el acta? Al cerrarla quedará protegida y el resultado oficial se actualizará con los goles registrados.');">🔒 Cerrar acta y oficializar</button>
+      <a href="{{ url_for('exportar_acta_word', campeonato_id=campeonato.id, partido_id=partido.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block;border-radius:9px;background:#2563eb;color:white;text-decoration:none;font-weight:700">📄 Exportar Word</a>
+      <a href="{{ url_for('estadisticas_campeonato', campeonato_id=campeonato.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block;border-radius:9px;background:#7c3aed;color:white;text-decoration:none;font-weight:700">📊 Estadísticas</a>
+      <a href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}" style="padding:12px 20px;margin-left:8px">↩ Volver</a>
+    </form>
+  {% endif %}
 </div>
 {% endblock %}
