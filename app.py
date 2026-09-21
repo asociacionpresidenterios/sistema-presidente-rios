@@ -4687,9 +4687,57 @@ def registrar_disciplina_campeonato(campeonato_id):
 # V5.7 — ACTA DIGITAL Y CONTROL DE NÓMINA
 # ============================================================
 
+def _normalizar_texto_acta(valor):
+    """Normaliza nombres de club/serie para evitar problemas por mayúsculas,
+    tildes, guiones o espacios diferentes entre el registro del jugador y el campeonato."""
+    import unicodedata
+    texto = unicodedata.normalize("NFKD", str(valor or ""))
+    texto = "".join(c for c in texto if not unicodedata.combining(c))
+    texto = texto.lower().strip()
+    for caracter in "._-":
+        texto = texto.replace(caracter, " ")
+    return " ".join(texto.split())
+
+
 def jugadores_disponibles_para_equipo(campeonato, club):
-    return (Jugador.query.filter(Jugador.serie == campeonato.serie, Jugador.club == club.nombre)
-            .order_by(Jugador.nombre_completo).all())
+    """Obtiene los jugadores habilitados para el club del partido.
+
+    Primero intenta coincidir club + serie de forma normalizada. Si la serie
+    fue registrada con una variante de nombre (por ejemplo, 'Senior' frente
+    a 'Serie Senior'), utiliza los jugadores del mismo club como respaldo.
+    Esto evita que la nómina aparezca vacía por diferencias de escritura.
+    """
+    if not club:
+        return []
+
+    nombre_club = _normalizar_texto_acta(club.nombre)
+    serie_campeonato = _normalizar_texto_acta(campeonato.serie)
+
+    jugadores_club = (
+        Jugador.query
+        .filter(Jugador.club.isnot(None))
+        .order_by(Jugador.nombre_completo)
+        .all()
+    )
+
+    por_club = [
+        jugador for jugador in jugadores_club
+        if _normalizar_texto_acta(jugador.club) == nombre_club
+    ]
+
+    por_club_y_serie = [
+        jugador for jugador in por_club
+        if _normalizar_texto_acta(jugador.serie) == serie_campeonato
+    ]
+
+    # Caso habitual: club y serie coinciden exactamente.
+    if por_club_y_serie:
+        return por_club_y_serie
+
+    # Respaldo: algunas cargas históricas usan nombres distintos para la
+    # misma serie. Para el acta es preferible mostrar los jugadores del club
+    # antes que dejar la nómina completamente vacía.
+    return por_club
 
 def sincronizar_estadisticas_desde_acta(campeonato, partido, nomina):
     """Reemplaza únicamente los registros generados por esta acta.
