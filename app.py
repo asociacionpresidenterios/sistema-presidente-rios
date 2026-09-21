@@ -3658,6 +3658,50 @@ def panel_campeonato(campeonato_id):
     )
 
 
+
+@app.route("/campeonatos/<int:campeonato_id>/afiches")
+def afiches_campeonato(campeonato_id):
+    """Generador de afiches básico y compatible con la versión estable V5.8."""
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    clubes_participantes = (
+        CampeonatoClub.query
+        .filter_by(campeonato_id=campeonato.id)
+        .join(Club, CampeonatoClub.club_id == Club.id)
+        .order_by(Club.nombre)
+        .all()
+    )
+    partidos = (
+        Partido.query
+        .filter_by(campeonato_id=campeonato.id)
+        .order_by(Partido.jornada, Partido.fecha, Partido.hora, Partido.id)
+        .all()
+    )
+    jornadas = {}
+    for partido in partidos:
+        jornadas.setdefault(partido.jornada, []).append(partido)
+
+    todos = {r.club_id: r.club for r in clubes_participantes}
+    libres_por_jornada = {}
+    for jornada, lista in jornadas.items():
+        jugando = set()
+        for partido in lista:
+            jugando.add(partido.local_club_id)
+            jugando.add(partido.visitante_club_id)
+        libres_por_jornada[jornada] = [club for cid, club in todos.items() if cid not in jugando]
+
+    jornada_seleccionada = request.args.get("jornada", type=int)
+    if jornada_seleccionada not in jornadas and jornadas:
+        jornada_seleccionada = min(jornadas)
+
+    return render_template(
+        "campeonato_afiches.html",
+        campeonato=campeonato,
+        clubes_participantes=clubes_participantes,
+        jornadas=jornadas,
+        libres_por_jornada=libres_por_jornada,
+        jornada_seleccionada=jornada_seleccionada,
+    )
+
 @app.route("/campeonatos/<int:campeonato_id>")
 def detalle_campeonato(campeonato_id):
 
