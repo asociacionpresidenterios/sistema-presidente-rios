@@ -1,4 +1,5 @@
 import os
+from functools import wraps
 from datetime import date, datetime, timedelta
 from io import BytesIO
 
@@ -12,7 +13,8 @@ from flask import (
     url_for,
     flash,
     jsonify,
-    Response
+    Response,
+    session
 )
 
 from flask_sqlalchemy import SQLAlchemy
@@ -25,6 +27,7 @@ from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.shared import Cm, Pt
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 # ============================================================
@@ -92,6 +95,26 @@ def normalizar_estado(estado):
         return "Vigente"
 
     return estado
+
+
+# ============================================================
+# V5.9 — USUARIOS ADMINISTRADORES
+# ============================================================
+
+class AdminUser(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    nombre = db.Column(db.String(160), nullable=False, default="Administrador")
+    password_hash = db.Column(db.String(255), nullable=False)
+    activo = db.Column(db.Boolean, nullable=False, default=True)
+    creado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
 
 # ============================================================
@@ -771,9 +794,64 @@ def preparar_vinculos_campeonato():
             repr(error)
         )
 
+def asegurar_admin_inicial():
+    """Crea un administrador inicial solo si no existe ninguno."""
+    try:
+        if AdminUser.query.count() > 0:
+            return
+        username = (os.environ.get("ADMIN_USERNAME") or "admin").strip()
+        password = os.environ.get("ADMIN_PASSWORD") or "PresidenteRios2026!"
+        nombre = (os.environ.get("ADMIN_NAME") or "Administrador principal").strip()
+        admin = AdminUser(username=username, nombre=nombre, activo=True)
+        admin.set_password(password)
+        db.session.add(admin)
+        db.session.commit()
+        print(f"Administrador inicial creado: {username}")
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR creando administrador inicial:", repr(error))
+
+
 with app.app_context():
     preparar_base_datos()
     preparar_vinculos_campeonato()
+    asegurar_admin_inicial()
+
+
+# ============================================================
+# SEGURIDAD V5.9 — PORTAL PÚBLICO / ADMINISTRACIÓN
+# ============================================================
+
+PUBLIC_ENDPOINTS = {
+    "login",
+    "logout",
+    "publico",
+    "publico_campeonato",
+    "publico_tabla",
+    "publico_goleadores",
+    "health",
+    "static",
+}
+
+
+@app.before_request
+def exigir_login_administrativo():
+    endpoint = request.endpoint
+    if endpoint in PUBLIC_ENDPOINTS or (request.path or "").startswith("/static/"):
+        return None
+    if session.get("admin_id"):
+        return None
+    destino = request.full_path.rstrip("?")
+    return redirect(url_for("login", next=destino))
+
+
+def admin_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("admin_id"):
+            return redirect(url_for("login", next=request.full_path))
+        return view(*args, **kwargs)
+    return wrapped
 
 
 # ============================================================
@@ -1156,6 +1234,97 @@ def obtener_datos_formulario_jugador():
 
 
 # ============================================================
+# V5.9 — LOGIN DE ADMINISTRADORES
+# ============================================================
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if session.get("admin_id"):
+        return redirect(url_for("dashboard"))
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        admin = AdminUser.query.filter_by(username=username).first()
+
+        if admin and admin.activo and admin.check_password(password):
+            session.clear()
+            session["admin_id"] = admin.id
+            session["admin_username"] = admin.username
+            session["admin_nombre"] = admin.nombre
+            session.permanent = True
+            destino = request.form.get("next", "").strip()
+            if not destino.startswith("/") or destino.startswith("//"):
+                destino = url_for("dashboard")
+            return redirect(destino)
+
+        flash("Usuario o contraseña incorrectos, o el administrador está inactivo.", "error")
+
+    return render_template("login.html", next=request.args.get("next", ""))
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("Sesión cerrada correctamente.", "success")
+    return redirect(url_for("login"))
+
+
+@app.route("/admin/mi-cuenta", methods=["GET", "POST"])
+def mi_cuenta_admin():
+    admin = db.get_or_404(AdminUser, session["admin_id"])
+    if request.method == "POST":
+        actual = request.form.get("password_actual", "")
+        nueva = request.form.get("password_nueva", "")
+        confirmar = request.form.get("password_confirmar", "")
+        if not admin.check_password(actual):
+            flash("La contraseña actual no es correcta.", "error")
+        elif len(nueva) < 8:
+            flash("La nueva contraseña debe tener al menos 8 caracteres.", "error")
+        elif nueva != confirmar:
+            flash("Las contraseñas nuevas no coinciden.", "error")
+        else:
+            admin.set_password(nueva)
+            db.session.commit()
+            flash("Contraseña actualizada correctamente.", "success")
+            return redirect(url_for("mi_cuenta_admin"))
+    return render_template("admin_cuenta.html", admin=admin)
+
+
+@app.route("/admin/usuarios", methods=["GET", "POST"])
+def admin_usuarios():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        nombre = request.form.get("nombre", "").strip() or "Administrador"
+        password = request.form.get("password", "")
+        if len(username) < 3 or len(password) < 8:
+            flash("El usuario debe tener al menos 3 caracteres y la contraseña 8.", "error")
+        elif AdminUser.query.filter_by(username=username).first():
+            flash("Ese usuario administrador ya existe.", "error")
+        else:
+            admin = AdminUser(username=username, nombre=nombre, activo=True)
+            admin.set_password(password)
+            db.session.add(admin)
+            db.session.commit()
+            flash("Administrador creado correctamente.", "success")
+            return redirect(url_for("admin_usuarios"))
+    usuarios = AdminUser.query.order_by(AdminUser.username).all()
+    return render_template("admin_usuarios.html", usuarios=usuarios)
+
+
+@app.route("/admin/usuarios/<int:admin_id>/estado", methods=["POST"])
+def cambiar_estado_admin(admin_id):
+    admin = db.get_or_404(AdminUser, admin_id)
+    if admin.id == session.get("admin_id"):
+        flash("No puedes desactivar tu propia cuenta.", "error")
+    else:
+        admin.activo = not admin.activo
+        db.session.commit()
+        flash("Estado del administrador actualizado.", "success")
+    return redirect(url_for("admin_usuarios"))
+
+
+# ============================================================
 # INICIO / LISTADO
 # ============================================================
 
@@ -1273,6 +1442,51 @@ def ficha_jugador(jugador_id):
         suspensiones=suspensiones,
         historial=historial,
         historial_goles=historial_goles
+    )
+
+
+# ============================================================
+# V5.9 — HISTORIAL DEPORTIVO DEL JUGADOR
+# ============================================================
+
+@app.route("/jugadores/<int:jugador_id>/historial")
+def historial_jugador(jugador_id):
+    jugador = db.get_or_404(Jugador, jugador_id)
+    participaciones = (
+        PartidoJugador.query
+        .join(Partido, PartidoJugador.partido_id == Partido.id)
+        .join(Campeonato, Partido.campeonato_id == Campeonato.id)
+        .filter(PartidoJugador.jugador_id == jugador.id)
+        .order_by(Partido.fecha.desc().nullslast(), Partido.id.desc())
+        .all()
+    )
+
+    total_partidos = len(participaciones)
+    total_titular = sum(1 for p in participaciones if p.condicion == "Titular")
+    total_suplente = sum(1 for p in participaciones if p.condicion == "Suplente")
+    total_goles = sum(int(p.goles or 0) for p in participaciones)
+    total_amarillas = sum(int(p.amarillas or 0) for p in participaciones)
+    total_rojas = sum(int(p.rojas or 0) for p in participaciones)
+
+    por_campeonato = {}
+    for p in participaciones:
+        camp = p.partido.campeonato
+        fila = por_campeonato.setdefault(camp.id, {
+            "campeonato": camp, "partidos": 0, "titular": 0, "suplente": 0,
+            "goles": 0, "amarillas": 0, "rojas": 0
+        })
+        fila["partidos"] += 1
+        fila["titular"] += 1 if p.condicion == "Titular" else 0
+        fila["suplente"] += 1 if p.condicion == "Suplente" else 0
+        fila["goles"] += int(p.goles or 0)
+        fila["amarillas"] += int(p.amarillas or 0)
+        fila["rojas"] += int(p.rojas or 0)
+
+    return render_template(
+        "jugador_historial.html", jugador=jugador, participaciones=participaciones,
+        campeonatos_historial=list(por_campeonato.values()), total_partidos=total_partidos,
+        total_titular=total_titular, total_suplente=total_suplente, total_goles=total_goles,
+        total_amarillas=total_amarillas, total_rojas=total_rojas
     )
 
 
@@ -5020,6 +5234,92 @@ def exportar_acta_word(campeonato_id, partido_id):
     doc.add_paragraph("\n____________________________        ____________________________\nFirma Árbitro                                      Firma Club de Turno")
     out=BytesIO(); doc.save(out); out.seek(0); safe="".join(c if c.isalnum() or c in " _-" else "_" for c in partido.local_club.nombre+"_vs_"+partido.visitante_club.nombre)
     return Response(out.getvalue(),mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",headers={"Content-Disposition":f'attachment; filename="Acta_{safe}.docx"'})
+
+
+# ============================================================
+# V5.9 — PORTAL PÚBLICO
+# ============================================================
+
+def obtener_tabla_publica(campeonato):
+    registros = (CampeonatoClub.query.filter_by(campeonato_id=campeonato.id)
+                 .join(Club, CampeonatoClub.club_id == Club.id).order_by(Club.nombre).all())
+    finalizados = Partido.query.filter_by(campeonato_id=campeonato.id, estado="Finalizado").all()
+    tabla = {}
+    for r in registros:
+        tabla[r.club.id] = {"club": r.club, "pj": 0, "pg": 0, "pe": 0, "pp": 0, "gf": 0, "gc": 0, "dg": 0, "pts": 0}
+    for p in finalizados:
+        if p.local_club_id not in tabla or p.visitante_club_id not in tabla:
+            continue
+        gl, gv = int(p.goles_local or 0), int(p.goles_visitante or 0)
+        l, v = tabla[p.local_club_id], tabla[p.visitante_club_id]
+        l["pj"] += 1; v["pj"] += 1; l["gf"] += gl; l["gc"] += gv; v["gf"] += gv; v["gc"] += gl
+        if gl > gv:
+            l["pg"] += 1; v["pp"] += 1; l["pts"] += 3
+        elif gv > gl:
+            v["pg"] += 1; l["pp"] += 1; v["pts"] += 3
+        else:
+            l["pe"] += 1; v["pe"] += 1; l["pts"] += 1; v["pts"] += 1
+    filas = list(tabla.values())
+    for f in filas: f["dg"] = f["gf"] - f["gc"]
+    filas.sort(key=lambda f: (-f["pts"], -f["dg"], -f["gf"], f["club"].nombre.lower()))
+    for pos, f in enumerate(filas, 1): f["pos"] = pos
+    return filas
+
+
+def obtener_proxima_jornada(campeonato):
+    partidos = (Partido.query.filter_by(campeonato_id=campeonato.id)
+                .filter(Partido.estado != "Finalizado")
+                .order_by(Partido.jornada, Partido.fecha, Partido.hora, Partido.id).all())
+    if not partidos:
+        return None, []
+    jornada = partidos[0].jornada
+    return jornada, [p for p in partidos if p.jornada == jornada]
+
+
+def obtener_goleadores_publicos(campeonato, limite=50):
+    ids = [j.id for j in jugadores_campeonato(campeonato)]
+    if not ids:
+        return []
+    filas = (db.session.query(Jugador, db.func.coalesce(db.func.sum(Gol.cantidad), 0).label("total"))
+             .outerjoin(Gol, db.and_(Gol.jugador_id == Jugador.id,
+                 db.or_(Gol.campeonato_id == campeonato.id,
+                       db.and_(Gol.campeonato_id.is_(None), Gol.campeonato == campeonato.nombre))))
+             .filter(Jugador.id.in_(ids)).group_by(Jugador.id)
+             .order_by(db.desc("total"), Jugador.nombre_completo).limit(limite).all())
+    return filas
+
+
+@app.route("/publico")
+def publico():
+    campeonatos = (Campeonato.query.filter(Campeonato.estado.ilike("Activo"))
+                   .order_by(Campeonato.fecha_inicio.desc().nullslast(), Campeonato.id.desc()).all())
+    paneles = []
+    for campeonato in campeonatos:
+        jornada, partidos = obtener_proxima_jornada(campeonato)
+        paneles.append({"campeonato": campeonato, "jornada": jornada, "partidos": partidos,
+                        "tabla": obtener_tabla_publica(campeonato),
+                        "goleadores": obtener_goleadores_publicos(campeonato, 10)})
+    return render_template("publico.html", paneles=paneles, campeonatos=campeonatos)
+
+
+@app.route("/publico/campeonato/<int:campeonato_id>")
+def publico_campeonato(campeonato_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    jornada, partidos = obtener_proxima_jornada(campeonato)
+    return render_template("publico_campeonato.html", campeonato=campeonato, jornada=jornada, partidos=partidos,
+                           tabla=obtener_tabla_publica(campeonato), goleadores=obtener_goleadores_publicos(campeonato, 50))
+
+
+@app.route("/publico/campeonato/<int:campeonato_id>/tabla")
+def publico_tabla(campeonato_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    return render_template("publico_tabla.html", campeonato=campeonato, tabla=obtener_tabla_publica(campeonato))
+
+
+@app.route("/publico/campeonato/<int:campeonato_id>/goleadores")
+def publico_goleadores(campeonato_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    return render_template("publico_goleadores.html", campeonato=campeonato, goleadores=obtener_goleadores_publicos(campeonato, 100))
 
 
 # ============================================================
