@@ -4619,10 +4619,59 @@ def tabla_campeonato(campeonato_id):
 # ============================================================
 
 def jugadores_campeonato(campeonato):
-    nombres = [r.club.nombre for r in CampeonatoClub.query.filter_by(campeonato_id=campeonato.id).join(Club).all()]
-    if not nombres: return []
-    return (Jugador.query.filter(Jugador.serie == campeonato.serie, Jugador.club.in_(nombres))
-            .order_by(Jugador.club, Jugador.nombre_completo).all())
+    """Jugadores habilitados para las estadísticas del campeonato.
+
+    Usa la misma normalización de club/serie que el acta digital, para que
+    los goles y tarjetas registrados desde el acta aparezcan también en
+    las estadísticas aunque existan diferencias de mayúsculas, tildes,
+    guiones o nombres como "Senior" / "Serie Senior".
+    """
+    import unicodedata
+
+    def normalizar(valor, quitar_serie=False):
+        texto = unicodedata.normalize("NFKD", str(valor or ""))
+        texto = "".join(c for c in texto if not unicodedata.combining(c))
+        texto = texto.lower().strip()
+        for caracter in "._-/":
+            texto = texto.replace(caracter, " ")
+        texto = " ".join(texto.split())
+        if quitar_serie:
+            texto = texto.replace("serie ", " ")
+            texto = " ".join(texto.split())
+        return texto
+
+    registros = CampeonatoClub.query.filter_by(campeonato_id=campeonato.id).join(Club).all()
+    if not registros:
+        return []
+
+    clubes = [registro.club for registro in registros]
+    nombres_club = {normalizar(club.nombre) for club in clubes}
+    serie_objetivo = normalizar(campeonato.serie, quitar_serie=True)
+
+    candidatos = (Jugador.query
+                  .filter(Jugador.club.isnot(None))
+                  .order_by(Jugador.club, Jugador.nombre_completo)
+                  .all())
+
+    resultado = []
+    for jugador in candidatos:
+        club_norm = normalizar(jugador.club)
+        if club_norm not in nombres_club:
+            continue
+        serie_norm = normalizar(jugador.serie, quitar_serie=True)
+        if serie_norm == serie_objetivo:
+            resultado.append(jugador)
+
+    # Respaldo para bases históricas donde la serie fue cargada con un
+    # nombre incompatible. Se limita a clubes participantes para no mezclar
+    # jugadores de clubes ajenos al campeonato.
+    if not resultado:
+        resultado = [
+            jugador for jugador in candidatos
+            if normalizar(jugador.club) in nombres_club
+        ]
+
+    return resultado
 
 def estadisticas_campeonato_data(campeonato):
     ids=[j.id for j in jugadores_campeonato(campeonato)]
