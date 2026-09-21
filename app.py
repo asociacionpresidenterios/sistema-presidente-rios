@@ -5294,12 +5294,18 @@ def publico():
     campeonatos = (Campeonato.query.filter(Campeonato.estado.ilike("Activo"))
                    .order_by(Campeonato.fecha_inicio.desc().nullslast(), Campeonato.id.desc()).all())
     paneles = []
+    campeonatos_por_serie = {}
     for campeonato in campeonatos:
         jornada, partidos = obtener_proxima_jornada(campeonato)
-        paneles.append({"campeonato": campeonato, "jornada": jornada, "partidos": partidos,
-                        "tabla": obtener_tabla_publica(campeonato),
-                        "goleadores": obtener_goleadores_publicos(campeonato, 10)})
-    return render_template("publico.html", paneles=paneles, campeonatos=campeonatos)
+        panel = {"campeonato": campeonato, "jornada": jornada, "partidos": partidos,
+                 "tabla": obtener_tabla_publica(campeonato),
+                 "goleadores": obtener_goleadores_publicos(campeonato, 10)}
+        paneles.append(panel)
+        serie = (campeonato.serie or "Sin serie").strip() or "Sin serie"
+        campeonatos_por_serie.setdefault(serie, []).append(panel)
+    series_publicas = sorted(campeonatos_por_serie.keys(), key=lambda x: x.lower())
+    return render_template("publico.html", paneles=paneles, campeonatos=campeonatos,
+                           series_publicas=series_publicas, campeonatos_por_serie=campeonatos_por_serie)
 
 
 @app.route("/publico/campeonato/<int:campeonato_id>")
