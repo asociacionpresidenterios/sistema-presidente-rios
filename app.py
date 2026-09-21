@@ -3151,6 +3151,25 @@ def dashboard():
 
 
 # ============================================================
+# IDENTIDAD VISUAL
+# ============================================================
+
+@app.route("/identidad")
+def identidad_visual():
+    """Punto de entrada para Identidad Visual.
+
+    La navegación institucional puede apuntar a este endpoint aunque la
+    configuración visual avanzada todavía no esté habilitada en esta versión.
+    Redirigimos a Configuración para evitar errores de url_for en producción.
+    """
+    flash(
+        "La identidad visual se administra desde Configuración en esta versión.",
+        "info"
+    )
+    return redirect(url_for("configuracion"))
+
+
+# ============================================================
 # ADMINISTRACIÓN DE CLUBES Y SERIES
 # ============================================================
 
