@@ -5289,24 +5289,31 @@ def obtener_goleadores_publicos(campeonato, limite=50):
     return filas
 
 
+def agrupar_campeonatos_publicos(campeonatos):
+    """Agrupa los campeonatos activos por serie para el portal público."""
+    grupos = {}
+    for campeonato in campeonatos:
+        serie = (campeonato.serie or "Sin serie").strip() or "Sin serie"
+        grupos.setdefault(serie, []).append(campeonato)
+    return dict(sorted(grupos.items(), key=lambda item: item[0].lower()))
+
+
+def agrupar_goleadores_por_club(goleadores):
+    """Agrupa pares (Jugador, goles) por nombre de club para el portal público."""
+    grupos = {}
+    for jugador, total in goleadores:
+        club = (jugador.club or "Sin club").strip() or "Sin club"
+        grupos.setdefault(club, []).append((jugador, total))
+    for club in grupos:
+        grupos[club].sort(key=lambda item: (-int(item[1] or 0), item[0].nombre_completo.lower()))
+    return dict(sorted(grupos.items(), key=lambda item: item[0].lower()))
+
+
 @app.route("/publico")
 def publico():
     campeonatos = (Campeonato.query.filter(Campeonato.estado.ilike("Activo"))
-                   .order_by(Campeonato.serie.asc(), Campeonato.fecha_inicio.desc().nullslast(), Campeonato.id.desc()).all())
-
-    # Agrupar campeonatos activos por serie para una navegación pública más ordenada.
-    grupos_series = []
-    por_serie = {}
-    for campeonato in campeonatos:
-        nombre_serie = (campeonato.serie or "Sin serie").strip() or "Sin serie"
-        por_serie.setdefault(nombre_serie, []).append(campeonato)
-
-    for nombre_serie in sorted(por_serie.keys(), key=lambda x: x.lower()):
-        grupos_series.append({
-            "serie": nombre_serie,
-            "campeonatos": por_serie[nombre_serie]
-        })
-
+                   .order_by(Campeonato.serie, Campeonato.fecha_inicio.desc().nullslast(), Campeonato.id.desc()).all())
+    grupos_series = agrupar_campeonatos_publicos(campeonatos)
     return render_template(
         "publico.html",
         campeonatos=campeonatos,
@@ -5318,20 +5325,38 @@ def publico():
 def publico_campeonato(campeonato_id):
     campeonato = db.get_or_404(Campeonato, campeonato_id)
     jornada, partidos = obtener_proxima_jornada(campeonato)
-    return render_template("publico_campeonato.html", campeonato=campeonato, jornada=jornada, partidos=partidos,
-                           tabla=obtener_tabla_publica(campeonato), goleadores=obtener_goleadores_publicos(campeonato, 50))
+    goleadores = obtener_goleadores_publicos(campeonato, 100)
+    return render_template(
+        "publico_campeonato.html",
+        campeonato=campeonato,
+        jornada=jornada,
+        partidos=partidos,
+        tabla=obtener_tabla_publica(campeonato),
+        goleadores=goleadores,
+        goleadores_por_club=agrupar_goleadores_por_club(goleadores)
+    )
 
 
 @app.route("/publico/campeonato/<int:campeonato_id>/tabla")
 def publico_tabla(campeonato_id):
     campeonato = db.get_or_404(Campeonato, campeonato_id)
-    return render_template("publico_tabla.html", campeonato=campeonato, tabla=obtener_tabla_publica(campeonato))
+    return render_template(
+        "publico_tabla.html",
+        campeonato=campeonato,
+        tabla=obtener_tabla_publica(campeonato)
+    )
 
 
 @app.route("/publico/campeonato/<int:campeonato_id>/goleadores")
 def publico_goleadores(campeonato_id):
     campeonato = db.get_or_404(Campeonato, campeonato_id)
-    return render_template("publico_goleadores.html", campeonato=campeonato, goleadores=obtener_goleadores_publicos(campeonato, 100))
+    goleadores = obtener_goleadores_publicos(campeonato, 100)
+    return render_template(
+        "publico_goleadores.html",
+        campeonato=campeonato,
+        goleadores=goleadores,
+        goleadores_por_club=agrupar_goleadores_por_club(goleadores)
+    )
 
 
 # ============================================================
