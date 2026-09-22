@@ -5340,6 +5340,58 @@ def publico_campeonato(campeonato_id):
     )
 
 
+@app.route("/publico/campeonato/<int:campeonato_id>/club/<int:club_id>")
+def publico_club(campeonato_id, club_id):
+    """Ficha pública de un club dentro de un campeonato."""
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    club = db.get_or_404(Club, club_id)
+
+    participante = CampeonatoClub.query.filter_by(campeonato_id=campeonato.id, club_id=club.id).first()
+    if not participante:
+        from flask import abort
+        abort(404)
+
+    partidos = (Partido.query.filter(
+        Partido.campeonato_id == campeonato.id,
+        db.or_(Partido.local_club_id == club.id, Partido.visitante_club_id == club.id)
+    ).order_by(Partido.jornada, Partido.fecha, Partido.hora, Partido.id).all())
+
+    finalizados = [p for p in partidos if (p.estado or '').lower() == 'finalizado' and p.goles_local is not None and p.goles_visitante is not None]
+    proximos = [p for p in partidos if p not in finalizados and (p.estado or '').lower() != 'suspendido']
+
+    pj = pg = pe = pp = gf = gc = pts = 0
+    for p in finalizados:
+        gl, gv = int(p.goles_local or 0), int(p.goles_visitante or 0)
+        if p.local_club_id == club.id:
+            gf += gl; gc += gv
+            if gl > gv: pg += 1; pts += 3
+            elif gl == gv: pe += 1; pts += 1
+            else: pp += 1
+        else:
+            gf += gv; gc += gl
+            if gv > gl: pg += 1; pts += 3
+            elif gv == gl: pe += 1; pts += 1
+            else: pp += 1
+        pj += 1
+
+    ultimos = list(reversed(finalizados[-5:]))
+    proximos = proximos[:5]
+
+    jugadores = (Jugador.query.filter_by(club=club.nombre, serie=campeonato.serie, estado='Vigente')
+                  .order_by(Jugador.nombre_completo.asc()).all())
+    goleadores = obtener_goleadores_publicos(campeonato, 500)
+    goleadores_club = [(j, t) for j, t in goleadores if (j.club or '').strip().lower() == club.nombre.strip().lower()]
+    goleadores_club.sort(key=lambda x: (-x[1], x[0].nombre_completo.lower()))
+
+    amarillas = rojas = 0
+    for j in jugadores:
+        registros = RegistroDisciplinario.query.filter_by(jugador_id=j.id, campeonato_id=campeonato.id).all()
+        amarillas += sum((r.cantidad or 1) for r in registros if (r.tipo or '').lower() in ('amarilla','amarillas','tarjeta amarilla'))
+        rojas += sum((r.cantidad or 1) for r in registros if (r.tipo or '').lower() in ('roja','rojas','tarjeta roja'))
+
+    return render_template('publico_club.html', campeonato=campeonato, club=club, partidos=partidos, finalizados=finalizados, ultimos=ultimos, proximos=proximos, jugadores=jugadores, goleadores_club=goleadores_club, stats={'pj':pj,'pg':pg,'pe':pe,'pp':pp,'gf':gf,'gc':gc,'dg':gf-gc,'pts':pts,'amarillas':amarillas,'rojas':rojas})
+
+
 @app.route("/publico/campeonato/<int:campeonato_id>/tabla")
 def publico_tabla(campeonato_id):
     campeonato = db.get_or_404(Campeonato, campeonato_id)
