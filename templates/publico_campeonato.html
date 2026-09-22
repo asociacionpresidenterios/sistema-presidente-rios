@@ -1,21 +1,103 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{{ campeonato.nombre }} · Presidente Ríos</title>
 <style>
-:root{--navy:#0f172a;--blue:#2563eb;--bg:#f3f6fa;--card:#fff;--muted:#64748b;--line:#e2e8f0}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#0f172a;font-family:Arial,Helvetica,sans-serif}.top{background:var(--navy);color:#fff;padding:16px 5%;display:flex;align-items:center;justify-content:space-between;gap:12px}.top a{color:#fff;text-decoration:none;font-weight:800;padding:9px 12px;border-radius:9px;background:#ffffff12}.wrap{max-width:1250px;margin:0 auto;padding:25px 18px 50px}.hero{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;margin-bottom:18px}.hero h1{margin:0 0 7px}.pill{display:inline-block;background:#dbeafe;color:#1d4ed8;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:900}.grid{display:grid;grid-template-columns:1.05fr .95fr;gap:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:18px}.card h2{margin-top:0}.match{padding:13px 0;border-bottom:1px solid var(--line)}.match:last-child{border-bottom:0}.small{color:var(--muted);font-size:13px}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}.table th{font-size:12px;color:#475569;background:#f8fafc}.score{font-weight:900}.club-title{display:flex;justify-content:space-between;align-items:center;margin:18px 0 6px}.club-title:first-child{margin-top:0}.club-title h3{margin:0}.btn{display:inline-block;background:var(--blue);color:#fff;text-decoration:none;font-weight:900;padding:10px 13px;border-radius:10px}.empty{color:var(--muted)}@media(max-width:850px){.grid{grid-template-columns:1fr}}
+*{box-sizing:border-box}
+body{margin:0;background:#f1f5f9;font-family:Arial,sans-serif;color:#0f172a}
+.top{background:#0f172a;color:#fff;padding:18px 5%;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+.top a{color:#fff;text-decoration:none;background:#2563eb;padding:9px 12px;border-radius:9px;font-weight:800}
+.wrap{max-width:1200px;margin:25px auto;padding:0 18px}
+.card{background:#fff;padding:20px;border-radius:18px;margin-bottom:18px;box-shadow:0 5px 18px rgba(15,23,42,.06)}
+.table{width:100%;border-collapse:collapse;overflow:hidden}
+.table th,.table td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left}
+.table th{background:#f8fafc}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.match{padding:11px 0;border-bottom:1px solid #eee}
+.score{font-weight:900}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+.btn{display:inline-block;padding:9px 13px;border-radius:9px;background:#2563eb;color:#fff;text-decoration:none;font-weight:800}
+.btn.green{background:#0f766e}.btn.purple{background:#7c3aed}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.table{font-size:13px}.table th,.table td{padding:7px}}
 </style>
 </head>
 <body>
-<header class="top"><strong>⚽ Asociación Presidente Ríos</strong><div><a href="{{ url_for('publico') }}">← Campeonatos</a> <a href="{{ url_for('login') }}">🔐 Administración</a></div></header>
+<header class="top">
+  <div>
+    <strong>⚽ Asociación Presidente Ríos</strong>
+    <div style="font-size:12px;opacity:.75">Portal público</div>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a href="{{ url_for('publico') }}">Inicio público</a>
+    <a href="{{ url_for('login') }}">🔐 Administración</a>
+  </div>
+</header>
+
 <main class="wrap">
-<section class="hero"><span class="pill">{{ campeonato.serie }}</span><h1>{{ campeonato.nombre }}</h1><div class="small">Temporada {{ campeonato.temporada }}</div></section>
-<div class="grid">
-<section class="card"><h2>📅 Próxima fecha{% if jornada %} · Jornada {{ jornada }}{% endif %}</h2>{% for p in partidos %}<div class="match"><strong>{{ p.hora or '--:--' }}</strong> · {{ p.local_club.nombre }} <b>vs</b> {{ p.visitante_club.nombre }}<div class="small">🏟️ {{ p.cancha or 'Por confirmar' }}{% if p.turno_club %} · 🔰 Turno: {{ p.turno_club.nombre }}{% endif %}</div></div>{% else %}<p class="empty">No hay partidos pendientes.</p>{% endfor %}</section>
-<section class="card"><h2>🥅 Goleadores</h2><p class="small">Serie {{ campeonato.serie }} · organizados por club</p>{% for club, lista in goleadores_por_club.items() %}<div class="club-title"><h3>🏟️ {{ club }}</h3><span class="small">{{ lista|length }} jugador(es)</span></div><div class="table-wrap"><table class="table"><tr><th>#</th><th>Jugador</th><th>Goles</th></tr>{% for j,t in lista %}<tr><td>{{ loop.index }}</td><td>{{ j.nombre_completo }}</td><td class="score">{{ t }}</td></tr>{% endfor %}</table></div>{% else %}<p class="empty">Sin goles registrados.</p>{% endfor %}</section>
-</div>
-<section class="card"><h2>📊 Tabla de posiciones</h2><div class="table-wrap"><table class="table"><tr><th>Pos</th><th>Club</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr>{% for f in tabla %}<tr><td>{{ f.pos }}</td><td>{{ f.club.nombre }}</td><td>{{ f.pj }}</td><td>{{ f.pg }}</td><td>{{ f.pe }}</td><td>{{ f.pp }}</td><td>{{ f.gf }}</td><td>{{ f.gc }}</td><td>{{ f.dg }}</td><td class="score">{{ f.pts }}</td></tr>{% else %}<tr><td colspan="10">Sin clubes registrados.</td></tr>{% endfor %}</table></div></section>
+  <section class="card">
+    <h1>{{ campeonato.nombre }}</h1>
+    <p>{{ campeonato.serie }} · {{ campeonato.temporada }}</p>
+    <div class="btns">
+      <a class="btn green" href="{{ url_for('publico_tabla', campeonato_id=campeonato.id) }}">📊 Tabla</a>
+      <a class="btn purple" href="{{ url_for('publico_goleadores', campeonato_id=campeonato.id) }}">🥅 Goleadores</a>
+    </div>
+  </section>
+
+  <div class="grid">
+    <section class="card">
+      <h2>📅 Próxima jornada{% if jornada %} · {{ jornada }}{% endif %}</h2>
+      {% for p in partidos %}
+        <div class="match">
+          <strong>{{ p.hora or '--:--' }}</strong>
+          · {{ p.local_club.nombre if p.local_club else 'Local por confirmar' }}
+          vs
+          {{ p.visitante_club.nombre if p.visitante_club else 'Visitante por confirmar' }}
+          <br>
+          <small>
+            🏟️ {{ p.cancha or 'Por confirmar' }}
+            {% if p.turno_club %} · 🔰 {{ p.turno_club.nombre }}{% endif %}
+          </small>
+        </div>
+      {% else %}
+        <p>No hay partidos pendientes.</p>
+      {% endfor %}
+    </section>
+
+    <section class="card">
+      <h2>🥅 Goleadores</h2>
+      <table class="table">
+        <tr><th>#</th><th>Jugador</th><th>Club</th><th>Goles</th></tr>
+        {% for j,t in goleadores %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ j.nombre_completo }}</td>
+            <td>{{ j.club or '-' }}</td>
+            <td class="score">{{ t }}</td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4">Sin registros.</td></tr>
+        {% endfor %}
+      </table>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>📊 Tabla de posiciones</h2>
+    <table class="table">
+      <tr><th>Pos</th><th>Club</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr>
+      {% for f in tabla %}
+        <tr>
+          <td>{{ f.pos }}</td><td>{{ f.club.nombre }}</td><td>{{ f.pj }}</td><td>{{ f.pg }}</td>
+          <td>{{ f.pe }}</td><td>{{ f.pp }}</td><td>{{ f.gf }}</td><td>{{ f.gc }}</td>
+          <td>{{ f.dg }}</td><td class="score">{{ f.pts }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="10">Sin clubes registrados.</td></tr>
+      {% endfor %}
+    </table>
+  </section>
 </main>
-</body></html>
+</body>
+</html>
