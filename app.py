@@ -5319,6 +5319,14 @@ def publico_campeonato(campeonato_id):
     tabla = obtener_tabla_publica(campeonato)
     goleadores = obtener_goleadores_publicos(campeonato, 50)
 
+    # Compatibilidad con versiones anteriores de la plantilla pública que
+    # esperaban la variable goleadores_por_club. Mantener ambas variables
+    # evita que un despliegue antiguo de la plantilla provoque un 500.
+    goleadores_por_club = {}
+    for jugador, total in goleadores:
+        club_nombre = (getattr(jugador, "club", None) or "Sin club").strip() or "Sin club"
+        goleadores_por_club.setdefault(club_nombre, []).append((jugador, total))
+
     return render_template(
         "publico_campeonato.html",
         campeonato=campeonato,
@@ -5326,6 +5334,7 @@ def publico_campeonato(campeonato_id):
         partidos=partidos,
         tabla=tabla,
         goleadores=goleadores,
+        goleadores_por_club=goleadores_por_club,
     )
 
 
