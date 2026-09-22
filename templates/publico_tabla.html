@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tabla · {{ campeonato.nombre }} · Presidente Ríos</title>
+<title>Posiciones · {{ campeonato.nombre }} · Presidente Ríos</title>
 <style>
 body{margin:0;background:#f1f5f9;font-family:Arial;color:#0f172a}
 .top{background:#0f172a;color:#fff;padding:18px 5%;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -14,9 +14,9 @@ body{margin:0;background:#f1f5f9;font-family:Arial;color:#0f172a}
 <body>
 <header class="top"><strong>⚽ Asociación Presidente Ríos</strong>
 <div><a href="{{ url_for('publico') }}">Inicio público</a> <a class="admin" href="{{ url_for('login') }}">🔐 Administración</a></div></header>
-<main class="wrap"><section class="card"><h1>📊 Tabla de posiciones</h1><p>{{ campeonato.nombre }} · {{ campeonato.serie }} · {{ campeonato.temporada }}</p>
+<main class="wrap"><section class="card"><h1>📊 Posiciones</h1><p>{{ campeonato.nombre }} · {{ campeonato.serie }} · {{ campeonato.temporada }}</p>
 <div class="table-wrap"><table class="table"><tr><th>Pos</th><th>Club</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr>
 {% for f in tabla %}<tr><td>{{ f.pos }}</td><td>{{ f.club.nombre }}</td><td>{{ f.pj }}</td><td>{{ f.pg }}</td><td>{{ f.pe }}</td><td>{{ f.pp }}</td><td>{{ f.gf }}</td><td>{{ f.gc }}</td><td>{{ f.dg }}</td><td class="score">{{ f.pts }}</td></tr>
 {% else %}<tr><td colspan="10">Sin clubes registrados.</td></tr>{% endfor %}</table></div>
-<div class="actions"><a class="btn" href="{{ url_for('publico_campeonato', campeonato_id=campeonato.id) }}">← Ver campeonato</a><a class="btn" href="{{ url_for('publico_goleadores', campeonato_id=campeonato.id) }}">🥅 Goleadores</a></div>
+<div class="actions"><a class="btn" href="{{ url_for('publico_campeonato', campeonato_id=campeonato.id) }}">← Resumen</a><a class="btn" href="{{ url_for('publico_programacion', campeonato_id=campeonato.id) }}">📅 Programación</a><a class="btn" href="{{ url_for('publico_resultados', campeonato_id=campeonato.id) }}">⚽ Resultados</a><a class="btn" href="{{ url_for('publico_goleadores', campeonato_id=campeonato.id) }}">🥅 Goleadores</a></div>
 </section></main></body></html>
