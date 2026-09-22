@@ -5292,20 +5292,26 @@ def obtener_goleadores_publicos(campeonato, limite=50):
 @app.route("/publico")
 def publico():
     campeonatos = (Campeonato.query.filter(Campeonato.estado.ilike("Activo"))
-                   .order_by(Campeonato.fecha_inicio.desc().nullslast(), Campeonato.id.desc()).all())
-    paneles = []
-    campeonatos_por_serie = {}
+                   .order_by(Campeonato.serie.asc(), Campeonato.fecha_inicio.desc().nullslast(), Campeonato.id.desc()).all())
+
+    # Agrupar campeonatos activos por serie para una navegación pública más ordenada.
+    grupos_series = []
+    por_serie = {}
     for campeonato in campeonatos:
-        jornada, partidos = obtener_proxima_jornada(campeonato)
-        panel = {"campeonato": campeonato, "jornada": jornada, "partidos": partidos,
-                 "tabla": obtener_tabla_publica(campeonato),
-                 "goleadores": obtener_goleadores_publicos(campeonato, 10)}
-        paneles.append(panel)
-        serie = (campeonato.serie or "Sin serie").strip() or "Sin serie"
-        campeonatos_por_serie.setdefault(serie, []).append(panel)
-    series_publicas = sorted(campeonatos_por_serie.keys(), key=lambda x: x.lower())
-    return render_template("publico.html", paneles=paneles, campeonatos=campeonatos,
-                           series_publicas=series_publicas, campeonatos_por_serie=campeonatos_por_serie)
+        nombre_serie = (campeonato.serie or "Sin serie").strip() or "Sin serie"
+        por_serie.setdefault(nombre_serie, []).append(campeonato)
+
+    for nombre_serie in sorted(por_serie.keys(), key=lambda x: x.lower()):
+        grupos_series.append({
+            "serie": nombre_serie,
+            "campeonatos": por_serie[nombre_serie]
+        })
+
+    return render_template(
+        "publico.html",
+        campeonatos=campeonatos,
+        grupos_series=grupos_series
+    )
 
 
 @app.route("/publico/campeonato/<int:campeonato_id>")
