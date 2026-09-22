@@ -1,103 +1,12 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{ campeonato.nombre }} · Presidente Ríos</title>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ campeonato.nombre }} · Presidente Ríos</title>
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#f1f5f9;font-family:Arial,sans-serif;color:#0f172a}
-.top{background:#0f172a;color:#fff;padding:18px 5%;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
-.top a{color:#fff;text-decoration:none;background:#2563eb;padding:9px 12px;border-radius:9px;font-weight:800}
-.wrap{max-width:1200px;margin:25px auto;padding:0 18px}
-.card{background:#fff;padding:20px;border-radius:18px;margin-bottom:18px;box-shadow:0 5px 18px rgba(15,23,42,.06)}
-.table{width:100%;border-collapse:collapse;overflow:hidden}
-.table th,.table td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left}
-.table th{background:#f8fafc}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.match{padding:11px 0;border-bottom:1px solid #eee}
-.score{font-weight:900}
-.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
-.btn{display:inline-block;padding:9px 13px;border-radius:9px;background:#2563eb;color:#fff;text-decoration:none;font-weight:800}
-.btn.green{background:#0f766e}.btn.purple{background:#7c3aed}
-@media(max-width:800px){.grid{grid-template-columns:1fr}.table{font-size:13px}.table th,.table td{padding:7px}}
-</style>
-</head>
-<body>
-<header class="top">
-  <div>
-    <strong>⚽ Asociación Presidente Ríos</strong>
-    <div style="font-size:12px;opacity:.75">Portal público</div>
-  </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <a href="{{ url_for('publico') }}">Inicio público</a>
-    <a href="{{ url_for('login') }}">🔐 Administración</a>
-  </div>
-</header>
-
+:root{--navy:#071426;--blue:#1769e0;--bg:#f4f7fb;--text:#102033;--muted:#68788c;--line:#e6ebf2;--shadow:0 12px 32px rgba(8,24,44,.08)}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}.top{background:var(--navy);color:#fff}.top-in{max-width:1280px;margin:auto;padding:11px 20px;display:flex;align-items:center;justify-content:space-between;gap:15px}.brand{display:flex;gap:10px;align-items:center;color:#fff;text-decoration:none}.crest{width:40px;height:40px;border-radius:12px;background:#1769e0;display:grid;place-items:center;font-weight:950}.brand b{display:block}.brand span{font-size:11px;color:#9eb1c8}.top-links{display:flex;gap:7px;flex-wrap:wrap}.top-links a{color:#fff;text-decoration:none;padding:8px 11px;border-radius:9px;font-size:12px;font-weight:800}.top-links a.active,.top-links a:hover{background:#1b4d87}.wrap{max-width:1280px;margin:auto;padding:22px 20px 50px}.hero{background:linear-gradient(125deg,#0b1e36,#1769e0);color:#fff;border-radius:23px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}.eyebrow{text-transform:uppercase;letter-spacing:.1em;font-size:11px;color:#a9ceff;font-weight:900}.hero h1{font-size:clamp(25px,4vw,40px);margin:7px 0}.hero p{margin:0;color:#d6e6fa}.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:20px}.stat{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.12);padding:12px;border-radius:13px}.stat b{display:block;font-size:21px}.stat span{font-size:10px;color:#bcd0e7;text-transform:uppercase;font-weight:800}.nav{display:flex;gap:7px;overflow:auto;background:#fff;border:1px solid var(--line);padding:8px;border-radius:15px;margin-bottom:18px;box-shadow:0 5px 18px rgba(8,24,44,.04)}.nav a{white-space:nowrap;text-decoration:none;color:#536276;padding:10px 12px;border-radius:9px;font-size:12px;font-weight:850}.nav a:hover,.nav a.active{background:#071426;color:#fff}.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:19px;box-shadow:var(--shadow)}.card h2{font-size:18px;margin:0 0 13px}.match{padding:12px 0;border-bottom:1px solid #edf1f5}.match:last-child{border-bottom:0}.match-top{display:flex;justify-content:space-between;gap:10px}.time{color:var(--blue);font-weight:950}.teams{font-weight:800;margin-top:4px}.venue{font-size:11px;color:var(--muted);margin-top:4px}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:650px}.table th,.table td{padding:9px;border-bottom:1px solid var(--line);text-align:center;font-size:12px}.table th{background:#f8fafc;color:#64748b;font-size:10px;text-transform:uppercase}.table th:nth-child(2),.table td:nth-child(2){text-align:left}.score{font-weight:950}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.btn{display:inline-flex;text-decoration:none;background:var(--blue);color:#fff;padding:9px 12px;border-radius:9px;font-size:12px;font-weight:850}.btn.green{background:#087f5b}.btn.purple{background:#6941c6}.empty{color:var(--muted);padding:12px 0}@media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}@media(max-width:520px){.top-in{padding:10px 13px}.brand span{display:none}.wrap{padding:14px 12px 35px}.hero{padding:21px}.stats{grid-template-columns:repeat(2,1fr)}.stat b{font-size:18px}}
+</style></head><body>
+<header class="top"><div class="top-in"><a class="brand" href="{{ url_for('publico') }}"><div class="crest">PR</div><div><b>Presidente Ríos</b><span>Portal oficial</span></div></a><div class="top-links"><a href="{{ url_for('publico') }}">Inicio</a><a href="{{ url_for('login') }}">🔐 Administración</a></div></div></header>
 <main class="wrap">
-  <section class="card">
-    <h1>{{ campeonato.nombre }}</h1>
-    <p>{{ campeonato.serie }} · {{ campeonato.temporada }}</p>
-    <div class="btns">
-      <a class="btn green" href="{{ url_for('publico_tabla', campeonato_id=campeonato.id) }}">📊 Tabla</a>
-      <a class="btn purple" href="{{ url_for('publico_goleadores', campeonato_id=campeonato.id) }}">🥅 Goleadores</a>
-    </div>
-  </section>
-
-  <div class="grid">
-    <section class="card">
-      <h2>📅 Próxima jornada{% if jornada %} · {{ jornada }}{% endif %}</h2>
-      {% for p in partidos %}
-        <div class="match">
-          <strong>{{ p.hora or '--:--' }}</strong>
-          · {{ p.local_club.nombre if p.local_club else 'Local por confirmar' }}
-          vs
-          {{ p.visitante_club.nombre if p.visitante_club else 'Visitante por confirmar' }}
-          <br>
-          <small>
-            🏟️ {{ p.cancha or 'Por confirmar' }}
-            {% if p.turno_club %} · 🔰 {{ p.turno_club.nombre }}{% endif %}
-          </small>
-        </div>
-      {% else %}
-        <p>No hay partidos pendientes.</p>
-      {% endfor %}
-    </section>
-
-    <section class="card">
-      <h2>🥅 Goleadores</h2>
-      <table class="table">
-        <tr><th>#</th><th>Jugador</th><th>Club</th><th>Goles</th></tr>
-        {% for j,t in goleadores %}
-          <tr>
-            <td>{{ loop.index }}</td>
-            <td>{{ j.nombre_completo }}</td>
-            <td>{{ j.club or '-' }}</td>
-            <td class="score">{{ t }}</td>
-          </tr>
-        {% else %}
-          <tr><td colspan="4">Sin registros.</td></tr>
-        {% endfor %}
-      </table>
-    </section>
-  </div>
-
-  <section class="card">
-    <h2>📊 Tabla de posiciones</h2>
-    <table class="table">
-      <tr><th>Pos</th><th>Club</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr>
-      {% for f in tabla %}
-        <tr>
-          <td>{{ f.pos }}</td><td>{{ f.club.nombre }}</td><td>{{ f.pj }}</td><td>{{ f.pg }}</td>
-          <td>{{ f.pe }}</td><td>{{ f.pp }}</td><td>{{ f.gf }}</td><td>{{ f.gc }}</td>
-          <td>{{ f.dg }}</td><td class="score">{{ f.pts }}</td>
-        </tr>
-      {% else %}
-        <tr><td colspan="10">Sin clubes registrados.</td></tr>
-      {% endfor %}
-    </table>
-  </section>
-</main>
-</body>
-</html>
+<section class="hero"><div class="eyebrow">{{ campeonato.serie }} · {{ campeonato.temporada }}</div><h1>{{ campeonato.nombre }}</h1><p>{{ campeonato.descripcion or 'Información oficial del campeonato, programación y estadísticas.' }}</p><div class="stats"><div class="stat"><b>{{ resumen.equipos }}</b><span>Equipos</span></div><div class="stat"><b>{{ resumen.partidos_jugados }}</b><span>Jugados</span></div><div class="stat"><b>{{ resumen.partidos_pendientes }}</b><span>Pendientes</span></div><div class="stat"><b>{{ resumen.goles }}</b><span>Goles</span></div><div class="stat"><b>{% if resumen.lider %}{{ resumen.lider.club.nombre }}{% else %}—{% endif %}</b><span>Líder</span></div></div></section>
+<nav class="nav"><a class="active" href="{{ url_for('publico_campeonato',campeonato_id=campeonato.id) }}">Resumen</a><a href="{{ url_for('publico_programacion',campeonato_id=campeonato.id) }}">📅 Programación</a><a href="{{ url_for('publico_resultados',campeonato_id=campeonato.id) }}">⚽ Resultados</a><a href="{{ url_for('publico_tabla',campeonato_id=campeonato.id) }}">📊 Posiciones</a><a href="{{ url_for('publico_goleadores',campeonato_id=campeonato.id) }}">🥅 Goleadores</a></nav>
+<div class="grid"><section class="card"><h2>📅 Próxima jornada{% if jornada %} · Fecha {{ jornada }}{% endif %}</h2>{% for p in partidos %}<div class="match"><div class="match-top"><span class="time">{{ p.hora or '--:--' }}</span><span>{{ p.estado or 'Programado' }}</span></div><div class="teams">{{ p.local_club.nombre if p.local_club else 'Local por confirmar' }} <span style="color:#9aa8b8">vs</span> {{ p.visitante_club.nombre if p.visitante_club else 'Visitante por confirmar' }}</div><div class="venue">🏟️ {{ p.cancha or 'Por confirmar' }}{% if p.turno_club %} · Turno: {{ p.turno_club.nombre }}{% endif %}</div></div>{% else %}<div class="empty">No hay partidos pendientes.</div>{% endfor %}<div class="actions"><a class="btn" href="{{ url_for('publico_programacion',campeonato_id=campeonato.id) }}">Ver programación completa</a></div></section>
+<section class="card"><h2>🥅 Goleadores destacados</h2><div class="table-wrap"><table class="table"><tr><th>#</th><th>Jugador</th><th>Club</th><th>Goles</th></tr>{% for j,t in goleadores[:8] %}<tr><td>{{ loop.index }}</td><td>{{ j.nombre_completo }}</td><td>{{ j.club or '-' }}</td><td class="score">{{ t }}</td></tr>{% else %}<tr><td colspan="4">Sin registros.</td></tr>{% endfor %}</table></div><div class="actions"><a class="btn purple" href="{{ url_for('publico_goleadores',campeonato_id=campeonato.id) }}">Ver todos los goleadores</a></div></section></div>
+<section class="card" style="margin-top:18px"><h2>📊 Posiciones</h2><div class="table-wrap"><table class="table"><tr><th>Pos</th><th>Club</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr>{% for f in tabla %}<tr><td>{{ f.pos }}</td><td><strong>{{ f.club.nombre }}</strong></td><td>{{ f.pj }}</td><td>{{ f.pg }}</td><td>{{ f.pe }}</td><td>{{ f.pp }}</td><td>{{ f.gf }}</td><td>{{ f.gc }}</td><td>{{ f.dg }}</td><td class="score">{{ f.pts }}</td></tr>{% else %}<tr><td colspan="10">Sin clubes registrados.</td></tr>{% endfor %}</table></div><div class="actions"><a class="btn green" href="{{ url_for('publico_tabla',campeonato_id=campeonato.id) }}">Ver tabla completa</a></div></section>
+</main></body></html>
