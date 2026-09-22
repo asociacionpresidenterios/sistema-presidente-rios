@@ -5318,6 +5318,7 @@ def publico_campeonato(campeonato_id):
     jornada, partidos = obtener_proxima_jornada(campeonato)
     tabla = obtener_tabla_publica(campeonato)
     goleadores = obtener_goleadores_publicos(campeonato, 50)
+    resumen = resumen_publico_campeonato(campeonato)
 
     # Compatibilidad con versiones anteriores de la plantilla pública que
     # esperaban la variable goleadores_por_club. Mantener ambas variables
@@ -5335,6 +5336,7 @@ def publico_campeonato(campeonato_id):
         tabla=tabla,
         goleadores=goleadores,
         goleadores_por_club=goleadores_por_club,
+        resumen=resumen,
     )
 
 
@@ -5348,6 +5350,46 @@ def publico_tabla(campeonato_id):
 def publico_goleadores(campeonato_id):
     campeonato = db.get_or_404(Campeonato, campeonato_id)
     return render_template("publico_goleadores.html", campeonato=campeonato, goleadores=obtener_goleadores_publicos(campeonato, 100))
+
+
+def resumen_publico_campeonato(campeonato):
+    """Indicadores ligeros para el nuevo portal público V6."""
+    partidos = Partido.query.filter_by(campeonato_id=campeonato.id).all()
+    finalizados = [p for p in partidos if p.estado == "Finalizado"]
+    goles = sum(int(p.goles_local or 0) + int(p.goles_visitante or 0) for p in finalizados)
+    equipos = CampeonatoClub.query.filter_by(campeonato_id=campeonato.id).count()
+    tabla = obtener_tabla_publica(campeonato)
+    lider = tabla[0] if tabla else None
+    return {
+        "equipos": equipos,
+        "partidos_totales": len(partidos),
+        "partidos_jugados": len(finalizados),
+        "partidos_pendientes": max(0, len(partidos) - len(finalizados)),
+        "goles": goles,
+        "lider": lider,
+    }
+
+
+@app.route("/publico/campeonato/<int:campeonato_id>/programacion")
+def publico_programacion(campeonato_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    partidos = (Partido.query.filter_by(campeonato_id=campeonato.id)
+                .order_by(Partido.jornada, Partido.fecha, Partido.hora, Partido.id).all())
+    jornadas = {}
+    for partido in partidos:
+        jornadas.setdefault(partido.jornada, []).append(partido)
+    return render_template("publico_programacion.html", campeonato=campeonato, jornadas=jornadas)
+
+
+@app.route("/publico/campeonato/<int:campeonato_id>/resultados")
+def publico_resultados(campeonato_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    partidos = (Partido.query.filter_by(campeonato_id=campeonato.id, estado="Finalizado")
+                .order_by(Partido.jornada.desc(), Partido.fecha.desc(), Partido.hora.desc(), Partido.id.desc()).all())
+    jornadas = {}
+    for partido in partidos:
+        jornadas.setdefault(partido.jornada, []).append(partido)
+    return render_template("publico_resultados.html", campeonato=campeonato, jornadas=jornadas)
 
 
 # ============================================================
