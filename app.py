@@ -5310,10 +5310,23 @@ def publico():
 
 @app.route("/publico/campeonato/<int:campeonato_id>")
 def publico_campeonato(campeonato_id):
+    # Página de detalle pública. Se mantiene independiente del resto del
+    # portal para evitar que un problema con una plantilla secundaria
+    # provoque un 500 en Railway. Los datos son los mismos que usa el
+    # portal público principal.
     campeonato = db.get_or_404(Campeonato, campeonato_id)
     jornada, partidos = obtener_proxima_jornada(campeonato)
-    return render_template("publico_campeonato.html", campeonato=campeonato, jornada=jornada, partidos=partidos,
-                           tabla=obtener_tabla_publica(campeonato), goleadores=obtener_goleadores_publicos(campeonato, 50))
+    tabla = obtener_tabla_publica(campeonato)
+    goleadores = obtener_goleadores_publicos(campeonato, 50)
+
+    return render_template(
+        "publico_campeonato.html",
+        campeonato=campeonato,
+        jornada=jornada,
+        partidos=partidos,
+        tabla=tabla,
+        goleadores=goleadores,
+    )
 
 
 @app.route("/publico/campeonato/<int:campeonato_id>/tabla")
