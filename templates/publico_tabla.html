@@ -1,4 +1,22 @@
 <!doctype html>
 <html lang="es">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Tabla · {{ campeonato.nombre }}</title><style>body{margin:0;background:#f3f6fa;font-family:Arial;color:#0f172a}.top{background:#0f172a;color:#fff;padding:17px 5%;display:flex;justify-content:space-between;gap:10px}.top a{color:#fff;text-decoration:none}.wrap{max-width:1150px;margin:25px auto;padding:0 18px}.card{background:#fff;padding:22px;border-radius:18px;border:1px solid #e2e8f0}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:11px;border-bottom:1px solid #e2e8f0;text-align:left;white-space:nowrap}.table th{background:#f8fafc;font-size:12px}.score{font-weight:900}.pill{display:inline-block;background:#dbeafe;color:#1d4ed8;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:900}</style></head>
-<body><header class="top"><strong>⚽ Asociación Presidente Ríos</strong><div><a href="{{ url_for('publico_campeonato',campeonato_id=campeonato.id) }}">← Campeonato</a> &nbsp; <a href="{{ url_for('publico') }}">Campeonatos</a> &nbsp; <a href="{{ url_for('login') }}">🔐 Administración</a></div></header><main class="wrap"><div class="card"><span class="pill">{{ campeonato.serie }}</span><h1>📊 Tabla de posiciones</h1><p>{{ campeonato.nombre }} · Temporada {{ campeonato.temporada }}</p><div class="table-wrap"><table class="table"><tr><th>Pos</th><th>Club</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr>{% for f in tabla %}<tr><td>{{ f.pos }}</td><td>{{ f.club.nombre }}</td><td>{{ f.pj }}</td><td>{{ f.pg }}</td><td>{{ f.pe }}</td><td>{{ f.pp }}</td><td>{{ f.gf }}</td><td>{{ f.gc }}</td><td>{{ f.dg }}</td><td class="score">{{ f.pts }}</td></tr>{% else %}<tr><td colspan="10">Sin clubes registrados.</td></tr>{% endfor %}</table></div></div></main></body></html>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tabla · {{ campeonato.nombre }} · Presidente Ríos</title>
+<style>
+body{margin:0;background:#f1f5f9;font-family:Arial;color:#0f172a}
+.top{background:#0f172a;color:#fff;padding:18px 5%;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.top a{color:#fff;text-decoration:none}.admin{background:#2563eb;padding:9px 12px;border-radius:9px;font-weight:800}
+.wrap{max-width:1100px;margin:25px auto;padding:0 18px}.card{background:#fff;padding:22px;border-radius:18px}
+.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:720px}.table th,.table td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:center}.table th:nth-child(2),.table td:nth-child(2){text-align:left}.score{font-weight:900}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}.btn{display:inline-block;padding:9px 13px;border-radius:9px;background:#2563eb;color:#fff;text-decoration:none;font-weight:800}
+</style></head>
+<body>
+<header class="top"><strong>⚽ Asociación Presidente Ríos</strong>
+<div><a href="{{ url_for('publico') }}">Inicio público</a> <a class="admin" href="{{ url_for('login') }}">🔐 Administración</a></div></header>
+<main class="wrap"><section class="card"><h1>📊 Tabla de posiciones</h1><p>{{ campeonato.nombre }} · {{ campeonato.serie }} · {{ campeonato.temporada }}</p>
+<div class="table-wrap"><table class="table"><tr><th>Pos</th><th>Club</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr>
+{% for f in tabla %}<tr><td>{{ f.pos }}</td><td>{{ f.club.nombre }}</td><td>{{ f.pj }}</td><td>{{ f.pg }}</td><td>{{ f.pe }}</td><td>{{ f.pp }}</td><td>{{ f.gf }}</td><td>{{ f.gc }}</td><td>{{ f.dg }}</td><td class="score">{{ f.pts }}</td></tr>
+{% else %}<tr><td colspan="10">Sin clubes registrados.</td></tr>{% endfor %}</table></div>
+<div class="actions"><a class="btn" href="{{ url_for('publico_campeonato', campeonato_id=campeonato.id) }}">← Ver campeonato</a><a class="btn" href="{{ url_for('publico_goleadores', campeonato_id=campeonato.id) }}">🥅 Goleadores</a></div>
+</section></main></body></html>
