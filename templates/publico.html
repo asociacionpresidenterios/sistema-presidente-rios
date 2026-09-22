@@ -5,44 +5,67 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Asociación Presidente Ríos · Portal Público</title>
 <style>
-:root{--navy:#0f172a;--blue:#2563eb;--orange:#f97316;--bg:#f3f6fa;--card:#fff;--muted:#64748b;--line:#e2e8f0}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#0f172a;font-family:Arial,Helvetica,sans-serif}.top{background:var(--navy);color:#fff;padding:16px 5%;display:flex;align-items:center;justify-content:space-between;gap:20px;position:sticky;top:0;z-index:10}.brand{display:flex;align-items:center;gap:12px}.logo{width:46px;height:46px;border-radius:13px;background:var(--orange);display:grid;place-items:center;font-size:24px}.brand strong{display:block;font-size:17px}.brand span{font-size:12px;opacity:.72}.top-links{display:flex;gap:8px;flex-wrap:wrap}.top a{color:#fff;text-decoration:none;font-weight:800;padding:10px 13px;border-radius:10px;background:#ffffff12}.top a:hover{background:#ffffff20}.wrap{max-width:1250px;margin:0 auto;padding:28px 18px 50px}.hero{background:linear-gradient(135deg,#0f172a,#1d4ed8);color:#fff;border-radius:24px;padding:32px;margin-bottom:24px;box-shadow:0 12px 30px #0f172a20}.hero h1{margin:0 0 8px;font-size:34px}.hero p{margin:0;opacity:.84;font-size:16px}.section-title{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:28px 0 12px}.section-title h2{margin:0;font-size:23px}.section-title span{color:var(--muted);font-size:13px}.series{margin-top:20px}.series-title{display:flex;align-items:center;gap:10px;margin-bottom:12px}.series-title h2{margin:0}.series-badge{background:#dbeafe;color:#1d4ed8;padding:7px 11px;border-radius:999px;font-weight:900;font-size:12px}.champ-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}.champ{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 5px 18px #0f172a0a}.champ:hover{box-shadow:0 10px 26px #0f172a12;transform:translateY(-1px)}.champ h3{margin:0 0 7px;font-size:19px}.meta{color:var(--muted);font-size:13px;margin-bottom:15px}.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 15px;border-radius:11px;background:var(--blue);color:#fff;text-decoration:none;font-weight:900}.empty{background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px;color:var(--muted)}.footer{text-align:center;color:#94a3b8;font-size:12px;padding:30px 0}.hint{margin-top:22px;color:var(--muted);font-size:13px}@media(max-width:700px){.top{align-items:flex-start;flex-direction:column}.hero h1{font-size:28px}.top-links{width:100%}.top-links a{flex:1;text-align:center}}
+*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:#0f172a;font-family:Arial,sans-serif}.top{background:#0f172a;color:#fff;padding:16px 5%;display:flex;justify-content:space-between;align-items:center;gap:15px}.top a{color:#fff;text-decoration:none;font-weight:800;background:#2563eb;padding:10px 14px;border-radius:10px}.wrap{max-width:1250px;margin:25px auto;padding:0 18px}.hero{background:linear-gradient(135deg,#0f172a,#1d4ed8);color:#fff;border-radius:20px;padding:30px;margin-bottom:22px}.hero h1{margin:0 0 8px}.hero p{margin:0;opacity:.85}.section-title{margin:25px 0 12px}.series-nav{display:flex;flex-wrap:wrap;gap:10px}.series-btn{display:inline-block;text-decoration:none;background:#fff;color:#0f172a;border:1px solid #dbe3ee;border-radius:12px;padding:12px 17px;font-weight:900;box-shadow:0 4px 14px #0f172a0d}.series-btn:hover{background:#2563eb;color:#fff}.series-block{margin-top:28px;scroll-margin-top:20px}.series-header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.series-header h2{margin:0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.card{background:#fff;border-radius:18px;padding:20px;box-shadow:0 6px 20px #0f172a10}.champ-title{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.champ-title h3{margin:7px 0 0}.pill{display:inline-block;background:#e0e7ff;color:#3730a3;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:900}.btn{display:inline-block;padding:9px 13px;border-radius:9px;background:#2563eb;color:#fff;text-decoration:none;font-weight:800;white-space:nowrap}.match{padding:9px 0;border-bottom:1px solid #e5e7eb}.small{color:#64748b;font-size:13px}.muted{color:#94a3b8}.empty{background:#fff;border-radius:18px;padding:25px}.back{display:inline-block;margin-top:10px;color:#2563eb;text-decoration:none;font-weight:800}
 </style>
 </head>
-<body>
+<body id="top">
 <header class="top">
-  <div class="brand"><div class="logo">⚽</div><div><strong>Asociación Presidente Ríos</strong><span>Portal público de campeonatos</span></div></div>
-  <div class="top-links"><a href="{{ url_for('login') }}">🔐 Administración</a></div>
+  <div>⚽ <strong>Asociación Presidente Ríos</strong><div style="font-size:12px;opacity:.75">Portal público de resultados</div></div>
+  <a href="{{ url_for('login') }}">🔐 Administración</a>
 </header>
 <main class="wrap">
   <section class="hero">
-    <h1>🏆 Campeonatos</h1>
-    <p>Selecciona una serie y luego el campeonato que deseas consultar.</p>
+    <h1>🏆 Portal Público</h1>
+    <p>Consulta los campeonatos, próximas jornadas, tablas de posiciones y goleadores.</p>
   </section>
 
-  <div class="section-title"><h2>📚 Campeonatos por serie</h2><span>{{ campeonatos|length }} campeonato(s) activo(s)</span></div>
-
-  {% if not grupos_series %}
-    <div class="empty"><strong>No hay campeonatos activos.</strong><br>Cuando la Asociación publique un campeonato, aparecerá aquí.</div>
-  {% endif %}
-
-  {% for serie, lista in grupos_series.items() %}
-  <section class="series">
-    <div class="series-title"><span class="series-badge">SERIE</span><h2>{{ serie }}</h2></div>
-    <div class="champ-grid">
-      {% for campeonato in lista %}
-      <article class="champ">
-        <h3>{{ campeonato.nombre }}</h3>
-        <div class="meta">Temporada {{ campeonato.temporada }} · Estado {{ campeonato.estado }}</div>
-        <a class="btn" href="{{ url_for('publico_campeonato', campeonato_id=campeonato.id) }}">⚽ Ver campeonato</a>
-      </article>
+  {% if not series_publicas %}
+    <div class="empty"><h2>No hay campeonatos activos</h2><p class="small">Cuando exista un campeonato en estado Activo aparecerá aquí.</p></div>
+  {% else %}
+    <h2 class="section-title">Selecciona una serie</h2>
+    <div class="series-nav">
+      {% for serie, panels in series_publicas %}
+        <a class="series-btn" href="#serie-{{ loop.index }}">⚽ {{ serie }} <span class="muted">({{ panels|length }})</span></a>
       {% endfor %}
     </div>
-  </section>
-  {% endfor %}
 
-  <p class="hint">Desde cada campeonato podrás consultar la próxima fecha, tabla de posiciones y goleadores por club.</p>
+    {% for serie, panels in series_publicas %}
+      <section class="series-block" id="serie-{{ loop.index }}">
+        <div class="series-header">
+          <h2>⚽ {{ serie }}</h2>
+          <a class="back" href="#top">↑ Volver arriba</a>
+        </div>
+        <div class="grid">
+          {% for p in panels %}
+            <article class="card">
+              <div class="champ-title">
+                <div>
+                  <span class="pill">{{ p.campeonato.estado or 'Activo' }}</span>
+                  <h3>{{ p.campeonato.nombre }}</h3>
+                </div>
+                <a class="btn" href="{{ url_for('publico_campeonato', campeonato_id=p.campeonato.id) }}">Ver</a>
+              </div>
+
+              <h4>📅 Próxima jornada{% if p.jornada %} · Jornada {{ p.jornada }}{% endif %}</h4>
+              {% for partido in p.partidos %}
+                <div class="match">
+                  <strong>{{ partido.hora or '--:--' }}</strong> · {{ partido.local_club.nombre }} <b>vs</b> {{ partido.visitante_club.nombre }}
+                  <div class="small">🏟️ {{ partido.cancha or 'Cancha por confirmar' }}{% if partido.turno_club %} · 🔰 {{ partido.turno_club.nombre }}{% endif %}</div>
+                </div>
+              {% else %}
+                <p class="small">No hay partidos pendientes.</p>
+              {% endfor %}
+
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+                <a class="btn" href="{{ url_for('publico_tabla', campeonato_id=p.campeonato.id) }}">📊 Tabla</a>
+                <a class="btn" href="{{ url_for('publico_goleadores', campeonato_id=p.campeonato.id) }}">🥅 Goleadores</a>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+  {% endif %}
 </main>
-<footer class="footer">Asociación de Fútbol Presidente Ríos · Portal público</footer>
 </body>
 </html>
