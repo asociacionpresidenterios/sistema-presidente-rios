@@ -481,114 +481,62 @@
 
         <nav class="nav">
 
+            {% if session.get("admin_id") %}
 
-            <!-- JUGADORES -->
-
-            <a
-                href="{{ url_for('index') }}"
-                class="{% if request.endpoint == 'index' %}
-                    active
-                {% endif %}"
-            >
-                👥 Jugadores
-            </a>
-
-
-            <!-- NUEVO JUGADOR -->
-
-            <a
-                href="{{ url_for('nuevo_jugador') }}"
-                class="{% if request.endpoint == 'nuevo_jugador' %}
-                    active
-                {% endif %}"
-            >
-                ➕ Nuevo jugador
-            </a>
-
-
-            <!-- IMPORTAR -->
-
-            <a
-                href="{{ url_for('importar_jugadores') }}"
-                class="{% if request.endpoint == 'importar_jugadores' %}
-                    active
-                {% endif %}"
-            >
-                📊 Importar
-            </a>
-
-
-            <!-- DASHBOARD -->
-
-            <a
-                href="{{ url_for('dashboard') }}"
-                class="{% if request.endpoint == 'dashboard' %}
-                    active
-                {% endif %}"
-            >
-                📈 Dashboard
-            </a>
-
-
-            <!-- =================================================
-                 CAMPEONATOS
-                 ================================================= -->
-
-            <a
-                href="{{ url_for('campeonatos') }}"
-                class="{% if request.endpoint == 'campeonatos'
-                    or request.endpoint == 'nuevo_campeonato'
-                    or request.endpoint == 'detalle_campeonato'
-                %}
-                    active
-                {% endif %}"
-            >
-                🏆 Campeonatos
-            </a>
-
-
-            <!-- =================================================
-                 PORTAL PÚBLICO / CUENTA
-                 ================================================= -->
-
-            <a
-                href="{{ url_for('publico') }}"
-                target="_blank"
-            >
+            <a href="{{ url_for('publico') }}"
+               class="{% if request.endpoint in ['publico','publico_campeonato','publico_tabla','publico_goleadores'] %}active{% endif %}">
                 🌐 Portal público
             </a>
 
-            {% if session.get('admin_id') %}
+            <a href="{{ url_for('index') }}"
+               class="{% if request.endpoint == 'index' %}active{% endif %}">
+                👥 Jugadores
+            </a>
 
-                <a href="{{ url_for('mi_cuenta_admin') }}">
-                    👤 {{ session.get('admin_nombre') or session.get('admin_username') }}
-                </a>
+            <a href="{{ url_for('nuevo_jugador') }}"
+               class="{% if request.endpoint == 'nuevo_jugador' %}active{% endif %}">
+                ➕ Nuevo jugador
+            </a>
 
-                <a href="{{ url_for('logout') }}">
-                    🚪 Salir
-                </a>
+            <a href="{{ url_for('importar_jugadores') }}"
+               class="{% if request.endpoint == 'importar_jugadores' %}active{% endif %}">
+                📊 Importar
+            </a>
 
-            {% endif %}
+            <a href="{{ url_for('dashboard') }}"
+               class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
+                📈 Dashboard
+            </a>
 
+            <a href="{{ url_for('campeonatos') }}"
+               class="{% if request.endpoint in ['campeonatos','nuevo_campeonato','detalle_campeonato'] %}active{% endif %}">
+                🏆 Campeonatos
+            </a>
 
-            <!-- =================================================
-                 CONFIGURACIÓN
-                 ================================================= -->
+            <a href="{{ url_for('identidad_visual') }}"
+               class="{% if request.endpoint == 'identidad_visual' %}active{% endif %}">
+                🎨 Identidad
+            </a>
 
-            <a
-                href="{{ url_for('configuracion') }}"
-                class="{% if request.endpoint == 'configuracion'
-                    or request.endpoint == 'nuevo_club'
-                    or request.endpoint == 'nueva_serie'
-                    or request.endpoint == 'cambiar_estado_club'
-                    or request.endpoint == 'cambiar_estado_serie'
-                %}
-                    active
-                {% endif %}"
-            >
+            <a href="{{ url_for('configuracion') }}"
+               class="{% if request.endpoint in ['configuracion','nuevo_club','nueva_serie','cambiar_estado_club','cambiar_estado_serie'] %}active{% endif %}">
                 ⚙️ Configuración
             </a>
 
+            <a href="{{ url_for('mi_cuenta_admin') }}">
+                👤 {{ session.get('admin_nombre', 'Administrador') }}
+            </a>
+
+            <a href="{{ url_for('logout') }}">
+                🚪 Salir
+            </a>
+
+            {% else %}
+
+            <a href="{{ url_for('publico') }}">🌐 Portal público</a>
+            <a href="{{ url_for('login') }}">🔐 Administración</a>
+
+            {% endif %}
 
         </nav>
 
