@@ -43,7 +43,11 @@
                   <span class="pill">{{ p.campeonato.estado or 'Activo' }}</span>
                   <h3>{{ p.campeonato.nombre }}</h3>
                 </div>
-                <a class="btn" href="{{ url_for('publico_campeonato', campeonato_id=p.campeonato.id) }}">Ver</a>
+                <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end">
+                  <a class="btn" href="{{ url_for('publico_campeonato', campeonato_id=p.campeonato.id) }}">Ver</a>
+                  <a class="btn" style="background:#0f766e" href="{{ url_for('publico_tabla', campeonato_id=p.campeonato.id) }}">Tabla</a>
+                  <a class="btn" style="background:#7c3aed" href="{{ url_for('publico_goleadores', campeonato_id=p.campeonato.id) }}">Goleadores</a>
+                </div>
               </div>
 
               <h4>📅 Próxima jornada{% if p.jornada %} · Jornada {{ p.jornada }}{% endif %}</h4>
