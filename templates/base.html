@@ -106,8 +106,11 @@
         .nav {
             display: flex;
             align-items: center;
-
             gap: 7px;
+            overflow-x: auto;
+            max-width: 78vw;
+            scrollbar-width: thin;
+            white-space: nowrap;
         }
 
         .nav a {
@@ -525,6 +528,11 @@
 
             <a href="{{ url_for('mi_cuenta_admin') }}">
                 👤 {{ session.get('admin_nombre', 'Administrador') }}
+            </a>
+
+            <a href="{{ url_for('admin_usuarios') }}"
+               class="{% if request.endpoint in ['admin_usuarios','cambiar_estado_admin'] %}active{% endif %}">
+                👥 Admins
             </a>
 
             <a href="{{ url_for('logout') }}">
