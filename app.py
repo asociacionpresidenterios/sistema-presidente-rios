@@ -3012,6 +3012,101 @@ def credencial_reverso(jugador_id):
     )
 
 
+
+# ============================================================
+# REGISTRO INTERNO DE CLUBES, SERIES Y PLANTELES
+# ============================================================
+
+@app.route("/admin/planteles")
+def admin_planteles():
+    """Registro interno de jugadores organizado por club y serie.
+
+    No crea nuevas tablas: utiliza el registro Jugador existente, por lo que
+    es compatible con la base de datos actual de PostgreSQL/Railway.
+    """
+    q = request.args.get("q", "").strip()
+    club_filtro = request.args.get("club", "").strip()
+    serie_filtro = request.args.get("serie", "").strip()
+    estado_filtro = request.args.get("estado", "").strip()
+
+    query = Jugador.query
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            db.or_(
+                Jugador.nombre_completo.ilike(like),
+                Jugador.rut.ilike(like),
+                Jugador.club.ilike(like),
+                Jugador.serie.ilike(like),
+            )
+        )
+
+    if club_filtro:
+        query = query.filter(Jugador.club == club_filtro)
+
+    if serie_filtro:
+        query = query.filter(Jugador.serie == serie_filtro)
+
+    if estado_filtro:
+        query = query.filter(Jugador.estado == estado_filtro)
+
+    jugadores = query.order_by(
+        Jugador.club.asc(),
+        Jugador.serie.asc(),
+        Jugador.nombre_completo.asc(),
+    ).all()
+
+    # Agrupación: Club -> Serie -> Jugadores
+    planteles = {}
+    for jugador in jugadores:
+        club = jugador.club or "Sin club"
+        serie = jugador.serie or "Sin serie"
+        planteles.setdefault(club, {}).setdefault(serie, []).append(jugador)
+
+    clubes = [
+        row[0]
+        for row in db.session.query(Jugador.club)
+        .filter(Jugador.club.isnot(None), Jugador.club != "")
+        .distinct()
+        .order_by(Jugador.club.asc())
+        .all()
+    ]
+
+    series = [
+        row[0]
+        for row in db.session.query(Jugador.serie)
+        .filter(Jugador.serie.isnot(None), Jugador.serie != "")
+        .distinct()
+        .order_by(Jugador.serie.asc())
+        .all()
+    ]
+
+    estados = [
+        row[0]
+        for row in db.session.query(Jugador.estado)
+        .filter(Jugador.estado.isnot(None), Jugador.estado != "")
+        .distinct()
+        .order_by(Jugador.estado.asc())
+        .all()
+    ]
+
+    return render_template(
+        "admin_planteles.html",
+        planteles=planteles,
+        clubes=clubes,
+        series=series,
+        estados=estados,
+        q=q,
+        club_filtro=club_filtro,
+        serie_filtro=serie_filtro,
+        estado_filtro=estado_filtro,
+        total_jugadores=len(jugadores),
+        total_clubes=len(planteles),
+        total_series=len({serie for club in planteles.values() for serie in club}),
+    )
+
+
 # ============================================================
 # DASHBOARD
 # ============================================================
