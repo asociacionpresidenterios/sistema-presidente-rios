@@ -66,7 +66,7 @@
                   <td><strong>{{ jugador.nombre_completo }}</strong></td>
                   <td>{{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') if jugador.fecha_nacimiento else '—' }}</td>
                   <td><span class="status {% if jugador.estado == 'Suspendido' or jugador.estado == 'Inhabilitado' %}danger{% elif jugador.estado == 'Pendiente' %}warn{% endif %}">{{ jugador.estado }}</span></td>
-                  <td class="actions"><a href="{{ url_for('ficha_jugador', jugador_id=jugador.id) }}">Ver ficha</a> · <a href="{{ url_for('editar_jugador', jugador_id=jugador.id) }}">Editar</a></td>
+                  <td class="actions"><a href="{{ url_for('admin_centro_jugador', jugador_id=jugador.id) }}">Centro</a> · <a href="{{ url_for('ficha_jugador', jugador_id=jugador.id) }}">Ver ficha</a> · <a href="{{ url_for('editar_jugador', jugador_id=jugador.id) }}">Editar</a></td>
                 </tr>
               {% endfor %}
               </tbody>
