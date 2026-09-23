@@ -20,7 +20,7 @@
         <p>Ficha administrativa del club, organizada por series y planteles registrados.</p>
       </div>
       <div class="actions">
-        <a class="btnx white" href="{{ url_for('nuevo_jugador') }}">➕ Agregar jugador</a>
+        <a class="btnx white" href="{{ url_for('admin_nuevo_jugador_club', club_nombre=club_nombre) }}">➕ Agregar jugador</a>
         <a class="btnx ghost" href="{{ url_for('admin_planteles') }}">← Volver a clubes</a>
       </div>
     </div>
@@ -75,7 +75,7 @@
               <td><strong>{{ jugador.nombre_completo }}</strong></td>
               <td>{{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') if jugador.fecha_nacimiento else '—' }}</td>
               <td><span class="status {% if jugador.estado == 'Suspendido' or jugador.estado == 'Inhabilitado' %}danger{% elif jugador.estado == 'Pendiente' %}warn{% endif %}">{{ jugador.estado }}</span></td>
-              <td><a class="link" href="{{ url_for('ficha_jugador', jugador_id=jugador.id) }}">Ficha</a> · <a class="link" href="{{ url_for('editar_jugador', jugador_id=jugador.id) }}">Editar / cambiar club o serie</a></td>
+              <td><a class="link" href="{{ url_for('ficha_jugador', jugador_id=jugador.id) }}">Ficha</a> · <a class="link" href="{{ url_for('admin_editar_jugador_plantel', jugador_id=jugador.id) }}">Editar / mover</a></td>
             </tr>
           {% endfor %}
           </tbody>
