@@ -9,9 +9,10 @@
 </style>
 </head>
 <body id="top">
-<header class="top"><div class="top-in"><a class="brand" href="{{ url_for('publico') }}"><div class="crest">PR</div><div><b>Asociación Presidente Ríos</b><span>Portal oficial de campeonatos</span></div></a><a class="admin" href="{{ url_for('login') }}">🔐 Administración</a></div></header>
+<header class="top"><div class="top-in"><a class="brand" href="{{ url_for('publico') }}"><div class="crest">PR</div><div><b>Asociación Presidente Ríos</b><span>Portal oficial de campeonatos</span></div></a><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><a class="admin" href="{{ url_for('publico_clubes') }}">👥 Clubes y planteles</a><a class="admin" href="{{ url_for('login') }}">🔐 Administración</a></div></div></header>
 <main class="wrap">
-<section class="hero"><div class="eyebrow">Temporada deportiva</div><h1>Todo Presidente Ríos, en un solo lugar.</h1><p>Programación, resultados, posiciones y goleadores de nuestros campeonatos. Selecciona una serie para comenzar.</p></section>
+<section class="hero"><div class="eyebrow">Temporada deportiva</div><h1>Todo Presidente Ríos, en un solo lugar.</h1><p>Programación, resultados, posiciones, goleadores y los planteles de nuestros clubes. Selecciona una serie o consulta directamente el directorio de clubes.</p></section>
+<section class="card" style="margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap"><div><strong style="font-size:18px">👥 Clubes y planteles</strong><div class="meta" style="margin-top:4px">Consulta cada club, sus series y todos los jugadores registrados.</div></div><a class="btn" href="{{ url_for('publico_clubes') }}">Ver directorio de clubes →</a></section>
 {% if not series_publicas %}<div class="empty"><strong>No hay campeonatos activos.</strong><div>Cuando se publique un campeonato aparecerá automáticamente en este portal.</div></div>{% else %}
 <div class="section-head"><div><h2>🏆 Campeonatos por serie</h2><p>Selecciona la categoría que quieres consultar.</p></div></div>
 <div class="series-nav">{% for serie, panels in series_publicas %}<a class="series-btn" href="#serie-{{ loop.index }}">⚽ {{ serie }} <span class="count">{{ panels|length }} campeonato{% if panels|length != 1 %}s{% endif %}</span></a>{% endfor %}</div>
