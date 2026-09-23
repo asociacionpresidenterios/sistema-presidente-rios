@@ -5340,6 +5340,108 @@ def publico_campeonato(campeonato_id):
     )
 
 
+
+
+def normalizar_nombre_publico(valor):
+    """Normaliza nombres para agrupar clubes/series aunque existan tildes o diferencias de formato."""
+    import unicodedata
+    texto = unicodedata.normalize("NFKD", str(valor or ""))
+    texto = "".join(c for c in texto if not unicodedata.combining(c))
+    texto = texto.lower().strip()
+    texto = texto.replace("_", " ").replace("-", " ").replace("/", " ")
+    return " ".join(texto.split())
+
+
+def normalizar_serie_publica(valor):
+    texto = normalizar_nombre_publico(valor)
+    if texto.startswith("serie "):
+        texto = texto[6:].strip()
+    return texto
+
+
+def construir_directorio_clubes():
+    """Construye el directorio público Club -> Series -> Jugadores."""
+    clubes = Club.query.filter_by(activo=True).order_by(Club.nombre.asc()).all()
+    jugadores = (Jugador.query
+                 .filter(Jugador.club.isnot(None), Jugador.club != "")
+                 .order_by(Jugador.club.asc(), Jugador.serie.asc(), Jugador.nombre_completo.asc())
+                 .all())
+
+    clubes_por_nombre = {normalizar_nombre_publico(c.nombre): c for c in clubes}
+    grupos = {c.id: {} for c in clubes}
+
+    for jugador in jugadores:
+        club = clubes_por_nombre.get(normalizar_nombre_publico(jugador.club))
+        if not club:
+            continue
+        serie = (jugador.serie or "Sin serie").strip() or "Sin serie"
+        clave = normalizar_serie_publica(serie)
+        grupos[club.id].setdefault(clave, {"nombre": serie, "jugadores": []})["jugadores"].append(jugador)
+
+    # Añade también las series de campeonatos activos, aunque todavía no tengan jugadores.
+    participantes = (CampeonatoClub.query
+                     .join(Campeonato, CampeonatoClub.campeonato_id == Campeonato.id)
+                     .filter(Campeonato.estado.ilike("Activo"))
+                     .all())
+    for participante in participantes:
+        club = participante.club
+        if not club or not club.activo:
+            continue
+        serie = (participante.campeonato.serie or "Sin serie").strip() or "Sin serie"
+        clave = normalizar_serie_publica(serie)
+        grupos.setdefault(club.id, {}).setdefault(clave, {"nombre": serie, "jugadores": []})
+
+    resultado = []
+    for club in clubes:
+        series = list(grupos.get(club.id, {}).values())
+        series.sort(key=lambda x: normalizar_serie_publica(x["nombre"]))
+        total = sum(len(s["jugadores"]) for s in series)
+        resultado.append({
+            "club": club,
+            "series": series,
+            "total_jugadores": total,
+            "total_series": len(series),
+        })
+    return resultado
+
+
+@app.route("/publico/clubes")
+def publico_clubes():
+    """Directorio público de clubes, series y planteles registrados."""
+    directorio = construir_directorio_clubes()
+    return render_template("publico_clubes.html", directorio=directorio)
+
+
+@app.route("/publico/club/<int:club_id>")
+def publico_club_ficha(club_id):
+    """Ficha global de un club con todas sus series y jugadores."""
+    club = db.get_or_404(Club, club_id)
+    if not club.activo:
+        from flask import abort
+        abort(404)
+
+    directorio = construir_directorio_clubes()
+    ficha = next((item for item in directorio if item["club"].id == club.id), None)
+    if not ficha:
+        ficha = {"club": club, "series": [], "total_jugadores": 0, "total_series": 0}
+
+    campeonatos = (CampeonatoClub.query
+                   .join(Campeonato, CampeonatoClub.campeonato_id == Campeonato.id)
+                   .filter(CampeonatoClub.club_id == club.id,
+                           Campeonato.estado.ilike("Activo"))
+                   .order_by(Campeonato.temporada.desc(), Campeonato.id.desc())
+                   .all())
+
+    return render_template(
+        "publico_club_ficha.html",
+        club=club,
+        series=ficha["series"],
+        total_jugadores=ficha["total_jugadores"],
+        total_series=ficha["total_series"],
+        campeonatos=campeonatos,
+    )
+
+
 @app.route("/publico/campeonato/<int:campeonato_id>/club/<int:club_id>")
 def publico_club(campeonato_id, club_id):
     """Ficha pública de un club dentro de un campeonato."""
@@ -5399,10 +5501,6 @@ def publico_jugador(campeonato_id, jugador_id):
     jugador = db.get_or_404(Jugador, jugador_id)
 
     # El jugador debe pertenecer al club/serie del campeonato para ser visible.
-    participante = CampeonatoClub.query.filter_by(
-        campeonato_id=campeonato.id,
-        club_id=Club.id
-    )
     club = Club.query.filter(db.func.lower(Club.nombre) == (jugador.club or "").strip().lower()).first()
     if not club or not CampeonatoClub.query.filter_by(campeonato_id=campeonato.id, club_id=club.id).first():
         from flask import abort
