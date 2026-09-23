@@ -3108,6 +3108,88 @@ def admin_planteles():
 
 
 # ============================================================
+# FICHA ADMINISTRATIVA DE CLUB
+# ============================================================
+
+@app.route("/admin/planteles/club/<path:club_nombre>")
+def admin_ficha_club(club_nombre):
+    """Ficha administrativa completa de un club.
+
+    Agrupa el registro Jugador por serie y permite consultar rápidamente
+    planteles, estados y acciones de gestión sin modificar el modelo de datos.
+    """
+    club_nombre = club_nombre.strip()
+    q = request.args.get("q", "").strip()
+    serie_filtro = request.args.get("serie", "").strip()
+
+    query = Jugador.query.filter(Jugador.club == club_nombre)
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            db.or_(
+                Jugador.nombre_completo.ilike(like),
+                Jugador.rut.ilike(like),
+            )
+        )
+
+    if serie_filtro:
+        query = query.filter(Jugador.serie == serie_filtro)
+
+    jugadores = query.order_by(
+        Jugador.serie.asc(),
+        Jugador.nombre_completo.asc(),
+    ).all()
+
+    series_club = [
+        row[0]
+        for row in db.session.query(Jugador.serie)
+        .filter(Jugador.club == club_nombre)
+        .filter(Jugador.serie.isnot(None), Jugador.serie != "")
+        .distinct()
+        .order_by(Jugador.serie.asc())
+        .all()
+    ]
+
+    # Agrupación Serie -> jugadores
+    planteles = {}
+    for jugador in jugadores:
+        serie = jugador.serie or "Sin serie"
+        planteles.setdefault(serie, []).append(jugador)
+
+    todos = Jugador.query.filter(Jugador.club == club_nombre).all()
+    total = len(todos)
+    vigentes = sum(1 for j in todos if (j.estado or "Vigente") == "Vigente")
+    pendientes = sum(1 for j in todos if j.estado == "Pendiente")
+    suspendidos = sum(1 for j in todos if j.estado in {"Suspendido", "Inhabilitado"})
+
+    resumen_series = []
+    for serie in series_club:
+        serie_jugadores = [j for j in todos if j.serie == serie]
+        resumen_series.append({
+            "nombre": serie,
+            "total": len(serie_jugadores),
+            "vigentes": sum(1 for j in serie_jugadores if (j.estado or "Vigente") == "Vigente"),
+            "pendientes": sum(1 for j in serie_jugadores if j.estado == "Pendiente"),
+            "suspendidos": sum(1 for j in serie_jugadores if j.estado in {"Suspendido", "Inhabilitado"}),
+        })
+
+    return render_template(
+        "admin_club_ficha.html",
+        club_nombre=club_nombre,
+        planteles=planteles,
+        series_club=series_club,
+        resumen_series=resumen_series,
+        total=total,
+        vigentes=vigentes,
+        pendientes=pendientes,
+        suspendidos=suspendidos,
+        q=q,
+        serie_filtro=serie_filtro,
+    )
+
+
+# ============================================================
 # DASHBOARD
 # ============================================================
 
