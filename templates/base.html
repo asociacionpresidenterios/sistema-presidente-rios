@@ -496,6 +496,11 @@
                 👥 Jugadores
             </a>
 
+            <a href="{{ url_for('admin_planteles') }}"
+               class="{% if request.endpoint == 'admin_planteles' %}active{% endif %}">
+                🏟️ Clubes y planteles
+            </a>
+
             <a href="{{ url_for('nuevo_jugador') }}"
                class="{% if request.endpoint == 'nuevo_jugador' %}active{% endif %}">
                 ➕ Nuevo jugador
