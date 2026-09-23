@@ -47,7 +47,10 @@
     <section class="club-card">
       <div class="club-head">
         <div><h2>⚽ {{ club }}</h2><div class="club-count">{{ series_map.values()|map('length')|sum }} jugador{% if (series_map.values()|map('length')|sum) != 1 %}es{% endif %}</div></div>
-        <a class="btnx light" href="{{ url_for('index') }}?q={{ club|urlencode }}">Ver en registro general →</a>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <a class="btnx primary" href="{{ url_for('admin_ficha_club', club_nombre=club) }}">📋 Ficha del club</a>
+          <a class="btnx light" href="{{ url_for('index') }}?q={{ club|urlencode }}">Ver registro general →</a>
+        </div>
       </div>
       {% for serie, jugadores in series_map.items() %}
         <div class="series-block">
