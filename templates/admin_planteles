@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Clubes y planteles{% endblock %}
+{% block content %}
+<style>
+.planteles-wrap{max-width:1500px;margin:0 auto}
+.hero-panel{background:linear-gradient(135deg,#071426,#123b70);color:#fff;border-radius:20px;padding:24px 26px;margin-bottom:20px;box-shadow:0 12px 32px rgba(8,24,44,.10)}
+.hero-panel h1{margin:0 0 6px;font-size:28px}.hero-panel p{margin:0;color:#cbd9ea;font-size:14px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:20px}.metric{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:16px}.metric strong{display:block;font-size:25px}.metric span{color:#6b7b90;font-size:12px;font-weight:700}
+.filters{background:#fff;border:1px solid #e5eaf1;border-radius:16px;padding:16px;margin-bottom:20px}.filters-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto auto;gap:10px;align-items:end}.field label{display:block;font-size:11px;font-weight:800;color:#66758a;margin-bottom:5px}.field input,.field select{width:100%;height:40px;border:1px solid #d8e0ea;border-radius:9px;padding:0 11px;background:#fff}.btnx{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 14px;border-radius:9px;text-decoration:none;border:1px solid #d8e0ea;font-weight:800;font-size:13px}.btnx.primary{background:#1769e0;color:#fff;border-color:#1769e0}.btnx.light{background:#f7f9fc;color:#233247}
+.club-card{background:#fff;border:1px solid #e5eaf1;border-radius:18px;margin-bottom:16px;overflow:hidden;box-shadow:0 7px 24px rgba(8,24,44,.05)}
+.club-head{padding:18px 20px;background:#f7f9fc;border-bottom:1px solid #e8edf3;display:flex;justify-content:space-between;align-items:center;gap:12px}.club-head h2{margin:0;font-size:20px}.club-count{color:#6b7b90;font-size:12px;font-weight:700}
+.series-block{padding:0 20px 18px}.series-head{display:flex;justify-content:space-between;align-items:center;padding:15px 0 10px}.series-head h3{margin:0;font-size:15px}.series-head span{font-size:11px;color:#6b7b90;font-weight:800}
+.table-wrap{overflow:auto}.players{width:100%;border-collapse:collapse}.players th{text-align:left;background:#f7f9fc;color:#63738a;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:9px}.players td{padding:10px 9px;border-top:1px solid #edf1f5;font-size:13px}.players tr:hover{background:#fbfdff}.status{display:inline-block;padding:4px 8px;border-radius:999px;background:#eaf7ef;color:#147a4b;font-size:10px;font-weight:900}.status.warn{background:#fff5d9;color:#8a5a00}.status.danger{background:#ffe8e8;color:#a32121}.actions{white-space:nowrap}.actions a{color:#1769e0;text-decoration:none;font-weight:800;font-size:12px}.empty{padding:35px;background:#fff;border:1px dashed #cbd5e1;border-radius:16px;text-align:center;color:#69798d}
+@media(max-width:1000px){.filters-grid{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.metrics{grid-template-columns:1fr 1fr}.filters-grid{grid-template-columns:1fr}.club-head{align-items:flex-start;flex-direction:column}.series-block{padding:0 12px 14px}.club-head{padding:15px 14px}.players th:nth-child(2),.players td:nth-child(2){display:none}}
+</style>
+
+<div class="planteles-wrap">
+  <section class="hero-panel">
+    <h1>🏟️ Clubes y planteles</h1>
+    <p>Registro interno de jugadores organizado por club y serie. Desde aquí puedes revisar y mantener los planteles registrados.</p>
+  </section>
+
+  <section class="metrics">
+    <div class="metric"><strong>{{ total_clubes }}</strong><span>Clubes con jugadores</span></div>
+    <div class="metric"><strong>{{ total_series }}</strong><span>Series representadas</span></div>
+    <div class="metric"><strong>{{ total_jugadores }}</strong><span>Jugadores encontrados</span></div>
+    <div class="metric"><strong>{{ clubes|length }}</strong><span>Clubes registrados</span></div>
+  </section>
+
+  <form class="filters" method="get" action="{{ url_for('admin_planteles') }}">
+    <div class="filters-grid">
+      <div class="field"><label>Buscar jugador, RUT, club o serie</label><input type="text" name="q" value="{{ q }}" placeholder="Ej.: Juan Pérez"></div>
+      <div class="field"><label>Club</label><select name="club"><option value="">Todos</option>{% for club in clubes %}<option value="{{ club }}" {% if club == club_filtro %}selected{% endif %}>{{ club }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Serie</label><select name="serie"><option value="">Todas</option>{% for serie in series %}<option value="{{ serie }}" {% if serie == serie_filtro %}selected{% endif %}>{{ serie }}</option>{% endfor %}</select></div>
+      <div class="field"><label>Estado</label><select name="estado"><option value="">Todos</option>{% for estado in estados %}<option value="{{ estado }}" {% if estado == estado_filtro %}selected{% endif %}>{{ estado }}</option>{% endfor %}</select></div>
+      <button class="btnx primary" type="submit">🔎 Filtrar</button>
+      <a class="btnx light" href="{{ url_for('admin_planteles') }}">Limpiar</a>
+    </div>
+  </form>
+
+  {% if not planteles %}
+    <div class="empty"><strong>No hay jugadores para los filtros seleccionados.</strong><br>Prueba quitando algún filtro o registra un nuevo jugador.</div>
+  {% endif %}
+
+  {% for club, series_map in planteles.items() %}
+    <section class="club-card">
+      <div class="club-head">
+        <div><h2>⚽ {{ club }}</h2><div class="club-count">{{ series_map.values()|map('length')|sum }} jugador{% if (series_map.values()|map('length')|sum) != 1 %}es{% endif %}</div></div>
+        <a class="btnx light" href="{{ url_for('index') }}?q={{ club|urlencode }}">Ver en registro general →</a>
+      </div>
+      {% for serie, jugadores in series_map.items() %}
+        <div class="series-block">
+          <div class="series-head"><h3>📋 {{ serie }}</h3><span>{{ jugadores|length }} jugador{% if jugadores|length != 1 %}es{% endif %}</span></div>
+          <div class="table-wrap">
+            <table class="players">
+              <thead><tr><th>#</th><th>RUT</th><th>Jugador</th><th>Fecha nacimiento</th><th>Estado</th><th>Acción</th></tr></thead>
+              <tbody>
+              {% for jugador in jugadores %}
+                <tr>
+                  <td>{{ loop.index }}</td>
+                  <td>{{ jugador.rut }}</td>
+                  <td><strong>{{ jugador.nombre_completo }}</strong></td>
+                  <td>{{ jugador.fecha_nacimiento.strftime('%d/%m/%Y') if jugador.fecha_nacimiento else '—' }}</td>
+                  <td><span class="status {% if jugador.estado == 'Suspendido' or jugador.estado == 'Inhabilitado' %}danger{% elif jugador.estado == 'Pendiente' %}warn{% endif %}">{{ jugador.estado }}</span></td>
+                  <td class="actions"><a href="{{ url_for('ficha_jugador', jugador_id=jugador.id) }}">Ver ficha</a> · <a href="{{ url_for('editar_jugador', jugador_id=jugador.id) }}">Editar</a></td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endfor %}
+    </section>
+  {% endfor %}
+</div>
+{% endblock %}
