@@ -5994,6 +5994,54 @@ def admin_mover_jugador_plantel(jugador_id):
 
 
 # ============================================================
+# ETAPA 9 — CENTRO INTEGRADO DEL JUGADOR
+# Conecta ficha, historial, credenciales, estadísticas y actas
+# usando el mismo registro Jugador.id.
+# ============================================================
+
+@app.route("/admin/jugador/<int:jugador_id>/centro")
+def admin_centro_jugador(jugador_id):
+    jugador = db.get_or_404(Jugador, jugador_id)
+
+    goles = obtener_goles(jugador.id)
+    amarillas = obtener_amarillas(jugador.id)
+    rojas = obtener_rojas(jugador.id)
+    suspensiones = obtener_suspensiones(jugador.id)
+
+    participaciones = (
+        PartidoJugador.query
+        .join(Partido, PartidoJugador.partido_id == Partido.id)
+        .join(Campeonato, Partido.campeonato_id == Campeonato.id)
+        .filter(PartidoJugador.jugador_id == jugador.id)
+        .order_by(Partido.fecha.desc().nullslast(), Partido.id.desc())
+        .all()
+    )
+
+    total_partidos = len(participaciones)
+    total_titular = sum(1 for p in participaciones if p.condicion == "Titular")
+    total_suplente = sum(1 for p in participaciones if p.condicion == "Suplente")
+    total_goles_acta = sum(int(p.goles or 0) for p in participaciones)
+    total_amarillas_acta = sum(int(p.amarillas or 0) for p in participaciones)
+    total_rojas_acta = sum(int(p.rojas or 0) for p in participaciones)
+
+    return render_template(
+        "admin_jugador_centro.html",
+        jugador=jugador,
+        goles=goles,
+        amarillas=amarillas,
+        rojas=rojas,
+        suspensiones=suspensiones,
+        participaciones=participaciones,
+        total_partidos=total_partidos,
+        total_titular=total_titular,
+        total_suplente=total_suplente,
+        total_goles_acta=total_goles_acta,
+        total_amarillas_acta=total_amarillas_acta,
+        total_rojas_acta=total_rojas_acta,
+    )
+
+
+# ============================================================
 # HEALTH CHECK
 # ============================================================
 
