@@ -5392,6 +5392,62 @@ def publico_club(campeonato_id, club_id):
     return render_template('publico_club.html', campeonato=campeonato, club=club, partidos=partidos, finalizados=finalizados, ultimos=ultimos, proximos=proximos, jugadores=jugadores, goleadores_club=goleadores_club, stats={'pj':pj,'pg':pg,'pe':pe,'pp':pp,'gf':gf,'gc':gc,'dg':gf-gc,'pts':pts,'amarillas':amarillas,'rojas':rojas})
 
 
+@app.route("/publico/campeonato/<int:campeonato_id>/jugador/<int:jugador_id>")
+def publico_jugador(campeonato_id, jugador_id):
+    """Ficha pública de un jugador dentro de un campeonato."""
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    jugador = db.get_or_404(Jugador, jugador_id)
+
+    # El jugador debe pertenecer al club/serie del campeonato para ser visible.
+    participante = CampeonatoClub.query.filter_by(
+        campeonato_id=campeonato.id,
+        club_id=Club.id
+    )
+    club = Club.query.filter(db.func.lower(Club.nombre) == (jugador.club or "").strip().lower()).first()
+    if not club or not CampeonatoClub.query.filter_by(campeonato_id=campeonato.id, club_id=club.id).first():
+        from flask import abort
+        abort(404)
+    if (jugador.serie or "").strip().lower() != (campeonato.serie or "").strip().lower():
+        from flask import abort
+        abort(404)
+
+    participaciones = (PartidoJugador.query
+        .join(Partido, PartidoJugador.partido_id == Partido.id)
+        .filter(PartidoJugador.jugador_id == jugador.id,
+                Partido.campeonato_id == campeonato.id)
+        .order_by(Partido.fecha.desc().nullslast(), Partido.id.desc())
+        .all())
+
+    total_partidos = len(participaciones)
+    total_titular = sum(1 for x in participaciones if (x.condicion or '').lower() == 'titular')
+    total_suplente = sum(1 for x in participaciones if (x.condicion or '').lower() == 'suplente')
+    total_goles = sum(int(x.goles or 0) for x in participaciones)
+    total_amarillas = sum(int(x.amarillas or 0) for x in participaciones)
+    total_rojas = sum(int(x.rojas or 0) for x in participaciones)
+
+    # Respaldo con registros históricos si aún no existen actas para todas las incidencias.
+    if not total_goles:
+        total_goles = sum((r.cantidad or 1) for r in Gol.query.filter_by(jugador_id=jugador.id, campeonato_id=campeonato.id).all())
+    if not total_amarillas or not total_rojas:
+        registros = RegistroDisciplinario.query.filter_by(jugador_id=jugador.id, campeonato_id=campeonato.id).all()
+        total_amarillas = max(total_amarillas, sum((r.cantidad or 1) for r in registros if (r.tipo or '').lower() in ('amarilla','amarillas','tarjeta amarilla')))
+        total_rojas = max(total_rojas, sum((r.cantidad or 1) for r in registros if (r.tipo or '').lower() in ('roja','rojas','tarjeta roja')))
+
+    return render_template(
+        'publico_jugador.html',
+        campeonato=campeonato,
+        jugador=jugador,
+        club=club,
+        participaciones=participaciones,
+        total_partidos=total_partidos,
+        total_titular=total_titular,
+        total_suplente=total_suplente,
+        total_goles=total_goles,
+        total_amarillas=total_amarillas,
+        total_rojas=total_rojas,
+    )
+
+
 @app.route("/publico/campeonato/<int:campeonato_id>/tabla")
 def publico_tabla(campeonato_id):
     campeonato = db.get_or_404(Campeonato, campeonato_id)
