@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Inscribir jugador' if modo == 'nuevo' else 'Editar jugador' }}{% endblock %}
+{% block content %}
+<style>
+.form-wrap{max-width:900px;margin:0 auto}.hero{background:linear-gradient(135deg,#071426,#174a87);color:#fff;border-radius:20px;padding:24px;margin-bottom:18px}.hero h1{margin:4px 0;font-size:28px}.hero p{margin:0;color:#cbd9ea}.card{background:#fff;border:1px solid #e5eaf1;border-radius:16px;padding:22px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.field label{display:block;font-size:12px;font-weight:900;color:#5d6d82;margin-bottom:6px}.field input,.field select{width:100%;height:43px;border:1px solid #d6dee8;border-radius:9px;padding:0 12px}..actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}.btn{height:43px;border:0;border-radius:9px;padding:0 17px;font-weight:900;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.primary{background:#1769e0;color:#fff}.light{background:#f5f7fa;color:#233247;border:1px solid #d8e0ea}.note{background:#f5f8fc;border-left:4px solid #1769e0;padding:12px 14px;border-radius:8px;margin-bottom:18px;font-size:13px;color:#516174}@media(max-width:700px){.grid{grid-template-columns:1fr}}
+</style>
+<div class="form-wrap">
+  <section class="hero">
+    <div style="font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#b9d5f5">Registro interno · Planteles</div>
+    <h1>{{ '➕ Inscribir jugador' if modo == 'nuevo' else '✏️ Editar jugador' }}</h1>
+    <p>{{ 'Registrar un nuevo integrante directamente en el plantel.' if modo == 'nuevo' else 'Actualizar datos, estado, club o serie del jugador.' }}</p>
+  </section>
+  <div class="card">
+    <div class="note">Los cambios se guardan en el registro oficial de jugadores. El RUT debe ser único.</div>
+    <form method="post">
+      <div class="grid">
+        <div class="field"><label>RUT *</label><input name="rut" required value="{{ jugador.rut if jugador else '' }}" placeholder="12.345.678-9"></div>
+        <div class="field"><label>Nombre completo *</label><input name="nombre_completo" required value="{{ jugador.nombre_completo if jugador else '' }}"></div>
+        <div class="field"><label>Fecha de nacimiento *</label><input type="date" name="fecha_nacimiento" required value="{{ jugador.fecha_nacimiento.isoformat() if jugador and jugador.fecha_nacimiento else '' }}"></div>
+        <div class="field"><label>Club *</label>
+          {% if club_fijo %}<input type="text" value="{{ club_fijo }}" disabled><input type="hidden" name="club" value="{{ club_fijo }}">
+          {% else %}<select name="club" required><option value="">Seleccionar club</option>{% for club in clubes %}<option value="{{ club.nombre }}" {% if jugador and jugador.club == club.nombre %}selected{% endif %}>{{ club.nombre }}</option>{% endfor %}</select>{% endif %}
+        </div>
+        <div class="field"><label>Serie *</label><select name="serie" required><option value="">Seleccionar serie</option>{% for serie in series %}<option value="{{ serie.nombre }}" {% if jugador and jugador.serie == serie.nombre %}selected{% endif %}>{{ serie.nombre }}</option>{% endfor %}</select></div>
+        <div class="field"><label>Estado *</label><select name="estado" required>{% for estado in estados %}<option value="{{ estado }}" {% if (jugador and jugador.estado == estado) or (not jugador and estado == 'Vigente') %}selected{% endif %}>{{ estado }}</option>{% endfor %}</select></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" type="submit">💾 {{ 'Inscribir jugador' if modo == 'nuevo' else 'Guardar cambios' }}</button>
+        {% if jugador %}<a class="btn light" href="{{ url_for('admin_ficha_club', club_nombre=jugador.club) }}">Cancelar</a>{% elif club_fijo %}<a class="btn light" href="{{ url_for('admin_ficha_club', club_nombre=club_fijo) }}">Cancelar</a>{% else %}<a class="btn light" href="{{ url_for('admin_planteles') }}">Cancelar</a>{% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
