@@ -5844,6 +5844,156 @@ def publico_resultados(campeonato_id):
 
 
 # ============================================================
+# ETAPA 8 — GESTIÓN INTERNA DE PLANTELES
+# ============================================================
+
+@app.route("/admin/planteles/club/<path:club_nombre>/nuevo", methods=["GET", "POST"])
+def admin_nuevo_jugador_club(club_nombre):
+    club_nombre = club_nombre.strip()
+    clubes, series = obtener_datos_formulario_jugador()
+    if request.method == "POST":
+        rut = normalizar_rut(request.form.get("rut", ""))
+        nombre = request.form.get("nombre_completo", "").strip()
+        fecha = request.form.get("fecha_nacimiento", "").strip()
+        serie = request.form.get("serie", "").strip()
+        estado = normalizar_estado(request.form.get("estado", "Vigente"))
+
+        if not all([rut, nombre, fecha, serie]):
+            flash("Completa todos los campos obligatorios.", "error")
+            return render_template("admin_jugador_form.html", modo="nuevo", jugador=None,
+                                   club_fijo=club_nombre, clubes=clubes, series=series,
+                                   estados=sorted(ESTADOS_PERMITIDOS))
+        if not validar_rut(rut):
+            flash("El RUT ingresado no es válido.", "error")
+            return render_template("admin_jugador_form.html", modo="nuevo", jugador=None,
+                                   club_fijo=club_nombre, clubes=clubes, series=series,
+                                   estados=sorted(ESTADOS_PERMITIDOS))
+        try:
+            fecha_obj = date.fromisoformat(fecha)
+        except ValueError:
+            flash("Fecha de nacimiento no válida.", "error")
+            return render_template("admin_jugador_form.html", modo="nuevo", jugador=None,
+                                   club_fijo=club_nombre, clubes=clubes, series=series,
+                                   estados=sorted(ESTADOS_PERMITIDOS))
+        if Jugador.query.filter_by(rut=rut).first():
+            flash("Ese RUT ya está registrado. Puedes buscarlo en el plantel y editarlo.", "error")
+            return render_template("admin_jugador_form.html", modo="nuevo", jugador=None,
+                                   club_fijo=club_nombre, clubes=clubes, series=series,
+                                   estados=sorted(ESTADOS_PERMITIDOS))
+        jugador = Jugador(rut=rut, nombre_completo=nombre, fecha_nacimiento=fecha_obj,
+                          serie=serie, club=club_nombre, estado=estado)
+        db.session.add(jugador)
+        try:
+            db.session.commit()
+        except Exception as error:
+            db.session.rollback()
+            print("Error registrando jugador desde plantel:", error)
+            flash("No fue posible guardar el jugador.", "error")
+            return render_template("admin_jugador_form.html", modo="nuevo", jugador=None,
+                                   club_fijo=club_nombre, clubes=clubes, series=series,
+                                   estados=sorted(ESTADOS_PERMITIDOS))
+        flash(f"{nombre} fue inscrito correctamente en {club_nombre} · {serie}.", "success")
+        return redirect(url_for("admin_ficha_club", club_nombre=club_nombre, serie=serie))
+
+    return render_template("admin_jugador_form.html", modo="nuevo", jugador=None,
+                           club_fijo=club_nombre, clubes=clubes, series=series,
+                           estados=sorted(ESTADOS_PERMITIDOS))
+
+
+@app.route("/admin/planteles/jugador/<int:jugador_id>/editar", methods=["GET", "POST"])
+def admin_editar_jugador_plantel(jugador_id):
+    jugador = db.get_or_404(Jugador, jugador_id)
+    clubes, series = obtener_datos_formulario_jugador()
+    club_anterior = jugador.club
+    serie_anterior = jugador.serie
+
+    if request.method == "POST":
+        rut = normalizar_rut(request.form.get("rut", ""))
+        nombre = request.form.get("nombre_completo", "").strip()
+        fecha = request.form.get("fecha_nacimiento", "").strip()
+        serie = request.form.get("serie", "").strip()
+        club = request.form.get("club", "").strip()
+        estado = normalizar_estado(request.form.get("estado", "Vigente"))
+
+        if not all([rut, nombre, fecha, serie, club]):
+            flash("Completa todos los campos obligatorios.", "error")
+            return render_template("admin_jugador_form.html", modo="editar", jugador=jugador,
+                                   clubes=clubes, series=series, club_fijo=None,
+                                   estados=sorted(ESTADOS_PERMITIDOS))
+        if not validar_rut(rut):
+            flash("El RUT ingresado no es válido.", "error")
+            return render_template("admin_jugador_form.html", modo="editar", jugador=jugador,
+                                   clubes=clubes, series=series, club_fijo=None,
+                                   estados=sorted(ESTADOS_PERMITIDOS))
+        try:
+            fecha_obj = date.fromisoformat(fecha)
+        except ValueError:
+            flash("Fecha de nacimiento no válida.", "error")
+            return render_template("admin_jugador_form.html", modo="editar", jugador=jugador,
+                                   clubes=clubes, series=series, club_fijo=None,
+                                   estados=sorted(ESTADOS_PERMITIDOS))
+
+        duplicado = Jugador.query.filter(Jugador.rut == rut, Jugador.id != jugador.id).first()
+        if duplicado:
+            flash("El RUT ya pertenece a otro jugador.", "error")
+            return render_template("admin_jugador_form.html", modo="editar", jugador=jugador,
+                                   clubes=clubes, series=series, club_fijo=None,
+                                   estados=sorted(ESTADOS_PERMITIDOS))
+
+        jugador.rut = rut
+        jugador.nombre_completo = nombre
+        jugador.fecha_nacimiento = fecha_obj
+        jugador.serie = serie
+        jugador.club = club
+        jugador.estado = estado
+        try:
+            db.session.commit()
+        except Exception as error:
+            db.session.rollback()
+            print("Error editando jugador desde plantel:", error)
+            flash("No fue posible actualizar el jugador.", "error")
+            return render_template("admin_jugador_form.html", modo="editar", jugador=jugador,
+                                   clubes=clubes, series=series, club_fijo=None,
+                                   estados=sorted(ESTADOS_PERMITIDOS))
+
+        if club_anterior != club or serie_anterior != serie:
+            flash(f"Jugador actualizado y asignado a {club} · {serie}.", "success")
+        else:
+            flash("Jugador actualizado correctamente.", "success")
+        return redirect(url_for("admin_ficha_club", club_nombre=club, serie=serie))
+
+    return render_template("admin_jugador_form.html", modo="editar", jugador=jugador,
+                           clubes=clubes, series=series, club_fijo=None,
+                           estados=sorted(ESTADOS_PERMITIDOS))
+
+
+@app.route("/admin/planteles/jugador/<int:jugador_id>/estado", methods=["POST"])
+def admin_cambiar_estado_plantel(jugador_id):
+    jugador = db.get_or_404(Jugador, jugador_id)
+    estado = normalizar_estado(request.form.get("estado", "Vigente"))
+    jugador.estado = estado
+    db.session.commit()
+    flash(f"Estado de {jugador.nombre_completo} actualizado a {estado}.", "success")
+    return redirect(url_for("admin_ficha_club", club_nombre=jugador.club, serie=jugador.serie))
+
+
+@app.route("/admin/planteles/jugador/<int:jugador_id>/mover", methods=["POST"])
+def admin_mover_jugador_plantel(jugador_id):
+    jugador = db.get_or_404(Jugador, jugador_id)
+    club = request.form.get("club", "").strip()
+    serie = request.form.get("serie", "").strip()
+    if not club or not serie:
+        flash("Debes seleccionar club y serie.", "error")
+        return redirect(url_for("admin_ficha_club", club_nombre=jugador.club))
+    anterior = f"{jugador.club} · {jugador.serie}"
+    jugador.club = club
+    jugador.serie = serie
+    db.session.commit()
+    flash(f"Jugador movido desde {anterior} a {club} · {serie}.", "success")
+    return redirect(url_for("admin_ficha_club", club_nombre=club, serie=serie))
+
+
+# ============================================================
 # HEALTH CHECK
 # ============================================================
 
