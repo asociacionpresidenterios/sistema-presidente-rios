@@ -5478,6 +5478,74 @@ def resumen_publico_campeonato(campeonato):
     }
 
 
+
+def datos_estadisticas_publicas(campeonato):
+    """Resumen estadístico público del campeonato, sin exponer datos privados."""
+    partidos = Partido.query.filter_by(campeonato_id=campeonato.id).all()
+    finalizados = [p for p in partidos if (p.estado or '').lower() == 'finalizado' and p.goles_local is not None and p.goles_visitante is not None]
+    total_goles = sum(int(p.goles_local or 0) + int(p.goles_visitante or 0) for p in finalizados)
+    victorias_local = sum(1 for p in finalizados if int(p.goles_local or 0) > int(p.goles_visitante or 0))
+    victorias_visitante = sum(1 for p in finalizados if int(p.goles_visitante or 0) > int(p.goles_local or 0))
+    empates = sum(1 for p in finalizados if int(p.goles_local or 0) == int(p.goles_visitante or 0))
+    tabla = obtener_tabla_publica(campeonato)
+    goleadores = obtener_goleadores_publicos(campeonato, 100)
+    jugadores = jugadores_campeonato(campeonato)
+    ids = [j.id for j in jugadores]
+    disciplina = []
+    if ids:
+        rows = (db.session.query(Jugador,
+                    db.func.coalesce(db.func.sum(db.case((db.func.lower(RegistroDisciplinario.tipo).like('%amarilla%'), RegistroDisciplinario.cantidad), else_=0)),0).label('amarillas'),
+                    db.func.coalesce(db.func.sum(db.case((db.func.lower(RegistroDisciplinario.tipo).like('%roja%'), RegistroDisciplinario.cantidad), else_=0)),0).label('rojas'),
+                    db.func.coalesce(db.func.sum(db.case((db.func.lower(RegistroDisciplinario.tipo).like('%suspension%'), RegistroDisciplinario.cantidad), else_=0)),0).label('suspensiones'))
+                .outerjoin(RegistroDisciplinario, db.and_(RegistroDisciplinario.jugador_id==Jugador.id,
+                    db.or_(RegistroDisciplinario.campeonato_id==campeonato.id,
+                          db.and_(RegistroDisciplinario.campeonato_id.is_(None), RegistroDisciplinario.campeonato==campeonato.nombre))))
+                .filter(Jugador.id.in_(ids)).group_by(Jugador.id).all())
+        disciplina = rows
+    total_amarillas = sum(int(r.amarillas or 0) for r in disciplina)
+    total_rojas = sum(int(r.rojas or 0) for r in disciplina)
+    total_suspensiones = sum(int(r.suspensiones or 0) for r in disciplina)
+    promedio_goles = round(total_goles / len(finalizados), 2) if finalizados else 0
+    equipos = len(tabla)
+    mejor_ataque = max(tabla, key=lambda x: (x.gf, x.pts)) if tabla else None
+    mejor_defensa = min(tabla, key=lambda x: (x.gc, -x.pts)) if tabla else None
+    mayor_diferencia = max(tabla, key=lambda x: (x.dg, x.pts)) if tabla else None
+    return dict(partidos=len(partidos), finalizados=len(finalizados), pendientes=max(0,len(partidos)-len(finalizados)),
+                goles=total_goles, promedio_goles=promedio_goles, victorias_local=victorias_local,
+                victorias_visitante=victorias_visitante, empates=empates, equipos=equipos,
+                tabla=tabla, goleadores=goleadores, disciplina=disciplina, jugadores=len(jugadores),
+                amarillas=total_amarillas, rojas=total_rojas, suspensiones=total_suspensiones,
+                mejor_ataque=mejor_ataque, mejor_defensa=mejor_defensa, mayor_diferencia=mayor_diferencia)
+
+
+@app.route('/publico/campeonato/<int:campeonato_id>/estadisticas')
+def publico_estadisticas(campeonato_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    datos = datos_estadisticas_publicas(campeonato)
+    return render_template('publico_estadisticas.html', campeonato=campeonato, datos=datos)
+
+
+@app.route('/publico/campeonato/<int:campeonato_id>/fair-play')
+def publico_fair_play(campeonato_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    datos = datos_estadisticas_publicas(campeonato)
+    equipos = []
+    for fila in datos['tabla']:
+        club_id = fila.club.id
+        jugadores = [j for j in jugadores_campeonato(campeonato) if (j.club or '').strip().lower() == fila.club.nombre.strip().lower()]
+        amarillas = rojas = suspensiones = 0
+        for j in jugadores:
+            regs = RegistroDisciplinario.query.filter_by(jugador_id=j.id, campeonato_id=campeonato.id).all()
+            amarillas += sum(int(r.cantidad or 1) for r in regs if 'amarilla' in (r.tipo or '').lower())
+            rojas += sum(int(r.cantidad or 1) for r in regs if 'roja' in (r.tipo or '').lower())
+            suspensiones += sum(int(r.cantidad or 1) for r in regs if 'suspension' in (r.tipo or '').lower())
+        puntos = amarillas + rojas * 3 + suspensiones * 2
+        equipos.append({'club':fila.club,'amarillas':amarillas,'rojas':rojas,'suspensiones':suspensiones,'puntos':puntos})
+    equipos.sort(key=lambda x:(x['puntos'], x['amarillas'], x['rojas'], x['club'].nombre.lower()))
+    for i,e in enumerate(equipos,1): e['pos']=i
+    return render_template('publico_fair_play.html', campeonato=campeonato, datos=datos, equipos=equipos)
+
+
 @app.route("/publico/campeonato/<int:campeonato_id>/programacion")
 def publico_programacion(campeonato_id):
     campeonato = db.get_or_404(Campeonato, campeonato_id)
