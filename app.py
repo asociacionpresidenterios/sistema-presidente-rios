@@ -6426,6 +6426,63 @@ def admin_centro_integracion():
 # V6.6 — PANEL MAESTRO DE LA ASOCIACIÓN
 # ============================================================
 
+@app.route("/admin/operaciones")
+@admin_required
+def admin_operaciones():
+    """Centro de operaciones diario: agenda, pendientes y accesos de trabajo.
+
+    Es una vista operativa sobre los mismos registros existentes; no crea
+    tablas ni duplica jugadores, partidos o actas.
+    """
+    hoy = date.today()
+    limite = hoy + timedelta(days=7)
+
+    partidos_hoy = (Partido.query
+        .filter(Partido.fecha == hoy)
+        .order_by(Partido.hora.asc().nullslast(), Partido.id.asc())
+        .all())
+
+    proximos = (Partido.query
+        .filter(Partido.fecha > hoy, Partido.fecha <= limite)
+        .order_by(Partido.fecha.asc(), Partido.hora.asc().nullslast(), Partido.id.asc())
+        .all())
+
+    pendientes_acta = (Partido.query
+        .outerjoin(ActaPartido, ActaPartido.partido_id == Partido.id)
+        .filter(Partido.fecha <= hoy, Partido.estado != "Finalizado", ActaPartido.id.is_(None))
+        .order_by(Partido.fecha.asc().nullslast(), Partido.hora.asc().nullslast(), Partido.id.asc())
+        .limit(20).all())
+
+    actas_borrador = (ActaPartido.query
+        .join(Partido)
+        .filter(ActaPartido.estado != "Cerrada")
+        .order_by(Partido.fecha.desc().nullslast(), ActaPartido.id.desc())
+        .limit(20).all())
+
+    resultados_pendientes = (Partido.query
+        .filter(
+            Partido.estado == "Finalizado",
+            db.or_(Partido.goles_local.is_(None), Partido.goles_visitante.is_(None))
+        )
+        .order_by(Partido.fecha.desc().nullslast(), Partido.id.desc())
+        .limit(20).all())
+
+    def acta_estado(partido):
+        return partido.acta.estado if partido.acta else "Sin acta"
+
+    return render_template(
+        "admin_operaciones.html",
+        hoy=hoy,
+        limite=limite,
+        partidos_hoy=partidos_hoy,
+        proximos=proximos,
+        pendientes_acta=pendientes_acta,
+        actas_borrador=actas_borrador,
+        resultados_pendientes=resultados_pendientes,
+        acta_estado=acta_estado,
+    )
+
+
 @app.route("/admin/panel-maestro")
 @admin_required
 def admin_panel_maestro():
