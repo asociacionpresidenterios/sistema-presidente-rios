@@ -68,6 +68,8 @@ a{text-decoration:none;color:inherit}
 
     <div class="section-label">Competencias</div>
     <a class="nav-item {% if request.endpoint in ['campeonatos','nuevo_campeonato','detalle_campeonato','panel_campeonato'] %}active{% endif %}" href="{{ url_for('campeonatos') }}"><span class="nav-icon">🏆</span>Campeonatos</a>
+    <a class="nav-item {% if request.endpoint in ['admin_partidos'] %}active{% endif %}" href="{{ url_for('admin_partidos') }}"><span class="nav-icon">⚽</span>Partidos</a>
+    <a class="nav-item {% if request.endpoint in ['admin_actas','acta_partido'] %}active{% endif %}" href="{{ url_for('admin_actas') }}"><span class="nav-icon">📋</span>Actas</a>
     <a class="nav-item {% if request.endpoint=='admin_integracion' %}active{% endif %}" href="{{ url_for('admin_integracion') }}"><span class="nav-icon">🔗</span>Integración y auditoría</a>
 
     <div class="section-label">Sistema</div>
