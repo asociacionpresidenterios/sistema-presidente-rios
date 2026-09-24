@@ -6575,6 +6575,80 @@ def admin_operaciones():
     )
 
 
+
+# ============================================================
+# V7.0 — CENTRO DE CONTROL DEPORTIVO
+# Consolida resultados, tabla, goleadores y disciplina usando
+# únicamente partidos y participaciones existentes.
+# ============================================================
+
+@app.route("/admin/centro-deportivo")
+@admin_required
+def admin_centro_deportivo():
+    campeonato_id = request.args.get("campeonato_id", type=int)
+    campeonatos = Campeonato.query.order_by(Campeonato.fecha_inicio.desc().nullslast(), Campeonato.id.desc()).all()
+    campeonato = db.get_or_404(Campeonato, campeonato_id) if campeonato_id else None
+
+    partidos_q = Partido.query
+    if campeonato:
+        partidos_q = partidos_q.filter(Partido.campeonato_id == campeonato.id)
+    partidos = partidos_q.order_by(Partido.fecha.asc().nullslast(), Partido.jornada.asc(), Partido.id.asc()).all()
+
+    # Tabla: solo resultados efectivamente finalizados.
+    tabla_map = {}
+    for p in partidos:
+        if p.estado != "Finalizado" or p.goles_local is None or p.goles_visitante is None:
+            continue
+        for club in (p.local_club, p.visitante_club):
+            if club.id not in tabla_map:
+                tabla_map[club.id] = {"club_id": club.id, "club": club.nombre, "pj": 0, "pg": 0, "pe": 0, "pp": 0, "gf": 0, "gc": 0, "dg": 0, "pts": 0}
+        l, v = tabla_map[p.local_club.id], tabla_map[p.visitante_club.id]
+        l["pj"] += 1; v["pj"] += 1
+        l["gf"] += int(p.goles_local); l["gc"] += int(p.goles_visitante)
+        v["gf"] += int(p.goles_visitante); v["gc"] += int(p.goles_local)
+        if p.goles_local > p.goles_visitante:
+            l["pg"] += 1; l["pts"] += 3; v["pp"] += 1
+        elif p.goles_local < p.goles_visitante:
+            v["pg"] += 1; v["pts"] += 3; l["pp"] += 1
+        else:
+            l["pe"] += 1; v["pe"] += 1; l["pts"] += 1; v["pts"] += 1
+    for x in tabla_map.values(): x["dg"] = x["gf"] - x["gc"]
+    tabla = sorted(tabla_map.values(), key=lambda x: (-x["pts"], -x["dg"], -x["gf"], x["club"]))
+
+    # Estadística oficial: solo nóminas de actas cerradas.
+    part_q = PartidoJugador.query.join(Partido, PartidoJugador.partido_id == Partido.id).join(ActaPartido, ActaPartido.partido_id == Partido.id).filter(ActaPartido.estado == "Cerrada")
+    if campeonato:
+        part_q = part_q.filter(Partido.campeonato_id == campeonato.id)
+    participaciones = part_q.all()
+
+    goleador_map, disciplina_map = {}, {}
+    for p in participaciones:
+        if int(p.goles or 0) > 0:
+            goleador_map[p.jugador_id] = goleador_map.get(p.jugador_id, 0) + int(p.goles or 0)
+        if int(p.amarillas or 0) or int(p.rojas or 0):
+            if p.jugador_id not in disciplina_map:
+                disciplina_map[p.jugador_id] = {"jugador": p.jugador, "amarillas": 0, "rojas": 0}
+            disciplina_map[p.jugador_id]["amarillas"] += int(p.amarillas or 0)
+            disciplina_map[p.jugador_id]["rojas"] += int(p.rojas or 0)
+    goleadores = [{"jugador": Jugador.query.get(jid), "goles": g} for jid, g in goleador_map.items()]
+    goleadores.sort(key=lambda x: (-x["goles"], x["jugador"].nombre_completo))
+    goleadores = goleadores[:20]
+    disciplinados = sorted(disciplina_map.values(), key=lambda x: (-x["rojas"], -x["amarillas"], x["jugador"].nombre_completo))[:20]
+
+    finalizados = sum(1 for p in partidos if p.estado == "Finalizado")
+    actas_cerradas = sum(1 for p in partidos if getattr(getattr(p, "acta", None), "estado", None) == "Cerrada")
+    proximos = [p for p in partidos if p.estado != "Finalizado"][:8]
+    total_goles = sum(int(p.goles or 0) for p in participaciones)
+    total_amarillas = sum(int(p.amarillas or 0) for p in participaciones)
+    total_rojas = sum(int(p.rojas or 0) for p in participaciones)
+    alertas = [
+        {"titulo": "Partidos sin acta", "cantidad": sum(1 for p in partidos if not getattr(p, "acta", None)), "texto": "Partidos que aún no tienen acta asociada."},
+        {"titulo": "Actas abiertas", "cantidad": sum(1 for p in partidos if getattr(getattr(p, "acta", None), "estado", None) not in (None, "Cerrada")), "texto": "Actas que todavía no están cerradas."},
+        {"titulo": "Partidos sin resultado", "cantidad": sum(1 for p in partidos if p.estado == "Finalizado" and (p.goles_local is None or p.goles_visitante is None)), "texto": "Partidos marcados como finalizados sin marcador completo."},
+    ]
+    resumen = {"partidos": len(partidos), "finalizados": finalizados, "actas_cerradas": actas_cerradas, "goles": total_goles, "amarillas": total_amarillas, "rojas": total_rojas, "participaciones": len(participaciones)}
+    return render_template("admin_centro_deportivo.html", campeonatos=campeonatos, campeonato=campeonato, resumen=resumen, tabla=tabla, goleadores=goleadores, disciplinados=disciplinados, proximos=proximos, alertas=alertas)
+
 @app.route("/admin/panel-maestro")
 @admin_required
 def admin_panel_maestro():
