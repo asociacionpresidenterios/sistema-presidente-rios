@@ -5349,6 +5349,68 @@ def sincronizar_estadisticas_desde_acta(campeonato, partido, nomina):
     return goles_local, goles_visitante
 
 
+@app.route("/admin/partidos")
+@admin_required
+def admin_partidos():
+    """Centro interno de partidos: consulta y acceso rápido a fixture y actas."""
+    campeonatos = Campeonato.query.order_by(Campeonato.temporada.desc(), Campeonato.id.desc()).all()
+    campeonato_id = request.args.get("campeonato_id", type=int)
+    estado = (request.args.get("estado") or "").strip()
+    q = (request.args.get("q") or "").strip()
+
+    partidos_q = Partido.query.join(Campeonato).order_by(
+        Partido.fecha.desc().nullslast(), Partido.jornada.desc(), Partido.id.desc()
+    )
+    if campeonato_id:
+        partidos_q = partidos_q.filter(Partido.campeonato_id == campeonato_id)
+    if estado:
+        partidos_q = partidos_q.filter(Partido.estado == estado)
+    if q:
+        patron = f"%{q}%"
+        partidos_q = partidos_q.filter(
+            db.or_(Club.nombre.ilike(patron),
+                   db.exists().where(db.and_(Club.id == Partido.local_club_id, Club.nombre.ilike(patron))),
+                   db.exists().where(db.and_(Club.id == Partido.visitante_club_id, Club.nombre.ilike(patron))))
+        )
+    partidos = partidos_q.limit(250).all()
+    resumen = {
+        "total": Partido.query.count(),
+        "programados": Partido.query.filter(Partido.estado != "Finalizado").count(),
+        "finalizados": Partido.query.filter_by(estado="Finalizado").count(),
+        "actas_cerradas": ActaPartido.query.filter_by(estado="Cerrada").count(),
+    }
+    return render_template("admin_partidos.html", partidos=partidos, campeonatos=campeonatos,
+                           campeonato_id=campeonato_id, estado=estado, q=q, resumen=resumen)
+
+
+@app.route("/admin/actas")
+@admin_required
+def admin_actas():
+    """Centro interno de actas con estado y acceso directo a cada acta."""
+    campeonatos = Campeonato.query.order_by(Campeonato.temporada.desc(), Campeonato.id.desc()).all()
+    estado = (request.args.get("estado") or "").strip()
+    campeonato_id = request.args.get("campeonato_id", type=int)
+    q = (request.args.get("q") or "").strip()
+
+    query = (ActaPartido.query.join(Partido).join(Campeonato)
+             .order_by(Partido.fecha.desc().nullslast(), ActaPartido.id.desc()))
+    if estado:
+        query = query.filter(ActaPartido.estado == estado)
+    if campeonato_id:
+        query = query.filter(Partido.campeonato_id == campeonato_id)
+    if q:
+        patron = f"%{q}%"
+        query = query.filter(ActaPartido.numero_acta.ilike(patron))
+    actas = query.limit(250).all()
+    resumen = {
+        "total": ActaPartido.query.count(),
+        "borrador": ActaPartido.query.filter_by(estado="Borrador").count(),
+        "cerradas": ActaPartido.query.filter_by(estado="Cerrada").count(),
+    }
+    return render_template("admin_actas.html", actas=actas, campeonatos=campeonatos,
+                           campeonato_id=campeonato_id, estado=estado, q=q, resumen=resumen)
+
+
 @app.route("/campeonatos/<int:campeonato_id>/partido/<int:partido_id>/acta", methods=["GET", "POST"])
 def acta_partido(campeonato_id, partido_id):
     campeonato = db.get_or_404(Campeonato, campeonato_id)
