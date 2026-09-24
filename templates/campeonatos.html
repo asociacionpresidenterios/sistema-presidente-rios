@@ -1,52 +1,38 @@
 {% extends "base.html" %}
-
-{% block title %}Campeonatos{% endblock %}
-
-{% block content %}
+{% block title %}Competiciones | Presidente Ríos{% endblock %}
+{% block head %}
 <style>
-.camp-page{max-width:1400px;margin:0 auto;padding:25px}
-.camp-head{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:25px}
-.camp-head h1{margin:0;font-size:32px;font-weight:900;color:#111827}.camp-head p{margin:7px 0 0;color:#6b7280}
-.btn-camp{display:inline-flex;align-items:center;gap:7px;padding:11px 17px;border-radius:10px;text-decoration:none;font-weight:800;border:1px solid #e5e7eb;background:#111827;color:white}.btn-camp.light{background:white;color:#111827}
-.camp-card{background:white;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;box-shadow:0 5px 18px rgba(15,23,42,.05)}
-.camp-table{width:100%;border-collapse:collapse}.camp-table th{background:#f8fafc;color:#475569;font-size:12px;text-transform:uppercase;padding:14px;text-align:left}.camp-table td{padding:15px;border-top:1px solid #f1f5f9;color:#334155}.camp-table tr:hover td{background:#fafafa}
-.badge{display:inline-flex;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:900}.activo{background:#dcfce7;color:#166534}.finalizado{background:#e5e7eb;color:#374151}.serie{background:#eef2ff;color:#3730a3}
-.empty{text-align:center;padding:65px 20px}.empty-icon{font-size:50px;margin-bottom:12px}.empty h3{margin:0 0 8px}.empty p{color:#6b7280}
-@media(max-width:700px){.camp-page{padding:15px}.camp-head h1{font-size:26px}.camp-table{min-width:850px}.camp-card{overflow-x:auto}}
+.comp-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin-bottom:22px;flex-wrap:wrap}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#64748b;font-weight:800}.title{font-size:30px;font-weight:900;margin:5px 0 4px}.sub{color:#64748b;font-size:14px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap}.search{min-width:280px;border:1px solid #dbe3ee;border-radius:11px;padding:11px 13px;background:#fff;font-size:13px;outline:none}.select{border:1px solid #dbe3ee;border-radius:11px;padding:11px 13px;background:#fff;font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:800;border:1px solid #dbe3ee;background:#fff}.btn.primary{background:#2563eb;border-color:#2563eb;color:#fff}.btn.dark{background:#0b1830;border-color:#0b1830;color:#fff}.btn.danger{color:#b91c1c}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}.stat{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:17px 18px;box-shadow:0 5px 18px rgba(15,23,42,.04)}.stat small{display:block;color:#64748b;font-size:11px;font-weight:800;text-transform:uppercase}.stat strong{display:block;font-size:25px;margin-top:6px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.card{background:#fff;border:1px solid #e5eaf1;border-radius:16px;overflow:hidden;box-shadow:0 6px 22px rgba(15,23,42,.05)}.card-top{padding:18px 20px;border-bottom:1px solid #edf1f6;display:flex;justify-content:space-between;gap:15px}.badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:10px;font-weight:900;text-transform:uppercase}.badge.active{background:#dcfce7;color:#166534}.badge.done{background:#e2e8f0;color:#475569}.comp-name{font-size:19px;font-weight:900;margin:6px 0 3px}.meta{font-size:12px;color:#64748b}.body{padding:17px 20px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.metric{background:#f7f9fc;border-radius:10px;padding:10px}.metric b{display:block;font-size:17px}.metric span{font-size:10px;color:#64748b}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}.empty{background:#fff;border:1px dashed #cbd5e1;border-radius:15px;padding:45px;text-align:center;color:#64748b;grid-column:1/-1}
+@media(max-width:1050px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}@media(max-width:620px){.stats{grid-template-columns:1fr 1fr}.search{min-width:100%;width:100%}.toolbar{width:100%}.title{font-size:25px}.metrics{grid-template-columns:repeat(2,1fr)}}
 </style>
-
-<div class="camp-page">
-  <div class="camp-head">
-    <div><h1>🏆 Campeonatos</h1><p>Administración de competencias — Asociación Presidente Ríos</p></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <a class="btn-camp light" href="{{ url_for('dashboard') }}">📊 Dashboard</a>
-      <a class="btn-camp" href="{{ url_for('nuevo_campeonato') }}">➕ Nuevo campeonato</a>
-    </div>
-  </div>
-
-  <div class="camp-card">
-    {% if campeonatos %}
-    <div style="overflow-x:auto">
-      <table class="camp-table">
-        <thead><tr><th>Campeonato</th><th>Temporada</th><th>Serie</th><th>Inicio</th><th>Término</th><th>Estado</th><th>Acciones</th></tr></thead>
-        <tbody>
-        {% for campeonato in campeonatos %}
-        <tr>
-          <td><strong>{{ campeonato.nombre }}</strong></td>
-          <td>{{ campeonato.temporada }}</td>
-          <td><span class="badge serie">{{ campeonato.serie }}</span></td>
-          <td>{{ campeonato.fecha_inicio.strftime('%d/%m/%Y') if campeonato.fecha_inicio else '—' }}</td>
-          <td>{{ campeonato.fecha_termino.strftime('%d/%m/%Y') if campeonato.fecha_termino else '—' }}</td>
-          <td><span class="badge {{ 'activo' if campeonato.estado == 'Activo' else 'finalizado' }}">{{ campeonato.estado }}</span></td>
-          <td><a class="btn-camp light" href="{{ url_for('detalle_campeonato', campeonato_id=campeonato.id) }}">👁️ Ver</a></td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="empty"><div class="empty-icon">🏆</div><h3>No hay campeonatos registrados</h3><p>Comienza creando el primer campeonato de la Asociación Presidente Ríos.</p><br><a class="btn-camp" href="{{ url_for('nuevo_campeonato') }}">➕ Crear campeonato</a></div>
-    {% endif %}
-  </div>
+{% endblock %}
+{% block content %}
+<div class="comp-head">
+  <div><div class="eyebrow">Gestión deportiva</div><div class="title">Competiciones</div><div class="sub">Centro de control de campeonatos, series, clubes, fixture y resultados.</div></div>
+  <div class="toolbar"><input id="busqueda" class="search" placeholder="🔎 Buscar campeonato, temporada o serie..."><select id="estado" class="select"><option value="">Todos los estados</option><option value="Activo">Activos</option><option value="Finalizado">Finalizados</option></select><a class="btn primary" href="{{ url_for('nuevo_campeonato') }}">＋ Nuevo campeonato</a></div>
 </div>
+<div class="stats">
+  <div class="stat"><small>Campeonatos</small><strong>{{ campeonatos|length }}</strong></div>
+  <div class="stat"><small>Activos</small><strong>{{ campeonatos|selectattr('estado','equalto','Activo')|list|length }}</strong></div>
+  <div class="stat"><small>Finalizados</small><strong>{{ campeonatos|selectattr('estado','equalto','Finalizado')|list|length }}</strong></div>
+  <div class="stat"><small>Temporadas</small><strong>{{ campeonatos|map(attribute='temporada')|unique|list|length }}</strong></div>
+</div>
+<div id="grid" class="grid">
+{% for c in campeonatos %}
+  <article class="card comp-card" data-text="{{ (c.nombre ~ ' ' ~ c.temporada ~ ' ' ~ c.serie)|lower }}" data-estado="{{ c.estado }}">
+    <div class="card-top"><div><span class="badge {% if c.estado=='Activo' %}active{% else %}done{% endif %}">{{ c.estado }}</span><div class="comp-name">{{ c.nombre }}</div><div class="meta">Temporada {{ c.temporada }} · Serie {{ c.serie }}</div></div><div style="font-size:27px">🏆</div></div>
+    <div class="body"><div class="metrics"><div class="metric"><b>{{ c.fecha_inicio.strftime('%d/%m/%Y') if c.fecha_inicio else '—' }}</b><span>Inicio</span></div><div class="metric"><b>{{ c.fecha_termino.strftime('%d/%m/%Y') if c.fecha_termino else '—' }}</b><span>Término</span></div><div class="metric"><b>{{ c.id }}</b><span>ID</span></div><div class="metric"><b>{{ c.serie }}</b><span>Serie</span></div></div><div class="actions"><a class="btn dark" href="{{ url_for('panel_campeonato', campeonato_id=c.id) }}">📊 Centro</a><a class="btn" href="{{ url_for('detalle_campeonato', campeonato_id=c.id) }}">⚙️ Administrar</a><a class="btn" href="{{ url_for('fixture_campeonato', campeonato_id=c.id) }}">📅 Fixture</a><a class="btn" href="{{ url_for('publico_campeonato', campeonato_id=c.id) }}" target="_blank">🌐 Público</a></div></div>
+  </article>
+{% else %}<div class="empty"><div style="font-size:35px">🏆</div><h3>No hay campeonatos registrados</h3><p>Crea el primer campeonato para comenzar a administrar la competencia.</p><a class="btn primary" href="{{ url_for('nuevo_campeonato') }}">＋ Crear campeonato</a></div>{% endfor %}
+</div>
+<script>
+const q=document.getElementById('busqueda'), e=document.getElementById('estado');
+function filtrar(){const t=(q.value||'').toLowerCase().trim(), s=e.value; document.querySelectorAll('.comp-card').forEach(c=>{c.style.display=((!t||c.dataset.text.includes(t))&&(!s||c.dataset.estado===s))?'':'none'})}
+q.addEventListener('input',filtrar);e.addEventListener('change',filtrar);
+</script>
 {% endblock %}
