@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Integración del sistema{% endblock %}
+{% block content %}
+<style>
+.wrap{max-width:1200px;margin:0 auto}.hero{background:linear-gradient(135deg,#071426,#123b70);color:#fff;border-radius:20px;padding:24px;margin-bottom:18px}.hero h1{margin:0 0 6px}.hero p{margin:0;color:#cbd9ea}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.card,.panel{background:#fff;border:1px solid #e5eaf1;border-radius:16px}.card{padding:16px}.card strong{display:block;font-size:25px}.card span{font-size:11px;color:#68788d;font-weight:800}.panel{padding:18px;margin-bottom:16px}.ok{color:#137a4b;font-weight:900}.warn{color:#a66b00;font-weight:900}.bad{color:#b42318;font-weight:900}.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-weight:900}.node{padding:9px 12px;border-radius:10px;background:#f5f8fc;border:1px solid #dce4ee}.arrow{color:#6b7b90}@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:500px){.grid{grid-template-columns:1fr}}
+</style>
+<div class="wrap">
+<section class="hero"><h1>🔗 Centro de Integración</h1><p>Auditoría del Registro Maestro de Jugadores y sus conexiones deportivas.</p></section>
+<div class="grid">
+<div class="card"><strong>{{ resumen.jugadores }}</strong><span>Jugadores</span></div>
+<div class="card"><strong>{{ resumen.clubes }}</strong><span>Clubes</span></div>
+<div class="card"><strong>{{ resumen.series }}</strong><span>Series</span></div>
+<div class="card"><strong>{{ resumen.campeonatos }}</strong><span>Campeonatos</span></div>
+<div class="card"><strong>{{ resumen.partidos }}</strong><span>Partidos</span></div>
+<div class="card"><strong>{{ resumen.actas_cerradas }}/{{ resumen.actas }}</strong><span>Actas cerradas</span></div>
+<div class="card"><strong>{{ resumen.goles }}</strong><span>Registros de goles</span></div>
+<div class="card"><strong>{{ resumen.disciplina }}</strong><span>Registros disciplinarios</span></div>
+</div>
+<section class="panel"><h2>Flujo maestro</h2><div class="flow"><span class="node">👤 Jugador</span><span class="arrow">→</span><span class="node">🏟️ Club / Serie</span><span class="arrow">→</span><span class="node">🏆 Campeonato</span><span class="arrow">→</span><span class="node">📋 Acta</span><span class="arrow">→</span><span class="node">⚽ Goles / 🟨🟥 Disciplina</span><span class="arrow">→</span><span class="node">📊 Estadísticas</span><span class="arrow">→</span><span class="node">🪪 Credencial / 🌐 Portal</span></div></section>
+<section class="panel"><h2>Controles de consistencia</h2>
+<p>Participaciones de jugadores que actualmente no están <b>Vigentes</b>: <span class="{{ 'ok' if resumen.participaciones_no_vigentes == 0 else 'warn' }}">{{ resumen.participaciones_no_vigentes }}</span></p>
+<p>Participaciones cuyo club actual no coincide con el club del partido: <span class="{{ 'ok' if resumen.inconsistencias_club == 0 else 'bad' }}">{{ resumen.inconsistencias_club }}</span></p>
+<p class="ok">✓ Los borradores de acta no alimentan estadísticas oficiales. Solo un acta cerrada las sincroniza.</p>
+<p class="ok">✓ Al reabrir un acta se eliminan sus estadísticas derivadas para evitar duplicados o datos antiguos.</p>
+</section>
+<section class="panel"><h2>Registro maestro</h2><p>Los módulos deben consultar el mismo <b>Jugador.id</b>. Los cambios de club, serie y estado quedan registrados en el historial administrativo.</p><a href="{{ url_for('admin_planteles') }}">← Volver a Clubes y planteles</a></section>
+</div>
+{% endblock %}
