@@ -6280,6 +6280,149 @@ def admin_integracion():
 
 
 # ============================================================
+# V6.5 — CENTRO DE INTEGRACIÓN TOTAL
+# ============================================================
+
+@app.route("/admin/centro-integracion")
+@admin_required
+def admin_centro_integracion():
+    """Centro transversal del sistema.
+
+    No crea registros ni modifica la base de datos. Reúne las relaciones
+    existentes para que el administrador pueda navegar desde campeonato
+    hasta club, jugador, partido, acta y estadísticas.
+    """
+    campeonatos = (
+        Campeonato.query
+        .order_by(Campeonato.temporada.desc(), Campeonato.id.desc())
+        .all()
+    )
+
+    partidos = (
+        Partido.query
+        .join(Campeonato)
+        .order_by(Partido.fecha.desc().nullslast(), Partido.id.desc())
+        .limit(12)
+        .all()
+    )
+
+    actas_abiertas = (
+        ActaPartido.query
+        .filter(ActaPartido.estado != "Cerrada")
+        .join(Partido)
+        .order_by(Partido.fecha.desc().nullslast(), ActaPartido.id.desc())
+        .limit(12)
+        .all()
+    )
+
+    # Campeonatos con sus métricas principales.
+    resumen_campeonatos = []
+    for campeonato in campeonatos[:10]:
+        total_partidos = Partido.query.filter_by(campeonato_id=campeonato.id).count()
+        finalizados = Partido.query.filter_by(
+            campeonato_id=campeonato.id,
+            estado="Finalizado"
+        ).count()
+        actas = (
+            ActaPartido.query
+            .join(Partido)
+            .filter(Partido.campeonato_id == campeonato.id)
+            .count()
+        )
+        actas_cerradas = (
+            ActaPartido.query
+            .join(Partido)
+            .filter(
+                Partido.campeonato_id == campeonato.id,
+                ActaPartido.estado == "Cerrada"
+            )
+            .count()
+        )
+        clubes = CampeonatoClub.query.filter_by(campeonato_id=campeonato.id).count()
+        resumen_campeonatos.append({
+            "campeonato": campeonato,
+            "partidos": total_partidos,
+            "finalizados": finalizados,
+            "actas": actas,
+            "actas_cerradas": actas_cerradas,
+            "clubes": clubes,
+        })
+
+    # Controles de integridad de lectura: no alteran ningún dato.
+    partidos_sin_acta = (
+        Partido.query
+        .outerjoin(ActaPartido, ActaPartido.partido_id == Partido.id)
+        .filter(ActaPartido.id.is_(None))
+        .count()
+    )
+
+    actas_cerradas_sin_nomina = (
+        ActaPartido.query
+        .join(Partido)
+        .filter(ActaPartido.estado == "Cerrada")
+        .filter(~db.exists().where(PartidoJugador.partido_id == Partido.id))
+        .count()
+    )
+
+    participaciones_no_vigentes = (
+        PartidoJugador.query
+        .join(Jugador, PartidoJugador.jugador_id == Jugador.id)
+        .filter(Jugador.estado != "Vigente")
+        .count()
+    )
+
+    inconsistencias_club = 0
+    for participacion in (
+        PartidoJugador.query
+        .join(Partido, PartidoJugador.partido_id == Partido.id)
+        .join(Jugador, PartidoJugador.jugador_id == Jugador.id)
+        .all()
+    ):
+        partido = participacion.partido
+        jugador = participacion.jugador
+        club_id = (
+            partido.local_club_id
+            if participacion.equipo == "local"
+            else partido.visitante_club_id
+        )
+        club = db.session.get(Club, club_id)
+        if club and _normalizar_texto_acta(jugador.club) != _normalizar_texto_acta(club.nombre):
+            inconsistencias_club += 1
+
+    alertas = [
+        ("Partidos sin acta", partidos_sin_acta, "Revisar desde Partidos"),
+        ("Actas cerradas sin nómina", actas_cerradas_sin_nomina, "Revisar acta y nómina"),
+        ("Participaciones de jugadores no vigentes", participaciones_no_vigentes, "Revisar Registro"),
+        ("Inconsistencias jugador/club", inconsistencias_club, "Revisar plantel"),
+    ]
+
+    resumen = {
+        "jugadores": Jugador.query.count(),
+        "jugadores_vigentes": Jugador.query.filter_by(estado="Vigente").count(),
+        "clubes": Club.query.count(),
+        "clubes_activos": Club.query.filter_by(activo=True).count(),
+        "series": Serie.query.count(),
+        "campeonatos": Campeonato.query.count(),
+        "partidos": Partido.query.count(),
+        "partidos_finalizados": Partido.query.filter_by(estado="Finalizado").count(),
+        "actas": ActaPartido.query.count(),
+        "actas_cerradas": ActaPartido.query.filter_by(estado="Cerrada").count(),
+        "participaciones": PartidoJugador.query.count(),
+        "goles": Gol.query.count(),
+        "disciplina": RegistroDisciplinario.query.count(),
+    }
+
+    return render_template(
+        "admin_centro_integracion.html",
+        resumen=resumen,
+        campeonatos=resumen_campeonatos,
+        partidos=partidos,
+        actas_abiertas=actas_abiertas,
+        alertas=alertas,
+    )
+
+
+# ============================================================
 # HEALTH CHECK
 # ============================================================
 
