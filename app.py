@@ -3166,6 +3166,45 @@ def admin_registro():
     )
 
 
+# ============================================================
+# V6.8 — CENTRO DE CONTROL DE CLUBES Y PLANTELES
+# ============================================================
+
+@app.route("/admin/control-clubes")
+@admin_required
+def admin_control_clubes():
+    """Centro operativo de clubes: planteles, competencias y partidos."""
+    clubes = Club.query.order_by(Club.nombre.asc()).all()
+    club_id = request.args.get("club_id", type=int)
+    club = db.session.get(Club, club_id) if club_id else None
+    if club_id and not club:
+        flash("El club seleccionado no existe.", "error")
+        return redirect(url_for("admin_control_clubes"))
+    if not club and clubes:
+        club = clubes[0]
+    jugadores = []; series = []; proximos = []; resultados = []; actas = []; campeonatos = []
+    if club:
+        jugadores = Jugador.query.filter(Jugador.club == club.nombre).order_by(Jugador.serie.asc(), Jugador.nombre_completo.asc()).all()
+        series = sorted({j.serie or "Sin serie" for j in jugadores})
+        campeonatos = (Campeonato.query.join(CampeonatoClub, CampeonatoClub.campeonato_id == Campeonato.id)
+            .filter(CampeonatoClub.club_id == club.id).order_by(Campeonato.temporada.desc(), Campeonato.id.desc()).all())
+        proximos = (Partido.query.filter(db.or_(Partido.local_club_id == club.id, Partido.visitante_club_id == club.id))
+            .filter(Partido.estado != "Finalizado").order_by(Partido.fecha.asc().nullslast(), Partido.hora.asc().nullslast(), Partido.id.asc()).limit(12).all())
+        resultados = (Partido.query.filter(db.or_(Partido.local_club_id == club.id, Partido.visitante_club_id == club.id))
+            .filter(Partido.estado == "Finalizado").order_by(Partido.fecha.desc().nullslast(), Partido.id.desc()).limit(12).all())
+        actas = (ActaPartido.query.join(Partido).filter(db.or_(Partido.local_club_id == club.id, Partido.visitante_club_id == club.id))
+            .order_by(Partido.fecha.desc().nullslast(), ActaPartido.id.desc()).limit(12).all())
+    total_jugadores = len(jugadores)
+    vigentes = sum(1 for j in jugadores if (j.estado or "Vigente") == "Vigente")
+    pendientes = sum(1 for j in jugadores if j.estado == "Pendiente")
+    suspendidos = sum(1 for j in jugadores if j.estado in {"Suspendido", "Inhabilitado"})
+    resumen_series = []
+    for serie in series:
+        lista = [j for j in jugadores if (j.serie or "Sin serie") == serie]
+        resumen_series.append({"nombre":serie,"total":len(lista),"vigentes":sum(1 for j in lista if (j.estado or "Vigente")=="Vigente"),"pendientes":sum(1 for j in lista if j.estado=="Pendiente"),"suspendidos":sum(1 for j in lista if j.estado in {"Suspendido","Inhabilitado"})})
+    return render_template("admin_control_clubes.html", clubes=clubes, club=club, jugadores=jugadores, series=series, resumen_series=resumen_series, proximos=proximos, resultados=resultados, actas=actas, campeonatos=campeonatos, total_jugadores=total_jugadores, vigentes=vigentes, pendientes=pendientes, suspendidos=suspendidos)
+
+
 @app.route("/admin/clubes")
 def admin_clubes():
     """Directorio interno de todos los clubes, agrupando sus planteles por serie."""
