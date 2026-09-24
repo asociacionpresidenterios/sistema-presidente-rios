@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Registro de jugadores{% endblock %}
+{% block content %}
+<style>
+.reg-wrap{max-width:1500px;margin:0 auto}.hero{background:linear-gradient(135deg,#08172e,#174a86);color:#fff;border-radius:22px;padding:26px 28px;margin-bottom:20px;box-shadow:0 14px 34px rgba(8,24,44,.12)}.hero h1{margin:0 0 6px;font-size:30px}.hero p{margin:0;color:#cbd9ea;font-size:14px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.stat,.card{background:#fff;border:1px solid #e5eaf1;border-radius:16px}.stat{padding:17px}.stat strong{display:block;font-size:26px}.stat span{font-size:12px;color:#64748b;font-weight:700}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.card{padding:22px}.card h2{margin:0 0 7px;font-size:18px}.card p{margin:0 0 18px;color:#64748b;font-size:13px;line-height:1.5}.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 15px;border-radius:10px;font-weight:800;font-size:13px;border:1px solid #d8e0ea}.primary{background:#1769e0;color:#fff;border-color:#1769e0}.light{background:#f7f9fc;color:#26364a}.links{margin-top:18px;display:flex;gap:10px;flex-wrap:wrap}.mini{font-size:12px;color:#1769e0;font-weight:800}.note{margin-top:20px;background:#f7f9fc;border:1px solid #e5eaf1;border-radius:14px;padding:14px;color:#64748b;font-size:12px}
+@media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}@media(max-width:500px){.stats{grid-template-columns:1fr 1fr}.hero{padding:20px}.hero h1{font-size:25px}}
+</style>
+<div class="reg-wrap">
+  <section class="hero"><h1>👥 Registro de jugadores</h1><p>Centro único para incorporar, importar, consultar y administrar el registro maestro de jugadores.</p></section>
+  <section class="stats">
+    <div class="stat"><strong>{{ total_jugadores }}</strong><span>Jugadores registrados</span></div>
+    <div class="stat"><strong>{{ total_vigentes }}</strong><span>Jugadores vigentes</span></div>
+    <div class="stat"><strong>{{ total_clubes }}</strong><span>Clubes activos</span></div>
+    <div class="stat"><strong>{{ total_series }}</strong><span>Series activas</span></div>
+  </section>
+  <section class="grid">
+    <div class="card"><h2>➕ Crear nuevo jugador</h2><p>Registra una persona directamente en el sistema. El jugador queda disponible para su club, serie, ficha, credencial y módulos deportivos.</p><div class="actions"><a class="btn primary" href="{{ url_for('nuevo_jugador') }}">Nuevo jugador</a></div></div>
+    <div class="card"><h2>📥 Importar jugadores</h2><p>Carga una nómina desde Excel utilizando el importador existente, manteniendo las validaciones de RUT y duplicados.</p><div class="actions"><a class="btn primary" href="{{ url_for('importar_jugadores') }}">Importar Excel</a></div></div>
+    <div class="card"><h2>🔎 Registro general</h2><p>Consulta todos los jugadores registrados y accede a sus fichas, estadísticas, disciplina, credenciales e historial.</p><div class="actions"><a class="btn light" href="{{ url_for('index') }}">Ver jugadores</a></div></div>
+    <div class="card"><h2>🏟️ Clubes y planteles</h2><p>Revisa todos los clubes y sus plantillas organizadas por serie. Desde allí puedes administrar cada plantel.</p><div class="actions"><a class="btn light" href="{{ url_for('admin_clubes') }}">Ver todos los clubes</a><a class="btn light" href="{{ url_for('admin_planteles') }}">Vista por planteles</a></div></div>
+  </section>
+  <div class="note">💡 <strong>Registro maestro:</strong> cada jugador mantiene un único registro para que sus datos puedan reutilizarse en planteles, actas, goles, tarjetas, credenciales, estadísticas e historial.</div>
+</div>
+{% endblock %}
