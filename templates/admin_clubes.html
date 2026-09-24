@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Clubes y planteles{% endblock %}
+{% block content %}
+<style>
+.wrap{max-width:1550px;margin:0 auto}.hero{background:linear-gradient(135deg,#08172e,#174a86);color:#fff;border-radius:22px;padding:25px 28px;margin-bottom:18px}.hero h1{margin:0 0 5px;font-size:29px}.hero p{margin:0;color:#cbd9ea;font-size:14px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.stat{background:#fff;border:1px solid #e5eaf1;border-radius:15px;padding:16px}.stat strong{display:block;font-size:25px}.stat span{font-size:12px;color:#64748b;font-weight:700}.toolbar{background:#fff;border:1px solid #e5eaf1;border-radius:15px;padding:14px;margin-bottom:18px;display:flex;gap:10px;flex-wrap:wrap}.toolbar input,.toolbar select{height:40px;border:1px solid #d8e0ea;border-radius:9px;padding:0 11px;min-width:220px}.btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 14px;border-radius:9px;border:1px solid #d8e0ea;font-size:12px;font-weight:800}.primary{background:#1769e0;color:#fff;border-color:#1769e0}.light{background:#f7f9fc;color:#26364a}.clubs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.club{background:#fff;border:1px solid #e5eaf1;border-radius:17px;overflow:hidden;box-shadow:0 7px 22px rgba(8,24,44,.045)}.club-head{padding:17px 19px;background:#f7f9fc;border-bottom:1px solid #e8edf3;display:flex;justify-content:space-between;gap:10px;align-items:center}.club-head h2{margin:0;font-size:18px}.club-head small{color:#64748b;font-weight:700}.series{padding:14px 18px}.serie{border:1px solid #e8edf3;border-radius:11px;margin-bottom:9px;overflow:hidden}.serie-head{padding:10px 12px;background:#fbfcfe;display:flex;justify-content:space-between;font-size:12px;font-weight:800}.serie-head span{color:#64748b}.players{padding:4px 12px 10px}.player{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid #eef2f6;font-size:12px}.player:first-child{border-top:0}.status{font-size:10px;font-weight:900;padding:3px 7px;border-radius:999px;background:#eaf7ef;color:#147a4b}.status.danger{background:#ffe8e8;color:#a32121}.status.warn{background:#fff5d9;color:#8a5a00}.empty{padding:35px;background:#fff;border:1px dashed #cbd5e1;border-radius:16px;text-align:center;color:#64748b}
+@media(max-width:950px){.clubs{grid-template-columns:1fr}}@media(max-width:650px){.stats{grid-template-columns:1fr}.toolbar input,.toolbar select{min-width:100%;width:100%}.club-head{align-items:flex-start;flex-direction:column}}
+</style>
+<div class="wrap">
+<section class="hero"><h1>🏟️ Clubes y planteles</h1><p>Directorio interno de la Asociación: cada club, sus series y todos sus jugadores.</p></section>
+<section class="stats"><div class="stat"><strong>{{ total_clubes }}</strong><span>Clubes registrados</span></div><div class="stat"><strong>{{ total_jugadores }}</strong><span>Jugadores registrados</span></div><div class="stat"><strong>{{ total_vigentes }}</strong><span>Jugadores vigentes</span></div></section>
+<form class="toolbar" method="get"><input name="q" value="{{ q }}" placeholder="🔎 Buscar club"><select name="club_id"><option value="">Todos los clubes</option>{% for c in clubes %}<option value="{{ c.id }}" {% if c.id == club_id %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}</select><button class="btn primary" type="submit">Filtrar</button><a class="btn light" href="{{ url_for('admin_clubes') }}">Limpiar</a></form>
+{% if not tarjetas %}<div class="empty">No hay clubes para los filtros seleccionados.</div>{% endif %}
+<div class="clubs">
+{% for item in tarjetas %}
+<div class="club">
+  <div class="club-head"><div><h2>⚽ {{ item.club.nombre }}</h2><small>{{ item.total }} jugador{% if item.total != 1 %}es{% endif %} en sus planteles</small></div><a class="btn primary" href="{{ url_for('admin_ficha_club', club_nombre=item.club.nombre) }}">Ver ficha</a></div>
+  <div class="series">
+    {% if item.series %}
+      {% for serie, jugadores in item.series.items() %}
+      <div class="serie">
+        <div class="serie-head"><span>📋 {{ serie }}</span><span>{{ jugadores|length }} jugador{% if jugadores|length != 1 %}es{% endif %}</span></div>
+        <div class="players">
+          {% for jugador in jugadores %}
+          <div class="player"><span><strong>{{ jugador.nombre_completo }}</strong><br><small>{{ jugador.rut }}</small></span><span class="status {% if jugador.estado in ['Suspendido','Inhabilitado'] %}danger{% elif jugador.estado == 'Pendiente' %}warn{% endif %}">{{ jugador.estado }}</span></div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}<div style="padding:16px;color:#64748b;font-size:12px">Este club todavía no tiene jugadores registrados.</div>{% endif %}
+  </div>
+</div>
+{% endfor %}
+</div>
+</div>
+{% endblock %}
