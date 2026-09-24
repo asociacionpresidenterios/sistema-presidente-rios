@@ -1,189 +1,77 @@
 {% extends "base.html" %}
-
+{% block title %}Dashboard · Presidente Ríos{% endblock %}
 {% block content %}
 <style>
-.dashboard-page{max-width:1450px;margin:0 auto;padding:25px}
-.dashboard-header{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:28px;flex-wrap:wrap}
-.dashboard-title h1{margin:0;font-size:32px;font-weight:900;color:#111827}
-.dashboard-title p{margin:7px 0 0;color:#6b7280;font-size:15px}
-.dashboard-actions{display:flex;gap:10px;flex-wrap:wrap}
-.dashboard-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 17px;border-radius:10px;text-decoration:none;font-weight:800;font-size:14px;border:1px solid #e5e7eb;background:#fff;color:#111827}
-.dashboard-btn.primary{background:#f97316;color:#fff;border-color:#f97316}
-.dashboard-btn.blue{background:#2563eb;color:#fff;border-color:#2563eb}
-.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:22px}
-.sports-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
-.stat-card{position:relative;overflow:hidden;background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:20px;box-shadow:0 5px 18px rgba(15,23,42,.05)}
-.stat-card:after{content:"";position:absolute;left:0;bottom:0;width:100%;height:4px}
-.total:after{background:#111827}.vigente:after{background:#16a34a}.pendiente:after{background:#eab308}.suspendido:after{background:#dc2626}.inhabilitado:after{background:#111}.goles:after{background:#2563eb}.amarillas:after{background:#f59e0b}.rojas:after{background:#dc2626}.suspensiones:after{background:#7c3aed}
-.stat-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:15px}
-.total .stat-icon{background:#f3f4f6}.vigente .stat-icon{background:#dcfce7}.pendiente .stat-icon{background:#fef9c3}.suspendido .stat-icon,.rojas .stat-icon{background:#fee2e2}.inhabilitado .stat-icon{background:#e5e7eb}.goles .stat-icon{background:#dbeafe}.amarillas .stat-icon{background:#fef3c7}.suspensiones .stat-icon{background:#ede9fe}
-.stat-label{font-size:13px;color:#6b7280;font-weight:700;margin-bottom:5px}.stat-number{font-size:31px;font-weight:900;color:#111827;line-height:1}
-.section-title{margin:0 0 12px;font-size:14px;font-weight:900;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
-.dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}.dashboard-panel{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:22px;box-shadow:0 5px 18px rgba(15,23,42,.05)}.dashboard-panel.full{grid-column:1/-1}
-.panel-header{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:20px;flex-wrap:wrap}.panel-header h2{margin:0;font-size:19px;font-weight:900;color:#111827}.panel-header span{color:#6b7280;font-size:13px}
-.status-list,.club-list,.ranking-list{display:flex;flex-direction:column;gap:10px}.status-row{display:grid;grid-template-columns:130px 1fr 50px;align-items:center;gap:12px}.status-name{font-size:14px;font-weight:800;color:#374151}.status-bar{height:12px;background:#f3f4f6;border-radius:20px;overflow:hidden}.status-fill{height:100%;min-width:2px;border-radius:20px}.status-fill.vigente{background:#16a34a}.status-fill.pendiente{background:#eab308}.status-fill.suspendido{background:#dc2626}.status-fill.inhabilitado{background:#111}.status-number{text-align:right;font-weight:900;color:#111827}
-.club-row,.ranking-row{display:grid;grid-template-columns:34px 1fr 70px;align-items:center;gap:10px;padding:10px 12px;border-radius:11px;background:#f8fafc;border:1px solid #eef2f7}.club-position,.ranking-position{width:28px;height:28px;border-radius:8px;background:#111827;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900}.club-name,.ranking-name{font-size:14px;font-weight:800;color:#1f2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.club-count,.ranking-count{text-align:right;font-size:14px;font-weight:900;color:#2563eb}.ranking-sub{display:block;margin-top:3px;color:#6b7280;font-size:11px;font-weight:600}.ranking-count.amarillas{color:#b45309}.ranking-count.rojas{color:#b91c1c}.ranking-count.suspensiones{color:#7c3aed}
-.series-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.serie-card{padding:15px;border-radius:13px;background:#f8fafc;border:1px solid #e5e7eb}.serie-card-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.serie-name{font-size:14px;font-weight:900;color:#111827}.serie-number{font-size:20px;font-weight:900;color:#2563eb}.serie-bar{height:8px;background:#e5e7eb;border-radius:20px;overflow:hidden}.serie-fill{height:100%;border-radius:20px;background:#2563eb}
-.players-table-wrapper{overflow-x:auto}.players-table{width:100%;border-collapse:collapse;min-width:750px}.players-table th{text-align:left;padding:12px 10px;background:#f8fafc;color:#6b7280;font-size:12px;font-weight:900;text-transform:uppercase;border-bottom:1px solid #e5e7eb}.players-table td{padding:13px 10px;border-bottom:1px solid #f1f5f9;color:#374151;font-size:14px}.player-name{font-weight:900;color:#111827}.player-rut{font-weight:700;color:#64748b}
-.badge{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:900}.badge-vigente{background:#dcfce7;color:#166534}.badge-pendiente{background:#fef9c3;color:#854d0e}.badge-suspendido{background:#fee2e2;color:#991b1b}.badge-inhabilitado{background:#e5e7eb;color:#111827}.btn-ficha{display:inline-flex;align-items:center;justify-content:center;padding:7px 11px;border-radius:8px;background:#eef2ff;color:#3730a3;text-decoration:none;font-size:12px;font-weight:900}
-.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.quick-action{display:flex;align-items:center;gap:12px;padding:15px;border:1px solid #e5e7eb;border-radius:13px;text-decoration:none;color:#111827;background:#fafafa}.quick-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#eef2ff;font-size:19px;flex-shrink:0}.quick-text strong{display:block;font-size:13px;margin-bottom:3px}.quick-text small{color:#6b7280;font-size:11px}
-.dashboard-search{display:flex;gap:10px}.dashboard-search input{flex:1;height:46px;border:1px solid #d1d5db;border-radius:10px;padding:0 14px;font-size:14px;outline:none}.dashboard-search button{border:0;border-radius:10px;padding:0 22px;background:#111827;color:#fff;font-weight:800;cursor:pointer}
-.empty-message{text-align:center;padding:25px;border-radius:12px;background:#f8fafc;color:#9ca3af;font-size:14px}.info-box{display:flex;align-items:center;gap:15px;padding:18px;border-radius:13px;background:#f8fafc;border:1px solid #e5e7eb}.info-icon{width:48px;height:48px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:#eef2ff;font-size:25px;flex-shrink:0}.info-box strong{display:block;margin-bottom:4px;color:#111827}.info-box span{color:#6b7280;font-size:13px}
-@media(max-width:1200px){.stats-grid{grid-template-columns:repeat(3,1fr)}.sports-grid{grid-template-columns:repeat(2,1fr)}.quick-actions{grid-template-columns:repeat(2,1fr)}}@media(max-width:850px){.dashboard-grid{grid-template-columns:1fr}.dashboard-panel.full{grid-column:auto}.stats-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.dashboard-page{padding:15px}.dashboard-title h1{font-size:25px}.stats-grid,.sports-grid,.quick-actions,.series-grid{grid-template-columns:1fr}.status-row{grid-template-columns:100px 1fr 40px}.dashboard-actions{width:100%}.dashboard-btn{flex:1}.dashboard-search{flex-direction:column}.dashboard-search button{height:44px}}
+.dash-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin-bottom:24px}
+.dash-head h1{margin:0;font-size:30px;letter-spacing:-.03em}.dash-head p{margin:6px 0 0;color:#64748b;font-size:14px}
+.grid{display:grid;gap:16px}.kpis{grid-template-columns:repeat(5,minmax(0,1fr));margin-bottom:20px}.cols{grid-template-columns:1.35fr .9fr;margin-bottom:20px}.cols3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.card{background:#fff;border:1px solid #e5eaf1;border-radius:16px;box-shadow:0 5px 18px rgba(15,23,42,.045);padding:18px}
+.kpi-label{font-size:12px;color:#64748b;font-weight:700}.kpi-value{font-size:30px;font-weight:850;margin-top:7px}.kpi-note{font-size:11px;color:#94a3b8;margin-top:4px}
+.section-title{font-size:15px;font-weight:800;margin:0 0 14px}.section-sub{font-size:12px;color:#64748b;margin:-8px 0 14px}
+.rows{display:flex;flex-direction:column;gap:8px}.row{display:flex;align-items:center;justify-content:space-between;padding:10px 11px;background:#f8fafc;border-radius:10px;font-size:13px}.row strong{font-weight:750}.pill{font-size:11px;font-weight:800;padding:4px 8px;border-radius:99px;background:#eaf1ff;color:#1d4ed8}
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.quick a{padding:12px;border:1px solid #e5eaf1;border-radius:11px;background:#fff;font-size:12px;font-weight:750}.quick a:hover{border-color:#b9cdfb;background:#f8fbff}
+.empty{color:#94a3b8;font-size:13px;padding:10px 0}
+@media(max-width:1200px){.kpis{grid-template-columns:repeat(3,1fr)}.cols,.cols3{grid-template-columns:1fr}}
+@media(max-width:650px){.kpis{grid-template-columns:repeat(2,1fr)}.quick{grid-template-columns:1fr}.dash-head{display:block}}
 </style>
 
-<div class="dashboard-page">
-    <div class="dashboard-header">
-        <div class="dashboard-title">
-            <h1>Dashboard</h1>
-            <p>Panel general de gestión futbolística — Asociación Presidente Ríos</p>
-        </div>
-        <div class="dashboard-actions">
-            <a href="{{ url_for('index') }}" class="dashboard-btn">Jugadores</a>
-            <a href="{{ url_for('configuracion') }}" class="dashboard-btn">Configuración</a>
-            <a href="{{ url_for('importar_jugadores') }}" class="dashboard-btn blue">Importar Excel</a>
-            <a href="{{ url_for('nuevo_jugador') }}" class="dashboard-btn primary">Nuevo jugador</a>
-        </div>
+<div class="dash-head">
+  <div>
+    <h1>Centro de control</h1>
+    <p>Resumen operativo de la Asociación Presidente Ríos.</p>
+  </div>
+  <div class="quick">
+    <a href="{{ url_for('admin_planteles') }}">🏟️ Planteles</a>
+    <a href="{{ url_for('campeonatos') }}">🏆 Campeonatos</a>
+    <a href="{{ url_for('admin_integracion') }}">🔗 Auditoría</a>
+  </div>
+</div>
+
+<div class="grid kpis">
+  <div class="card"><div class="kpi-label">Jugadores registrados</div><div class="kpi-value">{{ total_jugadores }}</div><div class="kpi-note">Registro maestro</div></div>
+  <div class="card"><div class="kpi-label">Vigentes</div><div class="kpi-value" style="color:#16a34a">{{ vigentes }}</div><div class="kpi-note">Disponibles en registro</div></div>
+  <div class="card"><div class="kpi-label">Pendientes</div><div class="kpi-value" style="color:#d97706">{{ pendientes }}</div><div class="kpi-note">Revisión requerida</div></div>
+  <div class="card"><div class="kpi-label">Suspendidos</div><div class="kpi-value" style="color:#dc2626">{{ suspendidos }}</div><div class="kpi-note">Estado disciplinario</div></div>
+  <div class="card"><div class="kpi-label">Inhabilitados</div><div class="kpi-value">{{ inhabilitados }}</div><div class="kpi-note">Registro administrativo</div></div>
+</div>
+
+<div class="grid cols">
+  <div class="card">
+    <h2 class="section-title">Jugadores por club</h2>
+    <div class="rows">
+      {% for club,cantidad in jugadores_por_club %}
+      <div class="row"><strong>{{ club }}</strong><span class="pill">{{ cantidad }} jugadores</span></div>
+      {% else %}<div class="empty">No hay clubes con jugadores registrados.</div>{% endfor %}
     </div>
-
-    <div class="section-title">Estado de registros</div>
-    <div class="stats-grid">
-        <div class="stat-card total"><div class="stat-icon">👥</div><div class="stat-label">Total jugadores</div><div class="stat-number">{{ total_jugadores }}</div></div>
-        <div class="stat-card vigente"><div class="stat-icon">🟢</div><div class="stat-label">Vigentes</div><div class="stat-number">{{ vigentes }}</div></div>
-        <div class="stat-card pendiente"><div class="stat-icon">🟡</div><div class="stat-label">Pendientes</div><div class="stat-number">{{ pendientes }}</div></div>
-        <div class="stat-card suspendido"><div class="stat-icon">🔴</div><div class="stat-label">Suspendidos</div><div class="stat-number">{{ suspendidos }}</div></div>
-        <div class="stat-card inhabilitado"><div class="stat-icon">⚫</div><div class="stat-label">Inhabilitados</div><div class="stat-number">{{ inhabilitados }}</div></div>
+  </div>
+  <div class="card">
+    <h2 class="section-title">Jugadores por serie</h2>
+    <div class="rows">
+      {% for serie,cantidad in jugadores_por_serie %}
+      <div class="row"><strong>{{ serie }}</strong><span class="pill">{{ cantidad }}</span></div>
+      {% else %}<div class="empty">No hay series registradas.</div>{% endfor %}
     </div>
+  </div>
+</div>
 
-    <div class="section-title">Resumen deportivo</div>
-    <div class="sports-grid">
-        <div class="stat-card goles"><div class="stat-icon">⚽</div><div class="stat-label">Goles registrados</div><div class="stat-number">{{ total_goles }}</div></div>
-        <div class="stat-card amarillas"><div class="stat-icon">🟨</div><div class="stat-label">Tarjetas amarillas</div><div class="stat-number">{{ total_amarillas }}</div></div>
-        <div class="stat-card rojas"><div class="stat-icon">🟥</div><div class="stat-label">Tarjetas rojas</div><div class="stat-number">{{ total_rojas }}</div></div>
-        <div class="stat-card suspensiones"><div class="stat-icon">⛔</div><div class="stat-label">Suspensiones</div><div class="stat-number">{{ total_suspensiones }}</div></div>
-    </div>
+<div class="grid cols3">
+  <div class="card"><h2 class="section-title">Resumen deportivo</h2><div class="rows">
+    <div class="row"><strong>⚽ Goles</strong><span class="pill">{{ total_goles }}</span></div>
+    <div class="row"><strong>🟨 Amarillas</strong><span class="pill">{{ total_amarillas }}</span></div>
+    <div class="row"><strong>🟥 Rojas</strong><span class="pill">{{ total_rojas }}</span></div>
+    <div class="row"><strong>⛔ Suspensiones</strong><span class="pill">{{ total_suspensiones }}</span></div>
+  </div></div>
 
-    <div class="dashboard-grid">
-        <div class="dashboard-panel">
-            <div class="panel-header"><h2>Estado de jugadores</h2><span>Distribución actual</span></div>
-            {% set max_estado = [vigentes, pendientes, suspendidos, inhabilitados, 1] | max %}
-            <div class="status-list">
-                {% for nombre, valor, clase in [
-                    ("Vigente", vigentes, "vigente"),
-                    ("Pendiente", pendientes, "pendiente"),
-                    ("Suspendido", suspendidos, "suspendido"),
-                    ("Inhabilitado", inhabilitados, "inhabilitado")
-                ] %}
-                <div class="status-row">
-                    <div class="status-name">{{ nombre }}</div>
-                    <div class="status-bar"><div class="status-fill {{ clase }}" style="width: {{ (valor / max_estado * 100) }}%;"></div></div>
-                    <div class="status-number">{{ valor }}</div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
+  <div class="card"><h2 class="section-title">Máximos goleadores</h2><div class="rows">
+    {% for g in goleadores %}
+    <div class="row"><strong>{{ loop.index }}. {{ g.nombre_completo }}</strong><span class="pill">{{ g.total }}</span></div>
+    {% else %}<div class="empty">Sin goles registrados.</div>{% endfor %}
+  </div></div>
 
-        <div class="dashboard-panel">
-            <div class="panel-header"><h2>Jugadores por club</h2><span>Top 8</span></div>
-            {% if jugadores_por_club %}
-            <div class="club-list">
-                {% for club, cantidad in jugadores_por_club[:8] %}
-                <div class="club-row"><div class="club-position">{{ loop.index }}</div><div class="club-name">{{ club }}</div><div class="club-count">{{ cantidad }}</div></div>
-                {% endfor %}
-            </div>
-            {% else %}<div class="empty-message">No hay jugadores registrados por club.</div>{% endif %}
-        </div>
-
-        <div class="dashboard-panel">
-            <div class="panel-header"><h2>Jugadores por serie</h2><span>Distribución</span></div>
-            {% if jugadores_por_serie %}
-            {% set max_serie = jugadores_por_serie[0][1] %}
-            <div class="series-grid">
-                {% for serie, cantidad in jugadores_por_serie %}
-                <div class="serie-card"><div class="serie-card-top"><div class="serie-name">{{ serie }}</div><div class="serie-number">{{ cantidad }}</div></div><div class="serie-bar"><div class="serie-fill" style="width: {{ (cantidad / max_serie * 100) }}%;"></div></div></div>
-                {% endfor %}
-            </div>
-            {% else %}<div class="empty-message">No hay jugadores registrados por serie.</div>{% endif %}
-        </div>
-
-        {% for titulo, lista, clase, vacio in [
-            ("Goleadores", goleadores, "goles", "Todavía no hay goles registrados."),
-            ("Ranking de amarillas", ranking_amarillas, "amarillas", "Todavía no hay tarjetas amarillas registradas."),
-            ("Ranking de rojas", ranking_rojas, "rojas", "Todavía no hay tarjetas rojas registradas."),
-            ("Ranking de suspensiones", ranking_suspensiones, "suspensiones", "Todavía no hay suspensiones registradas.")
-        ] %}
-        <div class="dashboard-panel">
-            <div class="panel-header"><h2>{{ titulo }}</h2><span>Top 10</span></div>
-            {% if lista %}
-            <div class="ranking-list">
-                {% for jugador in lista %}
-                <div class="ranking-row">
-                    <div class="ranking-position">{{ loop.index }}</div>
-                    <div class="ranking-name">{{ jugador.nombre_completo }}<span class="ranking-sub">{{ jugador.club }}{% if jugador.serie is defined %} · {{ jugador.serie }}{% endif %}</span></div>
-                    <div class="ranking-count {{ clase }}">{{ jugador.total }}</div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}<div class="empty-message">{{ vacio }}</div>{% endif %}
-        </div>
-        {% endfor %}
-
-        <div class="dashboard-panel">
-            <div class="panel-header"><h2>Suspendidos actualmente</h2><span>Máximo 10</span></div>
-            {% if jugadores_suspendidos %}
-            <div class="ranking-list">
-                {% for jugador in jugadores_suspendidos %}
-                <div class="ranking-row"><div class="ranking-position">{{ loop.index }}</div><div class="ranking-name">{{ jugador.nombre_completo }}<span class="ranking-sub">{{ jugador.club }} · {{ jugador.serie }}</span></div><a href="{{ url_for('ficha_jugador', jugador_id=jugador.id) }}" class="btn-ficha">Ver ficha</a></div>
-                {% endfor %}
-            </div>
-            {% else %}<div class="empty-message">No hay jugadores suspendidos actualmente.</div>{% endif %}
-        </div>
-
-        <div class="dashboard-panel">
-            <div class="panel-header"><h2>Accesos rápidos</h2><span>Gestión</span></div>
-            <div class="quick-actions">
-                <a href="{{ url_for('nuevo_jugador') }}" class="quick-action"><div class="quick-icon">+</div><div class="quick-text"><strong>Nuevo jugador</strong><small>Registrar jugador</small></div></a>
-                <a href="{{ url_for('index') }}" class="quick-action"><div class="quick-icon">👥</div><div class="quick-text"><strong>Ver jugadores</strong><small>Listado completo</small></div></a>
-                <a href="{{ url_for('importar_jugadores') }}" class="quick-action"><div class="quick-icon">📥</div><div class="quick-text"><strong>Importar Excel</strong><small>Cargar jugadores</small></div></a>
-                <a href="{{ url_for('configuracion') }}" class="quick-action"><div class="quick-icon">⚙️</div><div class="quick-text"><strong>Configuración</strong><small>Clubes y series</small></div></a>
-            </div>
-        </div>
-
-        <div class="dashboard-panel full">
-            <div class="panel-header"><div><h2>Últimos jugadores registrados</h2><span>Los 5 registros más recientes</span></div><a href="{{ url_for('index') }}" class="dashboard-btn">Ver todos</a></div>
-            {% if ultimos_jugadores %}
-            <div class="players-table-wrapper">
-                <table class="players-table">
-                    <thead><tr><th>Jugador</th><th>RUT</th><th>Club</th><th>Serie</th><th>Estado</th><th>Acción</th></tr></thead>
-                    <tbody>
-                    {% for jugador in ultimos_jugadores %}
-                    <tr>
-                        <td><div class="player-name">{{ jugador.nombre_completo }}</div></td>
-                        <td><div class="player-rut">{{ jugador.rut }}</div></td>
-                        <td>{{ jugador.club or "—" }}</td><td>{{ jugador.serie or "—" }}</td>
-                        <td>
-                            {% if jugador.estado == "Vigente" %}<span class="badge badge-vigente">Vigente</span>
-                            {% elif jugador.estado == "Pendiente" %}<span class="badge badge-pendiente">Pendiente</span>
-                            {% elif jugador.estado == "Suspendido" %}<span class="badge badge-suspendido">Suspendido</span>
-                            {% else %}<span class="badge badge-inhabilitado">Inhabilitado</span>{% endif %}
-                        </td>
-                        <td><a href="{{ url_for('ficha_jugador', jugador_id=jugador.id) }}" class="btn-ficha">Ver ficha</a></td>
-                    </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}<div class="empty-message">Todavía no hay jugadores registrados.</div>{% endif %}
-        </div>
-
-        <div class="dashboard-panel full">
-            <div class="panel-header"><h2>Búsqueda rápida</h2><span>Busca por RUT, nombre o club</span></div>
-            <form action="{{ url_for('index') }}" method="GET" class="dashboard-search"><input type="text" name="q" placeholder="Ingresa RUT, nombre o club..." autocomplete="off"><button type="submit">Buscar</button></form>
-        </div>
-
-        <div class="dashboard-panel full">
-            <div class="info-box"><div class="info-icon">🪪</div><div><strong>Sistema de jugadores — Asociación Presidente Ríos</strong><span>Administración de jugadores, clubes, series, estados, fotografías, credenciales, códigos QR, estadísticas deportivas e importaciones desde Excel.</span></div></div>
-        </div>
-    </div>
+  <div class="card"><h2 class="section-title">Últimos jugadores</h2><div class="rows">
+    {% for j in ultimos_jugadores %}
+    <div class="row"><strong>{{ j.nombre_completo }}</strong><span class="pill">{{ j.club or 'Sin club' }}</span></div>
+    {% else %}<div class="empty">No hay jugadores.</div>{% endfor %}
+  </div></div>
 </div>
 {% endblock %}
