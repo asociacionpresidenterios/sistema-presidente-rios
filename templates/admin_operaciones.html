@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Centro de operaciones{% endblock %}
+{% block content %}
+<style>
+.ops-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin-bottom:22px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#64748b;font-weight:800}.ops-head h1{margin:5px 0 4px;font-size:30px}.muted{color:#64748b;font-size:13px}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 13px;border:1px solid #e5eaf1;background:#fff;border-radius:9px;font-size:12px;font-weight:750}.btn.primary{background:#2563eb;color:#fff;border-color:#2563eb}.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}.kpi{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:17px}.kpi .n{font-size:27px;font-weight:850}.kpi .l{font-size:12px;color:#64748b;margin-top:4px}.layout{display:grid;grid-template-columns:1.35fr .95fr;gap:18px}.card{background:#fff;border:1px solid #e5eaf1;border-radius:14px;overflow:hidden;margin-bottom:18px}.card-head{padding:16px 18px;border-bottom:1px solid #eef2f7;display:flex;justify-content:space-between;align-items:center}.card-head h2{font-size:15px;margin:0}.card-body{padding:0}.row{padding:13px 17px;border-bottom:1px solid #f0f3f7;display:flex;justify-content:space-between;gap:15px;align-items:center}.row:last-child{border-bottom:0}.match-main{min-width:0}.match-title{font-size:13px;font-weight:800}.meta{font-size:11px;color:#64748b;margin-top:4px}.score{font-size:14px;font-weight:850;white-space:nowrap}.badge{display:inline-flex;align-items:center;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:800;background:#eef3f9;color:#475569}.badge.warn{background:#fff7ed;color:#c2410c}.badge.ok{background:#ecfdf3;color:#15803d}.empty{padding:25px 18px;color:#64748b;font-size:13px;text-align:center}.quick{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:15px}.quick a{padding:13px;border:1px solid #e5eaf1;border-radius:10px;font-size:12px;font-weight:750}.quick a:hover{border-color:#2563eb;background:#f8fbff}.section-note{font-size:11px;color:#64748b}.danger{color:#b91c1c}.warning{color:#b45309}@media(max-width:1100px){.grid4{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}}@media(max-width:600px){.grid4{grid-template-columns:1fr}.ops-head{display:block}.actions{margin-top:12px}.row{align-items:flex-start;flex-direction:column}.quick{grid-template-columns:1fr}}
+</style>
+
+<div class="ops-head">
+  <div>
+    <div class="eyebrow">Gestión diaria</div>
+    <h1>Centro de operaciones</h1>
+    <div class="muted">Agenda, pendientes y accesos rápidos para el trabajo diario de la Asociación.</div>
+  </div>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('admin_partidos') }}">⚽ Todos los partidos</a>
+    <a class="btn" href="{{ url_for('admin_actas') }}">📋 Todas las actas</a>
+    <a class="btn primary" href="{{ url_for('admin_panel_maestro') }}">📊 Panel maestro</a>
+  </div>
+</div>
+
+<div class="grid4">
+  <div class="kpi"><div class="n">{{ partidos_hoy|length }}</div><div class="l">Partidos de hoy</div></div>
+  <div class="kpi"><div class="n">{{ proximos|length }}</div><div class="l">Próximos 7 días</div></div>
+  <div class="kpi"><div class="n">{{ pendientes_acta|length }}</div><div class="l">Partidos pendientes de acta</div></div>
+  <div class="kpi"><div class="n">{{ actas_borrador|length }}</div><div class="l">Actas abiertas</div></div>
+</div>
+
+<div class="layout">
+  <div>
+    <div class="card">
+      <div class="card-head"><div><h2>🗓️ Partidos de hoy</h2><div class="section-note">{{ hoy.strftime('%d/%m/%Y') }}</div></div><span class="badge">Agenda</span></div>
+      <div class="card-body">
+      {% for p in partidos_hoy %}
+        <div class="row">
+          <div class="match-main"><div class="match-title">{{ p.local_club.nombre }} <span class="muted">vs</span> {{ p.visitante_club.nombre }}</div><div class="meta">{{ p.campeonato.nombre }} · Jornada {{ p.jornada }} · {{ p.cancha or 'Cancha pendiente' }} · {{ p.hora or 'Hora pendiente' }}</div></div>
+          <div style="display:flex;gap:7px;align-items:center"><span class="badge">{{ p.estado }}</span><a class="btn" href="{{ url_for('acta_partido', campeonato_id=p.campeonato_id, partido_id=p.id) }}">📋 Acta</a></div>
+        </div>
+      {% else %}<div class="empty">No hay partidos programados para hoy.</div>{% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><div><h2>📅 Próximos partidos</h2><div class="section-note">Hasta {{ limite.strftime('%d/%m/%Y') }}</div></div></div>
+      <div class="card-body">
+      {% for p in proximos %}
+        <div class="row"><div class="match-main"><div class="match-title">{{ p.local_club.nombre }} <span class="muted">vs</span> {{ p.visitante_club.nombre }}</div><div class="meta">{{ p.fecha.strftime('%d/%m/%Y') }} · {{ p.hora or 'Hora pendiente' }} · {{ p.campeonato.nombre }}</div></div><span class="badge">{{ p.cancha or 'Cancha pendiente' }}</span></div>
+      {% else %}<div class="empty">No hay partidos programados en los próximos 7 días.</div>{% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-head"><h2>⚠️ Requieren atención</h2><span class="badge warn">Operativo</span></div>
+      <div class="card-body">
+      {% if pendientes_acta or resultados_pendientes %}
+        {% for p in pendientes_acta %}<div class="row"><div class="match-main"><div class="match-title">📋 Acta pendiente</div><div class="meta">{{ p.local_club.nombre }} vs {{ p.visitante_club.nombre }} · {{ p.fecha.strftime('%d/%m/%Y') if p.fecha else 'Sin fecha' }}</div></div><a class="btn" href="{{ url_for('acta_partido', campeonato_id=p.campeonato_id, partido_id=p.id) }}">Abrir</a></div>{% endfor %}
+        {% for p in resultados_pendientes %}<div class="row"><div class="match-main"><div class="match-title danger">⚽ Resultado incompleto</div><div class="meta">{{ p.local_club.nombre }} vs {{ p.visitante_club.nombre }}</div></div><a class="btn" href="{{ url_for('acta_partido', campeonato_id=p.campeonato_id, partido_id=p.id) }}">Revisar</a></div>{% endfor %}
+      {% else %}<div class="empty">No hay pendientes críticos detectados.</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>📝 Actas abiertas</h2><span class="badge warn">Pendientes</span></div>
+      <div class="card-body">
+      {% for acta in actas_borrador %}<div class="row"><div class="match-main"><div class="match-title">{{ acta.partido.local_club.nombre }} vs {{ acta.partido.visitante_club.nombre }}</div><div class="meta">Acta {{ acta.numero_acta or 'sin número' }} · {{ acta.partido.campeonato.nombre }}</div></div><a class="btn" href="{{ url_for('acta_partido', campeonato_id=acta.partido.campeonato_id, partido_id=acta.partido_id) }}">Continuar</a></div>{% else %}<div class="empty">No hay actas abiertas.</div>{% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>⚡ Accesos rápidos</h2></div>
+      <div class="quick">
+        <a href="{{ url_for('admin_registro') }}">👥 Registro de jugadores</a>
+        <a href="{{ url_for('admin_clubes') }}">🏟️ Clubes y planteles</a>
+        <a href="{{ url_for('campeonatos') }}">🏆 Campeonatos</a>
+        <a href="{{ url_for('admin_centro_integracion') }}">🧭 Integración</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
