@@ -6233,7 +6233,60 @@ def admin_mover_jugador_plantel(jugador_id):
 # usando el mismo registro Jugador.id.
 # ============================================================
 
+@app.route("/admin/centro-jugadores")
+@admin_required
+def admin_centro_jugadores():
+    """Centro maestro de jugadores con búsqueda y acceso a la ficha integrada."""
+    q = request.args.get("q", "").strip()
+    club_filtro = request.args.get("club", "").strip()
+    serie_filtro = request.args.get("serie", "").strip()
+    estado_filtro = request.args.get("estado", "").strip()
+
+    query = Jugador.query
+    if q:
+        like = f"%{q}%"
+        query = query.filter(db.or_(Jugador.nombre_completo.ilike(like), Jugador.rut.ilike(like)))
+    if club_filtro:
+        query = query.filter(Jugador.club == club_filtro)
+    if serie_filtro:
+        query = query.filter(Jugador.serie == serie_filtro)
+    if estado_filtro:
+        query = query.filter(Jugador.estado == estado_filtro)
+
+    jugadores = query.order_by(Jugador.nombre_completo.asc()).limit(250).all()
+    clubes = [r[0] for r in db.session.query(Jugador.club).filter(Jugador.club.isnot(None), Jugador.club != "").distinct().order_by(Jugador.club.asc()).all()]
+    series = [r[0] for r in db.session.query(Jugador.serie).filter(Jugador.serie.isnot(None), Jugador.serie != "").distinct().order_by(Jugador.serie.asc()).all()]
+    estados = [r[0] for r in db.session.query(Jugador.estado).filter(Jugador.estado.isnot(None), Jugador.estado != "").distinct().order_by(Jugador.estado.asc()).all()]
+
+    total = Jugador.query.count()
+    vigentes = Jugador.query.filter_by(estado="Vigente").count()
+    clubes_total = len(clubes)
+    participaciones = PartidoJugador.query.count()
+
+    resumen = []
+    for j in jugadores:
+        ps = PartidoJugador.query.filter_by(jugador_id=j.id).all()
+        resumen.append({
+            "jugador": j,
+            "partidos": len(ps),
+            "goles": sum(int(x.goles or 0) for x in ps),
+            "amarillas": sum(int(x.amarillas or 0) for x in ps),
+            "rojas": sum(int(x.rojas or 0) for x in ps),
+        })
+
+    return render_template(
+        "admin_centro_jugadores.html",
+        resumen=resumen,
+        clubes=clubes,
+        series=series,
+        estados=estados,
+        q=q, club_filtro=club_filtro, serie_filtro=serie_filtro, estado_filtro=estado_filtro,
+        total=total, vigentes=vigentes, clubes_total=clubes_total, participaciones=participaciones,
+    )
+
+
 @app.route("/admin/jugador/<int:jugador_id>/centro")
+@admin_required
 def admin_centro_jugador(jugador_id):
     jugador = db.get_or_404(Jugador, jugador_id)
 
