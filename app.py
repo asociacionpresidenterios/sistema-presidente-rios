@@ -3146,6 +3146,68 @@ def admin_planteles():
 
 
 # ============================================================
+# V6.3 — CENTRO DE REGISTRO Y DIRECTORIO DE CLUBES
+# ============================================================
+
+@app.route("/admin/registro")
+def admin_registro():
+    """Centro único para altas e importación de jugadores."""
+    total_jugadores = Jugador.query.count()
+    total_vigentes = Jugador.query.filter_by(estado="Vigente").count()
+    total_clubes = Club.query.filter_by(activo=True).count()
+    total_series = Serie.query.filter_by(activo=True).count()
+
+    return render_template(
+        "admin_registro.html",
+        total_jugadores=total_jugadores,
+        total_vigentes=total_vigentes,
+        total_clubes=total_clubes,
+        total_series=total_series,
+    )
+
+
+@app.route("/admin/clubes")
+def admin_clubes():
+    """Directorio interno de todos los clubes, agrupando sus planteles por serie."""
+    q = request.args.get("q", "").strip()
+    club_id = request.args.get("club_id", "", type=int)
+
+    query = Club.query
+    if q:
+        query = query.filter(Club.nombre.ilike(f"%{q}%"))
+    if club_id:
+        query = query.filter(Club.id == club_id)
+
+    clubes = query.order_by(Club.nombre.asc()).all()
+    jugadores = Jugador.query.order_by(
+        Jugador.club.asc(), Jugador.serie.asc(), Jugador.nombre_completo.asc()
+    ).all()
+
+    agrupados = {}
+    for jugador in jugadores:
+        agrupados.setdefault(jugador.club or "Sin club", {}).setdefault(
+            jugador.serie or "Sin serie", []
+        ).append(jugador)
+
+    tarjetas = []
+    for club in clubes:
+        series_map = agrupados.get(club.nombre, {})
+        total = sum(len(lista) for lista in series_map.values())
+        tarjetas.append({"club": club, "series": series_map, "total": total})
+
+    return render_template(
+        "admin_clubes.html",
+        tarjetas=tarjetas,
+        clubes=Club.query.order_by(Club.nombre.asc()).all(),
+        q=q,
+        club_id=club_id,
+        total_clubes=Club.query.count(),
+        total_jugadores=Jugador.query.count(),
+        total_vigentes=Jugador.query.filter_by(estado="Vigente").count(),
+    )
+
+
+# ============================================================
 # FICHA ADMINISTRATIVA DE CLUB
 # ============================================================
 
