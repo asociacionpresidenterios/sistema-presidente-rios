@@ -6423,6 +6423,201 @@ def admin_centro_integracion():
 
 
 # ============================================================
+# V6.6 — PANEL MAESTRO DE LA ASOCIACIÓN
+# ============================================================
+
+@app.route("/admin/panel-maestro")
+@admin_required
+def admin_panel_maestro():
+    """Panel ejecutivo de lectura del sistema.
+
+    Reúne indicadores de las entidades existentes sin crear registros
+    paralelos ni modificar la estructura de PostgreSQL.
+    """
+
+    def safe_count(query):
+        try:
+            return query.count()
+        except Exception:
+            db.session.rollback()
+            return 0
+
+    def safe_scalar(query, default=0):
+        try:
+            value = query.scalar()
+            return default if value is None else value
+        except Exception:
+            db.session.rollback()
+            return default
+
+    # -------------------------
+    # INDICADORES PRINCIPALES
+    # -------------------------
+    total_jugadores = safe_count(Jugador.query)
+    jugadores_vigentes = safe_count(Jugador.query.filter_by(estado="Vigente"))
+    total_clubes = safe_count(Club.query)
+    clubes_activos = safe_count(Club.query.filter_by(activo=True))
+    total_campeonatos = safe_count(Campeonato.query)
+    campeonatos_activos = safe_count(Campeonato.query.filter_by(estado="Activo"))
+    total_partidos = safe_count(Partido.query)
+    partidos_finalizados = safe_count(Partido.query.filter_by(estado="Finalizado"))
+    partidos_programados = safe_count(Partido.query.filter_by(estado="Programado"))
+    total_actas = safe_count(ActaPartido.query)
+    actas_cerradas = safe_count(ActaPartido.query.filter_by(estado="Cerrada"))
+    actas_pendientes = safe_count(ActaPartido.query.filter(ActaPartido.estado != "Cerrada"))
+
+    total_goles = safe_scalar(
+        db.session.query(db.func.coalesce(db.func.sum(Gol.cantidad), 0))
+    )
+    total_amarillas = safe_scalar(
+        db.session.query(db.func.coalesce(db.func.sum(RegistroDisciplinario.cantidad), 0))
+        .filter(RegistroDisciplinario.tipo == "Amarilla")
+    )
+    total_rojas = safe_scalar(
+        db.session.query(db.func.coalesce(db.func.sum(RegistroDisciplinario.cantidad), 0))
+        .filter(RegistroDisciplinario.tipo == "Roja")
+    )
+
+    # -------------------------
+    # PENDIENTES / CONTROL
+    # -------------------------
+    partidos_sin_acta = safe_count(
+        Partido.query
+        .outerjoin(ActaPartido, ActaPartido.partido_id == Partido.id)
+        .filter(ActaPartido.id.is_(None))
+    )
+
+    actas_cerradas_sin_nomina = safe_count(
+        ActaPartido.query
+        .join(Partido)
+        .filter(ActaPartido.estado == "Cerrada")
+        .filter(~db.exists().where(PartidoJugador.partido_id == Partido.id))
+    )
+
+    partidos_sin_resultado = safe_count(
+        Partido.query.filter(
+            Partido.estado == "Finalizado",
+            db.or_(Partido.goles_local.is_(None), Partido.goles_visitante.is_(None))
+        )
+    )
+
+    jugadores_sin_club = safe_count(
+        Jugador.query.filter(
+            db.or_(Jugador.club.is_(None), Jugador.club == "")
+        )
+    )
+
+    jugadores_sin_serie = safe_count(
+        Jugador.query.filter(
+            db.or_(Jugador.serie.is_(None), Jugador.serie == "")
+        )
+    )
+
+    alertas = [
+        {"tipo": "danger", "icono": "📋", "titulo": "Partidos sin acta", "cantidad": partidos_sin_acta,
+         "texto": "Partidos que todavía no tienen acta asociada.", "url": url_for("admin_partidos")},
+        {"tipo": "warning", "icono": "📝", "titulo": "Actas pendientes", "cantidad": actas_pendientes,
+         "texto": "Actas que aún no están cerradas.", "url": url_for("admin_actas")},
+        {"tipo": "warning", "icono": "👥", "titulo": "Actas cerradas sin nómina", "cantidad": actas_cerradas_sin_nomina,
+         "texto": "Actas cerradas que no tienen jugadores asociados.", "url": url_for("admin_actas")},
+        {"tipo": "warning", "icono": "⚽", "titulo": "Finalizados sin resultado", "cantidad": partidos_sin_resultado,
+         "texto": "Partidos marcados como finalizados sin marcador completo.", "url": url_for("admin_partidos")},
+        {"tipo": "info", "icono": "👤", "titulo": "Jugadores sin club", "cantidad": jugadores_sin_club,
+         "texto": "Registros maestros que todavía no tienen club informado.", "url": url_for("admin_registro")},
+        {"tipo": "info", "icono": "🏷️", "titulo": "Jugadores sin serie", "cantidad": jugadores_sin_serie,
+         "texto": "Registros maestros que todavía no tienen serie informada.", "url": url_for("admin_registro")},
+    ]
+
+    # Solo mostrar pendientes reales en la tarjeta de control.
+    alertas = [a for a in alertas if a["cantidad"] > 0]
+
+    # -------------------------
+    # CAMPEONATOS
+    # -------------------------
+    campeonatos = Campeonato.query.order_by(
+        Campeonato.temporada.desc(), Campeonato.id.desc()
+    ).limit(10).all()
+
+    resumen_campeonatos = []
+    for campeonato in campeonatos:
+        partidos = Partido.query.filter_by(campeonato_id=campeonato.id)
+        resumen_campeonatos.append({
+            "campeonato": campeonato,
+            "clubes": safe_count(CampeonatoClub.query.filter_by(campeonato_id=campeonato.id)),
+            "partidos": safe_count(partidos),
+            "finalizados": safe_count(partidos.filter_by(estado="Finalizado")),
+            "actas": safe_count(
+                ActaPartido.query.join(Partido).filter(Partido.campeonato_id == campeonato.id)
+            ),
+            "actas_cerradas": safe_count(
+                ActaPartido.query.join(Partido).filter(
+                    Partido.campeonato_id == campeonato.id,
+                    ActaPartido.estado == "Cerrada"
+                )
+            ),
+        })
+
+    # -------------------------
+    # PRÓXIMOS PARTIDOS
+    # -------------------------
+    hoy = date.today()
+    proximos_partidos = (
+        Partido.query
+        .filter(
+            Partido.estado == "Programado",
+            db.or_(Partido.fecha.is_(None), Partido.fecha >= hoy)
+        )
+        .order_by(Partido.fecha.asc().nullslast(), Partido.hora.asc().nullslast(), Partido.id.asc())
+        .limit(8)
+        .all()
+    )
+
+    # -------------------------
+    # ÚLTIMOS PARTIDOS FINALIZADOS
+    # -------------------------
+    ultimos_resultados = (
+        Partido.query
+        .filter(Partido.estado == "Finalizado")
+        .order_by(Partido.fecha.desc().nullslast(), Partido.id.desc())
+        .limit(8)
+        .all()
+    )
+
+    # -------------------------
+    # ÚLTIMOS JUGADORES
+    # -------------------------
+    ultimos_jugadores = Jugador.query.order_by(Jugador.id.desc()).limit(6).all()
+
+    resumen = {
+        "total_jugadores": total_jugadores,
+        "jugadores_vigentes": jugadores_vigentes,
+        "total_clubes": total_clubes,
+        "clubes_activos": clubes_activos,
+        "total_campeonatos": total_campeonatos,
+        "campeonatos_activos": campeonatos_activos,
+        "total_partidos": total_partidos,
+        "partidos_finalizados": partidos_finalizados,
+        "partidos_programados": partidos_programados,
+        "total_actas": total_actas,
+        "actas_cerradas": actas_cerradas,
+        "actas_pendientes": actas_pendientes,
+        "total_goles": total_goles,
+        "total_amarillas": total_amarillas,
+        "total_rojas": total_rojas,
+    }
+
+    return render_template(
+        "admin_panel_maestro.html",
+        resumen=resumen,
+        alertas=alertas,
+        campeonatos=resumen_campeonatos,
+        proximos_partidos=proximos_partidos,
+        ultimos_resultados=ultimos_resultados,
+        ultimos_jugadores=ultimos_jugadores,
+    )
+
+
+# ============================================================
 # HEALTH CHECK
 # ============================================================
 
