@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Centro de Control Deportivo{% endblock %}
+{% block content %}
+<style>
+.hero{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin-bottom:20px}.hero h1{margin:0;font-size:28px}.hero p{margin:6px 0 0;color:#64748b;font-size:13px}.select{border:1px solid #dbe3ee;border-radius:10px;padding:10px 12px;background:#fff;font-weight:700;min-width:260px}.grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:18px}.card{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:16px;box-shadow:0 5px 18px rgba(15,23,42,.04)}.kpi-label{font-size:11px;color:#64748b;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.kpi-value{font-size:28px;font-weight:850;margin-top:5px}.layout{display:grid;grid-template-columns:1.45fr 1fr;gap:16px}.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.section-title h2{margin:0;font-size:16px}.muted{color:#64748b;font-size:12px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #eef2f7;white-space:nowrap}th{color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.06em}.badge{display:inline-block;padding:4px 7px;border-radius:999px;background:#eef4ff;color:#1d4ed8;font-weight:800;font-size:10px}.actions{display:flex;gap:7px;flex-wrap:wrap}.btn{display:inline-block;border:1px solid #dbe3ee;background:#fff;padding:7px 9px;border-radius:8px;font-size:11px;font-weight:800}.btn.primary{background:#2563eb;color:#fff;border-color:#2563eb}.empty{padding:25px;text-align:center;color:#64748b}.alert{display:flex;justify-content:space-between;gap:12px;align-items:center;border:1px solid #e5eaf1;border-radius:10px;padding:11px 12px;margin-bottom:8px}.alert strong{font-size:12px}.alert span{font-size:11px;color:#64748b}.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.mini{padding:12px;border:1px solid #eef2f7;border-radius:10px}.mini strong{display:block;font-size:20px}.mini span{font-size:10px;color:#64748b}.club-link{font-weight:800;color:#1d4ed8}@media(max-width:1100px){.grid{grid-template-columns:repeat(3,1fr)}.layout{grid-template-columns:1fr}}@media(max-width:650px){.grid{grid-template-columns:repeat(2,1fr)}.hero{display:block}.hero form{margin-top:12px}.select{width:100%}.mini-grid{grid-template-columns:1fr}}
+</style>
+
+<div class="hero">
+  <div>
+    <h1>⚽ Centro de Control Deportivo</h1>
+    <p>Resultados, tablas, goleadores, disciplina y rendimiento conectados al registro oficial de partidos y actas.</p>
+  </div>
+  <form method="get">
+    <select class="select" name="campeonato_id" onchange="this.form.submit()">
+      <option value="">Todos los campeonatos</option>
+      {% for c in campeonatos %}<option value="{{ c.id }}" {% if campeonato and c.id == campeonato.id %}selected{% endif %}>{{ c.nombre }}{% if c.serie %} · {{ c.serie }}{% endif %}</option>{% endfor %}
+    </select>
+  </form>
+</div>
+
+<div class="grid">
+  <div class="card"><div class="kpi-label">Partidos</div><div class="kpi-value">{{ resumen.partidos }}</div></div>
+  <div class="card"><div class="kpi-label">Finalizados</div><div class="kpi-value">{{ resumen.finalizados }}</div></div>
+  <div class="card"><div class="kpi-label">Actas cerradas</div><div class="kpi-value">{{ resumen.actas_cerradas }}</div></div>
+  <div class="card"><div class="kpi-label">Goles</div><div class="kpi-value">{{ resumen.goles }}</div></div>
+  <div class="card"><div class="kpi-label">Amarillas</div><div class="kpi-value">{{ resumen.amarillas }}</div></div>
+  <div class="card"><div class="kpi-label">Rojas</div><div class="kpi-value">{{ resumen.rojas }}</div></div>
+</div>
+
+<div class="layout">
+  <div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title"><h2>🏆 Tabla deportiva</h2><span class="muted">{{ campeonato.nombre if campeonato else 'Todos los campeonatos' }}</span></div>
+      {% if tabla %}<div class="table-wrap"><table><thead><tr><th>#</th><th>Club</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th></tr></thead><tbody>
+      {% for x in tabla %}<tr><td><span class="badge">{{ loop.index }}</span></td><td><a class="club-link" href="{{ url_for('admin_control_clubes', club_id=x.club_id) }}">{{ x.club }}</a></td><td>{{ x.pj }}</td><td>{{ x.pg }}</td><td>{{ x.pe }}</td><td>{{ x.pp }}</td><td>{{ x.gf }}</td><td>{{ x.gc }}</td><td>{{ x.dg }}</td><td><strong>{{ x.pts }}</strong></td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<div class="empty">No hay resultados suficientes para construir la tabla.</div>{% endif %}
+    </div>
+
+    <div class="card">
+      <div class="section-title"><h2>🥅 Goleadores</h2><span class="muted">Solo participaciones de actas cerradas</span></div>
+      {% if goleadores %}<div class="table-wrap"><table><thead><tr><th>#</th><th>Jugador</th><th>Club</th><th>Serie</th><th>Goles</th><th></th></tr></thead><tbody>
+      {% for x in goleadores %}<tr><td>{{ loop.index }}</td><td><strong>{{ x.jugador.nombre_completo }}</strong></td><td>{{ x.jugador.club }}</td><td>{{ x.jugador.serie }}</td><td><strong>{{ x.goles }}</strong></td><td><a class="btn" href="{{ url_for('admin_centro_jugador', jugador_id=x.jugador.id) }}">Ver jugador</a></td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<div class="empty">No hay goles registrados en actas cerradas.</div>{% endif %}
+    </div>
+  </div>
+
+  <div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title"><h2>🟨 Disciplina</h2><span class="muted">Actas cerradas</span></div>
+      <div class="mini-grid"><div class="mini"><strong>{{ resumen.amarillas }}</strong><span>Amarillas</span></div><div class="mini"><strong>{{ resumen.rojas }}</strong><span>Rojas</span></div><div class="mini"><strong>{{ resumen.participaciones }}</strong><span>Participaciones</span></div></div>
+      {% if disciplinados %}<div class="table-wrap" style="margin-top:12px"><table><thead><tr><th>Jugador</th><th>Club</th><th>A</th><th>R</th></tr></thead><tbody>{% for x in disciplinados %}<tr><td>{{ x.jugador.nombre_completo }}</td><td>{{ x.jugador.club }}</td><td>{{ x.amarillas }}</td><td>{{ x.rojas }}</td></tr>{% endfor %}</tbody></table></div>{% endif %}
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title"><h2>📅 Próximos partidos</h2></div>
+      {% if proximos %}{% for p in proximos %}<div class="alert"><div><strong>{{ p.local_club.nombre }} vs {{ p.visitante_club.nombre }}</strong><br><span>Jornada {{ p.jornada }} · {{ p.fecha or 'Fecha pendiente' }} · {{ p.hora or 'Hora pendiente' }}</span></div><a class="btn" href="{{ url_for('acta_partido', campeonato_id=p.campeonato_id, partido_id=p.id) }}">Acta</a></div>{% endfor %}{% else %}<div class="empty">No hay próximos partidos.</div>{% endif %}
+    </div>
+
+    <div class="card">
+      <div class="section-title"><h2>⚠️ Control deportivo</h2></div>
+      {% for a in alertas %}<div class="alert"><div><strong>{{ a.titulo }}</strong><br><span>{{ a.texto }}</span></div><strong>{{ a.cantidad }}</strong></div>{% endfor %}
+      <div class="actions" style="margin-top:12px"><a class="btn primary" href="{{ url_for('admin_partidos') }}">Partidos</a><a class="btn" href="{{ url_for('admin_actas') }}">Actas</a><a class="btn" href="{{ url_for('admin_centro_integracion') }}">Integración</a></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
