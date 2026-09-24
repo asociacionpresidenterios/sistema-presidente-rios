@@ -426,6 +426,26 @@ class Jugador(db.Model):
 
 
 # ============================================================
+# ETAPA 10 — HISTORIAL DE INTEGRACIÓN DEL REGISTRO MAESTRO
+# ============================================================
+
+class JugadorMovimiento(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    jugador_id = db.Column(db.Integer, db.ForeignKey("jugador.id"), nullable=False, index=True)
+    fecha_hora = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    tipo = db.Column(db.String(40), nullable=False)
+    club_anterior = db.Column(db.String(120), nullable=True)
+    serie_anterior = db.Column(db.String(80), nullable=True)
+    estado_anterior = db.Column(db.String(30), nullable=True)
+    club_nuevo = db.Column(db.String(120), nullable=True)
+    serie_nueva = db.Column(db.String(80), nullable=True)
+    estado_nuevo = db.Column(db.String(30), nullable=True)
+    motivo = db.Column(db.String(255), nullable=True)
+    realizado_por = db.Column(db.String(80), nullable=True)
+    jugador = db.relationship("Jugador", backref=db.backref("movimientos", lazy=True, cascade="all, delete-orphan"))
+
+
+# ============================================================
 # MODELO REGISTRO DISCIPLINARIO
 # ============================================================
 
@@ -3017,6 +3037,24 @@ def credencial_reverso(jugador_id):
 # REGISTRO INTERNO DE CLUBES, SERIES Y PLANTELES
 # ============================================================
 
+def registrar_movimiento_jugador(jugador, tipo, anterior=None, motivo=None):
+    """Registra cambios del registro maestro sin duplicar al jugador."""
+    anterior = anterior or {}
+    movimiento = JugadorMovimiento(
+        jugador_id=jugador.id,
+        tipo=tipo,
+        club_anterior=anterior.get("club"),
+        serie_anterior=anterior.get("serie"),
+        estado_anterior=anterior.get("estado"),
+        club_nuevo=jugador.club,
+        serie_nuevo=jugador.serie,
+        estado_nuevo=jugador.estado,
+        motivo=motivo,
+        realizado_por=(session.get("admin_username") or session.get("admin_id") or "Administrador"),
+    )
+    db.session.add(movimiento)
+
+
 @app.route("/admin/planteles")
 def admin_planteles():
     """Registro interno de jugadores organizado por club y serie.
@@ -5163,6 +5201,7 @@ def jugadores_disponibles_para_equipo(campeonato, club):
     por_club = [
         jugador for jugador in jugadores_club
         if _normalizar_texto_acta(jugador.club) == nombre_club
+        and normalizar_estado(jugador.estado) == "Vigente"
     ]
 
     por_club_y_serie = [
@@ -5270,9 +5309,15 @@ def acta_partido(campeonato_id, partido_id):
                 flash("El acta ya está abierta.", "info")
             else:
                 try:
+                    marcador = f"ACTA_PARTIDO:{partido.id}"
+                    Gol.query.filter_by(campeonato_id=campeonato.id, observaciones=marcador).delete(synchronize_session=False)
+                    RegistroDisciplinario.query.filter_by(campeonato_id=campeonato.id, observaciones=marcador).delete(synchronize_session=False)
                     acta.estado = "Borrador"
+                    partido.goles_local = None
+                    partido.goles_visitante = None
+                    partido.estado = "Programado"
                     db.session.commit()
-                    flash("Acta reabierta para edición.", "success")
+                    flash("Acta reabierta. Se retiraron sus estadísticas derivadas hasta volver a cerrarla.", "success")
                 except Exception as error:
                     db.session.rollback()
                     print("ERROR REABRIENDO ACTA V5.8:", repr(error))
@@ -5347,16 +5392,26 @@ def acta_partido(campeonato_id, partido_id):
 
             db.session.flush()
             nomina_actual = PartidoJugador.query.filter_by(partido_id=partido.id).all()
-            goles_local, goles_visitante = sincronizar_estadisticas_desde_acta(
-                campeonato, partido, nomina_actual
-            )
 
-            # El resultado oficial se toma de los goles registrados en el acta
-            # solamente al momento de cerrarla.
+            # Los borradores NO contaminan estadísticas oficiales.
             if acta.estado == "Cerrada":
+                goles_local, goles_visitante = sincronizar_estadisticas_desde_acta(
+                    campeonato, partido, nomina_actual
+                )
                 partido.goles_local = goles_local
                 partido.goles_visitante = goles_visitante
                 partido.estado = "Finalizado"
+            else:
+                # Si se vuelve a guardar como borrador, eliminar cualquier
+                # estadística derivada previa de esta acta para mantener una
+                # sola fuente de verdad: el acta cerrada.
+                marcador = f"ACTA_PARTIDO:{partido.id}"
+                Gol.query.filter_by(campeonato_id=campeonato.id, observaciones=marcador).delete(synchronize_session=False)
+                RegistroDisciplinario.query.filter_by(campeonato_id=campeonato.id, observaciones=marcador).delete(synchronize_session=False)
+                partido.goles_local = None
+                partido.goles_visitante = None
+                partido.estado = "Programado"
+                goles_local = goles_visitante = 0
 
             db.session.commit()
 
@@ -5884,6 +5939,8 @@ def admin_nuevo_jugador_club(club_nombre):
                           serie=serie, club=club_nombre, estado=estado)
         db.session.add(jugador)
         try:
+            db.session.flush()
+            registrar_movimiento_jugador(jugador, "ALTA", motivo="Inscripción de jugador")
             db.session.commit()
         except Exception as error:
             db.session.rollback()
@@ -5906,6 +5963,7 @@ def admin_editar_jugador_plantel(jugador_id):
     clubes, series = obtener_datos_formulario_jugador()
     club_anterior = jugador.club
     serie_anterior = jugador.serie
+    estado_anterior = jugador.estado
 
     if request.method == "POST":
         rut = normalizar_rut(request.form.get("rut", ""))
@@ -5947,6 +6005,15 @@ def admin_editar_jugador_plantel(jugador_id):
         jugador.club = club
         jugador.estado = estado
         try:
+            anterior = {"club": club_anterior, "serie": serie_anterior, "estado": getattr(jugador, "_estado_anterior", None)}
+            # El estado anterior se obtiene de la instancia antes de modificarla en versiones nuevas;
+            # si no existe, dejamos el campo vacío y registramos igualmente club/serie.
+            registrar_movimiento_jugador(
+                jugador,
+                "ACTUALIZACION",
+                anterior={"club": club_anterior, "serie": serie_anterior, "estado": estado_anterior},
+                motivo="Edición del registro maestro"
+            )
             db.session.commit()
         except Exception as error:
             db.session.rollback()
@@ -5971,7 +6038,9 @@ def admin_editar_jugador_plantel(jugador_id):
 def admin_cambiar_estado_plantel(jugador_id):
     jugador = db.get_or_404(Jugador, jugador_id)
     estado = normalizar_estado(request.form.get("estado", "Vigente"))
+    anterior = {"club": jugador.club, "serie": jugador.serie, "estado": jugador.estado}
     jugador.estado = estado
+    registrar_movimiento_jugador(jugador, "CAMBIO_ESTADO", anterior=anterior, motivo="Cambio de estado administrativo")
     db.session.commit()
     flash(f"Estado de {jugador.nombre_completo} actualizado a {estado}.", "success")
     return redirect(url_for("admin_ficha_club", club_nombre=jugador.club, serie=jugador.serie))
@@ -5985,11 +6054,13 @@ def admin_mover_jugador_plantel(jugador_id):
     if not club or not serie:
         flash("Debes seleccionar club y serie.", "error")
         return redirect(url_for("admin_ficha_club", club_nombre=jugador.club))
-    anterior = f"{jugador.club} · {jugador.serie}"
+    anterior = {"club": jugador.club, "serie": jugador.serie, "estado": jugador.estado}
+    anterior_texto = f"{jugador.club} · {jugador.serie}"
     jugador.club = club
     jugador.serie = serie
+    registrar_movimiento_jugador(jugador, "CAMBIO_CLUB_SERIE", anterior=anterior, motivo="Movimiento administrativo de plantel")
     db.session.commit()
-    flash(f"Jugador movido desde {anterior} a {club} · {serie}.", "success")
+    flash(f"Jugador movido desde {anterior_texto} a {club} · {serie}.", "success")
     return redirect(url_for("admin_ficha_club", club_nombre=club, serie=serie))
 
 
@@ -6039,6 +6110,49 @@ def admin_centro_jugador(jugador_id):
         total_amarillas_acta=total_amarillas_acta,
         total_rojas_acta=total_rojas_acta,
     )
+
+
+# ============================================================
+# ETAPA 10 — CENTRO DE INTEGRACIÓN Y AUDITORÍA
+# ============================================================
+
+@app.route("/admin/integracion")
+def admin_integracion():
+    """Panel técnico para verificar que los módulos usen el mismo registro maestro."""
+    jugadores = Jugador.query.count()
+    clubes = Club.query.count()
+    series = Serie.query.count()
+    campeonatos = Campeonato.query.count()
+    partidos = Partido.query.count()
+    actas = ActaPartido.query.count()
+    participaciones = PartidoJugador.query.count()
+    goles = Gol.query.count()
+    disciplina = RegistroDisciplinario.query.count()
+
+    actas_cerradas = ActaPartido.query.filter_by(estado="Cerrada").count()
+    participaciones_no_vigentes = (
+        PartidoJugador.query.join(Jugador, PartidoJugador.jugador_id == Jugador.id)
+        .filter(Jugador.estado != "Vigente").count()
+    )
+
+    inconsistencias_club = 0
+    for p in PartidoJugador.query.join(Partido).join(Jugador).all():
+        partido = p.partido
+        jugador = p.jugador
+        club_id = partido.local_club_id if p.equipo == "local" else partido.visitante_club_id
+        club = db.session.get(Club, club_id)
+        if club and _normalizar_texto_acta(jugador.club) != _normalizar_texto_acta(club.nombre):
+            inconsistencias_club += 1
+
+    resumen = {
+        "jugadores": jugadores, "clubes": clubes, "series": series,
+        "campeonatos": campeonatos, "partidos": partidos, "actas": actas,
+        "actas_cerradas": actas_cerradas, "participaciones": participaciones,
+        "goles": goles, "disciplina": disciplina,
+        "participaciones_no_vigentes": participaciones_no_vigentes,
+        "inconsistencias_club": inconsistencias_club,
+    }
+    return render_template("admin_integracion.html", resumen=resumen)
 
 
 # ============================================================
