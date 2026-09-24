@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Panel Maestro · Presidente Ríos{% endblock %}
+{% block head %}
+<style>
+.hero{background:linear-gradient(135deg,#0b1830 0%,#153765 65%,#2563eb 100%);color:#fff;border-radius:20px;padding:26px 28px;box-shadow:0 18px 45px rgba(15,23,42,.14);margin-bottom:20px}
+.hero-top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.eyebrow{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#b9c9df;font-weight:800}.hero h1{margin:7px 0 6px;font-size:28px}.hero p{margin:0;color:#d5e1ef;font-size:13px}.hero-actions{display:flex;gap:8px;flex-wrap:wrap}.hero-btn{padding:10px 13px;border-radius:9px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);font-size:12px;font-weight:750;color:#fff}.hero-btn:hover{background:rgba(255,255,255,.18)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}.metric{background:#fff;border:1px solid var(--line);border-radius:15px;padding:18px;box-shadow:0 5px 18px rgba(15,23,42,.04)}.metric-label{font-size:11px;color:var(--muted);font-weight:750;text-transform:uppercase;letter-spacing:.06em}.metric-row{display:flex;justify-content:space-between;align-items:end;gap:10px;margin-top:9px}.metric-value{font-size:28px;font-weight:850;color:#0f1f35}.metric-sub{font-size:11px;color:var(--muted);margin-top:4px}.metric-icon{font-size:23px}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin:24px 0 11px}.section-title h2{font-size:17px;margin:0}.section-title span{font-size:11px;color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(300px,.8fr);gap:16px}.card{background:#fff;border:1px solid var(--line);border-radius:15px;box-shadow:0 5px 18px rgba(15,23,42,.04);overflow:hidden}.card-head{padding:15px 17px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.card-head strong{font-size:13px}.card-head a{font-size:11px;color:var(--blue);font-weight:800}.card-body{padding:0 17px}
+.alert{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid var(--line)}.alert:last-child{border-bottom:0}.alert-icon{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:#f1f5f9;font-size:17px}.alert-main{min-width:0;flex:1}.alert-main strong{font-size:12px;display:block}.alert-main small{font-size:10px;color:var(--muted);display:block;margin-top:3px}.alert-count{font-weight:850;font-size:16px}.alert-link{font-size:11px;color:var(--blue);font-weight:800}
+.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse}.table th{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#7b8799;text-align:left;padding:11px 8px;border-bottom:1px solid var(--line);white-space:nowrap}.table td{padding:11px 8px;border-bottom:1px solid #eef2f7;font-size:12px;vertical-align:middle}.table tr:last-child td{border-bottom:0}.muted{color:var(--muted)}.pill{display:inline-flex;padding:4px 7px;border-radius:999px;background:#eef3f9;color:#42536b;font-size:10px;font-weight:800}.pill.active{background:#e8f7ee;color:#15803d}.pill.closed{background:#e8f7ee;color:#15803d}.pill.pending{background:#fff4df;color:#b45309}.btn-mini{display:inline-flex;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font-size:10px;font-weight:800;color:#334155;background:#fff}.btn-mini:hover{border-color:#c8d4e3;background:#f8fafc}
+.champ{padding:14px 0;border-bottom:1px solid var(--line)}.champ:last-child{border-bottom:0}.champ-top{display:flex;justify-content:space-between;gap:12px}.champ-name{font-size:13px;font-weight:800}.champ-meta{font-size:10px;color:var(--muted);margin-top:3px}.champ-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px}.mini-stat{background:#f7f9fc;border-radius:8px;padding:7px}.mini-stat b{display:block;font-size:13px}.mini-stat span{font-size:9px;color:var(--muted)}
+.empty{padding:24px 10px;text-align:center;color:var(--muted);font-size:12px}.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.flow span{padding:6px 8px;border-radius:8px;background:#f1f5f9;font-size:10px;font-weight:800;color:#42536b}.flow i{font-style:normal;color:#94a3b8}
+@media(max-width:1150px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.layout{grid-template-columns:1fr}}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.hero-top{flex-direction:column}.hero h1{font-size:23px}.champ-stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="hero">
+  <div class="hero-top">
+    <div>
+      <div class="eyebrow">V6.6 · Centro de gestión</div>
+      <h1>Panel Maestro</h1>
+      <p>Visión ejecutiva de jugadores, clubes, campeonatos, partidos, actas y estadísticas.</p>
+    </div>
+    <div class="hero-actions">
+      <a class="hero-btn" href="{{ url_for('campeonatos') }}">🏆 Campeonatos</a>
+      <a class="hero-btn" href="{{ url_for('admin_partidos') }}">⚽ Partidos</a>
+      <a class="hero-btn" href="{{ url_for('admin_actas') }}">📋 Actas</a>
+      <a class="hero-btn" href="{{ url_for('admin_registro') }}">👥 Jugadores</a>
+    </div>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="metric"><div class="metric-label">Jugadores</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_jugadores }}</div><div class="metric-sub">{{ resumen.jugadores_vigentes }} vigentes</div></div><div class="metric-icon">👥</div></div></div>
+  <div class="metric"><div class="metric-label">Clubes</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_clubes }}</div><div class="metric-sub">{{ resumen.clubes_activos }} activos</div></div><div class="metric-icon">🏟️</div></div></div>
+  <div class="metric"><div class="metric-label">Campeonatos</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_campeonatos }}</div><div class="metric-sub">{{ resumen.campeonatos_activos }} activos</div></div><div class="metric-icon">🏆</div></div></div>
+  <div class="metric"><div class="metric-label">Partidos</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_partidos }}</div><div class="metric-sub">{{ resumen.partidos_programados }} programados · {{ resumen.partidos_finalizados }} finalizados</div></div><div class="metric-icon">⚽</div></div></div>
+  <div class="metric"><div class="metric-label">Actas</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_actas }}</div><div class="metric-sub">{{ resumen.actas_cerradas }} cerradas · {{ resumen.actas_pendientes }} pendientes</div></div><div class="metric-icon">📋</div></div></div>
+  <div class="metric"><div class="metric-label">Goles</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_goles }}</div><div class="metric-sub">registrados en el sistema</div></div><div class="metric-icon">🥅</div></div></div>
+  <div class="metric"><div class="metric-label">Amarillas</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_amarillas }}</div><div class="metric-sub">registros disciplinarios</div></div><div class="metric-icon">🟨</div></div></div>
+  <div class="metric"><div class="metric-label">Rojas</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_rojas }}</div><div class="metric-sub">registros disciplinarios</div></div><div class="metric-icon">🟥</div></div></div>
+</div>
+
+<div class="section-title"><h2>Control de gestión</h2><span>{{ alertas|length }} pendientes detectados</span></div>
+<div class="card">
+  <div class="card-body">
+    {% if alertas %}
+      {% for alerta in alertas %}
+      <div class="alert">
+        <div class="alert-icon">{{ alerta.icono }}</div>
+        <div class="alert-main"><strong>{{ alerta.titulo }}</strong><small>{{ alerta.texto }}</small></div>
+        <div class="alert-count">{{ alerta.cantidad }}</div>
+        <a class="alert-link" href="{{ alerta.url }}">Revisar →</a>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">✅ No se detectaron pendientes en los controles principales.</div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="section-title"><h2>Operación deportiva</h2><span>Conexión entre competencias y registro maestro</span></div>
+<div class="layout">
+  <div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head"><strong>Próximos partidos</strong><a href="{{ url_for('admin_partidos') }}">Ver todos →</a></div>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Fecha</th><th>Campeonato</th><th>Partido</th><th>Cancha</th><th></th></tr></thead><tbody>
+      {% for partido in proximos_partidos %}
+      <tr><td>{{ partido.fecha.strftime('%d/%m/%Y') if partido.fecha else 'Sin fecha' }}<br><span class="muted">{{ partido.hora or '—' }}</span></td><td>{{ partido.campeonato.nombre if partido.campeonato else '—' }}<br><span class="muted">{{ partido.campeonato.serie if partido.campeonato else '' }}</span></td><td><strong>{{ partido.local_club.nombre if partido.local_club else 'Local' }}</strong><br>vs <strong>{{ partido.visitante_club.nombre if partido.visitante_club else 'Visitante' }}</strong></td><td>{{ partido.cancha or '—' }}</td><td><a class="btn-mini" href="{{ url_for('acta_partido', campeonato_id=partido.campeonato_id, partido_id=partido.id) }}">Acta</a></td></tr>
+      {% else %}<tr><td colspan="5"><div class="empty">No hay próximos partidos programados.</div></td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><strong>Últimos resultados</strong><a href="{{ url_for('admin_partidos') }}">Centro de partidos →</a></div>
+      <div class="table-wrap"><table class="table"><thead><tr><th>Fecha</th><th>Campeonato</th><th>Resultado</th><th>Estado</th></tr></thead><tbody>
+      {% for partido in ultimos_resultados %}
+      <tr><td>{{ partido.fecha.strftime('%d/%m/%Y') if partido.fecha else '—' }}</td><td>{{ partido.campeonato.nombre if partido.campeonato else '—' }}</td><td><strong>{{ partido.local_club.nombre if partido.local_club else 'Local' }}</strong> {{ partido.goles_local if partido.goles_local is not none else '—' }} - {{ partido.goles_visitante if partido.goles_visitante is not none else '—' }} <strong>{{ partido.visitante_club.nombre if partido.visitante_club else 'Visitante' }}</strong></td><td><span class="pill active">Finalizado</span></td></tr>
+      {% else %}<tr><td colspan="4"><div class="empty">Todavía no hay resultados finalizados.</div></td></tr>{% endfor %}
+      </tbody></table></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head"><strong>Campeonatos</strong><a href="{{ url_for('campeonatos') }}">Gestionar →</a></div>
+      <div class="card-body">
+      {% for item in campeonatos %}
+        <div class="champ"><div class="champ-top"><div><div class="champ-name">{{ item.campeonato.nombre }}</div><div class="champ-meta">{{ item.campeonato.temporada }} · {{ item.campeonato.serie }}</div></div><span class="pill {% if item.campeonato.estado == 'Activo' %}active{% endif %}">{{ item.campeonato.estado }}</span></div><div class="champ-stats"><div class="mini-stat"><b>{{ item.clubes }}</b><span>Clubes</span></div><div class="mini-stat"><b>{{ item.partidos }}</b><span>Partidos</span></div><div class="mini-stat"><b>{{ item.finalizados }}</b><span>Finalizados</span></div><div class="mini-stat"><b>{{ item.actas_cerradas }}/{{ item.actas }}</b><span>Actas</span></div></div><div style="margin-top:9px"><a class="btn-mini" href="{{ url_for('panel_campeonato', campeonato_id=item.campeonato.id) }}">Abrir campeonato →</a></div></div>
+      {% else %}<div class="empty">No hay campeonatos registrados.</div>{% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><strong>Últimos jugadores</strong><a href="{{ url_for('admin_registro') }}">Registro →</a></div>
+      <div class="card-body">
+      {% for jugador in ultimos_jugadores %}
+        <div style="display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)"><div><strong style="font-size:12px">{{ jugador.nombre_completo }}</strong><div class="muted" style="font-size:10px;margin-top:3px">{{ jugador.club or 'Sin club' }} · {{ jugador.serie or 'Sin serie' }}</div></div><span class="pill {% if jugador.estado == 'Vigente' %}active{% endif %}">{{ jugador.estado or '—' }}</span></div>
+      {% else %}<div class="empty">No hay jugadores registrados.</div>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section-title"><h2>Flujo integrado</h2><span>Una sola fuente de información</span></div>
+<div class="card"><div class="card-body" style="padding:18px"><div class="flow"><span>🏆 Campeonato</span><i>→</i><span>🏟️ Club</span><i>→</i><span>🏷️ Serie</span><i>→</i><span>👥 Plantel</span><i>→</i><span>👤 Jugador</span><i>→</i><span>⚽ Partido</span><i>→</i><span>📋 Acta</span><i>→</i><span>🥅 Estadísticas</span></div></div></div>
+{% endblock %}
