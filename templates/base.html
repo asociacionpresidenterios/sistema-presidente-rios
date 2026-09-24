@@ -63,10 +63,8 @@ a{text-decoration:none;color:inherit}
     <a class="nav-item {% if request.endpoint=='publico' %}active{% endif %}" href="{{ url_for('publico') }}"><span class="nav-icon">🌐</span>Portal público</a>
 
     <div class="section-label">Registro</div>
-    <a class="nav-item {% if request.endpoint in ['index','ficha_jugador','historial_jugador','editar_jugador'] %}active{% endif %}" href="{{ url_for('index') }}"><span class="nav-icon">👥</span>Jugadores</a>
-    <a class="nav-item {% if request.endpoint in ['admin_planteles','admin_ficha_club','admin_centro_jugador','admin_nuevo_jugador_club','admin_editar_jugador_plantel','admin_cambiar_estado_plantel','admin_mover_jugador_plantel'] %}active{% endif %}" href="{{ url_for('admin_planteles') }}"><span class="nav-icon">🏟️</span>Clubes y planteles</a>
-    <a class="nav-item {% if request.endpoint in ['nuevo_jugador','editar_jugador'] %}active{% endif %}" href="{{ url_for('nuevo_jugador') }}"><span class="nav-icon">＋</span>Nuevo jugador</a>
-    <a class="nav-item {% if request.endpoint=='importar_jugadores' %}active{% endif %}" href="{{ url_for('importar_jugadores') }}"><span class="nav-icon">⇧</span>Importar jugadores</a>
+    <a class="nav-item {% if request.endpoint in ['admin_registro','index','nuevo_jugador','editar_jugador','importar_jugadores','ficha_jugador','historial_jugador'] %}active{% endif %}" href="{{ url_for('admin_registro') }}"><span class="nav-icon">👥</span>Registro de jugadores</a>
+    <a class="nav-item {% if request.endpoint in ['admin_clubes','admin_planteles','admin_ficha_club','admin_centro_jugador','admin_nuevo_jugador_club','admin_editar_jugador_plantel','admin_cambiar_estado_plantel','admin_mover_jugador_plantel'] %}active{% endif %}" href="{{ url_for('admin_clubes') }}"><span class="nav-icon">🏟️</span>Clubes y planteles</a>
 
     <div class="section-label">Competencias</div>
     <a class="nav-item {% if request.endpoint in ['campeonatos','nuevo_campeonato','detalle_campeonato','panel_campeonato'] %}active{% endif %}" href="{{ url_for('campeonatos') }}"><span class="nav-icon">🏆</span>Campeonatos</a>
@@ -91,7 +89,7 @@ a{text-decoration:none;color:inherit}
     </div>
     <div class="top-actions">
       <a class="top-btn" href="{{ url_for('publico') }}">🌐 Ver portal</a>
-      <a class="top-btn primary" href="{{ url_for('nuevo_jugador') }}">＋ Nuevo jugador</a>
+      <a class="top-btn primary" href="{{ url_for('admin_registro') }}">👥 Registro</a>
     </div>
   </header>
   <div class="page">
