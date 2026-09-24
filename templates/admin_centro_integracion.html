@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Centro de Integración | Presidente Ríos{% endblock %}
+{% block head %}
+<style>
+.v65-hero{background:linear-gradient(135deg,#0b1830,#173a69);color:#fff;border-radius:18px;padding:24px;margin-bottom:20px;box-shadow:0 14px 32px rgba(11,24,48,.16)}
+.v65-hero h1{margin:4px 0 6px;font-size:30px}.v65-hero p{margin:0;color:#c8d7ea;max-width:900px;font-size:13px;line-height:1.6}
+.v65-kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}.v65-card{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:16px}.v65-kpi-label{font-size:11px;color:#64748b}.v65-kpi-value{font-size:26px;font-weight:850;margin-top:4px}.v65-grid{display:grid;grid-template-columns:1.35fr .85fr;gap:18px;margin-bottom:18px}.v65-flow{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:stretch}.v65-flow a{background:#f8fafc;border:1px solid #e5eaf1;border-radius:12px;padding:13px 8px;text-align:center;font-size:11px;font-weight:800;color:#334155}.v65-flow a:hover{border-color:#2563eb;background:#eff6ff;color:#1d4ed8}.v65-flow b{display:block;font-size:20px;margin-bottom:6px}.v65-section-title{font-size:14px;font-weight:850;margin:0 0 12px}.v65-table{width:100%;border-collapse:collapse}.v65-table th{background:#f8fafc;color:#64748b;font-size:11px;text-transform:uppercase;letter-spacing:.04em;text-align:left}.v65-table th,.v65-table td{padding:11px 12px;border-bottom:1px solid #eef2f6;font-size:12px}.v65-table tr:last-child td{border-bottom:0}.v65-badge{display:inline-block;padding:5px 8px;border-radius:999px;font-size:10px;font-weight:800;background:#eef2f7;color:#475569}.v65-badge.ok{background:#dcfce7;color:#166534}.v65-badge.warn{background:#fef3c7;color:#92400e}.v65-badge.danger{background:#fee2e2;color:#991b1b}.v65-alert{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 12px;border-bottom:1px solid #eef2f6}.v65-alert:last-child{border-bottom:0}.v65-alert-name{font-size:12px;font-weight:750}.v65-alert small{display:block;color:#64748b;margin-top:3px}.v65-count{font-size:18px;font-weight:850}.v65-links{display:flex;gap:7px;flex-wrap:wrap}.v65-btn{display:inline-block;padding:7px 9px;border:1px solid #dbe3ec;border-radius:8px;font-size:11px;font-weight:750;background:#fff}.v65-btn.primary{background:#2563eb;border-color:#2563eb;color:#fff}.v65-empty{padding:24px;text-align:center;color:#64748b;font-size:12px}
+@media(max-width:1200px){.v65-kpis{grid-template-columns:repeat(3,1fr)}.v65-flow{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:800px){.v65-grid{grid-template-columns:1fr}.v65-kpis{grid-template-columns:repeat(2,1fr)}.v65-flow{grid-template-columns:repeat(2,1fr)}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="v65-hero">
+  <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#8fb4e5">V6.5 · Centro transversal</div>
+  <h1>Centro de Integración Total</h1>
+  <p>Una vista única para navegar y verificar la relación entre el registro maestro, clubes, campeonatos, partidos, actas y estadísticas. Esta pantalla es de consulta: no modifica registros.</p>
+</div>
+
+<div class="v65-kpis">
+  {% for label,value in [
+    ('Jugadores',resumen.jugadores),
+    ('Clubes',resumen.clubes),
+    ('Campeonatos',resumen.campeonatos),
+    ('Partidos',resumen.partidos),
+    ('Actas',resumen.actas),
+    ('Goles registrados',resumen.goles)
+  ] %}
+  <div class="v65-card"><div class="v65-kpi-label">{{label}}</div><div class="v65-kpi-value">{{value}}</div></div>
+  {% endfor %}
+</div>
+
+<div class="v65-card" style="margin-bottom:18px">
+  <h3 class="v65-section-title">Flujo integral del sistema</h3>
+  <div class="v65-flow">
+    <a href="{{url_for('admin_registro')}}"><b>👥</b>Registro</a>
+    <a href="{{url_for('admin_clubes')}}"><b>🏟️</b>Clubes</a>
+    <a href="{{url_for('campeonatos')}}"><b>🏆</b>Campeonatos</a>
+    <a href="{{url_for('admin_partidos')}}"><b>⚽</b>Partidos</a>
+    <a href="{{url_for('admin_actas')}}"><b>📋</b>Actas</a>
+    <a href="{{url_for('admin_integracion')}}"><b>🔗</b>Auditoría</a>
+    <a href="{{url_for('publico')}}"><b>🌐</b>Portal público</a>
+  </div>
+  <div style="margin-top:12px;padding:12px;background:#f8fafc;border-radius:10px;color:#475569;font-size:12px;text-align:center;font-weight:700">
+    Campeonato → Club → Serie → Plantel → Jugador → Partido → Acta → Goles / Tarjetas → Estadísticas
+  </div>
+</div>
+
+<div class="v65-grid">
+  <div class="v65-card">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:4px">
+      <h3 class="v65-section-title">Campeonatos conectados</h3>
+      <a class="v65-btn primary" href="{{url_for('campeonatos')}}">Ver todos</a>
+    </div>
+    <table class="v65-table">
+      <thead><tr><th>Campeonato</th><th>Clubes</th><th>Partidos</th><th>Actas</th><th>Acceso</th></tr></thead>
+      <tbody>
+      {% for item in campeonatos %}
+        <tr>
+          <td><strong>{{item.campeonato.nombre}}</strong><br><small style="color:#64748b">{{item.campeonato.temporada}} · {{item.campeonato.serie}} · {{item.campeonato.estado}}</small></td>
+          <td>{{item.clubes}}</td>
+          <td>{{item.finalizados}} / {{item.partidos}} finalizados</td>
+          <td>{{item.actas_cerradas}} / {{item.actas}} cerradas</td>
+          <td><div class="v65-links"><a class="v65-btn" href="{{url_for('panel_campeonato',campeonato_id=item.campeonato.id)}}">Panel</a><a class="v65-btn" href="{{url_for('fixture_campeonato',campeonato_id=item.campeonato.id)}}">Fixture</a></div></td>
+        </tr>
+      {% else %}<tr><td colspan="5" class="v65-empty">No hay campeonatos registrados.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="v65-card">
+    <h3 class="v65-section-title">Control de integridad</h3>
+    {% for nombre,cantidad,detalle in alertas %}
+      <div class="v65-alert">
+        <div><div class="v65-alert-name">{{nombre}}</div><small>{{detalle}}</small></div>
+        <div class="v65-count"><span class="v65-badge {% if cantidad==0 %}ok{% elif cantidad<5 %}warn{% else %}danger{% endif %}">{{cantidad}}</span></div>
+      </div>
+    {% endfor %}
+    <div style="margin-top:12px"><a class="v65-btn primary" href="{{url_for('admin_integracion')}}">Abrir auditoría completa</a></div>
+  </div>
+</div>
+
+<div class="v65-grid">
+  <div class="v65-card">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:4px">
+      <h3 class="v65-section-title">Últimos partidos</h3>
+      <a class="v65-btn" href="{{url_for('admin_partidos')}}">Centro de partidos</a>
+    </div>
+    <table class="v65-table">
+      <thead><tr><th>Partido</th><th>Campeonato</th><th>Estado</th><th>Acta</th><th></th></tr></thead>
+      <tbody>
+      {% for p in partidos %}
+        <tr>
+          <td><strong>{{p.local_club.nombre}}</strong> <span style="color:#94a3b8">vs</span> <strong>{{p.visitante_club.nombre}}</strong><br><small style="color:#64748b">Jornada {{p.jornada}} · {{p.fecha.strftime('%d/%m/%Y') if p.fecha else 'Sin fecha'}} {{p.hora or ''}}</small></td>
+          <td>{{p.campeonato.nombre}}<br><small style="color:#64748b">{{p.campeonato.serie}}</small></td>
+          <td><span class="v65-badge {% if p.estado=='Finalizado' %}ok{% else %}warn{% endif %}">{{p.estado}}</span></td>
+          <td>{% if p.acta %}<span class="v65-badge {% if p.acta.estado=='Cerrada' %}ok{% else %}warn{% endif %}">{{p.acta.estado}}</span>{% else %}<span class="v65-badge danger">Sin acta</span>{% endif %}</td>
+          <td><a class="v65-btn" href="{{url_for('acta_partido',campeonato_id=p.campeonato_id,partido_id=p.id)}}">Abrir</a></td>
+        </tr>
+      {% else %}<tr><td colspan="5" class="v65-empty">No hay partidos registrados.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="v65-card">
+    <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:4px">
+      <h3 class="v65-section-title">Actas pendientes</h3>
+      <a class="v65-btn" href="{{url_for('admin_actas')}}">Ver actas</a>
+    </div>
+    {% for acta in actas_abiertas %}
+      <div class="v65-alert">
+        <div><div class="v65-alert-name">Acta {{acta.numero_acta or ('#' ~ acta.id)}}</div><small>{{acta.partido.local_club.nombre}} vs {{acta.partido.visitante_club.nombre}}</small></div>
+        <a class="v65-btn" href="{{url_for('acta_partido',campeonato_id=acta.partido.campeonato_id,partido_id=acta.partido.id)}}">Abrir</a>
+      </div>
+    {% else %}<div class="v65-empty">No hay actas abiertas.</div>{% endfor %}
+  </div>
+</div>
+
+<div class="v65-card">
+  <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+    <div><h3 class="v65-section-title" style="margin-bottom:4px">Resumen de conexión</h3><div style="font-size:12px;color:#64748b">Los indicadores se calculan directamente sobre los registros actuales.</div></div>
+    <div class="v65-links">
+      <span class="v65-badge ok">{{resumen.jugadores_vigentes}} jugadores vigentes</span>
+      <span class="v65-badge ok">{{resumen.clubes_activos}} clubes activos</span>
+      <span class="v65-badge">{{resumen.partidos_finalizados}} partidos finalizados</span>
+      <span class="v65-badge">{{resumen.actas_cerradas}} actas cerradas</span>
+      <span class="v65-badge">{{resumen.participaciones}} participaciones</span>
+      <span class="v65-badge">{{resumen.disciplina}} registros disciplinarios</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
