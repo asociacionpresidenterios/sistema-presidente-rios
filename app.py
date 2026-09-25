@@ -6295,6 +6295,21 @@ def admin_centro_jugador(jugador_id):
     rojas = obtener_rojas(jugador.id)
     suspensiones = obtener_suspensiones(jugador.id)
 
+    # Registros detallados para mostrar el historial sin confundirlos
+    # con los contadores numéricos calculados por las funciones anteriores.
+    goles_registros = (
+        Gol.query
+        .filter_by(jugador_id=jugador.id)
+        .order_by(Gol.fecha.desc(), Gol.id.desc())
+        .all()
+    )
+    suspensiones_registros = (
+        RegistroDisciplinario.query
+        .filter_by(jugador_id=jugador.id, tipo="Suspension")
+        .order_by(RegistroDisciplinario.fecha.desc(), RegistroDisciplinario.id.desc())
+        .all()
+    )
+
     participaciones = (
         PartidoJugador.query
         .join(Partido, PartidoJugador.partido_id == Partido.id)
@@ -6318,6 +6333,8 @@ def admin_centro_jugador(jugador_id):
         amarillas=amarillas,
         rojas=rojas,
         suspensiones=suspensiones,
+        goles_registros=goles_registros,
+        suspensiones_registros=suspensiones_registros,
         participaciones=participaciones,
         total_partidos=total_partidos,
         total_titular=total_titular,
