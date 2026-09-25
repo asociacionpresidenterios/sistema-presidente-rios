@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}Estadísticas avanzadas{% endblock %}
+{% block content %}
+<style>
+.hero{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin-bottom:20px}.hero h1{margin:0;font-size:28px}.hero p{margin:6px 0 0;color:#64748b;font-size:13px}.filters{display:flex;gap:8px;flex-wrap:wrap}.select{border:1px solid #dbe3ee;border-radius:10px;padding:10px 12px;background:#fff;font-weight:700;min-width:180px}.grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-bottom:18px}.card{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:16px;box-shadow:0 5px 18px rgba(15,23,42,.04)}.kpi-label{font-size:10px;color:#64748b;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.kpi-value{font-size:27px;font-weight:850;margin-top:5px}.layout{display:grid;grid-template-columns:1.15fr 1fr;gap:16px}.section-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.section-title h2{margin:0;font-size:16px}.muted{color:#64748b;font-size:11px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:9px 7px;border-bottom:1px solid #eef2f7;white-space:nowrap}th{color:#64748b;font-size:9px;text-transform:uppercase;letter-spacing:.06em}.badge{display:inline-block;padding:4px 7px;border-radius:999px;background:#eef4ff;color:#1d4ed8;font-weight:800;font-size:10px}.btn{display:inline-block;border:1px solid #dbe3ee;background:#fff;padding:7px 9px;border-radius:8px;font-size:10px;font-weight:800}.btn.primary{background:#2563eb;color:#fff;border-color:#2563eb}.bar{height:8px;background:#eef2f7;border-radius:999px;overflow:hidden;min-width:70px}.bar>i{display:block;height:100%;background:#2563eb;border-radius:999px}.empty{padding:25px;text-align:center;color:#64748b}.note{font-size:11px;color:#64748b;line-height:1.5}.rank{font-weight:900;width:28px}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.mini{border:1px solid #eef2f7;border-radius:10px;padding:12px}.mini strong{font-size:20px;display:block}.mini span{font-size:10px;color:#64748b}@media(max-width:1100px){.grid{grid-template-columns:repeat(3,1fr)}.layout{grid-template-columns:1fr}}@media(max-width:650px){.grid{grid-template-columns:repeat(2,1fr)}.hero{display:block}.filters{margin-top:12px}.select{width:100%}.summary{grid-template-columns:1fr}}
+</style>
+
+<div class="hero">
+  <div>
+    <h1>📊 Estadísticas avanzadas</h1>
+    <p>Análisis deportivo construido desde participaciones de actas cerradas. Sin registros paralelos.</p>
+  </div>
+  <form method="get" class="filters">
+    <select class="select" name="campeonato_id" onchange="this.form.submit()">
+      <option value="">Todos los campeonatos</option>
+      {% for c in campeonatos %}<option value="{{ c.id }}" {% if campeonato_id == c.id %}selected{% endif %}>{{ c.nombre }}{% if c.serie %} · {{ c.serie }}{% endif %}</option>{% endfor %}
+    </select>
+    <select class="select" name="club_id" onchange="this.form.submit()">
+      <option value="">Todos los clubes</option>
+      {% for c in clubes %}<option value="{{ c.id }}" {% if club_id == c.id %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}
+    </select>
+  </form>
+</div>
+
+<div class="grid">
+  <div class="card"><div class="kpi-label">Partidos con acta</div><div class="kpi-value">{{ resumen.partidos }}</div></div>
+  <div class="card"><div class="kpi-label">Participaciones</div><div class="kpi-value">{{ resumen.participaciones }}</div></div>
+  <div class="card"><div class="kpi-label">Jugadores utilizados</div><div class="kpi-value">{{ resumen.jugadores }}</div></div>
+  <div class="card"><div class="kpi-label">Goles</div><div class="kpi-value">{{ resumen.goles }}</div></div>
+  <div class="card"><div class="kpi-label">Amarillas</div><div class="kpi-value">{{ resumen.amarillas }}</div></div>
+  <div class="card"><div class="kpi-label">Rojas</div><div class="kpi-value">{{ resumen.rojas }}</div></div>
+</div>
+
+<div class="layout">
+  <div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title"><h2>👤 Rendimiento de jugadores</h2><span class="muted">Máximo 50 · actas cerradas</span></div>
+      {% if jugadores %}<div class="table-wrap"><table><thead><tr><th>#</th><th>Jugador</th><th>Club</th><th>PJ</th><th>Tit.</th><th>G</th><th>A</th><th>R</th><th>G/PJ</th><th></th></tr></thead><tbody>
+      {% for x in jugadores %}<tr><td class="rank">{{ loop.index }}</td><td><strong>{{ x.jugador.nombre_completo }}</strong><br><span class="muted">{{ x.jugador.serie }}</span></td><td>{{ x.jugador.club }}</td><td>{{ x.partidos }}</td><td>{{ x.titularidades }}</td><td><strong>{{ x.goles }}</strong></td><td>{{ x.amarillas }}</td><td>{{ x.rojas }}</td><td>{{ '%.2f'|format(x.promedio_goles) }}</td><td><a class="btn" href="{{ url_for('admin_centro_jugador', jugador_id=x.jugador.id) }}">Ver</a></td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<div class="empty">No existen participaciones de actas cerradas para los filtros seleccionados.</div>{% endif %}
+    </div>
+
+    <div class="card">
+      <div class="section-title"><h2>🏟️ Rendimiento por club</h2><span class="muted">Jugadores y producción ofensiva</span></div>
+      {% if clubes_stats %}<div class="table-wrap"><table><thead><tr><th>Club</th><th>Jug.</th><th>PJ jugador</th><th>Goles</th><th>G/PJ</th><th>A</th><th>R</th></tr></thead><tbody>
+      {% for x in clubes_stats %}<tr><td><strong>{{ x.club }}</strong></td><td>{{ x.jugadores }}</td><td>{{ x.participaciones }}</td><td><strong>{{ x.goles }}</strong></td><td>{{ '%.2f'|format(x.promedio_goles) }}</td><td>{{ x.amarillas }}</td><td>{{ x.rojas }}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<div class="empty">No hay datos por club.</div>{% endif %}
+    </div>
+  </div>
+
+  <div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title"><h2>🎯 Indicadores</h2><span class="muted">Lectura rápida</span></div>
+      <div class="summary"><div class="mini"><strong>{{ '%.2f'|format(resumen.promedio_goles) }}</strong><span>Goles por participación</span></div><div class="mini"><strong>{{ '%.2f'|format(resumen.promedio_amarillas) }}</strong><span>Amarillas por participación</span></div><div class="mini"><strong>{{ '%.2f'|format(resumen.promedio_rojas) }}</strong><span>Rojas por participación</span></div></div>
+      <p class="note" style="margin-top:12px">Los indicadores se calculan únicamente con registros de jugadores pertenecientes a actas en estado <strong>Cerrada</strong>.</p>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title"><h2>🥅 Producción goleadora</h2><span class="muted">Top 10</span></div>
+      {% if goleadores %}{% for x in goleadores %}<div style="display:grid;grid-template-columns:25px 1fr 35px;gap:8px;align-items:center;margin-bottom:9px"><strong>{{ loop.index }}</strong><div><strong>{{ x.jugador.nombre_completo }}</strong><div class="bar"><i style="width:{{ x.porcentaje }}%"></i></div></div><strong>{{ x.goles }}</strong></div>{% endfor %}{% else %}<div class="empty">Sin goles registrados.</div>{% endif %}
+    </div>
+
+    <div class="card">
+      <div class="section-title"><h2>🟨 Disciplina</h2><span class="muted">Top 10</span></div>
+      {% if disciplina %}<div class="table-wrap"><table><thead><tr><th>Jugador</th><th>Club</th><th>A</th><th>R</th></tr></thead><tbody>{% for x in disciplina %}<tr><td><strong>{{ x.jugador.nombre_completo }}</strong></td><td>{{ x.jugador.club }}</td><td>{{ x.amarillas }}</td><td>{{ x.rojas }}</td></tr>{% endfor %}</tbody></table></div>{% else %}<div class="empty">Sin tarjetas registradas.</div>{% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
