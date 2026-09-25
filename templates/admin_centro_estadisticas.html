@@ -77,7 +77,7 @@
       {% for f in goleadores %}
       <tr style="border-top:1px solid #eef2f6">
         <td style="padding:12px;font-weight:800">{{ loop.index }}</td>
-        <td style="padding:12px;font-weight:750">{{ f.jugador.nombre_completo }}</td>
+        <td style="padding:12px;font-weight:750"><a href="{{ url_for('admin_centro_jugador', jugador_id=f.jugador.id) }}" style="text-decoration:none">{{ f.jugador.nombre_completo }}</a></td>
         <td style="padding:12px">{{ f.jugador.club or '—' }}</td>
         <td style="padding:12px">{{ f.campeonato.nombre }}<br><small style="color:#64748b">{{ f.campeonato.serie }}</small></td>
         <td style="padding:12px;text-align:center">{{ f.partidos_jugados }}</td>
@@ -106,7 +106,7 @@
       {% for f in disciplina %}
       {% if f.amarillas > 0 or f.rojas > 0 %}
       <tr style="border-top:1px solid #eef2f6">
-        <td style="padding:12px;font-weight:700">{{ f.jugador.nombre_completo }}</td>
+        <td style="padding:12px;font-weight:700"><a href="{{ url_for('admin_centro_jugador', jugador_id=f.jugador.id) }}" style="text-decoration:none">{{ f.jugador.nombre_completo }}</a></td>
         <td style="padding:12px">{{ f.jugador.club or '—' }}</td>
         <td style="padding:12px;text-align:center;font-weight:800">{{ f.amarillas }}</td>
         <td style="padding:12px;text-align:center;font-weight:800">{{ f.rojas }}</td>
