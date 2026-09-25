@@ -6237,6 +6237,86 @@ def admin_centro_jugador(jugador_id):
 
 
 # ============================================================
+# V6.6 — CENTRO OPERATIVO
+# ============================================================
+
+@app.route("/admin/centro-operativo")
+@admin_required
+def admin_centro_operativo():
+    """Panel operativo que conecta campeonatos, partidos, actas y registro maestro."""
+    total_jugadores = Jugador.query.count()
+    total_clubes = Club.query.count()
+    total_campeonatos = Campeonato.query.count()
+    total_partidos = Partido.query.count()
+
+    partidos_pendientes = (
+        Partido.query
+        .filter(Partido.estado != "Finalizado")
+        .order_by(Partido.fecha.asc().nullslast(), Partido.id.asc())
+        .limit(8).all()
+    )
+
+    actas_pendientes = (
+        ActaPartido.query
+        .join(Partido)
+        .filter(ActaPartido.estado != "Cerrada")
+        .order_by(Partido.fecha.desc().nullslast(), ActaPartido.id.desc())
+        .limit(8).all()
+    )
+
+    partidos_sin_acta = (
+        Partido.query
+        .outerjoin(ActaPartido)
+        .filter(ActaPartido.id.is_(None))
+        .order_by(Partido.fecha.desc().nullslast(), Partido.id.desc())
+        .limit(8).all()
+    )
+
+    actas_cerradas_recientes = (
+        ActaPartido.query
+        .join(Partido)
+        .filter(ActaPartido.estado == "Cerrada")
+        .order_by(Partido.fecha.desc().nullslast(), ActaPartido.id.desc())
+        .limit(8).all()
+    )
+
+    participaciones_no_vigentes = (
+        PartidoJugador.query.join(Jugador, PartidoJugador.jugador_id == Jugador.id)
+        .filter(Jugador.estado != "Vigente").count()
+    )
+
+    inconsistencias_club = 0
+    for p in PartidoJugador.query.join(Partido).join(Jugador).all():
+        partido = p.partido
+        jugador = p.jugador
+        club_id = partido.local_club_id if p.equipo == "local" else partido.visitante_club_id
+        club = db.session.get(Club, club_id)
+        if club and _normalizar_texto_acta(jugador.club) != _normalizar_texto_acta(club.nombre):
+            inconsistencias_club += 1
+
+    resumen = {
+        "jugadores": total_jugadores,
+        "clubes": total_clubes,
+        "campeonatos": total_campeonatos,
+        "partidos": total_partidos,
+        "partidos_pendientes": Partido.query.filter(Partido.estado != "Finalizado").count(),
+        "actas_pendientes": ActaPartido.query.filter(ActaPartido.estado != "Cerrada").count(),
+        "partidos_sin_acta": Partido.query.outerjoin(ActaPartido).filter(ActaPartido.id.is_(None)).count(),
+        "participaciones_no_vigentes": participaciones_no_vigentes,
+        "inconsistencias_club": inconsistencias_club,
+    }
+
+    return render_template(
+        "admin_centro_operativo.html",
+        resumen=resumen,
+        partidos_pendientes=partidos_pendientes,
+        actas_pendientes=actas_pendientes,
+        partidos_sin_acta=partidos_sin_acta,
+        actas_cerradas_recientes=actas_cerradas_recientes,
+    )
+
+
+# ============================================================
 # ETAPA 10 — CENTRO DE INTEGRACIÓN Y AUDITORÍA
 # ============================================================
 
