@@ -5611,6 +5611,64 @@ def admin_partidos():
                            campeonato_id=campeonato_id, estado=estado, q=q, resumen=resumen)
 
 
+@app.route("/admin/actas/centro")
+@admin_required
+def admin_centro_actas():
+    """Centro maestro de actas. Consulta unificada sobre las actas existentes."""
+    campeonatos = Campeonato.query.order_by(
+        Campeonato.temporada.desc(), Campeonato.id.desc()
+    ).all()
+
+    estado = (request.args.get("estado") or "").strip()
+    campeonato_id = request.args.get("campeonato_id", type=int)
+    q = (request.args.get("q") or "").strip()
+
+    query = (
+        ActaPartido.query
+        .join(Partido)
+        .join(Campeonato)
+        .order_by(
+            Partido.fecha.desc().nullslast(),
+            ActaPartido.id.desc()
+        )
+    )
+
+    if estado:
+        query = query.filter(ActaPartido.estado == estado)
+
+    if campeonato_id:
+        query = query.filter(Partido.campeonato_id == campeonato_id)
+
+    if q:
+        patron = f"%{q}%"
+        query = query.filter(ActaPartido.numero_acta.ilike(patron))
+
+    actas = query.limit(250).all()
+
+    total = ActaPartido.query.count()
+    borrador = ActaPartido.query.filter_by(estado="Borrador").count()
+    cerradas = ActaPartido.query.filter_by(estado="Cerrada").count()
+
+    sin_numero = ActaPartido.query.filter(
+        db.or_(ActaPartido.numero_acta.is_(None), ActaPartido.numero_acta == "")
+    ).count()
+
+    return render_template(
+        "admin_centro_actas.html",
+        actas=actas,
+        campeonatos=campeonatos,
+        campeonato_id=campeonato_id,
+        estado=estado,
+        q=q,
+        resumen={
+            "total": total,
+            "borrador": borrador,
+            "cerradas": cerradas,
+            "sin_numero": sin_numero,
+        },
+    )
+
+
 @app.route("/admin/actas")
 @admin_required
 def admin_actas():
