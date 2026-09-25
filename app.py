@@ -1456,7 +1456,8 @@ def ficha_jugador(jugador_id):
     return render_template(
         "jugador_detalle.html",
         jugador=jugador,
-        goles=goles,
+        goles=goles_registrados,
+        total_goles_registrados=total_goles_registrados,
         amarillas=amarillas,
         rojas=rojas,
         suspensiones=suspensiones,
@@ -6290,7 +6291,13 @@ def admin_centro_jugadores():
 def admin_centro_jugador(jugador_id):
     jugador = db.get_or_404(Jugador, jugador_id)
 
-    goles = obtener_goles(jugador.id)
+    goles_registrados = (
+        Gol.query
+        .filter_by(jugador_id=jugador.id)
+        .order_by(Gol.fecha.desc(), Gol.id.desc())
+        .all()
+    )
+    total_goles_registrados = sum(int(g.cantidad or 0) for g in goles_registrados)
     amarillas = obtener_amarillas(jugador.id)
     rojas = obtener_rojas(jugador.id)
     suspensiones = obtener_suspensiones(jugador.id)
