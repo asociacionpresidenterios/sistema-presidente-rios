@@ -3,7 +3,7 @@
 {% block content %}
 <div style="display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin-bottom:22px;flex-wrap:wrap">
   <div><div style="font-size:12px;color:#64748b;font-weight:800;text-transform:uppercase;letter-spacing:.08em">Centro deportivo</div><h1 style="margin:5px 0 0;font-size:30px">Partidos</h1><p style="margin:6px 0 0;color:#64748b">Todos los encuentros, resultados y acceso directo a sus actas.</p></div>
-  <a class="top-btn primary" href="{{ url_for('campeonatos') }}">🏆 Ver campeonatos</a>
+  <a class="top-btn" href="{{ url_for('admin_centro_partidos') }}">📊 Centro maestro</a><a class="top-btn primary" href="{{ url_for('campeonatos') }}">🏆 Ver campeonatos</a>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
 {% for k,v,l in [('total',resumen.total,'Partidos'),('programados',resumen.programados,'Pendientes'),('finalizados',resumen.finalizados,'Finalizados'),('actas_cerradas',resumen.actas_cerradas,'Actas cerradas')] %}<div style="background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px"><div style="font-size:12px;color:#64748b">{{l}}</div><div style="font-size:28px;font-weight:850;margin-top:5px">{{v}}</div></div>{% endfor %}
