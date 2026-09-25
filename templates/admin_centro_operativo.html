@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Centro operativo · Presidente Ríos{% endblock %}
+{% block content %}
+<style>
+.hero{background:linear-gradient(135deg,#0b1830,#17345d);color:#fff;border-radius:18px;padding:24px;margin-bottom:20px;box-shadow:0 12px 30px rgba(15,23,42,.12)}
+.hero h1{margin:0 0 7px;font-size:25px}.hero p{margin:0;color:#b9c8dc;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:20px}.stat{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px}.stat .label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;font-weight:800}.stat .value{font-size:27px;font-weight:850;margin-top:7px;color:#142033}.stat .hint{font-size:11px;color:#64748b;margin-top:4px}
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:18px}.card{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px;margin-bottom:18px}.title{font-size:15px;font-weight:850;margin-bottom:12px}.muted{font-size:12px;color:#64748b}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #eef2f7}.row:last-child{border-bottom:0}.teams{font-weight:750;font-size:13px}.badge{display:inline-flex;padding:5px 8px;border-radius:999px;background:#eef3f9;font-size:11px;font-weight:800}.badge.ok{background:#e9f8ee;color:#15803d}.badge.warn{background:#fff4df;color:#b45309}.badge.danger{background:#feecec;color:#b91c1c}.actions{display:flex;gap:7px;flex-wrap:wrap}.btn{display:inline-block;padding:7px 10px;border:1px solid #e5eaf1;border-radius:8px;font-size:11px;font-weight:800;background:#fff}.btn.primary{background:#2563eb;color:#fff;border-color:#2563eb}.empty{padding:18px 0;color:#64748b;font-size:12px}
+@media(max-width:1000px){.grid{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}}@media(max-width:600px){.grid{grid-template-columns:1fr}}
+</style>
+
+<div class="hero">
+  <h1>🎯 Centro operativo</h1>
+  <p>Vista central para controlar el flujo Campeonato → Partido → Acta → Estadísticas y el registro maestro.</p>
+</div>
+
+<div class="grid">
+  <div class="stat"><div class="label">Jugadores</div><div class="value">{{ resumen.jugadores }}</div><div class="hint">Registro maestro</div></div>
+  <div class="stat"><div class="label">Clubes</div><div class="value">{{ resumen.clubes }}</div><div class="hint">Directorio activo</div></div>
+  <div class="stat"><div class="label">Campeonatos</div><div class="value">{{ resumen.campeonatos }}</div><div class="hint">Competencias registradas</div></div>
+  <div class="stat"><div class="label">Partidos</div><div class="value">{{ resumen.partidos }}</div><div class="hint">Centro de partidos</div></div>
+</div>
+
+<div class="grid">
+  <div class="stat"><div class="label">Partidos pendientes</div><div class="value">{{ resumen.partidos_pendientes }}</div><div class="hint">Aún no finalizados</div></div>
+  <div class="stat"><div class="label">Actas pendientes</div><div class="value">{{ resumen.actas_pendientes }}</div><div class="hint">Borradores o abiertas</div></div>
+  <div class="stat"><div class="label">Partidos sin acta</div><div class="value">{{ resumen.partidos_sin_acta }}</div><div class="hint">Revisar antes de cerrar jornada</div></div>
+  <div class="stat"><div class="label">Alertas de integración</div><div class="value">{{ resumen.participaciones_no_vigentes + resumen.inconsistencias_club }}</div><div class="hint">No vigentes + club inconsistente</div></div>
+</div>
+
+<div class="layout">
+  <div>
+    <div class="card">
+      <div class="title">⚽ Próximos / pendientes</div>
+      {% if partidos_pendientes %}{% for p in partidos_pendientes %}
+      <div class="row"><div><div class="teams">{{ p.local_club.nombre if p.local_club else 'Local' }} vs {{ p.visitante_club.nombre if p.visitante_club else 'Visitante' }}</div><div class="muted">{{ p.campeonato.nombre if p.campeonato else 'Sin campeonato' }} · Jornada {{ p.jornada or '-' }} · {{ p.fecha or 'Fecha pendiente' }} {{ p.hora or '' }}</div></div><a class="btn primary" href="{{ url_for('acta_partido', campeonato_id=p.campeonato_id, partido_id=p.id) }}">Acta</a></div>
+      {% endfor %}{% else %}<div class="empty">No hay partidos pendientes.</div>{% endif %}
+    </div>
+
+    <div class="card">
+      <div class="title">📋 Actas pendientes de cierre</div>
+      {% if actas_pendientes %}{% for a in actas_pendientes %}
+      <div class="row"><div><div class="teams">{{ a.partido.local_club.nombre if a.partido and a.partido.local_club else 'Local' }} vs {{ a.partido.visitante_club.nombre if a.partido and a.partido.visitante_club else 'Visitante' }}</div><div class="muted">Acta {{ a.numero_acta or 'sin número' }} · {{ a.estado }}</div></div><a class="btn primary" href="{{ url_for('acta_partido', campeonato_id=a.partido.campeonato_id, partido_id=a.partido.id) }}">Abrir</a></div>
+      {% endfor %}{% else %}<div class="empty">No hay actas pendientes.</div>{% endif %}
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="title">🔎 Partidos sin acta</div>
+      {% if partidos_sin_acta %}{% for p in partidos_sin_acta %}
+      <div class="row"><div><div class="teams">{{ p.local_club.nombre if p.local_club else 'Local' }} vs {{ p.visitante_club.nombre if p.visitante_club else 'Visitante' }}</div><div class="muted">{{ p.campeonato.nombre if p.campeonato else 'Sin campeonato' }} · {{ p.fecha or 'Fecha pendiente' }}</div></div><a class="btn" href="{{ url_for('acta_partido', campeonato_id=p.campeonato_id, partido_id=p.id) }}">Crear / ver acta</a></div>
+      {% endfor %}{% else %}<div class="empty">Todos los partidos tienen acta.</div>{% endif %}
+    </div>
+
+    <div class="card">
+      <div class="title">✅ Actas cerradas recientemente</div>
+      {% if actas_cerradas_recientes %}{% for a in actas_cerradas_recientes %}
+      <div class="row"><div><div class="teams">{{ a.partido.local_club.nombre if a.partido and a.partido.local_club else 'Local' }} {{ a.partido.goles_local if a.partido else '' }} - {{ a.partido.goles_visitante if a.partido else '' }} {{ a.partido.visitante_club.nombre if a.partido and a.partido.visitante_club else 'Visitante' }}</div><div class="muted">{{ a.partido.campeonato.nombre if a.partido and a.partido.campeonato else 'Sin campeonato' }} · {{ a.partido.fecha if a.partido else '' }}</div></div><span class="badge ok">Cerrada</span></div>
+      {% endfor %}{% else %}<div class="empty">Todavía no hay actas cerradas.</div>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="title">🛡️ Control de integración</div>
+  <div class="row"><strong>Participaciones de jugadores no vigentes</strong><span class="badge {% if resumen.participaciones_no_vigentes %}danger{% else %}ok{% endif %}">{{ resumen.participaciones_no_vigentes }}</span></div>
+  <div class="row"><strong>Inconsistencias entre jugador y club del partido</strong><span class="badge {% if resumen.inconsistencias_club %}danger{% else %}ok{% endif %}">{{ resumen.inconsistencias_club }}</span></div>
+  <div class="actions" style="margin-top:14px"><a class="btn primary" href="{{ url_for('admin_integracion') }}">Abrir auditoría completa</a><a class="btn" href="{{ url_for('admin_partidos') }}">Centro de partidos</a><a class="btn" href="{{ url_for('admin_actas') }}">Centro de actas</a></div>
+</div>
+{% endblock %}
