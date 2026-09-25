@@ -6922,6 +6922,73 @@ def admin_panel_maestro():
     )
 
 
+
+# ============================================================
+# V7.1 — CENTRO MAESTRO DE CAMPEONATOS
+# Consulta unificada de competencias existentes.
+# No crea tablas ni modifica registros.
+# ============================================================
+
+@app.route("/admin/campeonatos/centro")
+def admin_centro_campeonatos():
+    campeonatos = Campeonato.query.order_by(
+        Campeonato.temporada.desc(),
+        Campeonato.id.desc()
+    ).all()
+
+    tarjetas = []
+    for campeonato in campeonatos:
+        club_count = CampeonatoClub.query.filter_by(
+            campeonato_id=campeonato.id
+        ).count()
+
+        partidos_query = Partido.query.filter_by(
+            campeonato_id=campeonato.id
+        )
+        partidos_count = partidos_query.count()
+        finalizados = partidos_query.filter_by(
+            estado="Finalizado"
+        ).count()
+
+        actas_count = (
+            ActaPartido.query
+            .join(Partido, ActaPartido.partido_id == Partido.id)
+            .filter(Partido.campeonato_id == campeonato.id)
+            .count()
+        )
+
+        actas_cerradas = (
+            ActaPartido.query
+            .join(Partido, ActaPartido.partido_id == Partido.id)
+            .filter(
+                Partido.campeonato_id == campeonato.id,
+                ActaPartido.estado == "Cerrada"
+            )
+            .count()
+        )
+
+        tarjetas.append({
+            "campeonato": campeonato,
+            "clubes": club_count,
+            "partidos": partidos_count,
+            "finalizados": finalizados,
+            "pendientes": partidos_count - finalizados,
+            "actas": actas_count,
+            "actas_cerradas": actas_cerradas,
+            "actas_pendientes": actas_count - actas_cerradas,
+        })
+
+    return render_template(
+        "admin_centro_campeonatos.html",
+        tarjetas=tarjetas,
+        total_campeonatos=len(campeonatos),
+        activos=sum(1 for x in campeonatos if x.estado == "Activo"),
+        finalizados=sum(1 for x in campeonatos if x.estado == "Finalizado"),
+        total_partidos=sum(x["partidos"] for x in tarjetas),
+        total_pendientes=sum(x["pendientes"] for x in tarjetas),
+    )
+
+
 # ============================================================
 # HEALTH CHECK
 # ============================================================
