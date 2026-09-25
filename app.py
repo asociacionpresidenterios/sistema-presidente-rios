@@ -7136,6 +7136,133 @@ def admin_centro_partidos():
 
 
 # ============================================================
+# V7.4 — CENTRO MAESTRO DE ESTADÍSTICAS
+# Estadísticas oficiales derivadas exclusivamente de actas cerradas.
+# No crea tablas ni registros paralelos.
+# ============================================================
+
+@app.route("/admin/estadisticas/centro")
+@admin_required
+def admin_centro_estadisticas():
+    campeonatos = Campeonato.query.order_by(
+        Campeonato.temporada.desc(), Campeonato.id.desc()
+    ).all()
+
+    campeonato_id = request.args.get("campeonato_id", type=int)
+    serie = (request.args.get("serie") or "").strip()
+    club = (request.args.get("club") or "").strip()
+    q = (request.args.get("q") or "").strip()
+
+    series = sorted({(c.serie or "").strip() for c in campeonatos if (c.serie or "").strip()}, key=str.lower)
+    clubes = sorted({(j.club or "").strip() for j in Jugador.query.all() if (j.club or "").strip()}, key=str.lower)
+
+    base = (
+        db.session.query(PartidoJugador, Jugador, Partido, Campeonato, ActaPartido)
+        .join(Jugador, Jugador.id == PartidoJugador.jugador_id)
+        .join(Partido, Partido.id == PartidoJugador.partido_id)
+        .join(Campeonato, Campeonato.id == Partido.campeonato_id)
+        .join(ActaPartido, ActaPartido.partido_id == Partido.id)
+        .filter(ActaPartido.estado == "Cerrada")
+    )
+
+    if campeonato_id:
+        base = base.filter(Campeonato.id == campeonato_id)
+    if serie:
+        base = base.filter(Campeonato.serie == serie)
+    if club:
+        base = base.filter(Jugador.club == club)
+    if q:
+        patron = f"%{q}%"
+        base = base.filter(
+            db.or_(Jugador.nombre_completo.ilike(patron), Jugador.rut.ilike(patron))
+        )
+
+    registros = base.all()
+
+    # Agregación en Python para mantener el template simple y evitar
+    # expresiones Jinja complejas que puedan romper la vista.
+    por_jugador = {}
+    partidos_ids = set()
+    jugadores_ids = set()
+    total_goles = 0
+    total_amarillas = 0
+    total_rojas = 0
+    total_titulares = 0
+
+    for pj, jugador, partido, campeonato, acta in registros:
+        partidos_ids.add(partido.id)
+        jugadores_ids.add(jugador.id)
+        goles = int(pj.goles or 0)
+        amarillas = int(pj.amarillas or 0)
+        rojas = int(pj.rojas or 0)
+        titular = 1 if str(pj.condicion or "").strip().lower() == "titular" else 0
+
+        total_goles += goles
+        total_amarillas += amarillas
+        total_rojas += rojas
+        total_titulares += titular
+
+        key = (jugador.id, campeonato.id)
+        if key not in por_jugador:
+            por_jugador[key] = {
+                "jugador": jugador,
+                "campeonato": campeonato,
+                "partidos": set(),
+                "titulares": 0,
+                "goles": 0,
+                "amarillas": 0,
+                "rojas": 0,
+            }
+        fila = por_jugador[key]
+        fila["partidos"].add(partido.id)
+        fila["titulares"] += titular
+        fila["goles"] += goles
+        fila["amarillas"] += amarillas
+        fila["rojas"] += rojas
+
+    jugadores_stats = []
+    for fila in por_jugador.values():
+        fila["partidos_jugados"] = len(fila["partidos"])
+        jugadores_stats.append(fila)
+
+    goleadores = sorted(
+        jugadores_stats,
+        key=lambda x: (-x["goles"], x["jugador"].nombre_completo.lower())
+    )
+    disciplina = sorted(
+        jugadores_stats,
+        key=lambda x: (-x["amarillas"], -x["rojas"], x["jugador"].nombre_completo.lower())
+    )
+    rojas_ranking = sorted(
+        jugadores_stats,
+        key=lambda x: (-x["rojas"], x["jugador"].nombre_completo.lower())
+    )
+
+    return render_template(
+        "admin_centro_estadisticas.html",
+        campeonatos=campeonatos,
+        campeonato_id=campeonato_id,
+        series=series,
+        serie=serie,
+        clubes=clubes,
+        club=club,
+        q=q,
+        goleadores=goleadores,
+        disciplina=disciplina,
+        rojas=rojas_ranking,
+        resumen={
+            "partidos": len(partidos_ids),
+            "jugadores": len(jugadores_ids),
+            "goles": total_goles,
+            "amarillas": total_amarillas,
+            "rojas": total_rojas,
+            "titulares": total_titulares,
+            "registros": len(registros),
+        },
+    )
+
+
+# ============================================================
 # HEALTH CHECK
 # ============================================================
 
