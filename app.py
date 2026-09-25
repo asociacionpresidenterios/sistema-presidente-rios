@@ -3269,6 +3269,131 @@ def admin_registro():
     )
 
 
+
+# ============================================================
+# V6.9 — CENTRO MAESTRO DE JUGADORES
+# Consulta unificada del registro Jugador existente.
+# No crea una segunda base ni modifica el centro individual.
+# ============================================================
+
+@app.route("/admin/jugadores/centro")
+def admin_centro_jugadores():
+    q = request.args.get("q", "").strip()
+    club_filtro = request.args.get("club", "").strip()
+    serie_filtro = request.args.get("serie", "").strip()
+    estado_filtro = request.args.get("estado", "").strip()
+
+    query = Jugador.query
+
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            db.or_(
+                Jugador.nombre_completo.ilike(like),
+                Jugador.rut.ilike(like),
+            )
+        )
+
+    if club_filtro:
+        query = query.filter(Jugador.club == club_filtro)
+
+    if serie_filtro:
+        query = query.filter(Jugador.serie == serie_filtro)
+
+    if estado_filtro:
+        query = query.filter(Jugador.estado == estado_filtro)
+
+    jugadores = query.order_by(
+        Jugador.nombre_completo.asc()
+    ).limit(250).all()
+
+    clubes = [
+        row[0]
+        for row in db.session.query(Jugador.club)
+        .filter(Jugador.club.isnot(None), Jugador.club != "")
+        .distinct()
+        .order_by(Jugador.club.asc())
+        .all()
+    ]
+
+    series = [
+        row[0]
+        for row in db.session.query(Jugador.serie)
+        .filter(Jugador.serie.isnot(None), Jugador.serie != "")
+        .distinct()
+        .order_by(Jugador.serie.asc())
+        .all()
+    ]
+
+    estados = [
+        row[0]
+        for row in db.session.query(Jugador.estado)
+        .filter(Jugador.estado.isnot(None), Jugador.estado != "")
+        .distinct()
+        .order_by(Jugador.estado.asc())
+        .all()
+    ]
+
+    resumen = []
+    for jugador in jugadores:
+        partidos = (
+            db.session.query(db.func.count(PartidoJugador.id))
+            .filter(PartidoJugador.jugador_id == jugador.id)
+            .scalar()
+        ) or 0
+
+        goles = (
+            db.session.query(db.func.coalesce(db.func.sum(PartidoJugador.goles), 0))
+            .filter(PartidoJugador.jugador_id == jugador.id)
+            .scalar()
+        ) or 0
+
+        amarillas = (
+            db.session.query(db.func.coalesce(db.func.sum(PartidoJugador.amarillas), 0))
+            .filter(PartidoJugador.jugador_id == jugador.id)
+            .scalar()
+        ) or 0
+
+        rojas = (
+            db.session.query(db.func.coalesce(db.func.sum(PartidoJugador.rojas), 0))
+            .filter(PartidoJugador.jugador_id == jugador.id)
+            .scalar()
+        ) or 0
+
+        resumen.append({
+            "jugador": jugador,
+            "partidos": int(partidos),
+            "goles": int(goles),
+            "amarillas": int(amarillas),
+            "rojas": int(rojas),
+        })
+
+    total = Jugador.query.count()
+    vigentes = Jugador.query.filter_by(estado="Vigente").count()
+    clubes_total = (
+        db.session.query(Jugador.club)
+        .filter(Jugador.club.isnot(None), Jugador.club != "")
+        .distinct()
+        .count()
+    )
+    participaciones = PartidoJugador.query.count()
+
+    return render_template(
+        "admin_centro_jugadores.html",
+        resumen=resumen,
+        total=total,
+        vigentes=vigentes,
+        clubes_total=clubes_total,
+        participaciones=participaciones,
+        clubes=clubes,
+        series=series,
+        estados=estados,
+        q=q,
+        club_filtro=club_filtro,
+        serie_filtro=serie_filtro,
+        estado_filtro=estado_filtro,
+    )
+
 @app.route("/admin/clubes")
 def admin_clubes():
     """Directorio interno de todos los clubes, agrupando sus planteles por serie."""
