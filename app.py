@@ -3249,6 +3249,104 @@ def admin_centro_club(club_id):
     )
 
 # ============================================================
+# V7.4.3 — ESTADÍSTICAS INTEGRADAS POR CLUB
+# Usa exclusivamente PartidoJugador + ActaPartido cerrada.
+# No crea registros ni tablas paralelas.
+# ============================================================
+
+@app.route("/admin/clubes/<int:club_id>/estadisticas")
+def admin_centro_club_estadisticas(club_id):
+    club = db.get_or_404(Club, club_id)
+
+    campeonato_id = request.args.get("campeonato_id", type=int)
+
+    participaciones = CampeonatoClub.query.filter_by(club_id=club.id).all()
+    campeonatos = [x.campeonato for x in participaciones if x.campeonato]
+    campeonatos = sorted(campeonatos, key=lambda x: (x.temporada or "", x.id), reverse=True)
+
+    base = (
+        db.session.query(PartidoJugador, Jugador, Partido, Campeonato, ActaPartido)
+        .join(Jugador, Jugador.id == PartidoJugador.jugador_id)
+        .join(Partido, Partido.id == PartidoJugador.partido_id)
+        .join(Campeonato, Campeonato.id == Partido.campeonato_id)
+        .join(ActaPartido, ActaPartido.partido_id == Partido.id)
+        .filter(ActaPartido.estado == "Cerrada")
+        .filter(Jugador.club == club.nombre)
+    )
+
+    if campeonato_id:
+        base = base.filter(Campeonato.id == campeonato_id)
+
+    registros = base.all()
+
+    partidos_ids = set()
+    jugadores_ids = set()
+    total_goles = total_amarillas = total_rojas = 0
+    por_jugador = {}
+
+    for pj, jugador, partido, campeonato, acta in registros:
+        partidos_ids.add(partido.id)
+        jugadores_ids.add(jugador.id)
+
+        goles = int(pj.goles or 0)
+        amarillas = int(pj.amarillas or 0)
+        rojas = int(pj.rojas or 0)
+        total_goles += goles
+        total_amarillas += amarillas
+        total_rojas += rojas
+
+        key = (jugador.id, campeonato.id)
+        if key not in por_jugador:
+            por_jugador[key] = {
+                "jugador": jugador,
+                "campeonato": campeonato,
+                "partidos": set(),
+                "goles": 0,
+                "amarillas": 0,
+                "rojas": 0,
+            }
+
+        fila = por_jugador[key]
+        fila["partidos"].add(partido.id)
+        fila["goles"] += goles
+        fila["amarillas"] += amarillas
+        fila["rojas"] += rojas
+
+    jugadores_stats = []
+    for fila in por_jugador.values():
+        fila["partidos_jugados"] = len(fila["partidos"])
+        jugadores_stats.append(fila)
+
+    goleadores = sorted(
+        jugadores_stats,
+        key=lambda x: (-x["goles"], x["jugador"].nombre_completo.lower())
+    )
+    disciplina = sorted(
+        jugadores_stats,
+        key=lambda x: (-x["amarillas"], -x["rojas"], x["jugador"].nombre_completo.lower())
+    )
+
+    goleadores = [x for x in goleadores if x["goles"] > 0]
+    disciplina = [x for x in disciplina if x["amarillas"] > 0 or x["rojas"] > 0]
+
+    return render_template(
+        "admin_centro_club_estadisticas.html",
+        club=club,
+        campeonatos=campeonatos,
+        campeonato_id=campeonato_id,
+        goleadores=goleadores,
+        disciplina=disciplina,
+        resumen={
+            "partidos": len(partidos_ids),
+            "jugadores": len(jugadores_ids),
+            "goles": total_goles,
+            "amarillas": total_amarillas,
+            "rojas": total_rojas,
+        },
+    )
+
+
+# ============================================================
 # V6.3 — CENTRO DE REGISTRO Y DIRECTORIO DE CLUBES
 # ============================================================
 
