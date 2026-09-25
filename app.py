@@ -7238,6 +7238,11 @@ def admin_centro_estadisticas():
         key=lambda x: (-x["rojas"], x["jugador"].nombre_completo.lower())
     )
 
+    # Solo mostrar jugadores con producción estadística real.
+    goleadores = [x for x in goleadores if x["goles"] > 0]
+    disciplina = [x for x in disciplina if x["amarillas"] > 0 or x["rojas"] > 0]
+    rojas_ranking = [x for x in rojas_ranking if x["rojas"] > 0]
+
     return render_template(
         "admin_centro_estadisticas.html",
         campeonatos=campeonatos,
