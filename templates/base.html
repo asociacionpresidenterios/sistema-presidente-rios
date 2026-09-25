@@ -59,23 +59,17 @@ a{text-decoration:none;color:inherit}
   </div>
   <div class="side-scroll">
     <div class="section-label">Principal</div>
-    <a class="nav-item {% if request.endpoint in ['admin_panel_maestro'] %}active{% endif %}" href="{{ url_for('admin_panel_maestro') }}"><span class="nav-icon">📊</span>Panel maestro</a>
-    <a class="nav-item {% if request.endpoint in ['admin_operaciones'] %}active{% endif %}" href="{{ url_for('admin_operaciones') }}"><span class="nav-icon">🗓️</span>Centro de operaciones</a>
-    <a class="nav-item {% if request.endpoint=='dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><span class="nav-icon">▦</span>Dashboard clásico</a>
+    <a class="nav-item {% if request.endpoint=='dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><span class="nav-icon">▦</span>Dashboard</a>
     <a class="nav-item {% if request.endpoint=='publico' %}active{% endif %}" href="{{ url_for('publico') }}"><span class="nav-icon">🌐</span>Portal público</a>
 
     <div class="section-label">Registro</div>
     <a class="nav-item {% if request.endpoint in ['admin_registro','index','nuevo_jugador','editar_jugador','importar_jugadores','ficha_jugador','historial_jugador'] %}active{% endif %}" href="{{ url_for('admin_registro') }}"><span class="nav-icon">👥</span>Registro de jugadores</a>
     <a class="nav-item {% if request.endpoint in ['admin_clubes','admin_planteles','admin_ficha_club','admin_centro_jugador','admin_nuevo_jugador_club','admin_editar_jugador_plantel','admin_cambiar_estado_plantel','admin_mover_jugador_plantel'] %}active{% endif %}" href="{{ url_for('admin_clubes') }}"><span class="nav-icon">🏟️</span>Clubes y planteles</a>
-    <a class="nav-item {% if request.endpoint in ['admin_centro_jugadores','admin_centro_jugador'] %}active{% endif %}" href="{{ url_for('admin_centro_jugadores') }}"><span class="nav-icon">🧑‍💼</span>Centro de jugadores</a>
-    <a class="nav-item {% if request.endpoint == 'admin_control_clubes' %}active{% endif %}" href="{{ url_for('admin_control_clubes') }}"><span class="nav-icon">🎯</span>Control de clubes</a>
 
     <div class="section-label">Competencias</div>
     <a class="nav-item {% if request.endpoint in ['campeonatos','nuevo_campeonato','detalle_campeonato','panel_campeonato'] %}active{% endif %}" href="{{ url_for('campeonatos') }}"><span class="nav-icon">🏆</span>Campeonatos</a>
     <a class="nav-item {% if request.endpoint in ['admin_partidos'] %}active{% endif %}" href="{{ url_for('admin_partidos') }}"><span class="nav-icon">⚽</span>Partidos</a>
-    <a class="nav-item {% if request.endpoint == 'admin_centro_deportivo' %}active{% endif %}" href="{{ url_for('admin_centro_deportivo') }}"><span class="nav-icon">📈</span>Control deportivo</a>
     <a class="nav-item {% if request.endpoint in ['admin_actas','acta_partido'] %}active{% endif %}" href="{{ url_for('admin_actas') }}"><span class="nav-icon">📋</span>Actas</a>
-    <a class="nav-item {% if request.endpoint=='admin_centro_integracion' %}active{% endif %}" href="{{ url_for('admin_centro_integracion') }}"><span class="nav-icon">🧭</span>Centro de integración</a>
     <a class="nav-item {% if request.endpoint=='admin_integracion' %}active{% endif %}" href="{{ url_for('admin_integracion') }}"><span class="nav-icon">🔗</span>Integración y auditoría</a>
 
     <div class="section-label">Sistema</div>
