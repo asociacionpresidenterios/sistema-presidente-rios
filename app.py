@@ -3145,6 +3145,109 @@ def admin_planteles():
     )
 
 
+
+# ============================================================
+# V6.8 — CENTRO DE CONTROL DE CLUBES Y PLANTELES
+# ============================================================
+
+@app.route("/admin/clubes/centro")
+def admin_centro_clubes():
+    """Centro consolidado de clubes, planteles y participación deportiva."""
+    q = request.args.get("q", "").strip()
+    query = Club.query
+    if q:
+        query = query.filter(Club.nombre.ilike(f"%{q}%"))
+    clubes = query.order_by(Club.nombre.asc()).all()
+
+    jugadores = Jugador.query.all()
+    por_club = {}
+    for j in jugadores:
+        por_club.setdefault((j.club or "").strip(), []).append(j)
+
+    tarjetas = []
+    for club in clubes:
+        js = por_club.get(club.nombre.strip(), [])
+        vigentes = sum(1 for j in js if (j.estado or "Vigente") == "Vigente")
+        series = sorted({j.serie for j in js if j.serie})
+        campeonatos = CampeonatoClub.query.filter_by(club_id=club.id).count()
+        partidos = Partido.query.filter(
+            db.or_(Partido.local_club_id == club.id, Partido.visitante_club_id == club.id)
+        ).count()
+        tarjetas.append({
+            "club": club,
+            "total": len(js),
+            "vigentes": vigentes,
+            "series": series,
+            "campeonatos": campeonatos,
+            "partidos": partidos,
+        })
+
+    return render_template(
+        "admin_centro_clubes.html",
+        tarjetas=tarjetas,
+        q=q,
+        total_clubes=len(clubes),
+        total_jugadores=sum(t["total"] for t in tarjetas),
+        total_vigentes=sum(t["vigentes"] for t in tarjetas),
+        total_partidos=sum(t["partidos"] for t in tarjetas),
+    )
+
+
+@app.route("/admin/clubes/<int:club_id>/centro")
+def admin_centro_club(club_id):
+    """Centro operativo de un club usando el registro maestro existente."""
+    club = db.get_or_404(Club, club_id)
+    jugadores = Jugador.query.filter(Jugador.club == club.nombre).order_by(
+        Jugador.serie.asc(), Jugador.nombre_completo.asc()
+    ).all()
+
+    planteles = {}
+    for j in jugadores:
+        planteles.setdefault(j.serie or "Sin serie", []).append(j)
+
+    participaciones = CampeonatoClub.query.filter_by(club_id=club.id).all()
+    campeonatos = [x.campeonato for x in participaciones if x.campeonato]
+
+    partidos = Partido.query.filter(
+        db.or_(Partido.local_club_id == club.id, Partido.visitante_club_id == club.id)
+    ).order_by(Partido.fecha.desc().nullslast(), Partido.id.desc()).all()
+
+    jugados = [p for p in partidos if p.goles_local is not None and p.goles_visitante is not None]
+    victorias = empates = derrotas = goles_favor = goles_contra = 0
+    for p in jugados:
+        es_local = p.local_club_id == club.id
+        gf = p.goles_local if es_local else p.goles_visitante
+        gc = p.goles_visitante if es_local else p.goles_local
+        goles_favor += int(gf or 0)
+        goles_contra += int(gc or 0)
+        if gf > gc: victorias += 1
+        elif gf == gc: empates += 1
+        else: derrotas += 1
+
+    actas_pendientes = sum(
+        1 for p in partidos if not p.acta or (p.acta.estado or "Borrador") != "Cerrada"
+    )
+
+    return render_template(
+        "admin_centro_club.html",
+        club=club,
+        jugadores=jugadores,
+        planteles=planteles,
+        campeonatos=campeonatos,
+        partidos=partidos[:15],
+        total_jugadores=len(jugadores),
+        total_vigentes=sum(1 for j in jugadores if (j.estado or "Vigente") == "Vigente"),
+        total_series=len(planteles),
+        total_partidos=len(partidos),
+        jugados=len(jugados),
+        victorias=victorias,
+        empates=empates,
+        derrotas=derrotas,
+        goles_favor=goles_favor,
+        goles_contra=goles_contra,
+        actas_pendientes=actas_pendientes,
+    )
+
 # ============================================================
 # V6.3 — CENTRO DE REGISTRO Y DIRECTORIO DE CLUBES
 # ============================================================
