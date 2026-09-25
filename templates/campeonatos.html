@@ -14,7 +14,7 @@
 {% block content %}
 <div class="comp-head">
   <div><div class="eyebrow">Gestión deportiva</div><div class="title">Competiciones</div><div class="sub">Centro de control de campeonatos, series, clubes, fixture y resultados.</div></div>
-  <div class="toolbar"><input id="busqueda" class="search" placeholder="🔎 Buscar campeonato, temporada o serie..."><select id="estado" class="select"><option value="">Todos los estados</option><option value="Activo">Activos</option><option value="Finalizado">Finalizados</option></select><a class="btn primary" href="{{ url_for('nuevo_campeonato') }}">＋ Nuevo campeonato</a></div>
+  <div class="toolbar"><input id="busqueda" class="search" placeholder="🔎 Buscar campeonato, temporada o serie..."><select id="estado" class="select"><option value="">Todos los estados</option><option value="Activo">Activos</option><option value="Finalizado">Finalizados</option></select><a class="btn" href="{{ url_for('admin_centro_campeonatos') }}">📊 Centro maestro</a><a class="btn primary" href="{{ url_for('nuevo_campeonato') }}">＋ Nuevo campeonato</a></div>
 </div>
 <div class="stats">
   <div class="stat"><small>Campeonatos</small><strong>{{ campeonatos|length }}</strong></div>
