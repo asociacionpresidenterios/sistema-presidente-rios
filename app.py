@@ -6431,14 +6431,33 @@ def admin_centro_jugador(jugador_id):
     rojas = obtener_rojas(jugador.id)
     suspensiones = obtener_suspensiones(jugador.id)
 
-    participaciones = (
-        PartidoJugador.query
-        .join(Partido, PartidoJugador.partido_id == Partido.id)
-        .join(Campeonato, Partido.campeonato_id == Campeonato.id)
-        .filter(PartidoJugador.jugador_id == jugador.id)
-        .order_by(Partido.fecha.desc().nullslast(), Partido.id.desc())
-        .all()
-    )
+    # V6.9: consulta defensiva para que un registro incompleto no provoque 500.
+    try:
+        participaciones = (
+            PartidoJugador.query
+            .join(Partido, PartidoJugador.partido_id == Partido.id)
+            .join(Campeonato, Partido.campeonato_id == Campeonato.id)
+            .filter(PartidoJugador.jugador_id == jugador.id)
+            .order_by(Partido.fecha.desc().nullslast(), Partido.id.desc())
+            .all()
+        )
+    except Exception as error:
+        db.session.rollback()
+        print("Advertencia cargando participaciones del jugador:", repr(error))
+        participaciones = []
+
+    try:
+        movimientos = (
+            JugadorMovimiento.query
+            .filter_by(jugador_id=jugador.id)
+            .order_by(JugadorMovimiento.fecha_hora.desc())
+            .limit(8)
+            .all()
+        )
+    except Exception as error:
+        db.session.rollback()
+        print("Advertencia cargando movimientos del jugador:", repr(error))
+        movimientos = []
 
     total_partidos = len(participaciones)
     total_titular = sum(1 for p in participaciones if p.condicion == "Titular")
@@ -6455,6 +6474,7 @@ def admin_centro_jugador(jugador_id):
         rojas=rojas,
         suspensiones=suspensiones,
         participaciones=participaciones,
+        movimientos=movimientos,
         total_partidos=total_partidos,
         total_titular=total_titular,
         total_suplente=total_suplente,
