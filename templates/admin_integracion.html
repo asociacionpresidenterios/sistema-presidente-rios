@@ -1,28 +1,60 @@
 {% extends "base.html" %}
-{% block title %}Integración del sistema{% endblock %}
+{% block title %}Integración y Auditoría · Presidente Ríos{% endblock %}
 {% block content %}
 <style>
-.wrap{max-width:1200px;margin:0 auto}.hero{background:linear-gradient(135deg,#071426,#123b70);color:#fff;border-radius:20px;padding:24px;margin-bottom:18px}.hero h1{margin:0 0 6px}.hero p{margin:0;color:#cbd9ea}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.card,.panel{background:#fff;border:1px solid #e5eaf1;border-radius:16px}.card{padding:16px}.card strong{display:block;font-size:25px}.card span{font-size:11px;color:#68788d;font-weight:800}.panel{padding:18px;margin-bottom:16px}.ok{color:#137a4b;font-weight:900}.warn{color:#a66b00;font-weight:900}.bad{color:#b42318;font-weight:900}.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-weight:900}.node{padding:9px 12px;border-radius:10px;background:#f5f8fc;border:1px solid #dce4ee}.arrow{color:#6b7b90}@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:500px){.grid{grid-template-columns:1fr}}
+.audit-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.audit-title h1{margin:0 0 6px;font-size:28px}.audit-title p{margin:0;color:#64748b;font-size:13px}
+.audit-badge{padding:9px 13px;border-radius:999px;font-size:12px;font-weight:800;background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.card{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px;box-shadow:0 5px 18px rgba(15,23,42,.04)}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#64748b;font-weight:800}.value{font-size:30px;font-weight:850;margin-top:7px;color:#142033}.muted{color:#64748b;font-size:12px}
+.section-title{font-size:15px;font-weight:850;margin-bottom:13px}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #eef2f7}.row:last-child{border-bottom:0}.badge{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#eef2f7;color:#334155;font-size:11px;font-weight:800}.ok{background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}.danger{background:#fee2e2;color:#991b1b}
+.columns{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.action{display:block;border:1px solid #e5eaf1;border-radius:11px;padding:13px;background:#fff}.action:hover{border-color:#2563eb;box-shadow:0 4px 14px rgba(37,99,235,.08)}.action strong{display:block;font-size:13px}.action span{display:block;color:#64748b;font-size:11px;margin-top:4px}
+@media(max-width:1000px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.columns{grid-template-columns:1fr}}@media(max-width:600px){.grid{grid-template-columns:1fr}.actions{grid-template-columns:1fr}}
 </style>
-<div class="wrap">
-<section class="hero"><h1>🔗 Centro de Integración</h1><p>Auditoría del Registro Maestro de Jugadores y sus conexiones deportivas.</p></section>
-<div class="grid">
-<div class="card"><strong>{{ resumen.jugadores }}</strong><span>Jugadores</span></div>
-<div class="card"><strong>{{ resumen.clubes }}</strong><span>Clubes</span></div>
-<div class="card"><strong>{{ resumen.series }}</strong><span>Series</span></div>
-<div class="card"><strong>{{ resumen.campeonatos }}</strong><span>Campeonatos</span></div>
-<div class="card"><strong>{{ resumen.partidos }}</strong><span>Partidos</span></div>
-<div class="card"><strong>{{ resumen.actas_cerradas }}/{{ resumen.actas }}</strong><span>Actas cerradas</span></div>
-<div class="card"><strong>{{ resumen.goles }}</strong><span>Registros de goles</span></div>
-<div class="card"><strong>{{ resumen.disciplina }}</strong><span>Registros disciplinarios</span></div>
+
+<div class="audit-head">
+  <div class="audit-title">
+    <h1>Integración y Auditoría</h1>
+    <p>Centro técnico para comprobar que jugadores, clubes, campeonatos, partidos y actas trabajan sobre los mismos registros.</p>
+  </div>
+  {% if resumen.inconsistencias_club == 0 and resumen.participaciones_no_vigentes == 0 %}
+    <div class="audit-badge">✓ Integración consistente</div>
+  {% else %}
+    <div class="audit-badge danger">⚠ Revisar inconsistencias</div>
+  {% endif %}
 </div>
-<section class="panel"><h2>Flujo maestro</h2><div class="flow"><span class="node">👤 Jugador</span><span class="arrow">→</span><span class="node">🏟️ Club / Serie</span><span class="arrow">→</span><span class="node">🏆 Campeonato</span><span class="arrow">→</span><span class="node">📋 Acta</span><span class="arrow">→</span><span class="node">⚽ Goles / 🟨🟥 Disciplina</span><span class="arrow">→</span><span class="node">📊 Estadísticas</span><span class="arrow">→</span><span class="node">🪪 Credencial / 🌐 Portal</span></div></section>
-<section class="panel"><h2>Controles de consistencia</h2>
-<p>Participaciones de jugadores que actualmente no están <b>Vigentes</b>: <span class="{{ 'ok' if resumen.participaciones_no_vigentes == 0 else 'warn' }}">{{ resumen.participaciones_no_vigentes }}</span></p>
-<p>Participaciones cuyo club actual no coincide con el club del partido: <span class="{{ 'ok' if resumen.inconsistencias_club == 0 else 'bad' }}">{{ resumen.inconsistencias_club }}</span></p>
-<p class="ok">✓ Los borradores de acta no alimentan estadísticas oficiales. Solo un acta cerrada las sincroniza.</p>
-<p class="ok">✓ Al reabrir un acta se eliminan sus estadísticas derivadas para evitar duplicados o datos antiguos.</p>
-</section>
-<section class="panel"><h2>Registro maestro</h2><p>Los módulos deben consultar el mismo <b>Jugador.id</b>. Los cambios de club, serie y estado quedan registrados en el historial administrativo.</p><a href="{{ url_for('admin_planteles') }}">← Volver a Clubes y planteles</a></section>
+
+<div class="grid">
+  <div class="card"><div class="label">Jugadores</div><div class="value">{{ resumen.jugadores }}</div><div class="muted">Registro maestro</div></div>
+  <div class="card"><div class="label">Clubes</div><div class="value">{{ resumen.clubes }}</div><div class="muted">Directorio interno</div></div>
+  <div class="card"><div class="label">Series</div><div class="value">{{ resumen.series }}</div><div class="muted">Categorías registradas</div></div>
+  <div class="card"><div class="label">Campeonatos</div><div class="value">{{ resumen.campeonatos }}</div><div class="muted">Centro de competencias</div></div>
+  <div class="card"><div class="label">Partidos</div><div class="value">{{ resumen.partidos }}</div><div class="muted">Programación</div></div>
+  <div class="card"><div class="label">Actas</div><div class="value">{{ resumen.actas }}</div><div class="muted">{{ resumen.actas_cerradas }} cerradas</div></div>
+  <div class="card"><div class="label">Participaciones</div><div class="value">{{ resumen.participaciones }}</div><div class="muted">Jugador ↔ partido</div></div>
+  <div class="card"><div class="label">Goles</div><div class="value">{{ resumen.goles }}</div><div class="muted">Registro estadístico</div></div>
+</div>
+
+<div class="columns">
+  <div class="card">
+    <div class="section-title">Controles de consistencia</div>
+    <div class="row"><strong>Participaciones de jugadores no vigentes</strong><span class="badge {% if resumen.participaciones_no_vigentes == 0 %}ok{% else %}warn{% endif %}">{{ resumen.participaciones_no_vigentes }}</span></div>
+    <div class="row"><strong>Inconsistencias de club en partidos</strong><span class="badge {% if resumen.inconsistencias_club == 0 %}ok{% else %}danger{% endif %}">{{ resumen.inconsistencias_club }}</span></div>
+    <div class="row"><strong>Actas cerradas</strong><span class="badge ok">{{ resumen.actas_cerradas }}</span></div>
+    <div class="row"><strong>Registros disciplinarios</strong><span class="badge">{{ resumen.disciplina }}</span></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">Accesos de control</div>
+    <div class="actions">
+      <a class="action" href="{{ url_for('admin_registro') }}"><strong>👥 Registro</strong><span>Jugadores y altas</span></a>
+      <a class="action" href="{{ url_for('admin_clubes') }}"><strong>🏟️ Clubes</strong><span>Directorio y planteles</span></a>
+      <a class="action" href="{{ url_for('campeonatos') }}"><strong>🏆 Campeonatos</strong><span>Competencias</span></a>
+      <a class="action" href="{{ url_for('admin_partidos') }}"><strong>⚽ Partidos</strong><span>Programación</span></a>
+      <a class="action" href="{{ url_for('admin_actas') }}"><strong>📋 Actas</strong><span>Actas y cierres</span></a>
+      <a class="action" href="{{ url_for('admin_planteles') }}"><strong>👤 Planteles</strong><span>Jugadores por club y serie</span></a>
+    </div>
+  </div>
 </div>
 {% endblock %}
