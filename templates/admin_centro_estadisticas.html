@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}Centro Maestro de Estadísticas | Presidente Ríos{% endblock %}
+{% block content %}
+
+<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:22px">
+  <div>
+    <div style="font-size:12px;color:#64748b;font-weight:800;text-transform:uppercase;letter-spacing:.08em">Centro deportivo</div>
+    <h1 style="margin:5px 0 0;font-size:30px">Centro Maestro de Estadísticas</h1>
+    <p style="margin:6px 0 0;color:#64748b">Estadísticas oficiales calculadas desde actas cerradas.</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <a class="top-btn" href="{{ url_for('admin_centro_partidos') }}">⚽ Partidos</a>
+    <a class="top-btn" href="{{ url_for('admin_centro_actas') }}">📋 Actas</a>
+  </div>
+</div>
+
+<div style="background:#eef6ff;border:1px solid #cfe2ff;border-radius:14px;padding:14px 16px;margin-bottom:20px;color:#24405f">
+  <strong>Fuente oficial:</strong> solo se consideran jugadores registrados en <strong>actas cerradas</strong>. No se crean estadísticas paralelas.
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:22px">
+{% for item in [
+  ('Partidos', resumen.partidos, '⚽'),
+  ('Jugadores', resumen.jugadores, '👤'),
+  ('Goles', resumen.goles, '🥅'),
+  ('Amarillas', resumen.amarillas, '🟨'),
+  ('Rojas', resumen.rojas, '🟥'),
+  ('Titularidades', resumen.titulares, '🎽')
+] %}
+<div style="background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:16px">
+  <div style="font-size:12px;color:#64748b">{{ item[2] }} {{ item[0] }}</div>
+  <div style="font-size:27px;font-weight:850;margin-top:5px">{{ item[1] }}</div>
+</div>
+{% endfor %}
+</div>
+
+<form method="get" style="background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:16px;display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+  <select name="campeonato_id" style="padding:11px;border:1px solid #dbe3ec;border-radius:9px;min-width:220px">
+    <option value="">Todos los campeonatos</option>
+    {% for c in campeonatos %}
+      <option value="{{ c.id }}" {% if campeonato_id==c.id %}selected{% endif %}>{{ c.nombre }} · {{ c.serie }}</option>
+    {% endfor %}
+  </select>
+  <select name="serie" style="padding:11px;border:1px solid #dbe3ec;border-radius:9px;min-width:160px">
+    <option value="">Todas las series</option>
+    {% for s in series %}
+      <option value="{{ s }}" {% if serie==s %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <select name="club" style="padding:11px;border:1px solid #dbe3ec;border-radius:9px;min-width:190px">
+    <option value="">Todos los clubes</option>
+    {% for c in clubes %}
+      <option value="{{ c }}" {% if club==c %}selected{% endif %}>{{ c }}</option>
+    {% endfor %}
+  </select>
+  <input name="q" value="{{ q }}" placeholder="Jugador o RUT..." style="flex:1;min-width:190px;padding:11px;border:1px solid #dbe3ec;border-radius:9px">
+  <button class="top-btn primary">Filtrar</button>
+  <a class="top-btn" href="{{ url_for('admin_centro_estadisticas') }}">Limpiar</a>
+</form>
+
+<div style="display:grid;grid-template-columns:1.2fr 1fr;gap:18px;margin-bottom:20px">
+  <div style="background:#fff;border:1px solid #e5eaf1;border-radius:14px;overflow:auto">
+    <div style="padding:17px;border-bottom:1px solid #eef2f6">
+      <h2 style="margin:0;font-size:19px">⚽ Goleadores</h2>
+      <div style="font-size:12px;color:#64748b;margin-top:4px">Ranking por jugador y campeonato.</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;min-width:650px">
+      <thead><tr style="background:#f8fafc">
+        <th style="padding:12px;text-align:left">#</th>
+        <th style="padding:12px;text-align:left">Jugador</th>
+        <th style="padding:12px;text-align:left">Club</th>
+        <th style="padding:12px;text-align:left">Campeonato</th>
+        <th style="padding:12px;text-align:center">PJ</th>
+        <th style="padding:12px;text-align:center">Goles</th>
+      </tr></thead>
+      <tbody>
+      {% for f in goleadores %}
+      <tr style="border-top:1px solid #eef2f6">
+        <td style="padding:12px;font-weight:800">{{ loop.index }}</td>
+        <td style="padding:12px;font-weight:750">{{ f.jugador.nombre_completo }}</td>
+        <td style="padding:12px">{{ f.jugador.club or '—' }}</td>
+        <td style="padding:12px">{{ f.campeonato.nombre }}<br><small style="color:#64748b">{{ f.campeonato.serie }}</small></td>
+        <td style="padding:12px;text-align:center">{{ f.partidos_jugados }}</td>
+        <td style="padding:12px;text-align:center;font-weight:850;font-size:18px">{{ f.goles }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" style="padding:35px;text-align:center;color:#64748b">No hay estadísticas para los filtros seleccionados.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="background:#fff;border:1px solid #e5eaf1;border-radius:14px;overflow:auto">
+    <div style="padding:17px;border-bottom:1px solid #eef2f6">
+      <h2 style="margin:0;font-size:19px">🟨 Disciplina</h2>
+      <div style="font-size:12px;color:#64748b;margin-top:4px">Tarjetas registradas en actas cerradas.</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;min-width:500px">
+      <thead><tr style="background:#f8fafc">
+        <th style="padding:12px;text-align:left">Jugador</th>
+        <th style="padding:12px;text-align:left">Club</th>
+        <th style="padding:12px;text-align:center">🟨</th>
+        <th style="padding:12px;text-align:center">🟥</th>
+      </tr></thead>
+      <tbody>
+      {% for f in disciplina %}
+      {% if f.amarillas > 0 or f.rojas > 0 %}
+      <tr style="border-top:1px solid #eef2f6">
+        <td style="padding:12px;font-weight:700">{{ f.jugador.nombre_completo }}</td>
+        <td style="padding:12px">{{ f.jugador.club or '—' }}</td>
+        <td style="padding:12px;text-align:center;font-weight:800">{{ f.amarillas }}</td>
+        <td style="padding:12px;text-align:center;font-weight:800">{{ f.rojas }}</td>
+      </tr>
+      {% endif %}
+      {% else %}
+      <tr><td colspan="4" style="padding:35px;text-align:center;color:#64748b">Sin registros disciplinarios.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div style="background:#fff;border:1px solid #e5eaf1;border-radius:14px;overflow:auto">
+  <div style="padding:17px;border-bottom:1px solid #eef2f6">
+    <h2 style="margin:0;font-size:19px">🟥 Expulsiones</h2>
+    <div style="font-size:12px;color:#64748b;margin-top:4px">Jugadores con tarjetas rojas registradas.</div>
+  </div>
+  <table style="width:100%;border-collapse:collapse;min-width:650px">
+    <thead><tr style="background:#f8fafc">
+      <th style="padding:12px;text-align:left">Jugador</th>
+      <th style="padding:12px;text-align:left">Club</th>
+      <th style="padding:12px;text-align:left">Campeonato</th>
+      <th style="padding:12px;text-align:center">Rojas</th>
+    </tr></thead>
+    <tbody>
+    {% for f in rojas %}
+    {% if f.rojas > 0 %}
+    <tr style="border-top:1px solid #eef2f6">
+      <td style="padding:12px;font-weight:700">{{ f.jugador.nombre_completo }}</td>
+      <td style="padding:12px">{{ f.jugador.club or '—' }}</td>
+      <td style="padding:12px">{{ f.campeonato.nombre }} · {{ f.campeonato.serie }}</td>
+      <td style="padding:12px;text-align:center;font-weight:850">{{ f.rojas }}</td>
+    </tr>
+    {% endif %}
+    {% else %}
+    <tr><td colspan="4" style="padding:35px;text-align:center;color:#64748b">Sin expulsiones registradas.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}
