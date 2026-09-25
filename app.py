@@ -6989,6 +6989,94 @@ def admin_centro_campeonatos():
     )
 
 
+
+# ============================================================
+# V7.2 — CENTRO MAESTRO DE PARTIDOS
+# Vista unificada de partidos existentes y sus actas.
+# Solo consulta; no crea ni modifica registros.
+# ============================================================
+
+@app.route("/admin/partidos/centro")
+@admin_required
+def admin_centro_partidos():
+    campeonatos = Campeonato.query.order_by(
+        Campeonato.temporada.desc(), Campeonato.id.desc()
+    ).all()
+
+    campeonato_id = request.args.get("campeonato_id", type=int)
+    estado = (request.args.get("estado") or "").strip()
+    q = (request.args.get("q") or "").strip()
+
+    query = (
+        Partido.query
+        .join(Campeonato)
+        .order_by(
+            Partido.fecha.desc().nullslast(),
+            Partido.jornada.desc(),
+            Partido.id.desc()
+        )
+    )
+
+    if campeonato_id:
+        query = query.filter(Partido.campeonato_id == campeonato_id)
+
+    if estado:
+        query = query.filter(Partido.estado == estado)
+
+    if q:
+        patron = f"%{q}%"
+        query = query.filter(
+            db.or_(
+                Club.nombre.ilike(patron),
+                db.exists().where(
+                    db.and_(
+                        Club.id == Partido.local_club_id,
+                        Club.nombre.ilike(patron)
+                    )
+                ),
+                db.exists().where(
+                    db.and_(
+                        Club.id == Partido.visitante_club_id,
+                        Club.nombre.ilike(patron)
+                    )
+                )
+            )
+        )
+
+    partidos = query.limit(250).all()
+
+    filas = []
+    for partido in partidos:
+        acta = partido.acta
+        filas.append({
+            "partido": partido,
+            "acta": acta,
+            "acta_estado": acta.estado if acta else "Sin acta",
+        })
+
+    total = Partido.query.count()
+    programados = Partido.query.filter(Partido.estado != "Finalizado").count()
+    finalizados = Partido.query.filter_by(estado="Finalizado").count()
+    con_acta = ActaPartido.query.count()
+    actas_cerradas = ActaPartido.query.filter_by(estado="Cerrada").count()
+
+    return render_template(
+        "admin_centro_partidos.html",
+        filas=filas,
+        campeonatos=campeonatos,
+        campeonato_id=campeonato_id,
+        estado=estado,
+        q=q,
+        resumen={
+            "total": total,
+            "programados": programados,
+            "finalizados": finalizados,
+            "con_acta": con_acta,
+            "actas_cerradas": actas_cerradas,
+        },
+    )
+
+
 # ============================================================
 # HEALTH CHECK
 # ============================================================
