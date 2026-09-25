@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Estadísticas — {{ club.nombre }}{% endblock %}
+{% block content %}
+<style>
+.head{display:flex;justify-content:space-between;gap:15px;align-items:flex-end;margin-bottom:20px}.ey{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#64748b;font-weight:800}.head h1{margin:5px 0;font-size:29px}.muted{color:#64748b;font-size:12px}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 13px;border:1px solid #e5eaf1;background:#fff;border-radius:9px;font-size:12px;font-weight:750}.btn.primary{background:#2563eb;border-color:#2563eb;color:#fff}.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}.kpi,.card{background:#fff;border:1px solid #e5eaf1;border-radius:14px}.kpi{padding:15px}.kpi b{font-size:25px}.kpi span{display:block;color:#64748b;font-size:11px;margin-top:4px}.card{margin-bottom:18px;overflow:hidden}.ch{padding:15px 17px;border-bottom:1px solid #eef2f7}.ch h2{font-size:16px;margin:0}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:680px}th{background:#f8fafc;padding:12px;text-align:left;font-size:11px}td{padding:12px;border-top:1px solid #eef2f6;font-size:12px}.center{text-align:center}.empty{padding:30px;text-align:center;color:#64748b}.notice{background:#eef6ff;border:1px solid #cfe2ff;border-radius:14px;padding:14px 16px;margin-bottom:18px;color:#24405f}
+@media(max-width:800px){.kpis{grid-template-columns:repeat(2,1fr)}.head{display:block}.actions{margin-top:12px}}
+</style>
+<div class="head"><div><div class="ey">Centro deportivo · club</div><h1>📊 Estadísticas — {{ club.nombre }}</h1><div class="muted">Rendimiento individual del plantel a partir de actas cerradas.</div></div><div class="actions"><a class="btn" href="{{ url_for('admin_centro_club', club_id=club.id) }}">← Centro del club</a><a class="btn" href="{{ url_for('admin_centro_estadisticas') }}">Centro general</a></div></div>
+
+<div class="notice"><strong>Fuente oficial:</strong> solo se consideran participaciones registradas en <strong>actas cerradas</strong>. Las estadísticas se calculan sobre los mismos registros del sistema.</div>
+
+<form method="get" style="background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:15px;display:flex;gap:9px;flex-wrap:wrap;margin-bottom:18px">
+<select name="campeonato_id" style="padding:11px;border:1px solid #dbe3ec;border-radius:9px;min-width:260px">
+<option value="">Todos los campeonatos</option>
+{% for c in campeonatos %}<option value="{{ c.id }}" {% if campeonato_id==c.id %}selected{% endif %}>{{ c.nombre }} · {{ c.serie }} · {{ c.temporada }}</option>{% endfor %}
+</select>
+<button class="btn primary">Filtrar</button>
+<a class="btn" href="{{ url_for('admin_centro_club_estadisticas', club_id=club.id) }}">Limpiar</a>
+</form>
+
+<div class="kpis">
+<div class="kpi"><b>{{ resumen.partidos }}</b><span>Partidos con acta cerrada</span></div>
+<div class="kpi"><b>{{ resumen.jugadores }}</b><span>Jugadores con participación</span></div>
+<div class="kpi"><b>{{ resumen.goles }}</b><span>Goles registrados</span></div>
+<div class="kpi"><b>{{ resumen.amarillas }}</b><span>Amarillas</span></div>
+<div class="kpi"><b>{{ resumen.rojas }}</b><span>Rojas</span></div>
+</div>
+
+<div class="card"><div class="ch"><h2>⚽ Goleadores del club</h2></div><div class="table-wrap"><table><thead><tr><th>#</th><th>Jugador</th><th>Serie</th><th>Campeonato</th><th class="center">PJ</th><th class="center">Goles</th></tr></thead><tbody>
+{% for f in goleadores %}<tr><td><b>{{ loop.index }}</b></td><td><a href="{{ url_for('admin_centro_jugador', jugador_id=f.jugador.id) }}" style="font-weight:750;text-decoration:none">{{ f.jugador.nombre_completo }}</a><div class="muted">{{ f.jugador.rut }}</div></td><td>{{ f.jugador.serie }}</td><td>{{ f.campeonato.nombre }}<div class="muted">{{ f.campeonato.temporada }}</div></td><td class="center">{{ f.partidos_jugados }}</td><td class="center"><b style="font-size:17px">{{ f.goles }}</b></td></tr>
+{% else %}<tr><td colspan="6" class="empty">No hay goles registrados para los filtros seleccionados.</td></tr>{% endfor %}
+</tbody></table></div></div>
+
+<div class="card"><div class="ch"><h2>🟨 Disciplina del club</h2></div><div class="table-wrap"><table><thead><tr><th>Jugador</th><th>Serie</th><th>Campeonato</th><th class="center">PJ</th><th class="center">🟨</th><th class="center">🟥</th></tr></thead><tbody>
+{% for f in disciplina %}<tr><td><a href="{{ url_for('admin_centro_jugador', jugador_id=f.jugador.id) }}" style="font-weight:750;text-decoration:none">{{ f.jugador.nombre_completo }}</a></td><td>{{ f.jugador.serie }}</td><td>{{ f.campeonato.nombre }}<div class="muted">{{ f.campeonato.temporada }}</div></td><td class="center">{{ f.partidos_jugados }}</td><td class="center"><b>{{ f.amarillas }}</b></td><td class="center"><b>{{ f.rojas }}</b></td></tr>
+{% else %}<tr><td colspan="6" class="empty">Sin registros disciplinarios para los filtros seleccionados.</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}
