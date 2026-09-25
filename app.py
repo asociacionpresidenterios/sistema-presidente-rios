@@ -1456,8 +1456,7 @@ def ficha_jugador(jugador_id):
     return render_template(
         "jugador_detalle.html",
         jugador=jugador,
-        goles=goles_registrados,
-        total_goles_registrados=total_goles_registrados,
+        goles=goles,
         amarillas=amarillas,
         rojas=rojas,
         suspensiones=suspensiones,
@@ -6291,13 +6290,7 @@ def admin_centro_jugadores():
 def admin_centro_jugador(jugador_id):
     jugador = db.get_or_404(Jugador, jugador_id)
 
-    goles_registrados = (
-        Gol.query
-        .filter_by(jugador_id=jugador.id)
-        .order_by(Gol.fecha.desc(), Gol.id.desc())
-        .all()
-    )
-    total_goles_registrados = sum(int(g.cantidad or 0) for g in goles_registrados)
+    goles = obtener_goles(jugador.id)
     amarillas = obtener_amarillas(jugador.id)
     rojas = obtener_rojas(jugador.id)
     suspensiones = obtener_suspensiones(jugador.id)
@@ -6655,110 +6648,6 @@ def admin_centro_deportivo():
     ]
     resumen = {"partidos": len(partidos), "finalizados": finalizados, "actas_cerradas": actas_cerradas, "goles": total_goles, "amarillas": total_amarillas, "rojas": total_rojas, "participaciones": len(participaciones)}
     return render_template("admin_centro_deportivo.html", campeonatos=campeonatos, campeonato=campeonato, resumen=resumen, tabla=tabla, goleadores=goleadores, disciplinados=disciplinados, proximos=proximos, alertas=alertas)
-
-# ============================================================
-# V7.1 — ESTADÍSTICAS AVANZADAS
-# ============================================================
-
-@app.route("/admin/estadisticas-avanzadas")
-@admin_required
-def admin_estadisticas_avanzadas():
-    campeonato_id = request.args.get("campeonato_id", type=int)
-    club_id = request.args.get("club_id", type=int)
-
-    campeonatos = Campeonato.query.order_by(Campeonato.fecha_inicio.desc().nullslast(), Campeonato.id.desc()).all()
-    clubes = Club.query.filter_by(activo=True).order_by(Club.nombre.asc()).all()
-
-    q = (PartidoJugador.query
-         .join(Partido, PartidoJugador.partido_id == Partido.id)
-         .join(ActaPartido, ActaPartido.partido_id == Partido.id)
-         .filter(ActaPartido.estado == "Cerrada"))
-    if campeonato_id:
-        q = q.filter(Partido.campeonato_id == campeonato_id)
-
-    participaciones = q.all()
-    if club_id:
-        participaciones = [p for p in participaciones
-                           if (p.jugador and p.jugador.club and
-                               Club.query.filter(Club.id == club_id, Club.nombre == p.jugador.club).first())]
-
-    # Estadísticas individuales.
-    jugadores_map = {}
-    club_map = {}
-    for p in participaciones:
-        if not p.jugador:
-            continue
-        jid = p.jugador_id
-        if jid not in jugadores_map:
-            jugadores_map[jid] = {
-                "jugador": p.jugador, "partidos": 0, "titularidades": 0,
-                "goles": 0, "amarillas": 0, "rojas": 0
-            }
-        x = jugadores_map[jid]
-        x["partidos"] += 1
-        if str(p.condicion or "").lower() == "titular":
-            x["titularidades"] += 1
-        x["goles"] += int(p.goles or 0)
-        x["amarillas"] += int(p.amarillas or 0)
-        x["rojas"] += int(p.rojas or 0)
-
-        nombre_club = p.jugador.club or "Sin club"
-        if nombre_club not in club_map:
-            club_map[nombre_club] = {"club": nombre_club, "jugadores": set(), "participaciones": 0, "goles": 0, "amarillas": 0, "rojas": 0}
-        c = club_map[nombre_club]
-        c["jugadores"].add(jid)
-        c["participaciones"] += 1
-        c["goles"] += int(p.goles or 0)
-        c["amarillas"] += int(p.amarillas or 0)
-        c["rojas"] += int(p.rojas or 0)
-
-    jugadores = list(jugadores_map.values())
-    for x in jugadores:
-        x["promedio_goles"] = x["goles"] / x["partidos"] if x["partidos"] else 0
-    jugadores.sort(key=lambda x: (-x["goles"], -x["partidos"], x["jugador"].nombre_completo))
-    jugadores = jugadores[:50]
-
-    clubes_stats = []
-    for c in club_map.values():
-        c["jugadores"] = len(c["jugadores"])
-        c["promedio_goles"] = c["goles"] / c["participaciones"] if c["participaciones"] else 0
-        clubes_stats.append(c)
-    clubes_stats.sort(key=lambda x: (-x["goles"], -x["participaciones"], x["club"]))
-
-    goleadores = sorted(jugadores_map.values(), key=lambda x: (-x["goles"], x["jugador"].nombre_completo))[:10]
-    max_goles = max([x["goles"] for x in goleadores], default=1)
-    for x in goleadores:
-        x["porcentaje"] = round((x["goles"] / max_goles) * 100) if max_goles else 0
-
-    disciplina = [x for x in jugadores_map.values() if x["amarillas"] or x["rojas"]]
-    disciplina.sort(key=lambda x: (-x["rojas"], -x["amarillas"], x["jugador"].nombre_completo))
-    disciplina = disciplina[:10]
-
-    total_goles = sum(x["goles"] for x in jugadores_map.values())
-    total_amarillas = sum(x["amarillas"] for x in jugadores_map.values())
-    total_rojas = sum(x["rojas"] for x in jugadores_map.values())
-    total_participaciones = len(participaciones)
-    partidos_ids = {p.partido_id for p in participaciones}
-    resumen = {
-        "partidos": len(partidos_ids),
-        "participaciones": total_participaciones,
-        "jugadores": len(jugadores_map),
-        "goles": total_goles,
-        "amarillas": total_amarillas,
-        "rojas": total_rojas,
-        "promedio_goles": total_goles / total_participaciones if total_participaciones else 0,
-        "promedio_amarillas": total_amarillas / total_participaciones if total_participaciones else 0,
-        "promedio_rojas": total_rojas / total_participaciones if total_participaciones else 0,
-    }
-
-    return render_template(
-        "admin_estadisticas_avanzadas.html",
-        campeonatos=campeonatos, clubes=clubes,
-        campeonato_id=campeonato_id, club_id=club_id,
-        resumen=resumen, jugadores=jugadores,
-        clubes_stats=clubes_stats, goleadores=goleadores,
-        disciplina=disciplina
-    )
 
 @app.route("/admin/panel-maestro")
 @admin_required
