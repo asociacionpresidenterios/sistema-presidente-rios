@@ -7147,6 +7147,139 @@ def admin_centro_campeonatos():
 
 
 # ============================================================
+# V7.4.4 — CENTRO MAESTRO DE CAMPEONATO
+# Integra clubes, planteles, partidos, actas y estadísticas.
+# Solo lectura; utiliza los registros maestros existentes.
+# ============================================================
+
+@app.route("/admin/campeonatos/<int:campeonato_id>/centro")
+@admin_required
+def admin_centro_campeonato(campeonato_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+
+    participaciones = CampeonatoClub.query.filter_by(
+        campeonato_id=campeonato.id
+    ).all()
+    clubes = sorted(
+        [x.club for x in participaciones if x.club],
+        key=lambda x: (x.nombre or "").lower()
+    )
+
+    partidos = Partido.query.filter_by(
+        campeonato_id=campeonato.id
+    ).order_by(
+        Partido.jornada.asc(),
+        Partido.fecha.asc().nullslast(),
+        Partido.hora.asc().nullslast(),
+        Partido.id.asc()
+    ).all()
+
+    # Estadísticas oficiales: solamente actas cerradas.
+    registros = (
+        db.session.query(PartidoJugador, Jugador, Partido, ActaPartido)
+        .join(Jugador, Jugador.id == PartidoJugador.jugador_id)
+        .join(Partido, Partido.id == PartidoJugador.partido_id)
+        .join(ActaPartido, ActaPartido.partido_id == Partido.id)
+        .filter(
+            Partido.campeonato_id == campeonato.id,
+            ActaPartido.estado == "Cerrada"
+        )
+        .all()
+    )
+
+    jugadores_ids = set()
+    partidos_cerrados = set()
+    total_goles = total_amarillas = total_rojas = 0
+    por_club = {}
+    por_jugador = {}
+
+    for pj, jugador, partido, acta in registros:
+        jugadores_ids.add(jugador.id)
+        partidos_cerrados.add(partido.id)
+
+        goles = int(pj.goles or 0)
+        amarillas = int(pj.amarillas or 0)
+        rojas = int(pj.rojas or 0)
+        total_goles += goles
+        total_amarillas += amarillas
+        total_rojas += rojas
+
+        nombre_club = (jugador.club or "Sin club").strip()
+        fila_club = por_club.setdefault(nombre_club, {
+            "nombre": nombre_club,
+            "jugadores": set(),
+            "goles": 0,
+            "amarillas": 0,
+            "rojas": 0,
+        })
+        fila_club["jugadores"].add(jugador.id)
+        fila_club["goles"] += goles
+        fila_club["amarillas"] += amarillas
+        fila_club["rojas"] += rojas
+
+        key = jugador.id
+        fila_jugador = por_jugador.setdefault(key, {
+            "jugador": jugador,
+            "partidos": set(),
+            "goles": 0,
+            "amarillas": 0,
+            "rojas": 0,
+        })
+        fila_jugador["partidos"].add(partido.id)
+        fila_jugador["goles"] += goles
+        fila_jugador["amarillas"] += amarillas
+        fila_jugador["rojas"] += rojas
+
+    resumen_clubes = []
+    for fila in por_club.values():
+        fila["total_jugadores"] = len(fila["jugadores"])
+        resumen_clubes.append(fila)
+
+    resumen_clubes.sort(key=lambda x: (-(x["goles"]), x["nombre"].lower()))
+
+    goleadores = [
+        x for x in por_jugador.values()
+        if x["goles"] > 0
+    ]
+    goleadores.sort(
+        key=lambda x: (-x["goles"], x["jugador"].nombre_completo.lower())
+    )
+
+    disciplina = [
+        x for x in por_jugador.values()
+        if x["amarillas"] > 0 or x["rojas"] > 0
+    ]
+    disciplina.sort(
+        key=lambda x: (
+            -x["amarillas"],
+            -x["rojas"],
+            x["jugador"].nombre_completo.lower()
+        )
+    )
+
+    return render_template(
+        "admin_centro_campeonato.html",
+        campeonato=campeonato,
+        clubes=clubes,
+        partidos=partidos,
+        resumen_clubes=resumen_clubes,
+        goleadores=goleadores[:30],
+        disciplina=disciplina[:30],
+        resumen={
+            "clubes": len(clubes),
+            "partidos": len(partidos),
+            "finalizados": sum(1 for p in partidos if p.estado == "Finalizado"),
+            "pendientes": sum(1 for p in partidos if p.estado != "Finalizado"),
+            "actas_cerradas": len(partidos_cerrados),
+            "jugadores": len(jugadores_ids),
+            "goles": total_goles,
+            "amarillas": total_amarillas,
+            "rojas": total_rojas,
+        },
+    )
+
+
+# ============================================================
 # V7.2 — CENTRO MAESTRO DE PARTIDOS
 # Vista unificada de partidos existentes y sus actas.
 # Solo consulta; no crea ni modifica registros.
