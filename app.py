@@ -7165,6 +7165,31 @@ def admin_centro_campeonato(campeonato_id):
         key=lambda x: (x.nombre or "").lower()
     )
 
+    # Planteles maestros: jugadores ya registrados para los clubes participantes.
+    club_ids = {c.id for c in clubes}
+    club_nombres = {c.nombre for c in clubes}
+    jugadores = Jugador.query.filter(Jugador.club.in_(club_nombres)).order_by(
+        Jugador.club.asc(), Jugador.serie.asc(), Jugador.nombre_completo.asc()
+    ).all() if club_nombres else []
+
+    planteles = {}
+    for jugador in jugadores:
+        clave = (jugador.club or "Sin club", jugador.serie or "Sin serie")
+        planteles.setdefault(clave, []).append(jugador)
+
+    resumen_planteles = []
+    for (nombre_club, nombre_serie), lista in planteles.items():
+        resumen_planteles.append({
+            "club": nombre_club,
+            "serie": nombre_serie,
+            "total": len(lista),
+            "vigentes": sum(1 for j in lista if (j.estado or "Vigente") == "Vigente"),
+            "jugadores": lista,
+        })
+    resumen_planteles.sort(key=lambda x: (x["club"].lower(), x["serie"].lower()))
+
+    series = sorted({x["serie"] for x in resumen_planteles}, key=str.lower)
+
     partidos = Partido.query.filter_by(
         campeonato_id=campeonato.id
     ).order_by(
@@ -7263,6 +7288,8 @@ def admin_centro_campeonato(campeonato_id):
         clubes=clubes,
         partidos=partidos,
         resumen_clubes=resumen_clubes,
+        resumen_planteles=resumen_planteles,
+        series=series,
         goleadores=goleadores[:30],
         disciplina=disciplina[:30],
         resumen={
