@@ -7312,6 +7312,92 @@ def admin_centro_campeonato(campeonato_id):
 
 
 # ============================================================
+# V7.4.6 — CENTRO DE PLANTELES POR CAMPEONATO
+# ============================================================
+
+@app.route("/admin/campeonatos/<int:campeonato_id>/planteles")
+@admin_required
+def admin_planteles_campeonato(campeonato_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+
+    participaciones = CampeonatoClub.query.filter_by(
+        campeonato_id=campeonato.id
+    ).all()
+
+    clubes = sorted(
+        [x.club for x in participaciones if x.club],
+        key=lambda x: (x.nombre or "").lower()
+    )
+
+    serie = (campeonato.serie or "").strip()
+
+    filas = []
+    for club in clubes:
+        jugadores = Jugador.query.filter(
+            Jugador.club == club.nombre,
+            Jugador.serie == serie
+        ).order_by(
+            Jugador.nombre_completo.asc()
+        ).all()
+
+        filas.append({
+            "club": club,
+            "serie": serie or "Sin serie",
+            "jugadores": jugadores,
+            "total": len(jugadores),
+            "vigentes": sum(
+                1 for j in jugadores
+                if (j.estado or "Vigente") == "Vigente"
+            ),
+        })
+
+    return render_template(
+        "admin_planteles_campeonato.html",
+        campeonato=campeonato,
+        filas=filas,
+        serie=serie,
+    )
+
+
+@app.route("/admin/campeonatos/<int:campeonato_id>/plantel/<int:club_id>")
+@admin_required
+def admin_plantel_campeonato_club(campeonato_id, club_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    club = db.get_or_404(Club, club_id)
+
+    participa = CampeonatoClub.query.filter_by(
+        campeonato_id=campeonato.id,
+        club_id=club.id
+    ).first()
+
+    if not participa:
+        flash("El club no participa en este campeonato.", "warning")
+        return redirect(
+            url_for(
+                "admin_planteles_campeonato",
+                campeonato_id=campeonato.id
+            )
+        )
+
+    serie = (campeonato.serie or "").strip()
+
+    jugadores = Jugador.query.filter(
+        Jugador.club == club.nombre,
+        Jugador.serie == serie
+    ).order_by(
+        Jugador.nombre_completo.asc()
+    ).all()
+
+    return render_template(
+        "admin_plantel_campeonato_club.html",
+        campeonato=campeonato,
+        club=club,
+        serie=serie or "Sin serie",
+        jugadores=jugadores,
+    )
+
+
+# ============================================================
 # V7.2 — CENTRO MAESTRO DE PARTIDOS
 # Vista unificada de partidos existentes y sus actas.
 # Solo consulta; no crea ni modifica registros.
