@@ -32,6 +32,37 @@
   <div class="kpi"><b>{{ resumen.amarillas }} / {{ resumen.rojas }}</b><span>Amarillas / Rojas</span></div>
 </div>
 
+<div class="card">
+  <div class="section-head">
+    <h2>👥 Series y planteles</h2>
+    <span class="small">{{ resumen_planteles|length }} planteles registrados</span>
+  </div>
+  {% if resumen_planteles %}
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Club</th><th>Serie</th><th>Jugadores</th><th>Vigentes</th><th>Plantel</th></tr></thead>
+    <tbody>
+    {% for p in resumen_planteles %}
+    <tr>
+      <td class="club-name">{{ p.club }}</td>
+      <td><span class="tag">{{ p.serie }}</span></td>
+      <td>{{ p.total }}</td>
+      <td>{{ p.vigentes }}</td>
+      <td>
+        {% for c in clubes %}
+          {% if c.nombre == p.club %}
+            <a class="btn" href="{{ url_for('admin_centro_club', club_id=c.id) }}">Abrir club</a>
+          {% endif %}
+        {% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <div class="empty">No existen jugadores registrados para los clubes participantes de este campeonato.</div>
+  {% endif %}
+</div>
+
 <div class="grid">
 <div>
   <div class="card">
