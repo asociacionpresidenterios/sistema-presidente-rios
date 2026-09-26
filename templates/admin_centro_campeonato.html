@@ -37,6 +37,7 @@
     <h2>👥 Series y planteles</h2>
     <span class="small">Serie oficial: <b>{{ serie_campeonato or 'Sin serie' }}</b></span>
   </div>
+  <div style="margin-bottom:12px"><a class="btn primary" href="{{ url_for('admin_planteles_campeonato', campeonato_id=campeonato.id) }}">👥 Abrir centro de planteles</a></div>
   <div class="notice" style="margin-bottom:12px">
     Este campeonato está vinculado a la serie <b>{{ serie_campeonato or 'Sin serie' }}</b>. Los planteles mostrados corresponden a esa serie dentro del registro maestro de jugadores.
   </div>
