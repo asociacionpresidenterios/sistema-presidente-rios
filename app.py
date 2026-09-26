@@ -7388,12 +7388,53 @@ def admin_plantel_campeonato_club(campeonato_id, club_id):
         Jugador.nombre_completo.asc()
     ).all()
 
+    # Estadísticas individuales del plantel: solo actas cerradas.
+    jugador_ids = {j.id for j in jugadores}
+    stats = {
+        j.id: {
+            "partidos": 0,
+            "titulares": 0,
+            "goles": 0,
+            "amarillas": 0,
+            "rojas": 0,
+            "actas": 0,
+        }
+        for j in jugadores
+    }
+
+    if jugador_ids:
+        registros = (
+            db.session.query(PartidoJugador, Partido, ActaPartido)
+            .join(Partido, Partido.id == PartidoJugador.partido_id)
+            .join(ActaPartido, ActaPartido.partido_id == Partido.id)
+            .filter(
+                Partido.campeonato_id == campeonato.id,
+                ActaPartido.estado == "Cerrada",
+                PartidoJugador.jugador_id.in_(jugador_ids),
+            )
+            .all()
+        )
+
+        for pj, partido, acta in registros:
+            fila = stats.get(pj.jugador_id)
+            if not fila:
+                continue
+            fila["partidos"] += 1
+            fila["titulares"] += (
+                1 if str(pj.condicion or "").strip().lower() == "titular" else 0
+            )
+            fila["goles"] += int(pj.goles or 0)
+            fila["amarillas"] += int(pj.amarillas or 0)
+            fila["rojas"] += int(pj.rojas or 0)
+            fila["actas"] += 1
+
     return render_template(
         "admin_plantel_campeonato_club.html",
         campeonato=campeonato,
         club=club,
         serie=serie or "Sin serie",
         jugadores=jugadores,
+        stats=stats,
     )
 
 
