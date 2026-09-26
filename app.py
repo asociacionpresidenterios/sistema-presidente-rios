@@ -7168,9 +7168,13 @@ def admin_centro_campeonato(campeonato_id):
     # Planteles maestros: jugadores ya registrados para los clubes participantes.
     club_ids = {c.id for c in clubes}
     club_nombres = {c.nombre for c in clubes}
-    jugadores = Jugador.query.filter(Jugador.club.in_(club_nombres)).order_by(
+    serie_campeonato = (campeonato.serie or "").strip()
+    jugadores_query = Jugador.query.filter(Jugador.club.in_(club_nombres)) if club_nombres else Jugador.query.filter(db.false())
+    if serie_campeonato:
+        jugadores_query = jugadores_query.filter(Jugador.serie == serie_campeonato)
+    jugadores = jugadores_query.order_by(
         Jugador.club.asc(), Jugador.serie.asc(), Jugador.nombre_completo.asc()
-    ).all() if club_nombres else []
+    ).all()
 
     planteles = {}
     for jugador in jugadores:
@@ -7290,6 +7294,7 @@ def admin_centro_campeonato(campeonato_id):
         resumen_clubes=resumen_clubes,
         resumen_planteles=resumen_planteles,
         series=series,
+        serie_campeonato=serie_campeonato,
         goleadores=goleadores[:30],
         disciplina=disciplina[:30],
         resumen={
