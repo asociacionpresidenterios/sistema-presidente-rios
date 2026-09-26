@@ -6,6 +6,15 @@
 </style>
 <div class="wrap">
 <div class="head"><div><div class="ey">V7.4.6 · Plantel del campeonato</div><h1>👥 {{ club.nombre }}</h1><div class="muted">{{ campeonato.nombre }} · <span class="tag">{{ serie }}</span></div></div><div class="actions"><a class="btn" href="{{ url_for('admin_planteles_campeonato', campeonato_id=campeonato.id) }}">← Planteles</a><a class="btn" href="{{ url_for('admin_centro_club', club_id=club.id) }}">Centro club</a></div></div>
-<div class="card">{% if jugadores %}<table class="table"><thead><tr><th>#</th><th>Jugador</th><th>RUT</th><th>Estado</th><th>Serie</th><th></th></tr></thead><tbody>{% for j in jugadores %}<tr><td>{{ loop.index }}</td><td><b>{{ j.nombre_completo }}</b></td><td>{{ j.rut }}</td><td><span class="tag">{{ j.estado or 'Vigente' }}</span></td><td>{{ j.serie }}</td><td><a class="btn" href="{{ url_for('admin_centro_jugador', jugador_id=j.id) }}">Abrir centro</a> <a class="btn" href="{{ url_for('ficha_jugador', jugador_id=j.id) }}">Ficha</a></td></tr>{% endfor %}</tbody></table>{% else %}<div class="empty">No hay jugadores registrados para este club en la serie {{ serie }}.</div>{% endif %}</div>
+<div class="card">
+{% if jugadores %}
+<div style="margin-bottom:14px;color:#64748b;font-size:12px">📊 Estadísticas oficiales del plantel calculadas únicamente desde <b>actas cerradas</b>.</div>
+<div style="overflow:auto"><table class="table"><thead><tr><th>#</th><th>Jugador</th><th>RUT</th><th>Estado</th><th>Part.</th><th>Tit.</th><th>Goles</th><th>🟨</th><th>🟥</th><th>Actas</th><th></th></tr></thead><tbody>
+{% for j in jugadores %}{% set s=stats[j.id] %}<tr>
+<td>{{ loop.index }}</td><td><b>{{ j.nombre_completo }}</b><br><span style="color:#64748b;font-size:10px">{{ j.serie }}</span></td><td>{{ j.rut }}</td><td><span class="tag">{{ j.estado or 'Vigente' }}</span></td>
+<td><b>{{ s.partidos }}</b></td><td>{{ s.titulares }}</td><td><b>{{ s.goles }}</b></td><td>{{ s.amarillas }}</td><td>{{ s.rojas }}</td><td>{{ s.actas }}</td>
+<td><a class="btn primary" href="{{ url_for('admin_centro_jugador', jugador_id=j.id) }}">Centro</a> <a class="btn" href="{{ url_for('ficha_jugador', jugador_id=j.id) }}">Ficha</a></td>
+</tr>{% endfor %}</tbody></table></div>
+{% else %}<div class="empty">No hay jugadores registrados para este club en la serie {{ serie }}.</div>{% endif %}</div>
 </div>
 {% endblock %}
