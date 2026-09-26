@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Plantel · {{ club.nombre }}{% endblock %}
+{% block content %}
+<style>
+.wrap{max-width:1400px}.head{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin-bottom:20px}.ey{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#64748b;font-weight:800}.head h1{margin:5px 0;font-size:30px}.muted{color:#64748b;font-size:13px}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{display:inline-flex;padding:9px 12px;border:1px solid #e5eaf1;background:#fff;border-radius:10px;font-size:12px;font-weight:800;text-decoration:none;color:#1e293b}.btn.primary{background:#2563eb;border-color:#2563eb;color:#fff}.tag{display:inline-flex;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:800;font-size:10px}.card{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:17px}.table{width:100%;border-collapse:collapse;font-size:12px}.table th{text-align:left;background:#f8fafc;color:#64748b;font-size:10px;text-transform:uppercase;padding:10px}.table td{padding:10px;border-bottom:1px solid #eef2f7}.empty{padding:30px;text-align:center;color:#64748b}
+</style>
+<div class="wrap">
+<div class="head"><div><div class="ey">V7.4.6 · Plantel del campeonato</div><h1>👥 {{ club.nombre }}</h1><div class="muted">{{ campeonato.nombre }} · <span class="tag">{{ serie }}</span></div></div><div class="actions"><a class="btn" href="{{ url_for('admin_planteles_campeonato', campeonato_id=campeonato.id) }}">← Planteles</a><a class="btn" href="{{ url_for('admin_centro_club', club_id=club.id) }}">Centro club</a></div></div>
+<div class="card">{% if jugadores %}<table class="table"><thead><tr><th>#</th><th>Jugador</th><th>RUT</th><th>Estado</th><th>Serie</th><th></th></tr></thead><tbody>{% for j in jugadores %}<tr><td>{{ loop.index }}</td><td><b>{{ j.nombre_completo }}</b></td><td>{{ j.rut }}</td><td><span class="tag">{{ j.estado or 'Vigente' }}</span></td><td>{{ j.serie }}</td><td><a class="btn" href="{{ url_for('admin_centro_jugador', jugador_id=j.id) }}">Abrir centro</a> <a class="btn" href="{{ url_for('ficha_jugador', jugador_id=j.id) }}">Ficha</a></td></tr>{% endfor %}</tbody></table>{% else %}<div class="empty">No hay jugadores registrados para este club en la serie {{ serie }}.</div>{% endif %}</div>
+</div>
+{% endblock %}
