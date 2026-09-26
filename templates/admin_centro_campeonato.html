@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Centro maestro · {{ campeonato.nombre }}{% endblock %}
+{% block content %}
+<style>
+.wrap{max-width:1450px}.head{display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin-bottom:20px}.ey{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#64748b;font-weight:800}.head h1{margin:5px 0;font-size:30px}.muted{color:#64748b;font-size:13px}.actions{display:flex;gap:8px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;padding:9px 12px;border:1px solid #e5eaf1;background:#fff;border-radius:10px;font-size:12px;font-weight:800;text-decoration:none;color:#1e293b}.btn.primary{background:#2563eb;border-color:#2563eb;color:#fff}.notice{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;padding:12px 14px;border-radius:12px;font-size:12px;margin-bottom:18px}.kpis{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin-bottom:18px}.kpi,.card{background:#fff;border:1px solid #e5eaf1;border-radius:14px}.kpi{padding:13px}.kpi b{display:block;font-size:23px}.kpi span{font-size:10px;color:#64748b}.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}.card{padding:17px;margin-bottom:16px}.card h2{margin:0 0 12px;font-size:17px}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;font-size:12px}.table th{text-align:left;background:#f8fafc;color:#64748b;font-size:10px;text-transform:uppercase;padding:10px;border-bottom:1px solid #e5eaf1}.table td{padding:10px;border-bottom:1px solid #eef2f7;vertical-align:middle}.tag{display:inline-flex;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:800;font-size:10px}.score{font-weight:900;font-size:16px}.small{font-size:11px;color:#64748b}.club-name{font-weight:800}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}.empty{padding:30px;text-align:center;color:#64748b}@media(max-width:1100px){.kpis{grid-template-columns:repeat(4,1fr)}.grid{grid-template-columns:1fr}}@media(max-width:650px){.kpis{grid-template-columns:repeat(2,1fr)}.head{display:block}.actions{margin-top:12px}}
+</style>
+<div class="wrap">
+<div class="head">
+  <div>
+    <div class="ey">V7.4.4 · Integración de competencia</div>
+    <h1>🏆 {{ campeonato.nombre }}</h1>
+    <div class="muted">Temporada {{ campeonato.temporada }} · Serie {{ campeonato.serie }} · Estado: {{ campeonato.estado }}</div>
+  </div>
+  <div class="actions">
+    <a class="btn" href="{{ url_for('admin_centro_campeonatos') }}">← Campeonatos</a>
+    <a class="btn" href="{{ url_for('detalle_campeonato', campeonato_id=campeonato.id) }}">⚙️ Administrar</a>
+    <a class="btn" href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">📅 Fixture</a>
+    <a class="btn primary" href="{{ url_for('admin_centro_estadisticas', campeonato_id=campeonato.id) }}">📈 Estadísticas</a>
+    <a class="btn" href="{{ url_for('publico_campeonato', campeonato_id=campeonato.id) }}" target="_blank">🌐 Público</a>
+  </div>
+</div>
+
+<div class="notice">Las estadísticas de goles y disciplina mostradas aquí se calculan exclusivamente desde <b>actas cerradas</b>. No se crean jugadores, clubes ni registros paralelos.</div>
+
+<div class="kpis">
+  <div class="kpi"><b>{{ resumen.clubes }}</b><span>Clubes participantes</span></div>
+  <div class="kpi"><b>{{ resumen.partidos }}</b><span>Partidos</span></div>
+  <div class="kpi"><b>{{ resumen.finalizados }}</b><span>Finalizados</span></div>
+  <div class="kpi"><b>{{ resumen.pendientes }}</b><span>Pendientes</span></div>
+  <div class="kpi"><b>{{ resumen.jugadores }}</b><span>Jugadores con acta</span></div>
+  <div class="kpi"><b>{{ resumen.goles }}</b><span>Goles</span></div>
+  <div class="kpi"><b>{{ resumen.amarillas }} / {{ resumen.rojas }}</b><span>Amarillas / Rojas</span></div>
+</div>
+
+<div class="grid">
+<div>
+  <div class="card">
+    <div class="section-head"><h2>🏟️ Clubes participantes y estadísticas</h2><span class="small">{{ resumen_clubes|length }} con actividad registrada</span></div>
+    {% if resumen_clubes %}
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Club</th><th>Jugadores</th><th>Goles</th><th>Amarillas</th><th>Rojas</th><th></th></tr></thead>
+      <tbody>{% for f in resumen_clubes %}
+      <tr>
+        <td class="club-name">{{ f.nombre }}</td><td>{{ f.total_jugadores }}</td><td class="score">{{ f.goles }}</td><td>{{ f.amarillas }}</td><td>{{ f.rojas }}</td>
+        <td>{% for c in clubes %}{% if c.nombre == f.nombre %}<a class="btn" href="{{ url_for('admin_centro_club_estadisticas', club_id=c.id, campeonato_id=campeonato.id) }}">Ver club</a>{% endif %}{% endfor %}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<div class="empty">Aún no existen estadísticas de actas cerradas.</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <div class="section-head"><h2>📅 Partidos del campeonato</h2><a class="btn" href="{{ url_for('admin_centro_partidos', campeonato_id=campeonato.id) }}">Centro de partidos</a></div>
+    <div class="table-wrap"><table class="table">
+      <thead><tr><th>Jornada</th><th>Fecha</th><th>Partido</th><th>Marcador</th><th>Estado</th><th>Acta</th></tr></thead>
+      <tbody>{% for p in partidos[:40] %}
+      <tr>
+        <td>{{ p.jornada }}</td><td>{{ p.fecha or '—' }}{% if p.hora %}<div class="small">{{ p.hora }}</div>{% endif %}</td>
+        <td><b>{{ p.local_club.nombre }}</b><br><span class="small">vs</span> <b>{{ p.visitante_club.nombre }}</b></td>
+        <td>{% if p.goles_local is not none and p.goles_visitante is not none %}<span class="score">{{ p.goles_local }} - {{ p.goles_visitante }}</span>{% else %}—{% endif %}</td>
+        <td><span class="tag">{{ p.estado }}</span></td>
+        <td>{% if p.acta %}<span class="tag">{{ p.acta.estado }}</span>{% else %}<span class="small">Sin acta</span>{% endif %}</td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+  </div>
+</div>
+
+<div>
+  <div class="card">
+    <div class="section-head"><h2>⚽ Goleadores</h2><span class="small">Top 30</span></div>
+    {% if goleadores %}<div class="table-wrap"><table class="table"><thead><tr><th>Jugador</th><th>Club</th><th>Goles</th></tr></thead><tbody>
+    {% for f in goleadores %}<tr><td><a href="{{ url_for('admin_centro_jugador', jugador_id=f.jugador.id) }}"><b>{{ f.jugador.nombre_completo }}</b></a></td><td>{{ f.jugador.club }}</td><td class="score">{{ f.goles }}</td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<div class="empty">Sin goles registrados en actas cerradas.</div>{% endif %}
+  </div>
+
+  <div class="card">
+    <div class="section-head"><h2>🟨🟥 Disciplina</h2><span class="small">Top 30</span></div>
+    {% if disciplina %}<div class="table-wrap"><table class="table"><thead><tr><th>Jugador</th><th>Club</th><th>🟨</th><th>🟥</th></tr></thead><tbody>
+    {% for f in disciplina %}<tr><td><a href="{{ url_for('admin_centro_jugador', jugador_id=f.jugador.id) }}"><b>{{ f.jugador.nombre_completo }}</b></a></td><td>{{ f.jugador.club }}</td><td>{{ f.amarillas }}</td><td>{{ f.rojas }}</td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<div class="empty">Sin registros disciplinarios en actas cerradas.</div>{% endif %}
+  </div>
+</div>
+</div>
+</div>
+{% endblock %}
