@@ -6010,21 +6010,17 @@ def acta_partido(campeonato_id, partido_id):
                 if resultado_local is None or resultado_visitante is None:
                     raise ValueError("Debes ingresar el resultado de ambos equipos antes de cerrar el acta.")
 
-                suma_local = sum(int(x.goles or 0) for x in nomina_actual if (x.equipo or "").strip().lower() == "local")
-                suma_visitante = sum(int(x.goles or 0) for x in nomina_actual if (x.equipo or "").strip().lower() == "visitante")
-
-                if resultado_local != suma_local or resultado_visitante != suma_visitante:
-                    raise ValueError(
-                        f"El resultado no coincide con los goles registrados por jugador. "
-                        f"Local: {suma_local}, Visitante: {suma_visitante}."
-                    )
-
-                goles_local, goles_visitante = sincronizar_estadisticas_desde_acta(
+                # El marcador ingresado en el acta es el resultado oficial.
+                # Los goles por jugador son datos de goleadores y pueden
+                # registrarse aunque no exista detalle individual.
+                sincronizar_estadisticas_desde_acta(
                     campeonato, partido, nomina_actual
                 )
-                partido.goles_local = goles_local
-                partido.goles_visitante = goles_visitante
+                partido.goles_local = resultado_local
+                partido.goles_visitante = resultado_visitante
                 partido.estado = "Finalizado"
+                goles_local = resultado_local
+                goles_visitante = resultado_visitante
             else:
                 # Si se vuelve a guardar como borrador, eliminar cualquier
                 # estadística derivada previa de esta acta para mantener una
