@@ -58,15 +58,15 @@
 
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:18px;margin-bottom:22px">
         <div style="font-size:12px;color:#1d4ed8;font-weight:900;text-transform:uppercase;letter-spacing:.06em">Resultado oficial</div>
-        <p style="margin:6px 0 14px;color:#475569;font-size:13px">El resultado se registra aquí, dentro del acta. Al cerrar, se actualiza automáticamente el fixture, la tabla y el portal público.</p>
+        <p style="margin:6px 0 14px;color:#475569;font-size:13px">El resultado se registra aquí, dentro del acta. Al cerrar, se actualizan automáticamente el partido, la tabla, las estadísticas y el portal público.</p>
         <div style="display:grid;grid-template-columns:1fr 90px 30px 90px 1fr;align-items:center;gap:10px;max-width:720px;margin:auto">
           <div style="font-weight:800;text-align:right">{{ partido.local_club.nombre }}</div>
-          <input type="number" min="0" name="resultado_local" value="{{ partido.goles_local if partido.goles_local is not none else 0 }}" style="width:100%;padding:12px;text-align:center;font-size:22px;font-weight:800;border:1px solid #93c5fd;border-radius:10px;box-sizing:border-box">
+          <input type="number" min="0" name="resultado_local" value="{{ partido.goles_local if partido.goles_local is not none else '' }}" style="width:100%;padding:12px;text-align:center;font-size:22px;font-weight:800;border:1px solid #93c5fd;border-radius:10px;box-sizing:border-box">
           <div style="text-align:center;font-weight:900;color:#64748b">-</div>
-          <input type="number" min="0" name="resultado_visitante" value="{{ partido.goles_visitante if partido.goles_visitante is not none else 0 }}" style="width:100%;padding:12px;text-align:center;font-size:22px;font-weight:800;border:1px solid #93c5fd;border-radius:10px;box-sizing:border-box">
+          <input type="number" min="0" name="resultado_visitante" value="{{ partido.goles_visitante if partido.goles_visitante is not none else '' }}" style="width:100%;padding:12px;text-align:center;font-size:22px;font-weight:800;border:1px solid #93c5fd;border-radius:10px;box-sizing:border-box">
           <div style="font-weight:800">{{ partido.visitante_club.nombre }}</div>
         </div>
-        <div style="font-size:11px;color:#64748b;text-align:center;margin-top:10px">Para cerrar el acta, este marcador debe coincidir con los goles asignados a los jugadores.</div>
+        <div style="font-size:11px;color:#64748b;text-align:center;margin-top:10px">El marcador es el resultado oficial. Los goles individuales se utilizan para registrar a los goleadores cuando estén disponibles.</div>
       </div>
 
       {% for equipo, jugadores in [('local',locales),('visitante',visitantes)] %}
