@@ -7295,6 +7295,105 @@ def admin_centro_series():
     )
 
 
+@app.route("/admin/series/<int:serie_id>/centro")
+@admin_required
+def admin_centro_serie(serie_id):
+    """V7.4.14 — Centro maestro de una serie."""
+    serie = db.get_or_404(Serie, serie_id)
+    nombre_serie = (serie.nombre or "").strip()
+
+    campeonatos = Campeonato.query.filter(
+        db.func.lower(db.func.trim(Campeonato.serie)) == nombre_serie.lower()
+    ).order_by(
+        Campeonato.temporada.desc(), Campeonato.id.desc()
+    ).all()
+
+    club_ids = set()
+    for campeonato in campeonatos:
+        club_ids.update(
+            x.club_id for x in CampeonatoClub.query.filter_by(
+                campeonato_id=campeonato.id
+            ).all()
+        )
+
+    clubes = Club.query.filter(
+        Club.id.in_(club_ids)
+    ).order_by(Club.nombre.asc()).all() if club_ids else []
+
+    jugadores = Jugador.query.filter(
+        Jugador.serie == nombre_serie
+    ).order_by(
+        Jugador.club.asc(), Jugador.nombre_completo.asc()
+    ).all()
+
+    registros = (
+        db.session.query(PartidoJugador, Jugador, Partido, Campeonato, ActaPartido)
+        .join(Jugador, Jugador.id == PartidoJugador.jugador_id)
+        .join(Partido, Partido.id == PartidoJugador.partido_id)
+        .join(Campeonato, Campeonato.id == Partido.campeonato_id)
+        .join(ActaPartido, ActaPartido.partido_id == Partido.id)
+        .filter(
+            ActaPartido.estado == "Cerrada",
+            db.func.lower(db.func.trim(Campeonato.serie)) == nombre_serie.lower()
+        )
+        .all()
+    )
+
+    partidos_ids = set()
+    jugadores_stats_ids = set()
+    total_goles = total_amarillas = total_rojas = 0
+    por_club = {}
+
+    for pj, jugador, partido, campeonato, acta in registros:
+        partidos_ids.add(partido.id)
+        jugadores_stats_ids.add(jugador.id)
+
+        goles = int(pj.goles or 0)
+        amarillas = int(pj.amarillas or 0)
+        rojas = int(pj.rojas or 0)
+        total_goles += goles
+        total_amarillas += amarillas
+        total_rojas += rojas
+
+        nombre_club = (jugador.club or "Sin club").strip()
+        fila = por_club.setdefault(nombre_club, {
+            "nombre": nombre_club,
+            "goles": 0,
+            "amarillas": 0,
+            "rojas": 0,
+            "jugadores": set(),
+        })
+        fila["goles"] += goles
+        fila["amarillas"] += amarillas
+        fila["rojas"] += rojas
+        fila["jugadores"].add(jugador.id)
+
+    resumen_clubes = list(por_club.values())
+    resumen_clubes.sort(key=lambda x: (-x["goles"], x["nombre"].lower()))
+    for fila in resumen_clubes:
+        fila["total_jugadores"] = len(fila["jugadores"])
+
+    return render_template(
+        "admin_centro_serie.html",
+        serie=serie,
+        campeonatos=campeonatos,
+        clubes=clubes,
+        jugadores=jugadores,
+        resumen_clubes=resumen_clubes,
+        resumen={
+            "campeonatos": len(campeonatos),
+            "clubes": len(clubes),
+            "jugadores": len(jugadores),
+            "vigentes": sum(1 for j in jugadores if (j.estado or "Vigente") == "Vigente"),
+            "partidos": len(partidos_ids),
+            "jugadores_con_estadisticas": len(jugadores_stats_ids),
+            "goles": total_goles,
+            "amarillas": total_amarillas,
+            "rojas": total_rojas,
+        },
+    )
+
+
 # ============================================================
 # V7.4.4 — CENTRO MAESTRO DE CAMPEONATO
 # Integra clubes, planteles, partidos, actas y estadísticas.
