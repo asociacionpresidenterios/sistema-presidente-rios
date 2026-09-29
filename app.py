@@ -6249,10 +6249,14 @@ def publico_jugador(campeonato_id, jugador_id):
         from flask import abort
         abort(404)
 
+    # V7.4.10: fuente oficial pública = participaciones contenidas en actas cerradas.
+    # No mezcla estadísticas históricas/manuales con las estadísticas oficiales.
     participaciones = (PartidoJugador.query
         .join(Partido, PartidoJugador.partido_id == Partido.id)
+        .join(ActaPartido, ActaPartido.partido_id == Partido.id)
         .filter(PartidoJugador.jugador_id == jugador.id,
-                Partido.campeonato_id == campeonato.id)
+                Partido.campeonato_id == campeonato.id,
+                ActaPartido.estado == "Cerrada")
         .order_by(Partido.fecha.desc().nullslast(), Partido.id.desc())
         .all())
 
@@ -6262,14 +6266,6 @@ def publico_jugador(campeonato_id, jugador_id):
     total_goles = sum(int(x.goles or 0) for x in participaciones)
     total_amarillas = sum(int(x.amarillas or 0) for x in participaciones)
     total_rojas = sum(int(x.rojas or 0) for x in participaciones)
-
-    # Respaldo con registros históricos si aún no existen actas para todas las incidencias.
-    if not total_goles:
-        total_goles = sum((r.cantidad or 1) for r in Gol.query.filter_by(jugador_id=jugador.id, campeonato_id=campeonato.id).all())
-    if not total_amarillas or not total_rojas:
-        registros = RegistroDisciplinario.query.filter_by(jugador_id=jugador.id, campeonato_id=campeonato.id).all()
-        total_amarillas = max(total_amarillas, sum((r.cantidad or 1) for r in registros if (r.tipo or '').lower() in ('amarilla','amarillas','tarjeta amarilla')))
-        total_rojas = max(total_rojas, sum((r.cantidad or 1) for r in registros if (r.tipo or '').lower() in ('roja','rojas','tarjeta roja')))
 
     return render_template(
         'publico_jugador.html',
