@@ -6575,28 +6575,38 @@ def admin_mover_jugador_plantel(jugador_id):
 # ============================================================
 
 @app.route("/admin/jugador/<int:jugador_id>/centro")
+@admin_required
 def admin_centro_jugador(jugador_id):
     jugador = db.get_or_404(Jugador, jugador_id)
 
-    goles = obtener_goles(jugador.id)
-    amarillas = obtener_amarillas(jugador.id)
-    rojas = obtener_rojas(jugador.id)
-    suspensiones = obtener_suspensiones(jugador.id)
-
-    # V6.9: consulta defensiva para que un registro incompleto no provoque 500.
-    try:
-        participaciones = (
-            PartidoJugador.query
-            .join(Partido, PartidoJugador.partido_id == Partido.id)
-            .join(Campeonato, Partido.campeonato_id == Campeonato.id)
-            .filter(PartidoJugador.jugador_id == jugador.id)
-            .order_by(Partido.fecha.desc().nullslast(), Partido.id.desc())
-            .all()
+    # V7.4.12: fuente oficial = participaciones de actas cerradas.
+    participaciones = (
+        PartidoJugador.query
+        .join(Partido, PartidoJugador.partido_id == Partido.id)
+        .join(Campeonato, Partido.campeonato_id == Campeonato.id)
+        .join(ActaPartido, ActaPartido.partido_id == Partido.id)
+        .filter(
+            PartidoJugador.jugador_id == jugador.id,
+            ActaPartido.estado == "Cerrada"
         )
-    except Exception as error:
-        db.session.rollback()
-        print("Advertencia cargando participaciones del jugador:", repr(error))
-        participaciones = []
+        .order_by(Partido.fecha.desc().nullslast(), Partido.id.desc())
+        .all()
+    )
+
+    total_partidos = len(participaciones)
+    total_titular = sum(1 for p in participaciones if str(p.condicion or "").strip().lower() == "titular")
+    total_suplente = sum(1 for p in participaciones if str(p.condicion or "").strip().lower() == "suplente")
+    total_goles_acta = sum(int(p.goles or 0) for p in participaciones)
+    total_amarillas_acta = sum(int(p.amarillas or 0) for p in participaciones)
+    total_rojas_acta = sum(int(p.rojas or 0) for p in participaciones)
+
+    campeonatos = []
+    vistos = set()
+    for p in participaciones:
+        c = p.partido.campeonato if p.partido else None
+        if c and c.id not in vistos:
+            vistos.add(c.id)
+            campeonatos.append(c)
 
     try:
         movimientos = (
@@ -6611,22 +6621,16 @@ def admin_centro_jugador(jugador_id):
         print("Advertencia cargando movimientos del jugador:", repr(error))
         movimientos = []
 
-    total_partidos = len(participaciones)
-    total_titular = sum(1 for p in participaciones if p.condicion == "Titular")
-    total_suplente = sum(1 for p in participaciones if p.condicion == "Suplente")
-    total_goles_acta = sum(int(p.goles or 0) for p in participaciones)
-    total_amarillas_acta = sum(int(p.amarillas or 0) for p in participaciones)
-    total_rojas_acta = sum(int(p.rojas or 0) for p in participaciones)
-
     return render_template(
         "admin_jugador_centro.html",
         jugador=jugador,
-        goles=goles,
-        amarillas=amarillas,
-        rojas=rojas,
-        suspensiones=suspensiones,
+        goles=total_goles_acta,
+        amarillas=total_amarillas_acta,
+        rojas=total_rojas_acta,
+        suspensiones=obtener_suspensiones(jugador.id),
         participaciones=participaciones,
         movimientos=movimientos,
+        campeonatos=campeonatos,
         total_partidos=total_partidos,
         total_titular=total_titular,
         total_suplente=total_suplente,
@@ -6634,7 +6638,6 @@ def admin_centro_jugador(jugador_id):
         total_amarillas_acta=total_amarillas_acta,
         total_rojas_acta=total_rojas_acta,
     )
-
 
 # ============================================================
 # ETAPA 10 — CENTRO DE INTEGRACIÓN Y AUDITORÍA
