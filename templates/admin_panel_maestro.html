@@ -19,14 +19,13 @@
 <div class="hero">
   <div class="hero-top">
     <div>
-      <div class="eyebrow">V6.6 · Centro de gestión</div>
-      <h1>Panel Maestro</h1>
-      <p>Visión ejecutiva de jugadores, clubes, campeonatos, partidos, actas y estadísticas.</p>
+      <div class="eyebrow">V8.0 · Inicio de gestión</div>
+      <h1>Inicio</h1>
+      <p>Toda la gestión de la Asociación Presidente Ríos, en un solo lugar.</p>
     </div>
     <div class="hero-actions">
       <a class="hero-btn" href="{{ url_for('campeonatos') }}">🏆 Campeonatos</a>
-      <a class="hero-btn" href="{{ url_for('admin_partidos') }}">⚽ Partidos</a>
-      <a class="hero-btn" href="{{ url_for('admin_actas') }}">📋 Actas</a>
+      <a class="hero-btn" href="{{ url_for('admin_clubes') }}">🏟️ Clubes</a>
       <a class="hero-btn" href="{{ url_for('admin_registro') }}">👥 Jugadores</a>
     </div>
   </div>
@@ -104,6 +103,4 @@
   </div>
 </div>
 
-<div class="section-title"><h2>Flujo integrado</h2><span>Una sola fuente de información</span></div>
-<div class="card"><div class="card-body" style="padding:18px"><div class="flow"><span>🏆 Campeonato</span><i>→</i><span>🏟️ Club</span><i>→</i><span>🏷️ Serie</span><i>→</i><span>👥 Plantel</span><i>→</i><span>👤 Jugador</span><i>→</i><span>⚽ Partido</span><i>→</i><span>📋 Acta</span><i>→</i><span>🥅 Estadísticas</span></div></div></div>
 {% endblock %}
