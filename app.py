@@ -7147,6 +7147,67 @@ def admin_centro_campeonatos():
 
 
 # ============================================================
+# V7.4.8 — CENTRO MAESTRO DE SERIES
+# ============================================================
+
+@app.route("/admin/series/centro")
+@admin_required
+def admin_centro_series():
+    series_db = Serie.query.order_by(Serie.nombre.asc()).all()
+    campeonatos = Campeonato.query.order_by(
+        Campeonato.temporada.desc(), Campeonato.id.desc()
+    ).all()
+
+    filas = []
+    for serie_obj in series_db:
+        nombre = (serie_obj.nombre or "").strip()
+        campeonatos_serie = [
+            c for c in campeonatos
+            if (c.serie or "").strip().lower() == nombre.lower()
+        ]
+
+        club_ids = set()
+        for campeonato in campeonatos_serie:
+            participaciones = CampeonatoClub.query.filter_by(
+                campeonato_id=campeonato.id
+            ).all()
+            club_ids.update(x.club_id for x in participaciones)
+
+        clubes = Club.query.filter(Club.id.in_(club_ids)).order_by(
+            Club.nombre.asc()
+        ).all() if club_ids else []
+
+        jugadores = Jugador.query.filter(
+            Jugador.serie == nombre
+        ).order_by(
+            Jugador.club.asc(), Jugador.nombre_completo.asc()
+        ).all()
+
+        filas.append({
+            "serie": serie_obj,
+            "campeonatos": campeonatos_serie,
+            "clubes": clubes,
+            "jugadores": jugadores,
+            "total_clubes": len(clubes),
+            "total_jugadores": len(jugadores),
+            "vigentes": sum(
+                1 for j in jugadores
+                if (j.estado or "Vigente") == "Vigente"
+            ),
+        })
+
+    return render_template(
+        "admin_centro_series.html",
+        filas=filas,
+        total_series=len(filas),
+        total_clubes=len({
+            c.id for f in filas for c in f["clubes"]
+        }),
+        total_jugadores=sum(f["total_jugadores"] for f in filas),
+    )
+
+
+# ============================================================
 # V7.4.4 — CENTRO MAESTRO DE CAMPEONATO
 # Integra clubes, planteles, partidos, actas y estadísticas.
 # Solo lectura; utiliza los registros maestros existentes.
