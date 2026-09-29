@@ -14,6 +14,6 @@
 </div>
 <div>
 <div class="card"><div class="title">📊 Estadísticas por club</div>{% for c in resumen_clubes %}<div class="club"><div><div class="clubname">{{ c.nombre }}</div><div class="mini"><span>Jugadores: <b>{{ c.total_jugadores }}</b></span><span>⚽ <b>{{ c.goles }}</b></span><span>🟨 <b>{{ c.amarillas }}</b></span><span>🟥 <b>{{ c.rojas }}</b></span></div></div></div>{% else %}<div class="empty">Todavía no existen estadísticas en actas cerradas.</div>{% endfor %}</div>
-<div class="card"><div class="title">👥 Jugadores registrados</div>{% for j in jugadores[:30] %}<div class="player"><a href="{{ url_for('admin_centro_jugador', jugador_id=j.id) }}">{{ j.nombre_completo }}</a><div class="muted">{{ j.club }} · {{ j.estado or 'Vigente' }}</div></div>{% else %}<div class="empty">Sin jugadores registrados.</div>{% endfor %}{% if jugadores|length > 30 %}<div class="muted" style="margin-top:10px">Mostrando los primeros 30 jugadores.</div>{% endif %}</div>
-</div></div></div>
+<div class="card"><div class="title">👥 Jugadores registrados</div>{% for j in jugadores %}{% if loop.index <= 30 %}<div class="player"><a href="{{ url_for('admin_centro_jugador', jugador_id=j.id) }}">{{ j.nombre_completo }}</a><div class="muted">{{ j.club }} · {{ j.estado or 'Vigente' }}</div></div>{% else %}<div class="empty">Sin jugadores registrados.</div>{% endfor %}{% if jugadores|length > 30 %}<div class="muted" style="margin-top:10px">Mostrando los primeros 30 jugadores.</div>{% endif %}</div>
+</div>{% if loop.index <= 30 %}{% endif %}{% endfor %}</div></div></div>
 {% endblock %}
