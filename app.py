@@ -3248,6 +3248,95 @@ def admin_centro_club(club_id):
         actas_pendientes=actas_pendientes,
     )
 
+@app.route("/admin/clubes/<int:club_id>/series")
+@admin_required
+def admin_centro_club_series(club_id):
+    """V7.4.13 — Series del club conectadas al registro maestro."""
+    club = db.get_or_404(Club, club_id)
+
+    jugadores = Jugador.query.filter(
+        Jugador.club == club.nombre
+    ).order_by(
+        Jugador.serie.asc(), Jugador.nombre_completo.asc()
+    ).all()
+
+    participaciones = CampeonatoClub.query.filter_by(
+        club_id=club.id
+    ).all()
+
+    campeonatos = sorted(
+        [x.campeonato for x in participaciones if x.campeonato],
+        key=lambda x: (x.temporada or "", x.id),
+        reverse=True
+    )
+
+    series_map = {}
+    for jugador in jugadores:
+        nombre_serie = (jugador.serie or "Sin serie").strip()
+        fila = series_map.setdefault(nombre_serie, {
+            "nombre": nombre_serie,
+            "jugadores": [],
+            "campeonatos": [],
+        })
+        fila["jugadores"].append(jugador)
+
+    for campeonato in campeonatos:
+        nombre_serie = (campeonato.serie or "Sin serie").strip()
+        fila = series_map.setdefault(nombre_serie, {
+            "nombre": nombre_serie,
+            "jugadores": [],
+            "campeonatos": [],
+        })
+        fila["campeonatos"].append(campeonato)
+
+    filas = list(series_map.values())
+    for fila in filas:
+        ids_campeonatos = {c.id for c in fila["campeonatos"]}
+        stats = {
+            "partidos": 0,
+            "goles": 0,
+            "amarillas": 0,
+            "rojas": 0,
+        }
+
+        if ids_campeonatos and fila["jugadores"]:
+            jugador_ids = [j.id for j in fila["jugadores"]]
+            registros = (
+                db.session.query(PartidoJugador, Partido, ActaPartido)
+                .join(Partido, Partido.id == PartidoJugador.partido_id)
+                .join(ActaPartido, ActaPartido.partido_id == Partido.id)
+                .filter(
+                    PartidoJugador.jugador_id.in_(jugador_ids),
+                    Partido.campeonato_id.in_(ids_campeonatos),
+                    ActaPartido.estado == "Cerrada",
+                )
+                .all()
+            )
+            partidos_ids = set()
+            for pj, partido, acta in registros:
+                partidos_ids.add(partido.id)
+                stats["goles"] += int(pj.goles or 0)
+                stats["amarillas"] += int(pj.amarillas or 0)
+                stats["rojas"] += int(pj.rojas or 0)
+            stats["partidos"] = len(partidos_ids)
+
+        fila["vigentes"] = sum(
+            1 for j in fila["jugadores"]
+            if (j.estado or "Vigente") == "Vigente"
+        )
+        fila["stats"] = stats
+
+    filas.sort(key=lambda x: x["nombre"].lower())
+
+    return render_template(
+        "admin_centro_club_series.html",
+        club=club,
+        filas=filas,
+        total_series=len(filas),
+        total_jugadores=len(jugadores),
+        total_vigentes=sum(f["vigentes"] for f in filas),
+    )
+
 # ============================================================
 # V7.4.3 — ESTADÍSTICAS INTEGRADAS POR CLUB
 # Usa exclusivamente PartidoJugador + ActaPartido cerrada.
