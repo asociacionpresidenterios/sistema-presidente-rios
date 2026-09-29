@@ -10,7 +10,7 @@
 {% for f in filas %}
 <div class="card">
 <span class="tag">{{ 'Activa' if f.serie.activo else 'Inactiva' }}</span>
-<div class="name">{{ f.serie.nombre }}</div>
+<div class="name">{{ f.serie.nombre }}</div><div style="margin:10px 0"><a class="btn" href="{{ url_for('admin_centro_serie', serie_id=f.serie.id) }}">📊 Abrir centro de serie</a></div>
 <div class="stats"><span><b>{{ f.total_clubes }}</b>Clubes</span><span><b>{{ f.total_jugadores }}</b>Jugadores</span><span><b>{{ f.vigentes }}</b>Vigentes</span></div>
 <div class="list"><b style="font-size:12px">Campeonatos</b>{% if f.campeonatos %}{% for c in f.campeonatos %}<div class="item"><a href="{{ url_for('admin_centro_campeonato', campeonato_id=c.id) }}" style="text-decoration:none;color:#1d4ed8">{{ c.nombre }}</a> <span class="muted">· {{ c.temporada }}</span></div>{% endfor %}{% else %}<div class="empty">Sin campeonatos asociados.</div>{% endif %}</div>
 <div class="list"><b style="font-size:12px">Clubes</b>{% if f.clubes %}{% for club in f.clubes %}<div class="item"><a href="{{ url_for('admin_centro_club', club_id=club.id) }}" style="text-decoration:none;color:#1d4ed8">{{ club.nombre }}</a></div>{% endfor %}{% else %}<div class="empty">Sin clubes asociados.</div>{% endif %}</div>
