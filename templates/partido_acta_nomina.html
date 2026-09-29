@@ -20,7 +20,7 @@
     <p style="margin-bottom:0">📅 {{ partido.fecha.strftime('%d/%m/%Y') if partido.fecha else '-' }} · ⏰ {{ partido.hora or '-' }} · 🏟️ {{ partido.cancha or '-' }}</p>
     {% if partido.turno_club %}<p style="margin-bottom:0">🔰 Club de turno: <strong>{{ partido.turno_club.nombre }}</strong></p>{% endif %}
     {% if partido.goles_local is not none and partido.goles_visitante is not none %}
-      <p style="font-size:22px;font-weight:800;margin:12px 0 0">Resultado: {{ partido.goles_local }} - {{ partido.goles_visitante }}</p>
+      <p style="font-size:22px;font-weight:800;margin:12px 0 0">Resultado oficial: {{ partido.goles_local }} - {{ partido.goles_visitante }}</p>
     {% endif %}
   </div>
 
@@ -56,6 +56,19 @@
         </label>
       </div>
 
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:18px;margin-bottom:22px">
+        <div style="font-size:12px;color:#1d4ed8;font-weight:900;text-transform:uppercase;letter-spacing:.06em">Resultado oficial</div>
+        <p style="margin:6px 0 14px;color:#475569;font-size:13px">El resultado se registra aquí, dentro del acta. Al cerrar, se actualiza automáticamente el fixture, la tabla y el portal público.</p>
+        <div style="display:grid;grid-template-columns:1fr 90px 30px 90px 1fr;align-items:center;gap:10px;max-width:720px;margin:auto">
+          <div style="font-weight:800;text-align:right">{{ partido.local_club.nombre }}</div>
+          <input type="number" min="0" name="resultado_local" value="{{ partido.goles_local if partido.goles_local is not none else 0 }}" style="width:100%;padding:12px;text-align:center;font-size:22px;font-weight:800;border:1px solid #93c5fd;border-radius:10px;box-sizing:border-box">
+          <div style="text-align:center;font-weight:900;color:#64748b">-</div>
+          <input type="number" min="0" name="resultado_visitante" value="{{ partido.goles_visitante if partido.goles_visitante is not none else 0 }}" style="width:100%;padding:12px;text-align:center;font-size:22px;font-weight:800;border:1px solid #93c5fd;border-radius:10px;box-sizing:border-box">
+          <div style="font-weight:800">{{ partido.visitante_club.nombre }}</div>
+        </div>
+        <div style="font-size:11px;color:#64748b;text-align:center;margin-top:10px">Para cerrar el acta, este marcador debe coincidir con los goles asignados a los jugadores.</div>
+      </div>
+
       {% for equipo, jugadores in [('local',locales),('visitante',visitantes)] %}
         <h2 style="margin-top:25px">{{ partido.local_club.nombre if equipo=='local' else partido.visitante_club.nombre }}</h2>
         <div style="overflow:auto;background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.05)">
@@ -85,9 +98,9 @@
         <textarea name="observaciones" rows="4" style="width:100%;box-sizing:border-box">{{ acta.observaciones if acta else '' }}</textarea>
       </label>
 
-      <div style="background:#eff6ff;border:1px solid #93c5fd;padding:15px;border-radius:12px;margin-bottom:20px">
-        <strong>💡 Automatización V5.8</strong><br>
-        Los goles y tarjetas ingresados aquí alimentan automáticamente las estadísticas del campeonato. Al cerrar el acta, el resultado del partido se actualiza con la suma de goles registrada por jugador.
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:15px;border-radius:12px;margin-bottom:20px">
+        <strong>⚽ Fuente oficial del partido</strong><br>
+        El acta es el único lugar para oficializar el resultado. Al cerrarla, el sistema actualiza automáticamente el partido, fixture, tabla, estadísticas, goleadores y disciplina.
       </div>
 
       <button type="submit" name="estado" value="Borrador" style="padding:12px 20px;border:0;border-radius:9px;background:#64748b;color:white;font-weight:700;cursor:pointer">💾 Guardar borrador</button>
