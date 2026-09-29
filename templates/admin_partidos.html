@@ -2,8 +2,8 @@
 {% block title %}Partidos | Presidente Ríos{% endblock %}
 {% block content %}
 <div style="display:flex;justify-content:space-between;gap:18px;align-items:flex-end;margin-bottom:22px;flex-wrap:wrap">
-  <div><div style="font-size:12px;color:#64748b;font-weight:800;text-transform:uppercase;letter-spacing:.08em">Centro deportivo</div><h1 style="margin:5px 0 0;font-size:30px">Partidos</h1><p style="margin:6px 0 0;color:#64748b">Todos los encuentros, resultados y acceso directo a sus actas.</p></div>
-  <a class="top-btn" href="{{ url_for('admin_centro_partidos') }}">📊 Centro maestro</a><a class="top-btn" href="{{ url_for('admin_centro_estadisticas') }}">📈 Estadísticas</a><a class="top-btn primary" href="{{ url_for('campeonatos') }}">🏆 Ver campeonatos</a>
+  <div><div style="font-size:12px;color:#64748b;font-weight:800;text-transform:uppercase;letter-spacing:.08em">Gestión deportiva</div><h1 style="margin:5px 0 0;font-size:30px">Partidos</h1><p style="margin:6px 0 0;color:#64748b">Programa, administra y oficializa los encuentros desde su acta.</p></div>
+  <a class="top-btn primary" href="{{ url_for('campeonatos') }}">🏆 Ver campeonatos</a>
 </div>
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px">
 {% for k,v,l in [('total',resumen.total,'Partidos'),('programados',resumen.programados,'Pendientes'),('finalizados',resumen.finalizados,'Finalizados'),('actas_cerradas',resumen.actas_cerradas,'Actas cerradas')] %}<div style="background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px"><div style="font-size:12px;color:#64748b">{{l}}</div><div style="font-size:28px;font-weight:850;margin-top:5px">{{v}}</div></div>{% endfor %}
@@ -14,5 +14,21 @@
 <select name="estado" style="padding:11px;border:1px solid #dbe3ec;border-radius:9px"><option value="">Todos los estados</option><option value="Programado" {% if estado=='Programado' %}selected{% endif %}>Programado</option><option value="Finalizado" {% if estado=='Finalizado' %}selected{% endif %}>Finalizado</option></select>
 <button class="top-btn primary">Filtrar</button><a class="top-btn" href="{{url_for('admin_partidos')}}">Limpiar</a>
 </form>
-<div style="background:#fff;border:1px solid #e5eaf1;border-radius:14px;overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:850px"><thead><tr style="background:#f8fafc"><th style="padding:13px;text-align:left">Fecha</th><th style="padding:13px;text-align:left">Campeonato</th><th style="padding:13px;text-align:left">Partido</th><th style="padding:13px;text-align:left">Cancha</th><th style="padding:13px;text-align:left">Estado</th><th style="padding:13px;text-align:right">Acciones</th></tr></thead><tbody>{% for p in partidos %}<tr style="border-top:1px solid #eef2f6"><td style="padding:13px">{{p.fecha.strftime('%d/%m/%Y') if p.fecha else 'Sin fecha'}}<br><small style="color:#64748b">{{p.hora or ''}}</small></td><td style="padding:13px">{{p.campeonato.nombre}}<br><small style="color:#64748b">{{p.campeonato.serie}}</small></td><td style="padding:13px;font-weight:750">{{p.local_club.nombre}} <span style="color:#94a3b8">vs</span> {{p.visitante_club.nombre}}{% if p.estado=='Finalizado' %}<br><small>{{p.goles_local or 0}} - {{p.goles_visitante or 0}}</small>{% endif %}</td><td style="padding:13px">{{p.cancha or '—'}}</td><td style="padding:13px">{{p.estado}}</td><td style="padding:13px;text-align:right"><a class="top-btn" href="{{url_for('acta_partido',campeonato_id=p.campeonato_id,partido_id=p.id)}}">📋 Acta</a> <a class="top-btn" href="{{url_for('resultados_campeonato',campeonato_id=p.campeonato_id)}}">Resultados</a></td></tr>{% else %}<tr><td colspan="6" style="padding:35px;text-align:center;color:#64748b">No hay partidos para los filtros seleccionados.</td></tr>{% endfor %}</tbody></table></div>
+<div style="background:#fff;border:1px solid #e5eaf1;border-radius:14px;overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:850px"><thead><tr style="background:#f8fafc"><th style="padding:13px;text-align:left">Fecha</th><th style="padding:13px;text-align:left">Campeonato</th><th style="padding:13px;text-align:left">Partido</th><th style="padding:13px;text-align:left">Cancha</th><th style="padding:13px;text-align:left">Estado</th><th style="padding:13px;text-align:right">Acciones</th></tr></thead><tbody>{% for p in partidos %}<tr style="border-top:1px solid #eef2f6"><td style="padding:13px">{{p.fecha.strftime('%d/%m/%Y') if p.fecha else 'Sin fecha'}}<br><small style="color:#64748b">{{p.hora or ''}}</small></td><td style="padding:13px">{{p.campeonato.nombre}}<br><small style="color:#64748b">{{p.campeonato.serie}}</small></td><td style="padding:13px;font-weight:750">{{p.local_club.nombre}} <span style="color:#94a3b8">vs</span> {{p.visitante_club.nombre}}{% if p.estado=='Finalizado' %}<br><small>{{p.goles_local or 0}} - {{p.goles_visitante or 0}}</small>{% endif %}</td><td style="padding:13px">{{p.cancha or '—'}}</td><td style="padding:13px">
+{% if p.estado == 'Finalizado' %}
+  <span style="display:inline-block;background:#dcfce7;color:#166534;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800">FINALIZADO</span>
+{% elif p.acta and p.acta.estado == 'Borrador' %}
+  <span style="display:inline-block;background:#fef3c7;color:#92400e;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800">ACTA EN BORRADOR</span>
+{% else %}
+  <span style="display:inline-block;background:#e2e8f0;color:#475569;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800">PROGRAMADO</span>
+{% endif %}
+</td><td style="padding:13px;text-align:right">
+{% if p.estado == 'Finalizado' %}
+  <a class="top-btn primary" href="{{url_for('admin_centro_partido',partido_id=p.id)}}">👁️ Ver partido</a>
+{% elif p.acta and p.acta.estado == 'Borrador' %}
+  <a class="top-btn primary" href="{{url_for('acta_partido',campeonato_id=p.campeonato_id,partido_id=p.id)}}">📝 Continuar acta</a>
+{% else %}
+  <a class="top-btn primary" href="{{url_for('acta_partido',campeonato_id=p.campeonato_id,partido_id=p.id)}}">📝 Abrir acta</a>
+{% endif %}
+</td></tr>{% else %}<tr><td colspan="6" style="padding:35px;text-align:center;color:#64748b">No hay partidos para los filtros seleccionados.</td></tr>{% endfor %}</tbody></table></div>
 {% endblock %}
