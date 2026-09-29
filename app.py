@@ -7496,6 +7496,66 @@ def admin_plantel_campeonato_club(campeonato_id, club_id):
 
 
 # ============================================================
+# V7.4.11 — CENTRO MAESTRO DE PARTIDO
+# Partido → Clubes → Plantel → Acta → Estadísticas.
+# Solo lectura; utiliza los registros maestros existentes.
+# ============================================================
+
+@app.route("/admin/partidos/<int:partido_id>/centro")
+@admin_required
+def admin_centro_partido(partido_id):
+    partido = db.get_or_404(Partido, partido_id)
+
+    acta = partido.acta
+
+    nomina = (
+        PartidoJugador.query
+        .join(Jugador, PartidoJugador.jugador_id == Jugador.id)
+        .filter(PartidoJugador.partido_id == partido.id)
+        .order_by(
+            PartidoJugador.equipo.asc(),
+            Jugador.nombre_completo.asc()
+        )
+        .all()
+    )
+
+    local = [x for x in nomina if (x.equipo or "").strip().lower() in ("local", "home")]
+    visitante = [x for x in nomina if (x.equipo or "").strip().lower() in ("visitante", "visita", "away")]
+
+    # Estadísticas del partido: las oficiales se muestran solo si el acta está cerrada.
+    acta_cerrada = bool(acta and (acta.estado or "").strip().lower() == "cerrada")
+    if not acta_cerrada:
+        local = []
+        visitante = []
+
+    def resumen_nomina(lista):
+        return {
+            "jugadores": len(lista),
+            "titulares": sum(
+                1 for x in lista
+                if str(x.condicion or "").strip().lower() == "titular"
+            ),
+            "goles": sum(int(x.goles or 0) for x in lista),
+            "amarillas": sum(int(x.amarillas or 0) for x in lista),
+            "rojas": sum(int(x.rojas or 0) for x in lista),
+        }
+
+    resumen_local = resumen_nomina(local)
+    resumen_visitante = resumen_nomina(visitante)
+
+    return render_template(
+        "admin_centro_partido.html",
+        partido=partido,
+        acta=acta,
+        acta_cerrada=acta_cerrada,
+        local=local,
+        visitante=visitante,
+        resumen_local=resumen_local,
+        resumen_visitante=resumen_visitante,
+    )
+
+
+# ============================================================
 # V7.2 — CENTRO MAESTRO DE PARTIDOS
 # Vista unificada de partidos existentes y sus actas.
 # Solo consulta; no crea ni modifica registros.
