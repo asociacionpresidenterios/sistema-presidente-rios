@@ -6673,7 +6673,7 @@ def admin_integracion():
             inconsistencias_club += 1
 
     resumen = {
-        "jugadores": jugadores, "clubes": clubes, "series": series,
+        "jugadores": jugadores, "clubes": clubes[:10], "series": series,
         "campeonatos": campeonatos, "partidos": partidos, "actas": actas,
         "actas_cerradas": actas_cerradas, "participaciones": participaciones,
         "goles": goles, "disciplina": disciplina,
@@ -7185,7 +7185,7 @@ def admin_centro_series():
 
         filas.append({
             "serie": serie_obj,
-            "campeonatos": campeonatos_serie,
+            "campeonatos": campeonatos_serie[:8],
             "clubes": clubes,
             "jugadores": jugadores,
             "total_clubes": len(clubes),
