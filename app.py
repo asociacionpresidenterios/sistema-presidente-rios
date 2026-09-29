@@ -5885,6 +5885,7 @@ def admin_actas():
 
 
 @app.route("/campeonatos/<int:campeonato_id>/partido/<int:partido_id>/acta", methods=["GET", "POST"])
+@admin_required
 def acta_partido(campeonato_id, partido_id):
     campeonato = db.get_or_404(Campeonato, campeonato_id)
     partido = db.get_or_404(Partido, partido_id)
@@ -5990,8 +5991,34 @@ def acta_partido(campeonato_id, partido_id):
             db.session.flush()
             nomina_actual = PartidoJugador.query.filter_by(partido_id=partido.id).all()
 
-            # Los borradores NO contaminan estadísticas oficiales.
+            # V8.1: el resultado oficial se registra dentro del acta.
+            # Debe coincidir con la suma de goles ingresados por jugador para
+            # mantener una única fuente de verdad y evitar inconsistencias.
+            resultado_local_raw = request.form.get("resultado_local", "").strip()
+            resultado_visitante_raw = request.form.get("resultado_visitante", "").strip()
+
+            def entero_resultado(valor):
+                try:
+                    return max(0, int(valor))
+                except (ValueError, TypeError):
+                    return None
+
+            resultado_local = entero_resultado(resultado_local_raw)
+            resultado_visitante = entero_resultado(resultado_visitante_raw)
+
             if acta.estado == "Cerrada":
+                if resultado_local is None or resultado_visitante is None:
+                    raise ValueError("Debes ingresar el resultado de ambos equipos antes de cerrar el acta.")
+
+                suma_local = sum(int(x.goles or 0) for x in nomina_actual if (x.equipo or "").strip().lower() == "local")
+                suma_visitante = sum(int(x.goles or 0) for x in nomina_actual if (x.equipo or "").strip().lower() == "visitante")
+
+                if resultado_local != suma_local or resultado_visitante != suma_visitante:
+                    raise ValueError(
+                        f"El resultado no coincide con los goles registrados por jugador. "
+                        f"Local: {suma_local}, Visitante: {suma_visitante}."
+                    )
+
                 goles_local, goles_visitante = sincronizar_estadisticas_desde_acta(
                     campeonato, partido, nomina_actual
                 )
