@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Panel Maestro · Presidente Ríos{% endblock %}
+{% block title %}Inicio · Presidente Ríos{% endblock %}
 {% block head %}
 <style>
 .hero{background:linear-gradient(135deg,#0b1830 0%,#153765 65%,#2563eb 100%);color:#fff;border-radius:20px;padding:26px 28px;box-shadow:0 18px 45px rgba(15,23,42,.14);margin-bottom:20px}
@@ -19,14 +19,22 @@
 <div class="hero">
   <div class="hero-top">
     <div>
-      <div class="eyebrow">V8.0 · Inicio de gestión</div>
+      <div class="eyebrow">V9.0 · Panel principal</div>
       <h1>Inicio</h1>
-      <p>Toda la gestión de la Asociación Presidente Ríos, en un solo lugar.</p>
+      <p>Accede rápidamente a la gestión que necesitas.</p>
     </div>
     <div class="hero-actions">
+      {% if session.get('admin_rol') == 'Tesoreria' %}
+      <a class="hero-btn" href="{{ url_for('admin_tesoreria') }}">💰 Abrir tesorería</a>
+      {% elif session.get('admin_rol') == 'Disciplina' %}
+      <a class="hero-btn" href="{{ url_for('admin_partidos') }}">⚽ Partidos</a>
+      <a class="hero-btn" href="{{ url_for('admin_actas') }}">📋 Actas</a>
+      <a class="hero-btn" href="{{ url_for('admin_centro_estadisticas') }}">📊 Disciplina</a>
+      {% else %}
       <a class="hero-btn" href="{{ url_for('campeonatos') }}">🏆 Campeonatos</a>
       <a class="hero-btn" href="{{ url_for('admin_clubes') }}">🏟️ Clubes</a>
       <a class="hero-btn" href="{{ url_for('admin_centro_jugadores') }}">👥 Jugadores</a>
+      {% endif %}
     </div>
   </div>
 </div>
@@ -36,10 +44,6 @@
   <div class="metric"><div class="metric-label">Clubes</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_clubes }}</div><div class="metric-sub">{{ resumen.clubes_activos }} activos</div></div><div class="metric-icon">🏟️</div></div></div>
   <div class="metric"><div class="metric-label">Campeonatos</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_campeonatos }}</div><div class="metric-sub">{{ resumen.campeonatos_activos }} activos</div></div><div class="metric-icon">🏆</div></div></div>
   <div class="metric"><div class="metric-label">Partidos</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_partidos }}</div><div class="metric-sub">{{ resumen.partidos_programados }} programados · {{ resumen.partidos_finalizados }} finalizados</div></div><div class="metric-icon">⚽</div></div></div>
-  <div class="metric"><div class="metric-label">Actas</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_actas }}</div><div class="metric-sub">{{ resumen.actas_cerradas }} cerradas · {{ resumen.actas_pendientes }} pendientes</div></div><div class="metric-icon">📋</div></div></div>
-  <div class="metric"><div class="metric-label">Goles</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_goles }}</div><div class="metric-sub">registrados en el sistema</div></div><div class="metric-icon">🥅</div></div></div>
-  <div class="metric"><div class="metric-label">Amarillas</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_amarillas }}</div><div class="metric-sub">registros disciplinarios</div></div><div class="metric-icon">🟨</div></div></div>
-  <div class="metric"><div class="metric-label">Rojas</div><div class="metric-row"><div><div class="metric-value">{{ resumen.total_rojas }}</div><div class="metric-sub">registros disciplinarios</div></div><div class="metric-icon">🟥</div></div></div>
 </div>
 
 <div class="section-title"><h2>Control de gestión</h2><span>{{ alertas|length }} pendientes detectados</span></div>
@@ -60,7 +64,7 @@
   </div>
 </div>
 
-<div class="section-title"><h2>Operación deportiva</h2><span>Conexión entre competencias y registro maestro</span></div>
+<div class="section-title"><h2>Actividad reciente</h2><span>Lo que requiere atención</span></div>
 <div class="layout">
   <div>
     <div class="card" style="margin-bottom:16px">
@@ -73,7 +77,7 @@
     </div>
 
     <div class="card">
-      <div class="card-head"><strong>Últimos resultados</strong><a href="{{ url_for('admin_partidos') }}">Centro de partidos →</a></div>
+      <div class="card-head"><strong>Últimos resultados</strong><a href="{{ url_for('admin_partidos') }}">Ver partidos →</a></div>
       <div class="table-wrap"><table class="table"><thead><tr><th>Fecha</th><th>Campeonato</th><th>Resultado</th><th>Estado</th></tr></thead><tbody>
       {% for partido in ultimos_resultados %}
       <tr><td>{{ partido.fecha.strftime('%d/%m/%Y') if partido.fecha else '—' }}</td><td>{{ partido.campeonato.nombre if partido.campeonato else '—' }}</td><td><strong>{{ partido.local_club.nombre if partido.local_club else 'Local' }}</strong> {{ partido.goles_local if partido.goles_local is not none else '—' }} - {{ partido.goles_visitante if partido.goles_visitante is not none else '—' }} <strong>{{ partido.visitante_club.nombre if partido.visitante_club else 'Visitante' }}</strong></td><td><span class="pill active">Finalizado</span></td></tr>
@@ -84,7 +88,7 @@
 
   <div>
     <div class="card" style="margin-bottom:16px">
-      <div class="card-head"><strong>Campeonatos</strong><a href="{{ url_for('campeonatos') }}">Gestionar →</a></div>
+      <div class="card-head"><strong>Campeonatos</strong><a href="{{ url_for('campeonatos') }}">Ver todos →</a></div>
       <div class="card-body">
       {% for item in campeonatos %}
         <div class="champ"><div class="champ-top"><div><div class="champ-name">{{ item.campeonato.nombre }}</div><div class="champ-meta">{{ item.campeonato.temporada }} · {{ item.campeonato.serie }}</div></div><span class="pill {% if item.campeonato.estado == 'Activo' %}active{% endif %}">{{ item.campeonato.estado }}</span></div><div class="champ-stats"><div class="mini-stat"><b>{{ item.clubes }}</b><span>Clubes</span></div><div class="mini-stat"><b>{{ item.partidos }}</b><span>Partidos</span></div><div class="mini-stat"><b>{{ item.finalizados }}</b><span>Finalizados</span></div><div class="mini-stat"><b>{{ item.actas_cerradas }}/{{ item.actas }}</b><span>Actas</span></div></div><div style="margin-top:9px"><a class="btn-mini" href="{{ url_for('panel_campeonato', campeonato_id=item.campeonato.id) }}">Abrir campeonato →</a></div></div>
@@ -93,7 +97,7 @@
     </div>
 
     <div class="card">
-      <div class="card-head"><strong>Últimos jugadores</strong><a href="{{ url_for('admin_registro') }}">Registro →</a></div>
+      <div class="card-head"><strong>Últimos jugadores</strong><a href="{{ url_for('admin_centro_jugadores') }}">Ver jugadores →</a></div>
       <div class="card-body">
       {% for jugador in ultimos_jugadores %}
         <div style="display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)"><div><strong style="font-size:12px">{{ jugador.nombre_completo }}</strong><div class="muted" style="font-size:10px;margin-top:3px">{{ jugador.club or 'Sin club' }} · {{ jugador.serie or 'Sin serie' }}</div></div><span class="pill {% if jugador.estado == 'Vigente' %}active{% endif %}">{{ jugador.estado or '—' }}</span></div>
