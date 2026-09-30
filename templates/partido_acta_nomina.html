@@ -34,7 +34,7 @@
     <form method="post" style="margin-bottom:20px">
       <input type="hidden" name="accion" value="reabrir">
       <button type="submit" style="padding:12px 20px;border:0;border-radius:9px;background:#f59e0b;color:white;font-weight:700;cursor:pointer">🔓 Reabrir acta para corregir</button>
-      <a href="{{ url_for('exportar_acta_word', campeonato_id=campeonato.id, partido_id=partido.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block;border-radius:9px;background:#2563eb;color:white;text-decoration:none;font-weight:700">📄 Exportar Word</a>
+      <a href="{{ url_for('exportar_acta_word', campeonato_id=campeonato.id, partido_id=partido.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block;border-radius:9px;background:#2563eb;color:white;text-decoration:none;font-weight:700">📄 Exportar Word</a>\n      <a href="{{ url_for('informe_partido', campeonato_id=campeonato.id, partido_id=partido.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block;border-radius:9px;background:#111827;color:white;text-decoration:none;font-weight:700">🖨️ Informe / PDF</a>
       <a href="{{ url_for('admin_partidos', campeonato_id=campeonato.id) }}" style="padding:12px 20px;margin-left:8px">↩ Volver a partidos</a>
     </form>
 
@@ -104,7 +104,7 @@
 
       <button type="submit" name="estado" value="Borrador" style="padding:12px 20px;border:0;border-radius:9px;background:#64748b;color:white;font-weight:700;cursor:pointer">💾 Guardar borrador</button>
       <button type="submit" name="estado" value="Cerrada" style="padding:12px 20px;border:0;border-radius:9px;background:#16a34a;color:white;font-weight:700;cursor:pointer;margin-left:8px" onclick="return confirm('¿Cerrar el acta? Al cerrarla quedará protegida y el resultado oficial se actualizará con los goles registrados.');">🔒 Cerrar acta y oficializar</button>
-      <a href="{{ url_for('exportar_acta_word', campeonato_id=campeonato.id, partido_id=partido.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block;border-radius:9px;background:#2563eb;color:white;text-decoration:none;font-weight:700">📄 Exportar Word</a>
+      <a href="{{ url_for('exportar_acta_word', campeonato_id=campeonato.id, partido_id=partido.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block;border-radius:9px;background:#2563eb;color:white;text-decoration:none;font-weight:700">📄 Exportar Word</a>\n      <a href="{{ url_for('informe_partido', campeonato_id=campeonato.id, partido_id=partido.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block;border-radius:9px;background:#111827;color:white;text-decoration:none;font-weight:700">🖨️ Informe / PDF</a>
       <a href="{{ url_for('admin_partidos', campeonato_id=campeonato.id) }}" style="padding:12px 20px;margin-left:8px">↩ Volver a partidos</a>
     </form>
   {% endif %}
