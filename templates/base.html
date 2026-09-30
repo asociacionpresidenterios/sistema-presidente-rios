@@ -65,7 +65,7 @@ a{text-decoration:none;color:inherit}
     <div class="section-label">Gestión deportiva</div>
     <a class="nav-item {% if request.endpoint in ['campeonatos','nuevo_campeonato','detalle_campeonato','panel_campeonato'] %}active{% endif %}" href="{{ url_for('campeonatos') }}"><span class="nav-icon">🏆</span>Campeonatos</a>
     <a class="nav-item {% if request.endpoint in ['admin_clubes','admin_planteles','admin_ficha_club','admin_centro_club','admin_centro_clubes','admin_centro_club_series'] %}active{% endif %}" href="{{ url_for('admin_clubes') }}"><span class="nav-icon">🏟️</span>Clubes</a>
-    <a class="nav-item {% if request.endpoint in ['admin_registro','index','nuevo_jugador','editar_jugador','importar_jugadores','ficha_jugador','historial_jugador','admin_centro_jugadores','admin_centro_jugador'] %}active{% endif %}" href="{{ url_for('admin_registro') }}"><span class="nav-icon">👥</span>Jugadores</a>
+    <a class="nav-item {% if request.endpoint in ['admin_registro','index','nuevo_jugador','editar_jugador','importar_jugadores','ficha_jugador','historial_jugador','admin_centro_jugadores','admin_centro_jugador'] %}active{% endif %}" href="{{ url_for('admin_centro_jugadores') }}"><span class="nav-icon">👥</span>Jugadores</a>
     <a class="nav-item {% if request.endpoint in ['admin_partidos','admin_centro_partidos','admin_centro_partido'] %}active{% endif %}" href="{{ url_for('admin_partidos') }}"><span class="nav-icon">⚽</span>Partidos</a>
     <a class="nav-item {% if request.endpoint in ['admin_actas','acta_partido','admin_centro_actas'] %}active{% endif %}" href="{{ url_for('admin_actas') }}"><span class="nav-icon">📋</span>Actas</a>
     <a class="nav-item {% if request.endpoint in ['admin_centro_estadisticas'] %}active{% endif %}" href="{{ url_for('admin_centro_estadisticas') }}"><span class="nav-icon">📊</span>Estadísticas</a>
@@ -90,7 +90,7 @@ a{text-decoration:none;color:inherit}
     </div>
     <div class="top-actions">
       <a class="top-btn" href="{{ url_for('publico') }}">🌐 Ver portal</a>
-      <a class="top-btn primary" href="{{ url_for('admin_registro') }}">👥 Registro</a>
+      <a class="top-btn primary" href="{{ url_for('admin_centro_jugadores') }}">👥 Jugadores</a>
     </div>
   </header>
   <div class="page">
