@@ -31,4 +31,23 @@
 </div>
 <div class="grid"><div class="card"><div class="label">Jugadores registrados</div><div class="value">{{ total }}</div></div><div class="card"><div class="label">Jugadores vigentes</div><div class="value">{{ vigentes }}</div></div><div class="card"><div class="label">Clubes con jugadores</div><div class="value">{{ clubes_total }}</div></div><div class="card"><div class="label">Participaciones en partidos</div><div class="value">{{ participaciones }}</div></div></div>
 <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px"><div><strong>Jugadores</strong><div class="muted">{{ resumen|length }} resultados mostrados</div></div></div>{% if resumen %}<div class="table-wrap"><table class="table"><thead><tr><th>Jugador</th><th>Club</th><th>Serie</th><th>Estado</th><th>Partidos</th><th>Goles</th><th>🟨</th><th>🟥</th><th>Acción</th></tr></thead><tbody>{% for r in resumen %}{% set j=r.jugador %}<tr><td><div class="name">{{ j.nombre_completo }}</div><div class="muted">{{ j.rut }}</div></td><td>{{ j.club }}</td><td>{{ j.serie }}</td><td><span class="badge {% if j.estado=='Vigente' %}ok{% elif j.estado in ['Suspendido','Inhabilitado'] %}danger{% else %}warn{% endif %}">{{ j.estado }}</span></td><td>{{ r.partidos }}</td><td>{{ r.goles }}</td><td>{{ r.amarillas }}</td><td>{{ r.rojas }}</td><td><div class="actions"><a class="btn" href="{{ url_for('admin_centro_jugador', jugador_id=j.id) }}">👤 Abrir jugador</a></div></td></tr>{% endfor %}</tbody></table></div>{% if resumen|length >= 250 %}<div class="limit">Se muestran los primeros 250 resultados. Refina la búsqueda para localizar otros jugadores.</div>{% endif %}{% else %}<div class="empty">No se encontraron jugadores con los filtros seleccionados.</div>{% endif %}</div>
+<script>
+(function(){
+  const form=document.getElementById("filtro-jugadores");
+  const input=document.getElementById("busqueda-jugador");
+  if(!form || !input) return;
+  function rutFormateado(valor){
+    const v=(valor||"").toUpperCase().replace(/[^0-9K]/g,"");
+    if(v.length < 2) return valor;
+    const cuerpo=v.slice(0,-1), dv=v.slice(-1);
+    let partes=[];
+    for(let i=cuerpo.length;i>0;i-=3) partes.unshift(cuerpo.substring(Math.max(0,i-3),i));
+    return partes.join(".")+"-"+dv;
+  }
+  form.addEventListener("submit",function(){
+    const limpio=(input.value||"").toUpperCase().replace(/[^0-9K]/g,"");
+    if(/^[0-9]{7,8}[0-9K]$/.test(limpio)) input.value=rutFormateado(limpio);
+  });
+})();
+</script>
 {% endblock %}
