@@ -72,10 +72,7 @@ a{text-decoration:none;color:inherit}
     <a class="nav-item {% if request.endpoint in ['admin_centro_estadisticas'] %}active{% endif %}" href="{{ url_for('admin_centro_estadisticas') }}"><span class="nav-icon">📊</span>Estadísticas</a>
     {% elif session.get('admin_rol') == 'Disciplina' %}
     <div class="section-label">Disciplina</div>
-    <a class="nav-item" href="{{ url_for('admin_centro_jugadores') }}"><span class="nav-icon">👥</span>Jugadores</a>
-    <a class="nav-item" href="{{ url_for('admin_partidos') }}"><span class="nav-icon">⚽</span>Partidos</a>
-    <a class="nav-item" href="{{ url_for('admin_actas') }}"><span class="nav-icon">📋</span>Actas</a>
-    <a class="nav-item" href="{{ url_for('admin_centro_estadisticas') }}"><span class="nav-icon">📊</span>Disciplina y estadísticas</a>
+    <a class="nav-item {% if request.endpoint in ['admin_actas','acta_partido','admin_centro_actas'] %}active{% endif %}" href="{{ url_for('admin_actas') }}"><span class="nav-icon">📋</span>Actas</a>
     {% elif session.get('admin_rol') == 'Tesoreria' %}
     <div class="section-label">Tesorería</div>
     <a class="nav-item {% if request.endpoint=='admin_tesoreria' %}active{% endif %}" href="{{ url_for('admin_tesoreria') }}"><span class="nav-icon">💰</span>Tesorería</a>
