@@ -85,8 +85,8 @@ a{text-decoration:none;color:inherit}
     <a class="nav-item {% if request.endpoint=='mi_cuenta_admin' %}active{% endif %}" href="{{ url_for('mi_cuenta_admin') }}"><span class="nav-icon">👤</span>Mi cuenta</a>
     {% if session.get('admin_rol') == 'Administrador' or not session.get('admin_rol') %}
     <div class="section-label">Sistema</div>
+    <a class="nav-item {% if request.endpoint=='admin_usuarios' %}active{% endif %}" href="{{ url_for('admin_usuarios') }}"><span class="nav-icon">🔐</span>Usuarios</a>
     <a class="nav-item {% if request.endpoint=='admin_integracion' %}active{% endif %}" href="{{ url_for('admin_integracion') }}"><span class="nav-icon">🛡️</span>Auditoría</a>
-    <a class="nav-item {% if request.endpoint=='admin_usuarios' %}active{% endif %}" href="{{ url_for('admin_usuarios') }}"><span class="nav-icon">🔐</span>Administradores</a>
     <a class="nav-item {% if request.endpoint in ['identidad_visual','configuracion'] %}active{% endif %}" href="{{ url_for('configuracion') }}"><span class="nav-icon">⚙️</span>Configuración</a>
     {% endif %}
   </div>
@@ -100,13 +100,10 @@ a{text-decoration:none;color:inherit}
   <header class="topbar">
     <div style="display:flex;align-items:center;gap:12px">
       <button class="mobile-menu" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
-      <div class="breadcrumb"><strong>Asociación Presidente Ríos</strong> <span style="margin:0 6px;color:#94a3b8">/</span> Administración</div>
+      <div class="breadcrumb"><strong>Asociación Presidente Ríos</strong> <span style="margin:0 6px;color:#94a3b8">/</span> Gestión</div>
     </div>
     <div class="top-actions">
-      <a class="top-btn" href="{{ url_for('publico') }}">🌐 Ver portal</a>
-      {% if session.get('admin_rol') != 'Tesoreria' %}
-      <a class="top-btn primary" href="{{ url_for('admin_centro_jugadores') }}">👥 Jugadores</a>
-      {% endif %}
+      <a class="top-btn primary" href="{{ url_for('publico') }}">🌐 Ver portal público</a>
     </div>
   </header>
   <div class="page">
