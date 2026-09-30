@@ -104,7 +104,9 @@ a{text-decoration:none;color:inherit}
     </div>
     <div class="top-actions">
       <a class="top-btn" href="{{ url_for('publico') }}">🌐 Ver portal</a>
+      {% if session.get('admin_rol') != 'Tesoreria' %}
       <a class="top-btn primary" href="{{ url_for('admin_centro_jugadores') }}">👥 Jugadores</a>
+      {% endif %}
     </div>
   </header>
   <div class="page">
