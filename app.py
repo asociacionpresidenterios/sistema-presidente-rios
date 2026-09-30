@@ -108,6 +108,7 @@ class AdminUser(db.Model):
     nombre = db.Column(db.String(160), nullable=False, default="Administrador")
     password_hash = db.Column(db.String(255), nullable=False)
     activo = db.Column(db.Boolean, nullable=False, default=True)
+    rol = db.Column(db.String(30), nullable=False, default="Administrador")
     creado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     def set_password(self, password):
@@ -648,6 +649,19 @@ def preparar_base_datos():
             db.session.commit()
 
         # ----------------------------------------------------
+        # AGREGAR ROL A ADMINISTRADORES SI NO EXISTE
+        # ----------------------------------------------------
+        inspector = db.inspect(db.engine)
+        columnas_admin = [c["name"] for c in inspector.get_columns("admin_user")]
+        if "rol" not in columnas_admin:
+            if db.engine.dialect.name == "postgresql":
+                db.session.execute(db.text("ALTER TABLE admin_user ADD COLUMN IF NOT EXISTS rol VARCHAR(30) DEFAULT 'Administrador'"))
+            elif db.engine.dialect.name == "sqlite":
+                db.session.execute(db.text("ALTER TABLE admin_user ADD COLUMN rol VARCHAR(30) DEFAULT 'Administrador'"))
+            db.session.commit()
+        db.session.execute(db.text("UPDATE admin_user SET rol = 'Administrador' WHERE rol IS NULL OR rol = ''"))
+        db.session.commit()
+
         # AGREGAR ESTADO SI NO EXISTE
         # ----------------------------------------------------
 
@@ -822,7 +836,7 @@ def asegurar_admin_inicial():
         username = (os.environ.get("ADMIN_USERNAME") or "admin").strip()
         password = os.environ.get("ADMIN_PASSWORD") or "PresidenteRios2026!"
         nombre = (os.environ.get("ADMIN_NAME") or "Administrador principal").strip()
-        admin = AdminUser(username=username, nombre=nombre, activo=True)
+        admin = AdminUser(username=username, nombre=nombre, activo=True, rol="Administrador")
         admin.set_password(password)
         db.session.add(admin)
         db.session.commit()
@@ -860,10 +874,41 @@ def exigir_login_administrativo():
     if endpoint in PUBLIC_ENDPOINTS or (request.path or "").startswith("/static/"):
         return None
     if session.get("admin_id"):
+        rol = session.get("admin_rol") or "Administrador"
+        if rol != "Administrador":
+            permitidos = ROLE_ENDPOINTS.get(rol, set())
+            if endpoint not in permitidos and endpoint not in {"login", "logout"}:
+                flash("Tu perfil no tiene permisos para acceder a esta sección.", "error")
+                return redirect(url_for("dashboard"))
         return None
     destino = request.full_path.rstrip("?")
     return redirect(url_for("login", next=destino))
 
+
+# ============================================================
+# PERFILES DE ACCESO
+# ============================================================
+
+ROLES = {"Administrador": "Administrador", "Disciplina": "Disciplina", "Tesoreria": "Tesorería"}
+
+ROLE_ENDPOINTS = {
+    "Disciplina": {"dashboard","admin_panel_maestro","mi_cuenta_admin","admin_centro_jugadores","admin_centro_jugador","ficha_jugador","historial_jugador","foto_jugador","qr_jugador","credencial_jugador","credencial_completa","credencial_reverso","admin_clubes","admin_ficha_club","admin_planteles","admin_partidos","admin_centro_partidos","admin_centro_partido","admin_actas","admin_centro_actas","admin_centro_estadisticas","estadisticas_campeonato","registrar_gol","registrar_amarilla","registrar_roja","registrar_suspension","eliminar_gol","eliminar_registro_disciplinario","admin_integracion","logout"},
+    "Tesoreria": {"dashboard","admin_panel_maestro","mi_cuenta_admin","admin_tesoreria","logout"}
+}
+
+def rol_permitido(*roles):
+    def decorator(view):
+        @wraps(view)
+        def wrapped(*args, **kwargs):
+            if not session.get("admin_id"):
+                return redirect(url_for("login", next=request.full_path))
+            rol = session.get("admin_rol") or "Administrador"
+            if rol not in roles:
+                flash("Tu perfil no tiene permisos para acceder a esta sección.", "error")
+                return redirect(url_for("dashboard"))
+            return view(*args, **kwargs)
+        return wrapped
+    return decorator
 
 def admin_required(view):
     @wraps(view)
@@ -1272,6 +1317,7 @@ def login():
             session["admin_id"] = admin.id
             session["admin_username"] = admin.username
             session["admin_nombre"] = admin.nombre
+            session["admin_rol"] = admin.rol or "Administrador"
             session.permanent = True
             destino = request.form.get("next", "").strip()
             if not destino.startswith("/") or destino.startswith("//"):
@@ -1312,27 +1358,32 @@ def mi_cuenta_admin():
 
 
 @app.route("/admin/usuarios", methods=["GET", "POST"])
+@rol_permitido("Administrador")
 def admin_usuarios():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         nombre = request.form.get("nombre", "").strip() or "Administrador"
         password = request.form.get("password", "")
+        rol = request.form.get("rol", "Administrador").strip()
+        if rol not in ROLES:
+            rol = "Administrador"
         if len(username) < 3 or len(password) < 8:
             flash("El usuario debe tener al menos 3 caracteres y la contraseña 8.", "error")
         elif AdminUser.query.filter_by(username=username).first():
             flash("Ese usuario administrador ya existe.", "error")
         else:
-            admin = AdminUser(username=username, nombre=nombre, activo=True)
+            admin = AdminUser(username=username, nombre=nombre, activo=True, rol=rol)
             admin.set_password(password)
             db.session.add(admin)
             db.session.commit()
             flash("Administrador creado correctamente.", "success")
             return redirect(url_for("admin_usuarios"))
     usuarios = AdminUser.query.order_by(AdminUser.username).all()
-    return render_template("admin_usuarios.html", usuarios=usuarios)
+    return render_template("admin_usuarios.html", usuarios=usuarios, roles=ROLES)
 
 
 @app.route("/admin/usuarios/<int:admin_id>/estado", methods=["POST"])
+@rol_permitido("Administrador")
 def cambiar_estado_admin(admin_id):
     admin = db.get_or_404(AdminUser, admin_id)
     if admin.id == session.get("admin_id"):
@@ -6754,6 +6805,11 @@ def admin_centro_jugador(jugador_id):
 # ============================================================
 # ETAPA 10 — CENTRO DE INTEGRACIÓN Y AUDITORÍA
 # ============================================================
+
+@app.route("/admin/tesoreria")
+@rol_permitido("Administrador", "Tesoreria")
+def admin_tesoreria():
+    return render_template("admin_tesoreria.html")
 
 @app.route("/admin/integracion")
 def admin_integracion():
