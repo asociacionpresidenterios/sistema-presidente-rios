@@ -6910,6 +6910,7 @@ def admin_tesoreria():
         total_ingresos=int(ingresos),
         total_egresos=int(egresos),
         saldo=int(saldo),
+        today=date.today(),
     )
 
 @app.route("/admin/integracion")
