@@ -6311,7 +6311,15 @@ def publico():
     series = {}
     for campeonato in campeonatos:
         jornada, partidos = obtener_proxima_jornada(campeonato)
+        resultados_recientes = (Partido.query
+                               .filter(Partido.campeonato_id == campeonato.id,
+                                       Partido.estado == "Finalizado",
+                                       Partido.goles_local.isnot(None),
+                                       Partido.goles_visitante.isnot(None))
+                               .order_by(Partido.jornada.desc(), Partido.id.desc())
+                               .limit(5).all())
         panel = {"campeonato": campeonato, "jornada": jornada, "partidos": partidos,
+                 "resultados": resultados_recientes,
                  "tabla": obtener_tabla_publica(campeonato),
                  "goleadores": obtener_goleadores_publicos(campeonato, 10)}
         paneles.append(panel)
