@@ -62,6 +62,7 @@ a{text-decoration:none;color:inherit}
     <a class="nav-item {% if request.endpoint in ['admin_panel_maestro','admin_operaciones','dashboard'] %}active{% endif %}" href="{{ url_for('admin_panel_maestro') }}"><span class="nav-icon">🏠</span>Inicio</a>
     <a class="nav-item {% if request.endpoint=='publico' %}active{% endif %}" href="{{ url_for('publico') }}"><span class="nav-icon">🌐</span>Portal público</a>
 
+    {% if session.get('admin_rol') == 'Administrador' or not session.get('admin_rol') %}
     <div class="section-label">Gestión deportiva</div>
     <a class="nav-item {% if request.endpoint in ['campeonatos','nuevo_campeonato','detalle_campeonato','panel_campeonato'] %}active{% endif %}" href="{{ url_for('campeonatos') }}"><span class="nav-icon">🏆</span>Campeonatos</a>
     <a class="nav-item {% if request.endpoint in ['admin_clubes','admin_planteles','admin_ficha_club','admin_centro_club','admin_centro_clubes','admin_centro_club_series'] %}active{% endif %}" href="{{ url_for('admin_clubes') }}"><span class="nav-icon">🏟️</span>Clubes</a>
@@ -69,15 +70,28 @@ a{text-decoration:none;color:inherit}
     <a class="nav-item {% if request.endpoint in ['admin_partidos','admin_centro_partidos','admin_centro_partido'] %}active{% endif %}" href="{{ url_for('admin_partidos') }}"><span class="nav-icon">⚽</span>Partidos</a>
     <a class="nav-item {% if request.endpoint in ['admin_actas','acta_partido','admin_centro_actas'] %}active{% endif %}" href="{{ url_for('admin_actas') }}"><span class="nav-icon">📋</span>Actas</a>
     <a class="nav-item {% if request.endpoint in ['admin_centro_estadisticas'] %}active{% endif %}" href="{{ url_for('admin_centro_estadisticas') }}"><span class="nav-icon">📊</span>Estadísticas</a>
+    {% elif session.get('admin_rol') == 'Disciplina' %}
+    <div class="section-label">Disciplina</div>
+    <a class="nav-item" href="{{ url_for('admin_centro_jugadores') }}"><span class="nav-icon">👥</span>Jugadores</a>
+    <a class="nav-item" href="{{ url_for('admin_partidos') }}"><span class="nav-icon">⚽</span>Partidos</a>
+    <a class="nav-item" href="{{ url_for('admin_actas') }}"><span class="nav-icon">📋</span>Actas</a>
+    <a class="nav-item" href="{{ url_for('admin_centro_estadisticas') }}"><span class="nav-icon">📊</span>Disciplina y estadísticas</a>
+    {% elif session.get('admin_rol') == 'Tesoreria' %}
+    <div class="section-label">Tesorería</div>
+    <a class="nav-item {% if request.endpoint=='admin_tesoreria' %}active{% endif %}" href="{{ url_for('admin_tesoreria') }}"><span class="nav-icon">💰</span>Tesorería</a>
+    {% endif %}
 
+    <div class="section-label">Cuenta</div>
+    <a class="nav-item {% if request.endpoint=='mi_cuenta_admin' %}active{% endif %}" href="{{ url_for('mi_cuenta_admin') }}"><span class="nav-icon">👤</span>Mi cuenta</a>
+    {% if session.get('admin_rol') == 'Administrador' or not session.get('admin_rol') %}
     <div class="section-label">Sistema</div>
     <a class="nav-item {% if request.endpoint=='admin_integracion' %}active{% endif %}" href="{{ url_for('admin_integracion') }}"><span class="nav-icon">🛡️</span>Auditoría</a>
-    <a class="nav-item {% if request.endpoint=='mi_cuenta_admin' %}active{% endif %}" href="{{ url_for('mi_cuenta_admin') }}"><span class="nav-icon">👤</span>Mi cuenta</a>
     <a class="nav-item {% if request.endpoint=='admin_usuarios' %}active{% endif %}" href="{{ url_for('admin_usuarios') }}"><span class="nav-icon">🔐</span>Administradores</a>
     <a class="nav-item {% if request.endpoint in ['identidad_visual','configuracion'] %}active{% endif %}" href="{{ url_for('configuracion') }}"><span class="nav-icon">⚙️</span>Configuración</a>
+    {% endif %}
   </div>
   <div class="sidebar-footer">
-    <div class="user-box"><strong>{{ session.get('admin_nombre') or 'Administrador' }}</strong>Sesión administrativa</div>
+    <div class="user-box"><strong>{{ session.get('admin_nombre') or 'Administrador' }}</strong>{{ {'Administrador':'Administrador','Disciplina':'Disciplina','Tesoreria':'Tesorería'}.get(session.get('admin_rol'),'Administrador') }}</div>
     <a class="logout" href="{{ url_for('logout') }}">↪ Cerrar sesión</a>
   </div>
 </aside>
