@@ -119,6 +119,23 @@ class AdminUser(db.Model):
 
 
 # ============================================================
+# V9.0 — MODELO DE TESORERÍA
+# ============================================================
+
+class MovimientoTesoreria(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    fecha = db.Column(db.Date, nullable=False, default=date.today, index=True)
+    tipo = db.Column(db.String(20), nullable=False, index=True)  # Ingreso / Egreso
+    concepto = db.Column(db.String(180), nullable=False)
+    categoria = db.Column(db.String(80), nullable=True)
+    monto = db.Column(db.Numeric(14, 0), nullable=False, default=0)
+    medio_pago = db.Column(db.String(50), nullable=True)
+    referencia = db.Column(db.String(120), nullable=True)
+    observaciones = db.Column(db.Text, nullable=True)
+    creado_por = db.Column(db.String(160), nullable=True)
+    creado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+# ============================================================
 # MODELO CLUB
 # ============================================================
 
@@ -6811,10 +6828,89 @@ def admin_centro_jugador(jugador_id):
 # ETAPA 10 — CENTRO DE INTEGRACIÓN Y AUDITORÍA
 # ============================================================
 
-@app.route("/admin/tesoreria")
+@app.route("/admin/tesoreria", methods=["GET", "POST"])
 @rol_permitido("Administrador", "Tesoreria")
 def admin_tesoreria():
-    return render_template("admin_tesoreria.html")
+    if request.method == "POST":
+        tipo = request.form.get("tipo", "").strip()
+        concepto = request.form.get("concepto", "").strip()
+        categoria = request.form.get("categoria", "").strip()
+        monto_raw = request.form.get("monto", "").strip().replace(".", "").replace(",", "")
+        fecha_raw = request.form.get("fecha", "").strip()
+        medio_pago = request.form.get("medio_pago", "").strip()
+        referencia = request.form.get("referencia", "").strip()
+        observaciones = request.form.get("observaciones", "").strip()
+
+        if tipo not in {"Ingreso", "Egreso"}:
+            flash("Selecciona si el movimiento es un ingreso o un egreso.", "error")
+            return redirect(url_for("admin_tesoreria"))
+
+        if not concepto:
+            flash("Debes ingresar un concepto.", "error")
+            return redirect(url_for("admin_tesoreria"))
+
+        try:
+            monto = int(monto_raw)
+        except (TypeError, ValueError):
+            monto = 0
+
+        if monto <= 0:
+            flash("El monto debe ser mayor que $0.", "error")
+            return redirect(url_for("admin_tesoreria"))
+
+        try:
+            fecha_movimiento = datetime.strptime(fecha_raw, "%Y-%m-%d").date() if fecha_raw else date.today()
+        except ValueError:
+            fecha_movimiento = date.today()
+
+        movimiento = MovimientoTesoreria(
+            fecha=fecha_movimiento,
+            tipo=tipo,
+            concepto=concepto,
+            categoria=categoria or None,
+            monto=monto,
+            medio_pago=medio_pago or None,
+            referencia=referencia or None,
+            observaciones=observaciones or None,
+            creado_por=session.get("admin_nombre") or session.get("admin_username"),
+        )
+        db.session.add(movimiento)
+        db.session.commit()
+        flash(f"{tipo} registrado correctamente.", "success")
+        return redirect(url_for("admin_tesoreria"))
+
+    movimientos = (
+        MovimientoTesoreria.query
+        .order_by(MovimientoTesoreria.fecha.desc(), MovimientoTesoreria.id.desc())
+        .limit(100)
+        .all()
+    )
+
+    ingresos = db.session.query(
+        db.func.coalesce(
+            db.func.sum(MovimientoTesoreria.monto), 0
+        )
+    ).filter(
+        MovimientoTesoreria.tipo == "Ingreso"
+    ).scalar() or 0
+
+    egresos = db.session.query(
+        db.func.coalesce(
+            db.func.sum(MovimientoTesoreria.monto), 0
+        )
+    ).filter(
+        MovimientoTesoreria.tipo == "Egreso"
+    ).scalar() or 0
+
+    saldo = ingresos - egresos
+
+    return render_template(
+        "admin_tesoreria.html",
+        movimientos=movimientos,
+        total_ingresos=int(ingresos),
+        total_egresos=int(egresos),
+        saldo=int(saldo),
+    )
 
 @app.route("/admin/integracion")
 def admin_integracion():
