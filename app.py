@@ -4705,6 +4705,7 @@ def panel_campeonato(campeonato_id):
     fair_play.sort(key=lambda x: (x["puntos"], x["nombre"].lower()))
 
     porcentaje = round((len(partidos_finalizados) / len(partidos)) * 100) if partidos else 0
+    campaign_clubs = [{"id": r.club.id, "nombre": r.club.nombre} for r in clubes_participantes]
 
     return render_template(
         "campeonato_panel.html",
@@ -4721,6 +4722,7 @@ def panel_campeonato(campeonato_id):
         total_rojas=int(total_rojas),
         total_suspensiones=int(total_suspensiones),
         campaign_matches=campaign_matches,
+        campaign_clubs=campaign_clubs,
         fair_play=fair_play,
     )
 
