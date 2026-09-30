@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Tesorería{% endblock %}
+{% block content %}
+<style>
+.wrap{max-width:1100px;margin:auto}.hero{background:linear-gradient(135deg,#0b1830,#1d4ed8);color:#fff;border-radius:18px;padding:25px;margin-bottom:18px}.eyebrow{font-size:10px;letter-spacing:.12em;font-weight:800;opacity:.75}.hero h1{margin:6px 0;font-size:28px}.hero p{margin:0;color:#dbe7f5;font-size:13px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px}.icon{font-size:24px}.card h2{font-size:14px;margin:10px 0 5px}.card p{font-size:11px;color:#64748b;line-height:1.5;margin:0}.note{margin-top:16px;background:#fff;border:1px dashed #cbd5e1;border-radius:14px;padding:15px;font-size:11px;color:#64748b}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+</style>
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">PERFIL FINANCIERO</div>
+    <h1>💰 Tesorería</h1>
+    <p>Espacio reservado para la gestión económica de la Asociación.</p>
+  </div>
+  <div class="grid">
+    <div class="card"><div class="icon">💵</div><h2>Ingresos</h2><p>Preparado para registrar cuotas, pagos y otros ingresos.</p></div>
+    <div class="card"><div class="icon">🧾</div><h2>Egresos</h2><p>Preparado para controlar gastos, comprobantes y movimientos.</p></div>
+    <div class="card"><div class="icon">📊</div><h2>Resumen financiero</h2><p>Preparado para consultar saldos y reportes de tesorería.</p></div>
+  </div>
+  <div class="note">Este perfil ya queda separado del área deportiva. Los módulos financieros pueden incorporarse posteriormente sin mezclar la información con jugadores, campeonatos o disciplina.</div>
+</div>
+{% endblock %}
