@@ -1401,6 +1401,11 @@ def cambiar_estado_admin(admin_id):
 
 @app.route("/")
 def index():
+    # V9.0: si el administrador entra a la raíz del sistema,
+    # llevarlo siempre al Inicio de gestión y no al antiguo registro
+    # de jugadores. El acceso público sin sesión conserva su comportamiento.
+    if session.get("admin_id"):
+        return redirect(url_for("admin_panel_maestro"))
 
     q = request.args.get(
         "q",
