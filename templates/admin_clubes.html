@@ -6,14 +6,14 @@
 @media(max-width:950px){.clubs{grid-template-columns:1fr}}@media(max-width:650px){.stats{grid-template-columns:1fr}.toolbar input,.toolbar select{min-width:100%;width:100%}.club-head{align-items:flex-start;flex-direction:column}}
 </style>
 <div class="wrap">
-<section class="hero"><h1>🏟️ Clubes y planteles</h1><p>Directorio interno de la Asociación: cada club, sus series y todos sus jugadores.</p></section>
+<section class="hero"><h1>🏟️ Gestión de clubes</h1><p>Administra clubes, series y planteles desde una sola vista.</p></section>
 <section class="stats"><div class="stat"><strong>{{ total_clubes }}</strong><span>Clubes registrados</span></div><div class="stat"><strong>{{ total_jugadores }}</strong><span>Jugadores registrados</span></div><div class="stat"><strong>{{ total_vigentes }}</strong><span>Jugadores vigentes</span></div></section>
 <form class="toolbar" method="get"><input name="q" value="{{ q }}" placeholder="🔎 Buscar club"><select name="club_id"><option value="">Todos los clubes</option>{% for c in clubes %}<option value="{{ c.id }}" {% if c.id == club_id %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}</select><button class="btn primary" type="submit">Filtrar</button><a class="btn light" href="{{ url_for('admin_clubes') }}">Limpiar</a></form>
 {% if not tarjetas %}<div class="empty">No hay clubes para los filtros seleccionados.</div>{% endif %}
 <div class="clubs">
 {% for item in tarjetas %}
 <div class="club">
-  <div class="club-head"><div><h2>⚽ {{ item.club.nombre }}</h2><small>{{ item.total }} jugador{% if item.total != 1 %}es{% endif %} en sus planteles</small></div><a class="btn primary" href="{{ url_for('admin_ficha_club', club_nombre=item.club.nombre) }}">Ver ficha</a></div>
+  <div class="club-head"><div><h2>⚽ {{ item.club.nombre }}</h2><small>{{ item.total }} jugador{% if item.total != 1 %}es{% endif %} en sus planteles</small></div><a class="btn primary" href="{{ url_for('admin_ficha_club', club_nombre=item.club.nombre) }}">Abrir club</a></div>
   <div class="series">
     {% if item.series %}
       {% for serie, jugadores in item.series.items() %}
