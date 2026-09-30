@@ -29,7 +29,7 @@
       <a href="{{ url_for('admin_partidos', campeonato_id=campeonato.id) }}">⚽ Partidos</a>
       <a href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">📅 Fixture</a>
       <a href="{{ url_for('tabla_campeonato', campeonato_id=campeonato.id) }}">📊 Tabla</a>
-      <a href="{{ url_for('estadisticas_campeonato', campeonato_id=campeonato.id) }}">📈 Estadísticas</a>
+      <a href="{{ url_for('estadisticas_campeonato', campeonato_id=campeonato.id) }}">📈 Estadísticas</a>\n      <a href="{{ url_for('informes_campeonato', campeonato_id=campeonato.id) }}">📄 Informes</a>
       <a href="{{ url_for('admin_historia') }}">🏛️ Historia</a>
     </div></div></div>
     <div class="panel" style="margin-top:18px"><h3>👑 Goleadores</h3><div class="panel-body">{% for nombre,total in goleadores %}<div class="mini-list"><span>{{ nombre }}</span><strong>{{ total }}</strong></div>{% else %}<p style="color:#64748b">Sin goleadores registrados.</p>{% endfor %}</div></div>
