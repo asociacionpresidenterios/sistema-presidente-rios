@@ -2,20 +2,104 @@
 {% block title %}Tesorería{% endblock %}
 {% block content %}
 <style>
-.wrap{max-width:1100px;margin:auto}.hero{background:linear-gradient(135deg,#0b1830,#1d4ed8);color:#fff;border-radius:18px;padding:25px;margin-bottom:18px}.eyebrow{font-size:10px;letter-spacing:.12em;font-weight:800;opacity:.75}.hero h1{margin:6px 0;font-size:28px}.hero p{margin:0;color:#dbe7f5;font-size:13px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px}.icon{font-size:24px}.card h2{font-size:14px;margin:10px 0 5px}.card p{font-size:11px;color:#64748b;line-height:1.5;margin:0}.note{margin-top:16px;background:#fff;border:1px dashed #cbd5e1;border-radius:14px;padding:15px;font-size:11px;color:#64748b}
-@media(max-width:800px){.grid{grid-template-columns:1fr}}
+.wrap{max-width:1180px;margin:auto}
+.hero{background:linear-gradient(135deg,#0b1830,#1d4ed8);color:#fff;border-radius:18px;padding:25px;margin-bottom:18px}
+.eyebrow{font-size:10px;letter-spacing:.12em;font-weight:800;opacity:.75}
+.hero h1{margin:6px 0;font-size:28px}.hero p{margin:0;color:#dbe7f5;font-size:13px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.card{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px}
+.label{font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.amount{font-size:27px;font-weight:850;margin-top:7px;color:#0f172a}
+.amount.positive{color:#15803d}.amount.negative{color:#b91c1c}
+.layout{display:grid;grid-template-columns:360px 1fr;gap:18px}
+.panel{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:20px}
+.panel h2{font-size:16px;margin:0 0 16px}
+.form-grid{display:grid;gap:10px}
+.form-grid label{font-size:11px;color:#475569;font-weight:700}
+.form-grid input,.form-grid select,.form-grid textarea{width:100%;box-sizing:border-box;border:1px solid #d7dee8;border-radius:9px;padding:10px;font:inherit;background:#fff}
+.form-grid textarea{min-height:70px;resize:vertical}
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.type-grid label{border:1px solid #d7dee8;border-radius:9px;padding:11px;text-align:center;cursor:pointer}
+.type-grid input{width:auto;margin-right:5px}
+.btn{border:0;border-radius:9px;padding:11px 14px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer;width:100%}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:10px;color:#64748b;padding:11px 9px;border-bottom:1px solid #e5eaf1;text-transform:uppercase}
+td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:12px;vertical-align:top}
+.badge{display:inline-block;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:800}
+.ingreso{background:#dcfce7;color:#166534}.egreso{background:#fee2e2;color:#991b1b}
+.empty{padding:35px;text-align:center;color:#64748b}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.summary{grid-template-columns:1fr}}
 </style>
+
 <div class="wrap">
   <div class="hero">
-    <div class="eyebrow">PERFIL FINANCIERO</div>
+    <div class="eyebrow">PERFIL FINANCIERO · V9.0</div>
     <h1>💰 Tesorería</h1>
-    <p>Espacio reservado para la gestión económica de la Asociación.</p>
+    <p>Registra ingresos y egresos de la Asociación y consulta el saldo disponible.</p>
   </div>
-  <div class="grid">
-    <div class="card"><div class="icon">💵</div><h2>Ingresos</h2><p>Preparado para registrar cuotas, pagos y otros ingresos.</p></div>
-    <div class="card"><div class="icon">🧾</div><h2>Egresos</h2><p>Preparado para controlar gastos, comprobantes y movimientos.</p></div>
-    <div class="card"><div class="icon">📊</div><h2>Resumen financiero</h2><p>Preparado para consultar saldos y reportes de tesorería.</p></div>
+
+  <div class="summary">
+    <div class="card"><div class="label">Ingresos</div><div class="amount positive">$ {{ "{:,.0f}".format(total_ingresos).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Egresos</div><div class="amount negative">$ {{ "{:,.0f}".format(total_egresos).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Saldo</div><div class="amount {% if saldo < 0 %}negative{% else %}positive{% endif %}">$ {{ "{:,.0f}".format(saldo).replace(",", ".") }}</div></div>
   </div>
-  <div class="note">Este perfil ya queda separado del área deportiva. Los módulos financieros pueden incorporarse posteriormente sin mezclar la información con jugadores, campeonatos o disciplina.</div>
+
+  <div class="layout">
+    <div class="panel">
+      <h2>➕ Registrar movimiento</h2>
+      <form method="post" class="form-grid">
+        <div>
+          <label>Tipo</label>
+          <div class="type-grid">
+            <label><input type="radio" name="tipo" value="Ingreso" checked> 💵 Ingreso</label>
+            <label><input type="radio" name="tipo" value="Egreso"> 🧾 Egreso</label>
+          </div>
+        </div>
+        <div><label>Fecha</label><input type="date" name="fecha" value="{{ today.strftime('%Y-%m-%d') if today is defined else '' }}"></div>
+        <div><label>Concepto</label><input name="concepto" required placeholder="Ej. Cuota club Unión Defensor"></div>
+        <div><label>Monto ($)</label><input type="number" name="monto" min="1" step="1" required placeholder="50000"></div>
+        <div><label>Categoría</label>
+          <select name="categoria">
+            <option value="">Seleccionar</option>
+            <option>Cuotas</option><option>Multas</option><option>Inscripciones</option><option>Arbitraje</option><option>Implementación</option><option>Administración</option><option>Otros</option>
+          </select>
+        </div>
+        <div><label>Medio de pago</label>
+          <select name="medio_pago">
+            <option value="">Seleccionar</option><option>Efectivo</option><option>Transferencia</option><option>Depósito</option><option>Otro</option>
+          </select>
+        </div>
+        <div><label>Referencia / comprobante</label><input name="referencia" placeholder="N° comprobante (opcional)"></div>
+        <div><label>Observaciones</label><textarea name="observaciones" placeholder="Detalle adicional (opcional)"></textarea></div>
+        <button class="btn" type="submit">💾 Guardar movimiento</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h2>📋 Movimientos recientes</h2>
+      {% if movimientos %}
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Categoría</th><th>Medio</th><th>Monto</th></tr></thead>
+          <tbody>
+          {% for m in movimientos %}
+          <tr>
+            <td>{{ m.fecha.strftime('%d/%m/%Y') }}</td>
+            <td><span class="badge {% if m.tipo == 'Ingreso' %}ingreso{% else %}egreso{% endif %}">{{ m.tipo }}</span></td>
+            <td><strong>{{ m.concepto }}</strong>{% if m.referencia %}<br><small>{{ m.referencia }}</small>{% endif %}</td>
+            <td>{{ m.categoria or '—' }}</td>
+            <td>{{ m.medio_pago or '—' }}</td>
+            <td><strong>$ {{ "{:,.0f}".format(m.monto|int).replace(",", ".") }}</strong></td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty">Todavía no hay movimientos registrados.</div>
+      {% endif %}
+    </div>
+  </div>
 </div>
 {% endblock %}
