@@ -6250,6 +6250,134 @@ def exportar_acta_word(campeonato_id, partido_id):
     return Response(out.getvalue(),mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document",headers={"Content-Disposition":f'attachment; filename="Acta_{safe}.docx"'})
 
 
+
+# ============================================================
+# V9.6 — INFORMES OFICIALES
+# ============================================================
+
+@app.route("/campeonatos/<int:campeonato_id>/informes")
+@admin_required
+def informes_campeonato(campeonato_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    total_partidos = Partido.query.filter_by(campeonato_id=campeonato.id).count()
+    finalizados = Partido.query.filter_by(
+        campeonato_id=campeonato.id,
+        estado="Finalizado"
+    ).count()
+    return render_template(
+        "informes_campeonato.html",
+        campeonato=campeonato,
+        total_partidos=total_partidos,
+        finalizados=finalizados,
+    )
+
+
+@app.route("/campeonatos/<int:campeonato_id>/partido/<int:partido_id>/informe")
+@admin_required
+def informe_partido(campeonato_id, partido_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    partido = db.get_or_404(Partido, partido_id)
+    if partido.campeonato_id != campeonato.id:
+        flash("El partido no pertenece a este campeonato.", "error")
+        return redirect(url_for("informes_campeonato", campeonato_id=campeonato.id))
+    return render_template(
+        "informe_partido.html",
+        campeonato=campeonato,
+        partido=partido,
+        acta=partido.acta,
+        nomina=sorted(partido.nomina, key=lambda x: (x.equipo, x.jugador.nombre_completo)),
+    )
+
+
+@app.route("/campeonatos/<int:campeonato_id>/informe")
+@admin_required
+def informe_campeonato(campeonato_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    filas = obtener_tabla_publica(campeonato)
+    goleadores = obtener_goleadores_publicos(campeonato, 20)
+    partidos = (
+        Partido.query.filter_by(campeonato_id=campeonato.id)
+        .order_by(Partido.jornada.asc(), Partido.fecha.asc().nullslast(), Partido.id.asc())
+        .all()
+    )
+    return render_template(
+        "informe_campeonato.html",
+        campeonato=campeonato,
+        filas=filas,
+        goleadores=goleadores,
+        partidos=partidos,
+    )
+
+
+@app.route("/campeonatos/<int:campeonato_id>/club/<int:club_id>/informe")
+@admin_required
+def informe_club(campeonato_id, club_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    club = db.get_or_404(Club, club_id)
+    partidos = (
+        Partido.query.filter(
+            Partido.campeonato_id == campeonato.id,
+            db.or_(Partido.local_club_id == club.id, Partido.visitante_club_id == club.id),
+        )
+        .order_by(Partido.jornada.asc(), Partido.fecha.asc().nullslast(), Partido.id.asc())
+        .all()
+    )
+    stats = {"pj": 0, "pg": 0, "pe": 0, "pp": 0, "gf": 0, "gc": 0, "pts": 0}
+    for p in partidos:
+        if p.estado != "Finalizado" or p.goles_local is None or p.goles_visitante is None:
+            continue
+        stats["pj"] += 1
+        local = p.local_club_id == club.id
+        gf = p.goles_local if local else p.goles_visitante
+        gc = p.goles_visitante if local else p.goles_local
+        stats["gf"] += int(gf or 0)
+        stats["gc"] += int(gc or 0)
+        if gf > gc:
+            stats["pg"] += 1; stats["pts"] += 3
+        elif gf == gc:
+            stats["pe"] += 1; stats["pts"] += 1
+        else:
+            stats["pp"] += 1
+    stats["dg"] = stats["gf"] - stats["gc"]
+    plantel = sorted(
+        [j for j in Jugador.query.filter_by(club=club.nombre).all()
+         if (j.serie or "").strip().lower() == (campeonato.serie or "").strip().lower()],
+        key=lambda j: j.nombre_completo.lower()
+    )
+    return render_template(
+        "informe_club.html",
+        campeonato=campeonato,
+        club=club,
+        partidos=partidos,
+        stats=stats,
+        plantel=plantel,
+    )
+
+
+@app.route("/jugadores/<int:jugador_id>/informe")
+@admin_required
+def informe_jugador(jugador_id):
+    jugador = db.get_or_404(Jugador, jugador_id)
+    participaciones = (
+        PartidoJugador.query.filter_by(jugador_id=jugador.id)
+        .join(Partido)
+        .order_by(Partido.fecha.desc().nullslast(), Partido.id.desc())
+        .all()
+    )
+    goles = Gol.query.filter_by(jugador_id=jugador.id).order_by(Gol.fecha.desc(), Gol.id.desc()).all()
+    disciplina = (
+        RegistroDisciplinario.query.filter_by(jugador_id=jugador.id)
+        .order_by(RegistroDisciplinario.fecha.desc(), RegistroDisciplinario.id.desc())
+        .all()
+    )
+    return render_template(
+        "informe_jugador.html",
+        jugador=jugador,
+        participaciones=participaciones,
+        goles=goles,
+        disciplina=disciplina,
+    )
+
 # ============================================================
 # V5.9 — PORTAL PÚBLICO
 # ============================================================
