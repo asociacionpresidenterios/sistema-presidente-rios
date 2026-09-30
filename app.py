@@ -4534,50 +4534,73 @@ def eliminar_campeonato(campeonato_id):
 
 
 @app.route("/campeonatos/<int:campeonato_id>/panel")
+@admin_required
 def panel_campeonato(campeonato_id):
-    """Centro de control PRO de un campeonato."""
+    """Panel estable del campeonato. Solo lectura sobre registros existentes."""
     campeonato = db.get_or_404(Campeonato, campeonato_id)
 
     clubes_participantes = (
         CampeonatoClub.query
         .filter_by(campeonato_id=campeonato.id)
         .join(Club, CampeonatoClub.club_id == Club.id)
-        .order_by(Club.nombre)
+        .order_by(Club.nombre.asc())
         .all()
     )
-    club_ids = {r.club_id for r in clubes_participantes}
 
     partidos = (
         Partido.query
         .filter_by(campeonato_id=campeonato.id)
-        .order_by(Partido.jornada, Partido.id)
+        .order_by(
+            Partido.jornada.asc(),
+            Partido.fecha.asc().nullslast(),
+            Partido.hora.asc().nullslast(),
+            Partido.id.asc(),
+        )
         .all()
     )
-    partidos_finalizados = [p for p in partidos if p.estado == "Finalizado"]
+
+    partidos_finalizados = [
+        p for p in partidos
+        if p.estado == "Finalizado"
+        and p.goles_local is not None
+        and p.goles_visitante is not None
+    ]
     partidos_pendientes = [p for p in partidos if p.estado != "Finalizado"]
 
-    # Tabla de posiciones
     tabla = {}
     for registro in clubes_participantes:
         club = registro.club
-        tabla[club.id] = {"club": club, "pj": 0, "pg": 0, "pe": 0, "pp": 0,
-                          "gf": 0, "gc": 0, "dg": 0, "pts": 0}
+        tabla[club.id] = {
+            "club": club, "pj": 0, "pg": 0, "pe": 0, "pp": 0,
+            "gf": 0, "gc": 0, "dg": 0, "pts": 0
+        }
 
     for partido in partidos_finalizados:
         if partido.local_club_id not in tabla or partido.visitante_club_id not in tabla:
             continue
-        gl = partido.goles_local or 0
-        gv = partido.goles_visitante or 0
-        local, visitante = tabla[partido.local_club_id], tabla[partido.visitante_club_id]
-        local["pj"] += 1; visitante["pj"] += 1
-        local["gf"] += gl; local["gc"] += gv
-        visitante["gf"] += gv; visitante["gc"] += gl
+        gl = int(partido.goles_local or 0)
+        gv = int(partido.goles_visitante or 0)
+        local = tabla[partido.local_club_id]
+        visitante = tabla[partido.visitante_club_id]
+        local["pj"] += 1
+        visitante["pj"] += 1
+        local["gf"] += gl
+        local["gc"] += gv
+        visitante["gf"] += gv
+        visitante["gc"] += gl
         if gl > gv:
-            local["pg"] += 1; visitante["pp"] += 1; local["pts"] += 3
-        elif gl < gv:
-            visitante["pg"] += 1; local["pp"] += 1; visitante["pts"] += 3
+            local["pg"] += 1
+            visitante["pp"] += 1
+            local["pts"] += 3
+        elif gv > gl:
+            visitante["pg"] += 1
+            local["pp"] += 1
+            visitante["pts"] += 3
         else:
-            local["pe"] += 1; visitante["pe"] += 1; local["pts"] += 1; visitante["pts"] += 1
+            local["pe"] += 1
+            visitante["pe"] += 1
+            local["pts"] += 1
+            visitante["pts"] += 1
 
     filas = list(tabla.values())
     for fila in filas:
@@ -4586,38 +4609,102 @@ def panel_campeonato(campeonato_id):
     for pos, fila in enumerate(filas, 1):
         fila["pos"] = pos
 
-    # Próximo partido: prioriza los programados con fecha, luego jornada.
     proximos = [p for p in partidos if p.estado != "Finalizado"]
     proximos.sort(key=lambda p: (p.fecha is None, p.fecha or date.max, p.jornada, p.id))
     proximo_partido = proximos[0] if proximos else None
 
-    # Club libre por jornada
-    todos = {r.club_id: r.club for r in clubes_participantes}
-    libres_por_jornada = {}
-    jornadas = {}
-    for p in partidos:
-        jornadas.setdefault(p.jornada, []).append(p)
-    for jornada, lista in jornadas.items():
-        jugando = set()
-        for p in lista:
-            jugando.add(p.local_club_id); jugando.add(p.visitante_club_id)
-        libres_por_jornada[jornada] = [todos[cid] for cid in todos if cid not in jugando]
+    # Estadísticas oficiales: solo participaciones de actas cerradas.
+    registros = (
+        db.session.query(PartidoJugador, Jugador, Partido)
+        .join(Jugador, Jugador.id == PartidoJugador.jugador_id)
+        .join(Partido, Partido.id == PartidoJugador.partido_id)
+        .join(ActaPartido, ActaPartido.partido_id == Partido.id)
+        .filter(
+            Partido.campeonato_id == campeonato.id,
+            ActaPartido.estado == "Cerrada",
+        )
+        .all()
+    )
 
-    # Estadísticas del campeonato existentes en el sistema.
-    goles = amarillas = rojas = suspensiones = []
-    try:
-        goles, amarillas, rojas, suspensiones = estadisticas_campeonato_data(campeonato)
-    except Exception as error:
-        db.session.rollback()
-        print("ERROR PANEL ESTADISTICAS:", repr(error))
+    por_jugador = {}
+    por_club = {}
+    for pj, jugador, partido in registros:
+        j = por_jugador.setdefault(
+            jugador.id,
+            {"nombre": jugador.nombre_completo, "goles": 0, "amarillas": 0, "rojas": 0},
+        )
+        j["goles"] += int(pj.goles or 0)
+        j["amarillas"] += int(pj.amarillas or 0)
+        j["rojas"] += int(pj.rojas or 0)
 
-    total_goles = sum(int(x or 0) for _, x in goles)
-    total_amarillas = sum(int(x or 0) for _, x in amarillas)
-    total_rojas = sum(int(x or 0) for _, x in rojas)
-    total_suspensiones = sum(int(x or 0) for _, x in suspensiones)
+        nombre_club = (jugador.club or "Sin club").strip() or "Sin club"
+        cc = por_club.setdefault(
+            nombre_club,
+            {"nombre": nombre_club, "amarillas": 0, "rojas": 0},
+        )
+        cc["amarillas"] += int(pj.amarillas or 0)
+        cc["rojas"] += int(pj.rojas or 0)
 
-    jornadas_count = len(jornadas)
-    porcentaje = round((len(partidos_finalizados) / len(partidos) * 100), 1) if partidos else 0
+    goleadores = sorted(
+        [(x["nombre"], x["goles"]) for x in por_jugador.values() if x["goles"] > 0],
+        key=lambda x: (-x[1], x[0].lower()),
+    )[:8]
+
+    total_amarillas = sum(x["amarillas"] for x in por_jugador.values())
+    total_rojas = sum(x["rojas"] for x in por_jugador.values())
+
+    total_suspensiones = (
+        db.session.query(db.func.coalesce(db.func.sum(RegistroDisciplinario.cantidad), 0))
+        .filter(
+            RegistroDisciplinario.campeonato_id == campeonato.id,
+            RegistroDisciplinario.tipo == "Suspension",
+        )
+        .scalar()
+        or 0
+    )
+
+    # Datos simples y serializables para las funciones interactivas del panel.
+    campaign_matches = [
+        {
+            "id": p.id,
+            "jornada": p.jornada or 0,
+            "local_id": p.local_club_id,
+            "local": p.local_club.nombre,
+            "visitante_id": p.visitante_club_id,
+            "visitante": p.visitante_club.nombre,
+            "gl": p.goles_local,
+            "gv": p.goles_visitante,
+            "estado": p.estado,
+        }
+        for p in partidos
+    ]
+
+    fair_play = sorted(
+        [
+            {
+                "nombre": x["nombre"],
+                "amarillas": x["amarillas"],
+                "rojas": x["rojas"],
+                "puntos": x["amarillas"] + x["rojas"] * 3,
+            }
+            for x in por_club.values()
+        ],
+        key=lambda x: (x["puntos"], x["nombre"].lower()),
+    )
+
+    # Incluir también clubes sin tarjetas.
+    existentes = {x["nombre"] for x in fair_play}
+    for registro in clubes_participantes:
+        if registro.club.nombre not in existentes:
+            fair_play.append({
+                "nombre": registro.club.nombre,
+                "amarillas": 0,
+                "rojas": 0,
+                "puntos": 0,
+            })
+    fair_play.sort(key=lambda x: (x["puntos"], x["nombre"].lower()))
+
+    porcentaje = round((len(partidos_finalizados) / len(partidos)) * 100) if partidos else 0
 
     return render_template(
         "campeonato_panel.html",
@@ -4626,21 +4713,16 @@ def panel_campeonato(campeonato_id):
         partidos=partidos,
         partidos_finalizados=partidos_finalizados,
         partidos_pendientes=partidos_pendientes,
+        porcentaje=porcentaje,
         filas=filas,
         proximo_partido=proximo_partido,
-        libres_por_jornada=libres_por_jornada,
-        jornadas_count=jornadas_count,
-        porcentaje=porcentaje,
-        goleadores=goles[:8],
-        ranking_amarillas=amarillas[:8],
-        ranking_rojas=rojas[:8],
-        ranking_suspensiones=suspensiones[:8],
-        total_goles=total_goles,
-        total_amarillas=total_amarillas,
-        total_rojas=total_rojas,
-        total_suspensiones=total_suspensiones,
+        goleadores=goleadores,
+        total_amarillas=int(total_amarillas),
+        total_rojas=int(total_rojas),
+        total_suspensiones=int(total_suspensiones),
+        campaign_matches=campaign_matches,
+        fair_play=fair_play,
     )
-
 
 
 @app.route("/campeonatos/<int:campeonato_id>/afiches")
