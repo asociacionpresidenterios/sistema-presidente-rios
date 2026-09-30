@@ -3,7 +3,7 @@
 <div class="container" style="max-width:1250px;margin:25px auto;padding:0 15px;font-family:Arial,sans-serif">
   <div style="display:flex;justify-content:space-between;gap:15px;align-items:flex-start;flex-wrap:wrap">
     <div>
-      <h1 style="margin-bottom:5px">📝 Acta Digital del Partido</h1>
+      <h1 style="margin-bottom:5px">📝 Acta del partido</h1>
       <p style="margin-top:0"><strong>{{ campeonato.nombre }}</strong> · Jornada {{ partido.jornada }}</p>
     </div>
     <div>
@@ -27,7 +27,7 @@
   {% if acta and acta.estado == 'Cerrada' %}
     <div style="background:#ecfdf5;border:1px solid #86efac;padding:16px;border-radius:12px;margin-bottom:20px">
       <strong>🔒 Registro oficial protegido.</strong><br>
-      El acta está cerrada y sus goles, tarjetas y estadísticas fueron sincronizados con el campeonato.
+      El acta está cerrada y sus datos oficiales ya fueron sincronizados con el campeonato.
       Para corregirla debes reabrirla.
     </div>
 
@@ -35,8 +35,7 @@
       <input type="hidden" name="accion" value="reabrir">
       <button type="submit" style="padding:12px 20px;border:0;border-radius:9px;background:#f59e0b;color:white;font-weight:700;cursor:pointer">🔓 Reabrir acta para corregir</button>
       <a href="{{ url_for('exportar_acta_word', campeonato_id=campeonato.id, partido_id=partido.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block;border-radius:9px;background:#2563eb;color:white;text-decoration:none;font-weight:700">📄 Exportar Word</a>
-      <a href="{{ url_for('estadisticas_campeonato', campeonato_id=campeonato.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block;border-radius:9px;background:#7c3aed;color:white;text-decoration:none;font-weight:700">📊 Ver estadísticas</a>
-      <a href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}" style="padding:12px 20px;margin-left:8px">↩ Volver</a>
+      <a href="{{ url_for('admin_partidos', campeonato_id=campeonato.id) }}" style="padding:12px 20px;margin-left:8px">↩ Volver a partidos</a>
     </form>
 
     <div style="overflow:auto"><table style="width:100%;border-collapse:collapse;background:white">
@@ -100,14 +99,13 @@
 
       <div style="background:#f8fafc;border:1px solid #e2e8f0;padding:15px;border-radius:12px;margin-bottom:20px">
         <strong>⚽ Fuente oficial del partido</strong><br>
-        El acta es el único lugar para oficializar el resultado. Al cerrarla, el sistema actualiza automáticamente el partido, fixture, tabla, estadísticas, goleadores y disciplina.
+        El acta es la única fuente para oficializar el partido. Al cerrarla, el sistema actualiza automáticamente sus datos oficiales.
       </div>
 
       <button type="submit" name="estado" value="Borrador" style="padding:12px 20px;border:0;border-radius:9px;background:#64748b;color:white;font-weight:700;cursor:pointer">💾 Guardar borrador</button>
       <button type="submit" name="estado" value="Cerrada" style="padding:12px 20px;border:0;border-radius:9px;background:#16a34a;color:white;font-weight:700;cursor:pointer;margin-left:8px" onclick="return confirm('¿Cerrar el acta? Al cerrarla quedará protegida y el resultado oficial se actualizará con los goles registrados.');">🔒 Cerrar acta y oficializar</button>
       <a href="{{ url_for('exportar_acta_word', campeonato_id=campeonato.id, partido_id=partido.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block;border-radius:9px;background:#2563eb;color:white;text-decoration:none;font-weight:700">📄 Exportar Word</a>
-      <a href="{{ url_for('estadisticas_campeonato', campeonato_id=campeonato.id) }}" style="padding:12px 20px;margin-left:8px;display:inline-block;border-radius:9px;background:#7c3aed;color:white;text-decoration:none;font-weight:700">📊 Estadísticas</a>
-      <a href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}" style="padding:12px 20px;margin-left:8px">↩ Volver</a>
+      <a href="{{ url_for('admin_partidos', campeonato_id=campeonato.id) }}" style="padding:12px 20px;margin-left:8px">↩ Volver a partidos</a>
     </form>
   {% endif %}
 </div>
