@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Historia | Presidente Ríos{% endblock %}
+{% block head %}
+<style>
+.hero{background:linear-gradient(135deg,#0b1830,#16355f);color:#fff;border-radius:18px;padding:24px;margin-bottom:18px;display:flex;justify-content:space-between;gap:18px;align-items:center}.hero h1{margin:5px 0;font-size:29px}.hero p{margin:0;color:#c8d5e7;font-size:13px}.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 14px;border-radius:10px;font-size:12px;font-weight:800;border:1px solid #dbe3ee;background:#fff}.btn.primary{background:#2563eb;border-color:#2563eb;color:#fff}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.kpi,.panel{background:#fff;border:1px solid #e5eaf1;border-radius:16px}.kpi{padding:16px}.kpi small{display:block;color:#64748b;font-size:10px;text-transform:uppercase;font-weight:800}.kpi strong{display:block;font-size:25px;margin-top:5px}.layout{display:grid;grid-template-columns:1.55fr 1fr;gap:18px}.panel{overflow:hidden}.panel h3{margin:0;padding:16px 18px;border-bottom:1px solid #edf1f6;font-size:14px}.panel-body{padding:16px 18px}.history-card{border:1px solid #e5eaf1;border-radius:13px;padding:15px;margin-bottom:11px;background:#fbfcfe}.history-card:last-child{margin-bottom:0}.history-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.name{font-size:16px;font-weight:900}.meta{font-size:11px;color:#64748b;margin-top:3px}.badge{display:inline-flex;padding:5px 9px;border-radius:999px;font-size:9px;font-weight:900;text-transform:uppercase;background:#eef2f7;color:#475569}.badge.done{background:#dcfce7;color:#166534}.champ{margin-top:12px;padding:11px;border-radius:10px;background:#f5f8ff;border:1px solid #dbe7ff}.champ b{font-size:15px}.positions{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.pos{background:#fff;border:1px solid #e5eaf1;border-radius:9px;padding:9px}.pos small{display:block;color:#64748b;font-size:9px;text-transform:uppercase;font-weight:800}.pos strong{display:block;font-size:11px;margin-top:4px}.mini{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #edf1f6;font-size:12px}.mini:last-child{border-bottom:0}.rank{width:26px;height:26px;border-radius:8px;background:#f1f5f9;display:grid;place-items:center;font-weight:900;margin-right:9px}.left{display:flex;align-items:center;min-width:0}.club-name{font-weight:800}.muted{color:#64748b;font-size:10px}.empty{padding:25px;text-align:center;color:#64748b}.title-note{color:#64748b;font-size:12px;margin:0 0 12px}.trophy{font-size:24px}@media(max-width:1000px){.layout{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:620px){.hero{align-items:flex-start;flex-direction:column}.kpis{grid-template-columns:1fr 1fr}.positions{grid-template-columns:1fr}.history-top{flex-direction:column}}
+</style>
+{% endblock %}
+{% block content %}
+<div class="hero">
+  <div><div style="font-size:11px;color:#9db3d0;font-weight:800;text-transform:uppercase">V9.4 · Historia</div><h1>Historia de la Asociación</h1><p>Campeonatos, campeones, trayectoria y goleadores históricos a partir de los registros existentes.</p></div>
+  <a class="btn primary" href="{{ url_for('campeonatos') }}">← Campeonatos</a>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><small>Campeonatos</small><strong>{{ resumen.campeonatos }}</strong></div>
+  <div class="kpi"><small>Finalizados</small><strong>{{ resumen.finalizados }}</strong></div>
+  <div class="kpi"><small>Clubes históricos</small><strong>{{ resumen.clubes }}</strong></div>
+  <div class="kpi"><small>Partidos registrados</small><strong>{{ resumen.partidos }}</strong></div>
+</div>
+
+<div class="layout">
+  <div class="panel">
+    <h3>🏆 Historial de campeonatos</h3>
+    <div class="panel-body">
+      <p class="title-note">El campeón se identifica automáticamente cuando el campeonato está finalizado y existe una tabla con partidos disputados.</p>
+      {% for item in historial %}
+      <div class="history-card">
+        <div class="history-top">
+          <div>
+            <span class="badge {% if item.es_finalizado %}done{% endif %}">{% if item.es_finalizado %}Finalizado{% else %}En curso{% endif %}</span>
+            <div class="name" style="margin-top:7px">{{ item.campeonato.nombre }}</div>
+            <div class="meta">Temporada {{ item.campeonato.temporada }} · Serie {{ item.campeonato.serie }} · {{ item.clubes }} clubes · {{ item.finalizados }}/{{ item.partidos }} partidos finalizados</div>
+          </div>
+          <div class="trophy">🏆</div>
+        </div>
+        {% if item.campeon %}
+        <div class="champ"><span class="muted">CAMPEÓN</span><br><b>{{ item.campeon.club.nombre }}</b><span class="muted"> · {{ item.campeon.pts }} pts · DG {{ item.campeon.dg }}</span></div>
+        {% endif %}
+        {% if item.tabla %}
+        <div class="positions">
+          {% for fila in item.tabla %}
+          <div class="pos"><small>Posición {{ loop.index }}</small><strong>{{ fila.club.nombre }}</strong><span class="muted">{{ fila.pts }} pts · {{ fila.pj }} PJ</span></div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if item.goleador %}
+        <div class="meta" style="margin-top:10px">⚽ Máximo goleador: <strong>{{ item.goleador.jugador.nombre_completo }}</strong> · {{ item.goleador.goles }} goles</div>
+        {% endif %}
+      </div>
+      {% else %}
+      <div class="empty">Todavía no hay campeonatos registrados.</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h3>👑 Clubes con títulos</h3>
+      <div class="panel-body">
+        {% for item in titulos_ranking %}
+        <div class="mini"><div class="left"><div class="rank">{{ loop.index }}</div><div><div class="club-name">{{ item.club }}</div><div class="muted">Campeonatos ganados</div></div></div><strong>{{ item.titulos }}</strong></div>
+        {% else %}
+        <div class="empty">Aún no hay campeonatos finalizados con campeón registrado.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:18px">
+      <h3>⚽ Goleadores históricos</h3>
+      <div class="panel-body">
+        {% for jugador,goles in goleadores_historicos %}
+        <div class="mini"><div class="left"><div class="rank">{{ loop.index }}</div><div><div class="club-name">{{ jugador.nombre_completo }}</div><div class="muted">{{ jugador.club or 'Sin club' }}</div></div></div><strong>{{ goles }}</strong></div>
+        {% else %}
+        <div class="empty">Aún no hay goles oficiales registrados.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
