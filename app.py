@@ -909,7 +909,8 @@ def exigir_login_administrativo():
 ROLES = {"Administrador": "Administrador", "Disciplina": "Disciplina", "Tesoreria": "Tesorería"}
 
 ROLE_ENDPOINTS = {
-    "Disciplina": {"dashboard","admin_panel_maestro","mi_cuenta_admin","admin_centro_jugadores","admin_centro_jugador","ficha_jugador","historial_jugador","foto_jugador","qr_jugador","credencial_jugador","credencial_completa","credencial_reverso","admin_clubes","admin_ficha_club","admin_planteles","admin_partidos","admin_centro_partidos","admin_centro_partido","admin_actas","admin_centro_actas","admin_centro_estadisticas","estadisticas_campeonato","registrar_gol","registrar_amarilla","registrar_roja","registrar_suspension","eliminar_gol","eliminar_registro_disciplinario","admin_integracion","logout"},
+    # Disciplina trabaja exclusivamente con las actas y sus registros.
+    "Disciplina": {"dashboard","admin_panel_maestro","mi_cuenta_admin","admin_actas","acta_partido","admin_centro_actas","registrar_gol","registrar_amarilla","registrar_roja","registrar_suspension","eliminar_gol","eliminar_registro_disciplinario","logout"},
     "Tesoreria": {"dashboard","admin_panel_maestro","mi_cuenta_admin","admin_tesoreria","logout"}
 }
 
@@ -1618,6 +1619,7 @@ def foto_jugador(jugador_id):
     "/jugadores/nuevo",
     methods=["GET", "POST"]
 )
+@rol_permitido("Administrador")
 def nuevo_jugador():
 
     clubes, series = obtener_datos_formulario_jugador()
@@ -1811,6 +1813,7 @@ def nuevo_jugador():
     "/jugadores/<int:jugador_id>/editar",
     methods=["GET", "POST"]
 )
+@rol_permitido("Administrador")
 def editar_jugador(jugador_id):
 
     jugador = db.get_or_404(
@@ -2021,6 +2024,7 @@ def editar_jugador(jugador_id):
     "/jugadores/<int:jugador_id>/eliminar",
     methods=["POST"]
 )
+@rol_permitido("Administrador")
 def eliminar_jugador(jugador_id):
 
     jugador = db.get_or_404(
@@ -2075,6 +2079,7 @@ def eliminar_jugador(jugador_id):
     "/jugadores/importar",
     methods=["GET", "POST"]
 )
+@rol_permitido("Administrador")
 def importar_jugadores():
 
     if request.method == "GET":
