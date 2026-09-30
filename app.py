@@ -8236,6 +8236,176 @@ def admin_centro_estadisticas():
 
 
 # ============================================================
+# V9.4 — HISTORIA DE LA ASOCIACIÓN
+# Historial derivado de campeonatos y actas cerradas.
+# No crea registros paralelos.
+# ============================================================
+
+@app.route("/admin/historia")
+@admin_required
+def admin_historia():
+    campeonatos = Campeonato.query.order_by(
+        Campeonato.temporada.desc(),
+        Campeonato.fecha_inicio.desc().nullslast(),
+        Campeonato.id.desc()
+    ).all()
+
+    historial = []
+    titulos = {}
+
+    for campeonato in campeonatos:
+        clubes_participantes = CampeonatoClub.query.filter_by(
+            campeonato_id=campeonato.id
+        ).all()
+
+        partidos = Partido.query.filter_by(
+            campeonato_id=campeonato.id
+        ).order_by(
+            Partido.jornada.asc(),
+            Partido.id.asc()
+        ).all()
+
+        finalizados = [
+            p for p in partidos
+            if p.estado == "Finalizado"
+            and p.goles_local is not None
+            and p.goles_visitante is not None
+        ]
+
+        filas = {}
+        for registro in clubes_participantes:
+            if not registro.club:
+                continue
+            filas[registro.club.id] = {
+                "club": registro.club,
+                "pj": 0,
+                "pg": 0,
+                "pe": 0,
+                "pp": 0,
+                "gf": 0,
+                "gc": 0,
+                "dg": 0,
+                "pts": 0,
+            }
+
+        for partido in finalizados:
+            local = filas.get(partido.local_club_id)
+            visitante = filas.get(partido.visitante_club_id)
+            if not local or not visitante:
+                continue
+
+            gl = int(partido.goles_local or 0)
+            gv = int(partido.goles_visitante or 0)
+            local["pj"] += 1
+            visitante["pj"] += 1
+            local["gf"] += gl
+            local["gc"] += gv
+            visitante["gf"] += gv
+            visitante["gc"] += gl
+
+            if gl > gv:
+                local["pg"] += 1
+                local["pts"] += 3
+                visitante["pp"] += 1
+            elif gl < gv:
+                visitante["pg"] += 1
+                visitante["pts"] += 3
+                local["pp"] += 1
+            else:
+                local["pe"] += 1
+                visitante["pe"] += 1
+                local["pts"] += 1
+                visitante["pts"] += 1
+
+        for fila in filas.values():
+            fila["dg"] = fila["gf"] - fila["gc"]
+
+        tabla = sorted(
+            filas.values(),
+            key=lambda x: (
+                -x["pts"],
+                -x["dg"],
+                -x["gf"],
+                x["club"].nombre.lower(),
+            )
+        )
+
+        campeonato_completo = bool(partidos) and len(finalizados) == len(partidos)
+        es_finalizado = (campeonato.estado or "").strip().lower() == "finalizado" or campeonato_completo
+        campeon = tabla[0] if es_finalizado and tabla and tabla[0]["pj"] > 0 else None
+
+        goleador = None
+        registros_goles = (
+            db.session.query(Jugador, db.func.coalesce(db.func.sum(Gol.cantidad), 0))
+            .join(Gol, Gol.jugador_id == Jugador.id)
+            .filter(Gol.campeonato_id == campeonato.id)
+            .group_by(Jugador.id)
+            .order_by(db.func.sum(Gol.cantidad).desc(), Jugador.nombre_completo.asc())
+            .first()
+        )
+        if registros_goles:
+            goleador = {
+                "jugador": registros_goles[0],
+                "goles": int(registros_goles[1] or 0),
+            }
+
+        if campeon:
+            nombre_campeon = campeon["club"].nombre
+            titulos[nombre_campeon] = titulos.get(nombre_campeon, 0) + 1
+
+        historial.append({
+            "campeonato": campeonato,
+            "clubes": len(clubes_participantes),
+            "partidos": len(partidos),
+            "finalizados": len(finalizados),
+            "completo": campeonato_completo,
+            "es_finalizado": es_finalizado,
+            "campeon": campeon,
+            "tabla": tabla[:3],
+            "goleador": goleador,
+        })
+
+    titulos_ranking = sorted(
+        [{"club": nombre, "titulos": total} for nombre, total in titulos.items()],
+        key=lambda x: (-x["titulos"], x["club"].lower())
+    )
+
+    goleadores_historicos = (
+        db.session.query(
+            Jugador,
+            db.func.coalesce(db.func.sum(Gol.cantidad), 0).label("goles")
+        )
+        .join(Gol, Gol.jugador_id == Jugador.id)
+        .group_by(Jugador.id)
+        .order_by(db.func.sum(Gol.cantidad).desc(), Jugador.nombre_completo.asc())
+        .limit(10)
+        .all()
+    )
+
+    total_campeonatos = len(campeonatos)
+    campeonatos_finalizados = sum(1 for x in historial if x["es_finalizado"])
+    total_clubes = len({
+        registro.club_id
+        for campeonato in campeonatos
+        for registro in CampeonatoClub.query.filter_by(campeonato_id=campeonato.id).all()
+    })
+    total_partidos = sum(x["partidos"] for x in historial)
+
+    return render_template(
+        "admin_historia.html",
+        historial=historial,
+        titulos_ranking=titulos_ranking,
+        goleadores_historicos=goleadores_historicos,
+        resumen={
+            "campeonatos": total_campeonatos,
+            "finalizados": campeonatos_finalizados,
+            "clubes": total_clubes,
+            "partidos": total_partidos,
+        },
+    )
+
+
+# ============================================================
 # HEALTH CHECK
 # ============================================================
 
