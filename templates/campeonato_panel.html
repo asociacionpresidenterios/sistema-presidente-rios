@@ -59,7 +59,7 @@
 
 <script>
 const matches = {{ campaign_matches|tojson }};
-const clubs = {{ [{'id': c.club.id, 'nombre': c.club.nombre} for c in clubes_participantes]|tojson }};
+const clubs = {{ campaign_clubs|tojson }};
 
 (function(){
   const finished = matches.filter(m => m.estado === "Finalizado" && m.gl !== null && m.gv !== null);
