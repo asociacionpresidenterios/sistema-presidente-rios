@@ -3893,6 +3893,7 @@ def anular_expulsado_disciplina(expulsado_id):
     expulsado.estado = "Anulado"
     expulsado.publicado = False
     db.session.commit()
+    registrar_auditoria("ANULAR_EXPULSION", "Disciplina", "Se anuló un registro de expulsión y se retiró del portal público.")
     flash("El registro de expulsión fue anulado y retirado del portal público.", "success")
     return redirect(url_for("ver_expulsado_disciplina", expulsado_id=expulsado.id))
 
@@ -6179,7 +6180,7 @@ def registrar_gol_campeonato(campeonato_id):
     if not jugador: flash('El jugador no pertenece a la serie o clubes de este campeonato.','error'); return redirect(url_for('estadisticas_campeonato',campeonato_id=campeonato.id))
     try:
         db.session.add(Gol(jugador_id=jugador.id,fecha=date.today(),cantidad=cantidad,campeonato=campeonato.nombre,campeonato_id=campeonato.id,observaciones=request.form.get('observaciones','').strip()))
-        db.session.commit(); registrar_auditoria("REGISTRAR_GOL", "Campeonatos", f"Se registraron {cantidad} gol(es) para {jugador.nombre_completo} en '{campeonato.nombre}."); flash(f'Se registraron {cantidad} gol(es) para {jugador.nombre_completo}.','success')
+        db.session.commit(); registrar_auditoria("REGISTRAR_GOL", "Campeonatos", f"Se registraron {cantidad} gol(es) para {jugador.nombre_completo} en '{campeonato.nombre}'."); flash(f'Se registraron {cantidad} gol(es) para {jugador.nombre_completo}.','success')
     except Exception as error:
         db.session.rollback(); print('ERROR GOL CAMPEONATO:',repr(error)); flash('No fue posible registrar el gol.','error')
     return redirect(url_for('estadisticas_campeonato',campeonato_id=campeonato.id))
