@@ -8110,6 +8110,47 @@ def admin_tesoreria_rendicion():
     )
 
 
+@app.route("/admin/tesoreria/rendicion/<int:rendicion_id>/comprobante")
+@rol_permitido("Administrador", "Tesoreria")
+def admin_tesoreria_comprobante(rendicion_id):
+    rendicion = RendicionTesoreria.query.get_or_404(rendicion_id)
+    calculo = calcular_rendicion_mensual(rendicion.periodo_mes, rendicion.periodo_anio)
+
+    # El comprobante oficial usa los valores congelados al cierre.
+    if rendicion.estado == "Cerrada":
+        resumen = {
+            "saldo_inicial": int(rendicion.saldo_inicial or 0),
+            "ingresos": int(rendicion.ingresos or 0),
+            "egresos": int(rendicion.egresos or 0),
+            "saldo_final": int(rendicion.saldo_final or 0),
+            "movimientos": int(rendicion.movimientos or 0),
+            "cuentas_cobrar": int(rendicion.cuentas_por_cobrar or 0),
+            "cuentas_pagar": int(rendicion.cuentas_por_pagar or 0),
+        }
+    else:
+        resumen = {
+            "saldo_inicial": calculo["saldo_inicial"],
+            "ingresos": calculo["ingresos"],
+            "egresos": calculo["egresos"],
+            "saldo_final": calculo["saldo_final"],
+            "movimientos": len(calculo["movimientos"]),
+            "cuentas_cobrar": calculo["cuentas_cobrar"],
+            "cuentas_pagar": calculo["cuentas_pagar"],
+        }
+
+    return render_template(
+        "admin_tesoreria_comprobante.html",
+        rendicion=rendicion,
+        resumen=resumen,
+        calculo=calculo,
+        nombre_mes=[
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ][rendicion.periodo_mes - 1],
+        fecha_emision=date.today(),
+    )
+
+
 @app.route("/admin/tesoreria/cierre", methods=["GET", "POST"])
 @rol_permitido("Administrador", "Tesoreria")
 def admin_tesoreria_cierre():
