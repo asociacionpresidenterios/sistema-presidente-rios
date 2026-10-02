@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Auditoría del sistema{% endblock %}
+{% block content %}
+<style>
+.audit-wrap{max-width:1400px;margin:0 auto}
+.audit-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.audit-title h1{margin:0}.audit-title p{margin:6px 0 0;color:#64748b}
+.audit-filters{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px;margin-bottom:18px;display:flex;gap:12px;align-items:end;flex-wrap:wrap}
+.audit-filters label{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:#475569}
+.audit-filters select{min-width:190px;padding:9px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}
+.audit-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden}
+.audit-table th,.audit-table td{padding:11px 12px;border-bottom:1px solid #eef2f7;text-align:left;font-size:13px;vertical-align:top}
+.audit-table th{background:#f8fafc;color:#475569;font-size:11px;text-transform:uppercase}
+.audit-table tr:last-child td{border-bottom:0}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:800}
+.muted{color:#64748b}
+.btn-audit{padding:9px 14px;border:0;border-radius:8px;background:#0f172a;color:#fff;font-weight:700;cursor:pointer}
+</style>
+<div class="audit-wrap">
+  <div class="audit-head">
+    <div class="audit-title">
+      <h1>📋 Auditoría del sistema</h1>
+      <p>Registro de acciones administrativas y trazabilidad de cambios.</p>
+    </div>
+  </div>
+
+  <form class="audit-filters" method="get">
+    <label>Acción
+      <select name="accion">
+        <option value="">Todas</option>
+        {% for item in acciones %}<option value="{{ item }}" {% if accion == item %}selected{% endif %}>{{ item }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Módulo
+      <select name="modulo">
+        <option value="">Todos</option>
+        {% for item in modulos %}<option value="{{ item }}" {% if modulo == item %}selected{% endif %}>{{ item }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Registros
+      <select name="limite">
+        {% for n in [50,100,200,500] %}<option value="{{ n }}" {% if limite == n %}selected{% endif %}>{{ n }}</option>{% endfor %}
+      </select>
+    </label>
+    <button class="btn-audit" type="submit">Filtrar</button>
+  </form>
+
+  <div style="overflow:auto">
+    <table class="audit-table">
+      <thead><tr><th>Fecha</th><th>Usuario</th><th>Rol</th><th>Acción</th><th>Módulo</th><th>Descripción</th><th>IP</th></tr></thead>
+      <tbody>
+      {% for r in registros %}
+        <tr>
+          <td>{{ r.fecha.strftime('%d/%m/%Y %H:%M:%S') if r.fecha else '-' }}</td>
+          <td><strong>{{ r.usuario }}</strong></td>
+          <td><span class="badge">{{ r.rol }}</span></td>
+          <td><strong>{{ r.accion }}</strong></td>
+          <td>{{ r.modulo }}</td>
+          <td>{{ r.descripcion }}</td>
+          <td class="muted">{{ r.ip or '-' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" style="text-align:center;padding:35px" class="muted">No hay registros para los filtros seleccionados.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
