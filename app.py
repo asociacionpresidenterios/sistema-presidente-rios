@@ -8430,9 +8430,9 @@ def admin_panel_maestro():
         {"tipo": "warning", "icono": "⚽", "titulo": "Finalizados sin resultado", "cantidad": partidos_sin_resultado,
          "texto": "Partidos marcados como finalizados sin marcador completo.", "url": url_for("admin_partidos")},
         {"tipo": "info", "icono": "👤", "titulo": "Jugadores sin club", "cantidad": jugadores_sin_club,
-         "texto": "Registros maestros que todavía no tienen club informado.", "url": url_for("admin_registro")},
+         "texto": "Registros maestros que todavía no tienen club informado.", "url": url_for("index")},
         {"tipo": "info", "icono": "🏷️", "titulo": "Jugadores sin serie", "cantidad": jugadores_sin_serie,
-         "texto": "Registros maestros que todavía no tienen serie informada.", "url": url_for("admin_registro")},
+         "texto": "Registros maestros que todavía no tienen serie informada.", "url": url_for("index")},
     ]
 
     # Solo mostrar pendientes reales en la tarjeta de control.
