@@ -2,104 +2,135 @@
 {% block title %}Tesorería{% endblock %}
 {% block content %}
 <style>
-.wrap{max-width:1180px;margin:auto}
-.hero{background:linear-gradient(135deg,#0b1830,#1d4ed8);color:#fff;border-radius:18px;padding:25px;margin-bottom:18px}
-.eyebrow{font-size:10px;letter-spacing:.12em;font-weight:800;opacity:.75}
-.hero h1{margin:6px 0;font-size:28px}.hero p{margin:0;color:#dbe7f5;font-size:13px}
-.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
-.card{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px}
-.label{font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
-.amount{font-size:27px;font-weight:850;margin-top:7px;color:#0f172a}
-.amount.positive{color:#15803d}.amount.negative{color:#b91c1c}
-.layout{display:grid;grid-template-columns:360px 1fr;gap:18px}
-.panel{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:20px}
-.panel h2{font-size:16px;margin:0 0 16px}
-.form-grid{display:grid;gap:10px}
-.form-grid label{font-size:11px;color:#475569;font-weight:700}
-.form-grid input,.form-grid select,.form-grid textarea{width:100%;box-sizing:border-box;border:1px solid #d7dee8;border-radius:9px;padding:10px;font:inherit;background:#fff}
-.form-grid textarea{min-height:70px;resize:vertical}
-.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.type-grid label{border:1px solid #d7dee8;border-radius:9px;padding:11px;text-align:center;cursor:pointer}
-.type-grid input{width:auto;margin-right:5px}
-.btn{border:0;border-radius:9px;padding:11px 14px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer;width:100%}
-.table-wrap{overflow:auto}
-table{width:100%;border-collapse:collapse}
-th{text-align:left;font-size:10px;color:#64748b;padding:11px 9px;border-bottom:1px solid #e5eaf1;text-transform:uppercase}
-td{padding:12px 9px;border-bottom:1px solid #eef2f7;font-size:12px;vertical-align:top}
-.badge{display:inline-block;border-radius:999px;padding:5px 9px;font-size:10px;font-weight:800}
-.ingreso{background:#dcfce7;color:#166534}.egreso{background:#fee2e2;color:#991b1b}
-.empty{padding:35px;text-align:center;color:#64748b}
-@media(max-width:900px){.layout{grid-template-columns:1fr}.summary{grid-template-columns:1fr}}
+.wrap{max-width:1280px;margin:auto}
+.hero{background:linear-gradient(135deg,#071426,#173f7a);color:#fff;border-radius:18px;padding:24px;margin-bottom:18px}
+.eyebrow{font-size:10px;letter-spacing:.14em;font-weight:800;opacity:.75}.hero h1{margin:5px 0;font-size:29px}.hero p{margin:0;color:#d9e7f8;font-size:13px}
+.toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:14px;margin-bottom:18px}
+.toolbar label,.form-grid label{display:block;font-size:10px;color:#64748b;font-weight:800;text-transform:uppercase;margin-bottom:5px}
+.toolbar select,.toolbar input,.form-grid input,.form-grid select,.form-grid textarea{border:1px solid #d6dee9;border-radius:9px;padding:10px;font:inherit;background:#fff;box-sizing:border-box;width:100%}
+.toolbar .field{min-width:130px}.toolbar button,.btn{border:0;border-radius:9px;padding:10px 14px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer}
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+.card{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:16px}.label{font-size:10px;color:#64748b;font-weight:800;text-transform:uppercase}.amount{font-size:24px;font-weight:900;margin-top:6px}.positive{color:#15803d}.negative{color:#b91c1c}.warning{color:#b45309}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-bottom:18px}.panel{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px}.panel h2{font-size:16px;margin:0 0 14px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}.btn{width:100%;margin-top:4px}.tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.tab{font-size:11px;font-weight:800;padding:7px 10px;border-radius:999px;background:#eef2ff;color:#334155}
+.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th{text-align:left;font-size:9px;color:#64748b;padding:10px 8px;border-bottom:1px solid #e5eaf1;text-transform:uppercase;white-space:nowrap}td{padding:10px 8px;border-bottom:1px solid #eef2f7;font-size:11px;vertical-align:top}.badge{display:inline-block;border-radius:999px;padding:4px 8px;font-size:9px;font-weight:800}.ingreso{background:#dcfce7;color:#166534}.egreso{background:#fee2e2;color:#991b1b}.pendiente{background:#fff7ed;color:#9a3412}.abono{background:#dbeafe;color:#1d4ed8}.pagado{background:#dcfce7;color:#166534}.mini-form{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.mini-form input,.mini-form select{width:auto;padding:7px;border:1px solid #d6dee9;border-radius:7px;font-size:11px}.mini-form button{border:0;border-radius:7px;padding:7px 9px;background:#0f766e;color:#fff;font-weight:800;font-size:10px;cursor:pointer}.muted{color:#64748b}.empty{padding:28px;text-align:center;color:#64748b}
+@media(max-width:1050px){.summary{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}@media(max-width:650px){.summary{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.full{grid-column:auto}}
 </style>
 
 <div class="wrap">
   <div class="hero">
-    <div class="eyebrow">PERFIL FINANCIERO · V9.0</div>
-    <h1>💰 Tesorería</h1>
-    <p>Registra ingresos y egresos de la Asociación y consulta el saldo disponible.</p>
+    <div class="eyebrow">PERFIL FINANCIERO · TESORERÍA</div>
+    <h1>💰 Tesorería Asociación Presidente Ríos</h1>
+    <p>Control de ingresos, egresos, cuentas por cobrar, cuentas por pagar y abonos.</p>
   </div>
+
+  <form class="toolbar" method="get">
+    <div class="field"><label>Mes</label><select name="mes">{% for n,nombre in [(1,'Enero'),(2,'Febrero'),(3,'Marzo'),(4,'Abril'),(5,'Mayo'),(6,'Junio'),(7,'Julio'),(8,'Agosto'),(9,'Septiembre'),(10,'Octubre'),(11,'Noviembre'),(12,'Diciembre')] %}<option value="{{n}}" {% if mes==n %}selected{% endif %}>{{nombre}}</option>{% endfor %}</select></div>
+    <div class="field"><label>Año</label><input type="number" name="anio" value="{{anio}}" min="2020" max="2100"></div>
+    <button type="submit">🔎 Consultar período</button>
+  </form>
 
   <div class="summary">
-    <div class="card"><div class="label">Ingresos</div><div class="amount positive">$ {{ "{:,.0f}".format(total_ingresos).replace(",", ".") }}</div></div>
-    <div class="card"><div class="label">Egresos</div><div class="amount negative">$ {{ "{:,.0f}".format(total_egresos).replace(",", ".") }}</div></div>
-    <div class="card"><div class="label">Saldo</div><div class="amount {% if saldo < 0 %}negative{% else %}positive{% endif %}">$ {{ "{:,.0f}".format(saldo).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Ingresos del período</div><div class="amount positive">$ {{ "{:,.0f}".format(total_ingresos).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Egresos del período</div><div class="amount negative">$ {{ "{:,.0f}".format(total_egresos).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Saldo del período</div><div class="amount {% if saldo < 0 %}negative{% else %}positive{% endif %}">$ {{ "{:,.0f}".format(saldo).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Por cobrar</div><div class="amount warning">$ {{ "{:,.0f}".format(por_cobrar).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Por pagar</div><div class="amount warning">$ {{ "{:,.0f}".format(por_pagar).replace(",", ".") }}</div></div>
   </div>
 
-  <div class="layout">
+  <div class="grid">
     <div class="panel">
       <h2>➕ Registrar movimiento</h2>
       <form method="post" class="form-grid">
-        <div>
-          <label>Tipo</label>
-          <div class="type-grid">
-            <label><input type="radio" name="tipo" value="Ingreso" checked> 💵 Ingreso</label>
-            <label><input type="radio" name="tipo" value="Egreso"> 🧾 Egreso</label>
-          </div>
-        </div>
-        <div><label>Fecha</label><input type="date" name="fecha" value="{{ today.strftime('%Y-%m-%d') if today is defined else '' }}"></div>
-        <div><label>Concepto</label><input name="concepto" required placeholder="Ej. Cuota club Unión Defensor"></div>
-        <div><label>Monto ($)</label><input type="number" name="monto" min="1" step="1" required placeholder="50000"></div>
-        <div><label>Categoría</label>
-          <select name="categoria">
-            <option value="">Seleccionar</option>
-            <option>Cuotas</option><option>Multas</option><option>Inscripciones</option><option>Arbitraje</option><option>Implementación</option><option>Administración</option><option>Otros</option>
-          </select>
-        </div>
-        <div><label>Medio de pago</label>
-          <select name="medio_pago">
-            <option value="">Seleccionar</option><option>Efectivo</option><option>Transferencia</option><option>Depósito</option><option>Otro</option>
-          </select>
-        </div>
-        <div><label>Referencia / comprobante</label><input name="referencia" placeholder="N° comprobante (opcional)"></div>
-        <div><label>Observaciones</label><textarea name="observaciones" placeholder="Detalle adicional (opcional)"></textarea></div>
-        <button class="btn" type="submit">💾 Guardar movimiento</button>
+        <input type="hidden" name="accion" value="movimiento">
+        <div><label>Tipo</label><select name="tipo"><option value="Ingreso">Ingreso</option><option value="Egreso">Egreso</option></select></div>
+        <div><label>Fecha</label><input type="date" name="fecha" value="{{today.strftime('%Y-%m-%d')}}"></div>
+        <div class="full"><label>Concepto</label><input name="concepto" required placeholder="Ej. Cuota club Unión Defensor"></div>
+        <div><label>Monto ($)</label><input type="number" name="monto" min="1" step="1" required></div>
+        <div><label>Categoría</label><select name="categoria"><option value="">Seleccionar</option><option>Cuotas</option><option>Multas</option><option>Inscripciones</option><option>Arbitraje</option><option>Canchas</option><option>Corporación</option><option>Implementación</option><option>Administración</option><option>Otros</option></select></div>
+        <div><label>Club</label><select name="club_id"><option value="">Sin club</option>{% for club in clubes %}<option value="{{club.id}}">{{club.nombre}}</option>{% endfor %}</select></div>
+        <div><label>Campeonato</label><select name="campeonato_id"><option value="">Sin campeonato</option>{% for c in campeonatos %}<option value="{{c.id}}">{{c.nombre}} · {{c.serie}}</option>{% endfor %}</select></div>
+        <div><label>Serie</label><select name="serie"><option value="">Sin serie</option>{% for s in series %}<option value="{{s.nombre}}">{{s.nombre}}</option>{% endfor %}</select></div>
+        <div><label>Medio de pago</label><select name="medio_pago"><option value="">Seleccionar</option><option>Efectivo</option><option>Transferencia</option><option>Depósito</option><option>Cheque</option><option>Otro</option></select></div>
+        <div><label>Referencia / comprobante</label><input name="referencia" placeholder="N° comprobante"></div>
+        <div class="full"><label>Observaciones</label><textarea name="observaciones" placeholder="Detalle adicional"></textarea></div>
+        <div class="full"><button class="btn" type="submit">💾 Guardar movimiento</button></div>
       </form>
     </div>
 
     <div class="panel">
-      <h2>📋 Movimientos recientes</h2>
-      {% if movimientos %}
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Categoría</th><th>Medio</th><th>Monto</th></tr></thead>
-          <tbody>
-          {% for m in movimientos %}
-          <tr>
-            <td>{{ m.fecha.strftime('%d/%m/%Y') }}</td>
-            <td><span class="badge {% if m.tipo == 'Ingreso' %}ingreso{% else %}egreso{% endif %}">{{ m.tipo }}</span></td>
-            <td><strong>{{ m.concepto }}</strong>{% if m.referencia %}<br><small>{{ m.referencia }}</small>{% endif %}</td>
-            <td>{{ m.categoria or '—' }}</td>
-            <td>{{ m.medio_pago or '—' }}</td>
-            <td><strong>$ {{ "{:,.0f}".format(m.monto|int).replace(",", ".") }}</strong></td>
-          </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-      <div class="empty">Todavía no hay movimientos registrados.</div>
-      {% endif %}
+      <h2>📌 Crear cuenta pendiente</h2>
+      <form method="post" class="form-grid">
+        <input type="hidden" name="accion" value="cuenta">
+        <div><label>Tipo</label><select name="tipo_cuenta"><option value="Por cobrar">Por cobrar</option><option value="Por pagar">Por pagar</option></select></div>
+        <div><label>Fecha</label><input type="date" name="fecha" value="{{today.strftime('%Y-%m-%d')}}"></div>
+        <div class="full"><label>Concepto</label><input name="concepto" required placeholder="Ej. Cuota mensual / arbitraje pendiente"></div>
+        <div><label>Monto total ($)</label><input type="number" name="monto_total" min="1" required></div>
+        <div><label>Vencimiento</label><input type="date" name="vencimiento"></div>
+        <div><label>Club</label><select name="club_id"><option value="">Sin club</option>{% for club in clubes %}<option value="{{club.id}}">{{club.nombre}}</option>{% endfor %}</select></div>
+        <div><label>Campeonato</label><select name="campeonato_id"><option value="">Sin campeonato</option>{% for c in campeonatos %}<option value="{{c.id}}">{{c.nombre}} · {{c.serie}}</option>{% endfor %}</select></div>
+        <div><label>Serie</label><select name="serie"><option value="">Sin serie</option>{% for s in series %}<option value="{{s.nombre}}">{{s.nombre}}</option>{% endfor %}</select></div>
+        <div class="full"><label>Observaciones</label><textarea name="observaciones" placeholder="Detalle de la deuda o compromiso"></textarea></div>
+        <div class="full"><button class="btn" type="submit">📋 Crear cuenta</button></div>
+      </form>
     </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:18px">
+    <h2>🧾 Cuentas por cobrar y por pagar</h2>
+    {% if cuentas %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Club</th><th>Concepto</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Vencimiento</th><th>Estado</th><th>Registrar abono</th></tr></thead>
+      <tbody>
+      {% for c in cuentas %}
+      <tr>
+        <td>{{c.fecha.strftime('%d/%m/%Y')}}</td>
+        <td><span class="badge {% if c.tipo=='Por cobrar' %}ingreso{% else %}egreso{% endif %}">{{c.tipo}}</span></td>
+        <td>{{c.club.nombre if c.club else '—'}}</td>
+        <td><strong>{{c.concepto}}</strong>{% if c.campeonato %}<br><small class="muted">{{c.campeonato.nombre}}{% if c.serie %} · {{c.serie}}{% endif %}</small>{% endif %}</td>
+        <td>$ {{ "{:,.0f}".format(c.monto_total|int).replace(",", ".") }}</td>
+        <td>$ {{ "{:,.0f}".format(c.monto_pagado|int).replace(",", ".") }}</td>
+        <td><strong>$ {{ "{:,.0f}".format(c.saldo).replace(",", ".") }}</strong></td>
+        <td>{{c.vencimiento.strftime('%d/%m/%Y') if c.vencimiento else '—'}}</td>
+        <td><span class="badge {% if c.estado=='Pagado' %}pagado{% elif c.estado=='Abono' %}abono{% else %}pendiente{% endif %}">{{c.estado}}</span></td>
+        <td>
+          {% if c.saldo > 0 %}
+          <form method="post" class="mini-form">
+            <input type="hidden" name="accion" value="pago"><input type="hidden" name="cuenta_id" value="{{c.id}}">
+            <input type="date" name="fecha_pago" value="{{today.strftime('%Y-%m-%d')}}">
+            <input type="number" name="monto_pago" min="1" max="{{c.saldo}}" placeholder="Monto">
+            <select name="medio_pago_pago"><option value="">Medio</option><option>Efectivo</option><option>Transferencia</option><option>Depósito</option><option>Cheque</option></select>
+            <input name="referencia_pago" placeholder="Comprobante">
+            <button type="submit">Abonar</button>
+          </form>
+          {% else %}<span class="muted">Cuenta saldada</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}<div class="empty">No hay cuentas pendientes registradas.</div>{% endif %}
+  </div>
+
+  <div class="panel">
+    <h2>📊 Movimientos del período</h2>
+    {% if movimientos %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Club</th><th>Categoría</th><th>Medio</th><th>Monto</th></tr></thead>
+      <tbody>
+      {% for m in movimientos %}
+      <tr>
+        <td>{{m.fecha.strftime('%d/%m/%Y')}}</td>
+        <td><span class="badge {% if m.tipo=='Ingreso' %}ingreso{% else %}egreso{% endif %}">{{m.tipo}}</span></td>
+        <td><strong>{{m.concepto}}</strong>{% if m.referencia %}<br><small class="muted">{{m.referencia}}</small>{% endif %}</td>
+        <td>{{m.club.nombre if m.club else '—'}}</td>
+        <td>{{m.categoria or '—'}}</td>
+        <td>{{m.medio_pago or '—'}}</td>
+        <td><strong>$ {{ "{:,.0f}".format(m.monto|int).replace(",", ".") }}</strong></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}<div class="empty">No hay movimientos en este período.</div>{% endif %}
   </div>
 </div>
 {% endblock %}
