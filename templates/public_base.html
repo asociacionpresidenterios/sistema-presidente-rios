@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Presidente Ríos · Portal Oficial{% endblock %}</title>
+<style>
+:root{--navy:#071426;--blue:#1769e0;--bg:#eef2f6;--text:#172033;--muted:#68788c;--line:#dfe5ec}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,system-ui,sans-serif}
+.top{background:var(--navy);color:#fff}.top-in{max-width:1240px;margin:auto;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none}.crest{width:42px;height:42px;border-radius:10px;background:var(--blue);display:grid;place-items:center;font-weight:900}.brand b{display:block;font-size:15px}.brand span{font-size:10px;color:#aebed2}
+.top-links{display:flex;gap:7px;flex-wrap:wrap}.top-links a{color:#fff;text-decoration:none;font-size:12px;font-weight:800;padding:8px 11px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:rgba(255,255,255,.06)}
+.wrap{max-width:1240px;margin:auto;padding:22px 18px 45px}.footer{text-align:center;color:#8290a3;font-size:11px;padding:20px}
+@media(max-width:700px){.top-in{padding:10px 13px}.brand span{display:none}.wrap{padding:15px 12px 35px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="top-in">
+<a class="brand" href="{{ url_for('publico') }}"><div class="crest">PR</div><div><b>Asociación Presidente Ríos</b><span>Portal oficial · Información pública</span></div></a>
+<div class="top-links">
+<a href="{{ url_for('publico') }}">🏠 Inicio</a>
+<a href="{{ url_for('publico_disciplina') }}">⚖️ Disciplina</a>
+<a href="{{ url_for('publico_expulsados') }}">🚫 Expulsados</a>
+<a href="{{ url_for('publico_clubes') }}">👥 Clubes</a>
+<a href="{{ url_for('login') }}">🔐 Administración</a>
+</div>
+</div></header>
+<main class="wrap">{% block content %}{% endblock %}</main>
+<div class="footer">Asociación de Fútbol Presidente Ríos · Portal oficial</div>
+</body>
+</html>
