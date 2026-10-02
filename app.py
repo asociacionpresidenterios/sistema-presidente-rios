@@ -4902,6 +4902,7 @@ def generar_calendario_todos_contra_todos(club_ids):
 
 
 @app.route("/campeonatos/<int:campeonato_id>/fixture/exportar-word")
+@rol_permitido("Administrador")
 def exportar_fixture_word(campeonato_id):
     """Exporta todas las jornadas del fixture a un documento Word, una jornada por página."""
     campeonato = db.get_or_404(Campeonato, campeonato_id)
@@ -5075,6 +5076,7 @@ def exportar_fixture_word(campeonato_id):
 
 
 @app.route("/campeonatos/<int:campeonato_id>/fixture")
+@rol_permitido("Administrador")
 def fixture_campeonato(campeonato_id):
 
     campeonato = db.get_or_404(
@@ -5130,6 +5132,7 @@ def fixture_campeonato(campeonato_id):
     "/campeonatos/<int:campeonato_id>/fixture/generar",
     methods=["POST"]
 )
+@rol_permitido("Administrador")
 def generar_fixture_campeonato(campeonato_id):
 
     campeonato = db.get_or_404(
@@ -5216,6 +5219,7 @@ def generar_fixture_campeonato(campeonato_id):
     "/campeonatos/<int:campeonato_id>/fixture/jornada/<int:jornada>/configurar",
     methods=["POST"]
 )
+@rol_permitido("Administrador")
 def configurar_jornada_fixture(campeonato_id, jornada):
     """Asigna fecha, hora y cancha a todos los partidos de una jornada."""
     campeonato = db.get_or_404(Campeonato, campeonato_id)
@@ -5261,6 +5265,7 @@ def configurar_jornada_fixture(campeonato_id, jornada):
     "/campeonatos/<int:campeonato_id>/fixture/eliminar",
     methods=["POST"]
 )
+@rol_permitido("Administrador")
 def eliminar_fixture_campeonato(campeonato_id):
 
     campeonato = db.get_or_404(
@@ -5301,6 +5306,7 @@ def eliminar_fixture_campeonato(campeonato_id):
     "/campeonatos/<int:campeonato_id>/fixture/partido/<int:partido_id>/editar",
     methods=["POST"]
 )
+@rol_permitido("Administrador")
 def editar_partido_fixture(campeonato_id, partido_id):
     """Edita fecha, hora, cancha y equipos de un partido sin regenerar el fixture."""
     campeonato = db.get_or_404(Campeonato, campeonato_id)
@@ -5372,6 +5378,7 @@ def editar_partido_fixture(campeonato_id, partido_id):
     "/campeonatos/<int:campeonato_id>/fixture/regenerar-nuevo",
     methods=["POST"]
 )
+@rol_permitido("Administrador")
 def regenerar_fixture_nuevo(campeonato_id):
     """Regenera un fixture nuevo cambiando el orden de los clubes."""
     campeonato = db.get_or_404(Campeonato, campeonato_id)
