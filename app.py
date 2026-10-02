@@ -7684,6 +7684,8 @@ def admin_tesoreria_club(club_id):
         categorias=categorias,
         mes=mes,
         anio=anio,
+        inicio_mes=inicio_mes,
+        fin_mes=fin_mes,
         today=hoy,
         resumen={
             "por_cobrar": int(total_por_cobrar),
