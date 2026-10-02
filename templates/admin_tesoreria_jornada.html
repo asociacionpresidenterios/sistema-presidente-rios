@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Tesorería · Generar jornada{% endblock %}
+{% block content %}
+<style>
+.wrap{max-width:1280px;margin:auto}.hero{background:linear-gradient(135deg,#071426,#173f7a);color:#fff;border-radius:18px;padding:24px;margin-bottom:18px}.eyebrow{font-size:10px;letter-spacing:.14em;font-weight:800;opacity:.75}.hero h1{margin:5px 0;font-size:29px}.hero p{margin:0;color:#d9e7f8;font-size:13px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.actions a{display:inline-block;text-decoration:none;border-radius:9px;padding:9px 12px;background:#fff;color:#173f7a;font-weight:800;font-size:11px}.grid{display:grid;grid-template-columns:380px 1fr;gap:18px}.panel{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px;margin-bottom:18px}.panel h2{font-size:16px;margin:0 0 14px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{display:block;font-size:10px;color:#64748b;font-weight:800;text-transform:uppercase;margin-bottom:5px}input,select{border:1px solid #d6dee9;border-radius:9px;padding:10px;font:inherit;background:#fff;box-sizing:border-box;width:100%}.btn{border:0;border-radius:9px;padding:11px 14px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer;width:100%;margin-top:4px}.note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:11px;padding:12px;font-size:11px;color:#1e3a8a;line-height:1.5}.warning{background:#fff7ed;border:1px solid #fed7aa;border-radius:11px;padding:12px;font-size:11px;color:#9a3412;line-height:1.5;margin-top:10px}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}.card{background:#f8fafc;border:1px solid #e5eaf1;border-radius:12px;padding:13px}.label{font-size:9px;color:#64748b;font-weight:800;text-transform:uppercase}.amount{font-size:21px;font-weight:900;margin-top:5px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th{text-align:left;font-size:9px;color:#64748b;padding:10px 8px;border-bottom:1px solid #e5eaf1;text-transform:uppercase;white-space:nowrap}td{padding:10px 8px;border-bottom:1px solid #eef2f7;font-size:11px;vertical-align:top}.badge{display:inline-block;border-radius:999px;padding:4px 8px;font-size:9px;font-weight:800}.ok{background:#dcfce7;color:#166534}.pending{background:#fff7ed;color:#9a3412}.muted{color:#64748b}.empty{padding:28px;text-align:center;color:#64748b}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.summary{grid-template-columns:1fr 1fr}}@media(max-width:600px){.form-grid,.summary{grid-template-columns:1fr}.full{grid-column:auto}}
+</style>
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">V10.2 · INTEGRACIÓN TESORERÍA + FIXTURE</div>
+    <h1>⚽ Generar cuentas desde una jornada</h1>
+    <p>Convierte una fecha real del fixture en cuentas por cobrar a los clubes y cuentas por pagar de cancha y arbitraje.</p>
+    <div class="actions"><a href="{{url_for('admin_tesoreria')}}">← Volver a Tesorería</a></div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="panel">
+        <h2>⚙️ Configurar jornada</h2>
+        <form method="post" class="form-grid">
+          <input type="hidden" name="accion" value="generar">
+          <div class="full"><label>Campeonato</label>
+            <select name="campeonato_id" required onchange="this.form.submit()">
+              <option value="">Seleccionar campeonato</option>
+              {% for c in campeonatos %}<option value="{{c.id}}" {% if campeonato_id==c.id %}selected{% endif %}>{{c.nombre}} · {{c.serie}} · {{c.temporada}}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="full"><label>Fecha de jornada</label><input type="date" name="fecha" value="{{fecha_raw}}" required></div>
+          <div><label>Cobro a cada club ($)</label><input type="number" name="cobro_club" value="{{cobro_club}}" min="0" step="1"></div>
+          <div><label>Cancha por partido ($)</label><input type="number" name="cancha" value="{{monto_cancha}}" min="0" step="1"></div>
+          <div><label>Arbitraje por partido ($)</label><input type="number" name="arbitraje" value="{{monto_arbitraje}}" min="0" step="1"></div>
+          <div><label>Vencimiento</label><input type="date" name="vencimiento" value="{{vencimiento_raw}}"></div>
+          <div class="full"><button class="btn" type="submit">💾 Generar cuentas de la jornada</button></div>
+        </form>
+        <div class="note" style="margin-top:12px">
+          <strong>Cómo funciona:</strong> el sistema toma los partidos existentes del fixture. Por cada partido puede crear 2 cuentas por cobrar (una por club), 1 cuenta por pagar de cancha y 1 de arbitraje. Solo se crean las cuentas que tengan un monto mayor a $0.
+        </div>
+        <div class="warning"><strong>Importante:</strong> generar una cuenta no significa que el dinero haya entrado o salido. El movimiento de caja se registra recién cuando Tesorería registra el abono o pago.</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel">
+        <h2>📅 Partidos encontrados</h2>
+        {% if campeonato and fecha %}
+        <div class="summary">
+          <div class="card"><div class="label">Partidos</div><div class="amount">{{partidos|length}}</div></div>
+          <div class="card"><div class="label">Clubes cobrados</div><div class="amount">{{partidos|length * 2}}</div></div>
+          <div class="card"><div class="label">Campeonato</div><div style="font-weight:800;font-size:12px;margin-top:6px">{{campeonato.nombre}}</div></div>
+        </div>
+        {% endif %}
+        {% if partidos %}
+        <div class="table-wrap"><table>
+          <thead><tr><th>Fecha</th><th>Hora</th><th>Partido</th><th>Cancha</th><th>Árbitro</th><th>Estado financiero</th></tr></thead>
+          <tbody>
+          {% for p in partidos %}
+          <tr>
+            <td>{{p.fecha.strftime('%d/%m/%Y') if p.fecha else '—'}}</td>
+            <td>{{p.hora or '—'}}</td>
+            <td><strong>{{p.local_club.nombre}}</strong><br>vs<br><strong>{{p.visitante_club.nombre}}</strong></td>
+            <td>{{p.cancha or '—'}}</td>
+            <td>{% if p.acta and p.acta.arbitro %}{{p.acta.arbitro}}{% else %}<span class="muted">No informado</span>{% endif %}</td>
+            <td>
+              {% set origen='PARTIDO:' ~ p.id %}
+              {% set cuentas_partido = p.id %}
+              <span class="badge pending">Se verificará al generar</span>
+            </td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table></div>
+        {% elif campeonato and fecha %}
+        <div class="empty">No hay partidos con fecha {{fecha.strftime('%d/%m/%Y')}} en este campeonato.</div>
+        {% else %}
+        <div class="empty">Selecciona un campeonato y una fecha para cargar la jornada.</div>
+        {% endif %}
+      </div>
+
+      <div class="panel">
+        <h2>🧮 Ejemplo de generación</h2>
+        <p class="muted" style="font-size:11px;line-height:1.5">
+          Si una jornada tiene 7 partidos y configuras $10.000 por club, el sistema genera hasta 14 cuentas por cobrar.
+          Si agregas $20.000 de cancha y $25.000 de arbitraje, además genera hasta 7 cuentas por pagar de cancha y 7 de arbitraje.
+          Si vuelves a procesar la misma jornada, el sistema detecta las cuentas ya generadas y no las duplica.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
