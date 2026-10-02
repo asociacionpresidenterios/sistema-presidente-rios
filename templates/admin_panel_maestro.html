@@ -56,7 +56,7 @@
     <a class="btn-mini" style="justify-content:center;padding:10px" href="{{ url_for('admin_tesoreria') }}">💰 Tesorería</a>
   </div>
 </div>
-<div class="section-title"><h2>Centro de Alertas y Control Operativo</h2><span>{{ alertas|length }} controles con atención requerida</span></div>
+<div class="section-title"><h2>Centro de Alertas y Control Operativo</h2><span>{{ alertas|length }} controles con atención requerida</span><a class="alert-link" href="{{ url_for('admin_alertas') }}">Abrir centro completo →</a></div>
 <div class="card">
   <div class="card-body">
     {% if alertas %}
