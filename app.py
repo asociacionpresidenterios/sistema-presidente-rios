@@ -8808,7 +8808,7 @@ def admin_panel_maestro():
         except Exception:
             return 0
 
-    partidos_con_resultado = total_partidos - partidos_sin_resultado
+    partidos_con_resultado = total_partidos - finalizados_sin_resultado
     campeonatos_con_clubes = total_campeonatos - campeonatos_sin_clubes
 
     indicadores_operativos = [
