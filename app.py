@@ -1761,6 +1761,7 @@ def login():
             session["admin_nombre"] = admin.nombre
             session["admin_rol"] = admin.rol or "Administrador"
             session.permanent = True
+            registrar_auditoria("INICIO_SESION", "Seguridad", f"Inicio de sesión exitoso del usuario '{admin.username}'.")
             destino = request.form.get("next", "").strip()
             if not destino.startswith("/") or destino.startswith("//"):
                 destino = destino_inicial_por_rol()
@@ -1773,6 +1774,10 @@ def login():
 
 @app.route("/logout")
 def logout():
+    usuario = session.get("admin_username") or "Sistema"
+    rol = session.get("admin_rol") or "Sistema"
+    if session.get("admin_id"):
+        registrar_auditoria("CIERRE_SESION", "Seguridad", f"Cierre de sesión del usuario '{usuario}' con rol {rol}.")
     session.clear()
     flash("Sesión cerrada correctamente.", "success")
     return redirect(url_for("login"))
@@ -1794,6 +1799,7 @@ def mi_cuenta_admin():
         else:
             admin.set_password(nueva)
             db.session.commit()
+            registrar_auditoria("CAMBIO_CONTRASENA", "Seguridad", f"El usuario '{admin.username}' cambió su contraseña.")
             # Rotar la sesión al cambiar la contraseña: obliga a autenticarse
             # nuevamente y evita conservar una sesión administrativa anterior.
             session.clear()
@@ -1801,6 +1807,26 @@ def mi_cuenta_admin():
             return redirect(url_for("login"))
     return render_template("admin_cuenta.html", admin=admin)
 
+
+@app.route("/admin/auditoria")
+@rol_permitido("Administrador")
+def admin_auditoria():
+    accion = request.args.get("accion", "").strip()
+    modulo = request.args.get("modulo", "").strip()
+    limite = request.args.get("limite", "200").strip()
+    try:
+        limite = max(20, min(int(limite), 500))
+    except (TypeError, ValueError):
+        limite = 200
+    consulta = RegistroAuditoria.query
+    if accion:
+        consulta = consulta.filter(RegistroAuditoria.accion == accion)
+    if modulo:
+        consulta = consulta.filter(RegistroAuditoria.modulo == modulo)
+    registros = consulta.order_by(RegistroAuditoria.fecha.desc(), RegistroAuditoria.id.desc()).limit(limite).all()
+    acciones = [fila[0] for fila in db.session.query(RegistroAuditoria.accion).distinct().order_by(RegistroAuditoria.accion.asc()).all()]
+    modulos = [fila[0] for fila in db.session.query(RegistroAuditoria.modulo).distinct().order_by(RegistroAuditoria.modulo.asc()).all()]
+    return render_template("admin_auditoria.html", registros=registros, acciones=acciones, modulos=modulos, accion=accion, modulo=modulo, limite=limite)
 
 @app.route("/admin/usuarios", methods=["GET", "POST"])
 @rol_permitido("Administrador")
