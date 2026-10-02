@@ -32,6 +32,9 @@
       <div class="note">Esta rendición todavía no tiene un número formal. Puedes crearla y luego pasarla por revisión antes del cierre.</div>
     {% endif %}
     <a href="{{url_for('admin_tesoreria_cierre',mes=mes,anio=anio)}}" style="display:inline-block;margin-top:12px;text-decoration:none;border-radius:9px;padding:10px 14px;background:#111827;color:#fff;font-weight:800;font-size:11px">🔒 Administrar estado de cierre →</a>
+    {% if rendicion %}
+    <a href="{{url_for('admin_tesoreria_comprobante',rendicion_id=rendicion.id)}}" style="display:inline-block;margin-top:12px;margin-left:6px;text-decoration:none;border-radius:9px;padding:10px 14px;background:#0f766e;color:#fff;font-weight:800;font-size:11px">🧾 Ver comprobante oficial →</a>
+    {% endif %}
   </div>
 
   <div class="panel no-print">
