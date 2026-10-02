@@ -1214,6 +1214,16 @@ def destino_inicial_por_rol():
         return url_for("admin_tesoreria")
     return url_for("dashboard")
 
+def admin_required(view):
+    """Protege rutas internas que requieren una sesión administrativa."""
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("admin_id"):
+            return redirect(url_for("login", next=request.full_path))
+        return view(*args, **kwargs)
+    return wrapped
+
+
 def rol_permitido(*roles):
     def decorator(view):
         @wraps(view)
