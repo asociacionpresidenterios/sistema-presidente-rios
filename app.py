@@ -5719,6 +5719,11 @@ def eliminar_fixture_campeonato(campeonato_id):
         ).delete(synchronize_session=False)
 
         db.session.commit()
+        registrar_auditoria(
+            "ELIMINAR_FIXTURE",
+            "Campeonatos",
+            f"Se eliminó el fixture de '{campeonato.nombre}'. Partidos eliminados: {eliminados}.",
+        )
 
         flash(
             f"Fixture eliminado correctamente. Partidos eliminados: {eliminados}.",
@@ -5804,6 +5809,11 @@ def editar_partido_fixture(campeonato_id, partido_id):
         partido.turno_club_id = turno_id
 
         db.session.commit()
+        registrar_auditoria(
+            "EDITAR_PARTIDO_FIXTURE",
+            "Campeonatos",
+            f"Se editó el partido {partido.local_club.nombre} vs {partido.visitante_club.nombre} de la jornada {partido.jornada} en '{campeonato.nombre}'.",
+        )
         flash(f"Partido de la jornada {partido.jornada} actualizado correctamente.", "success")
 
     except Exception as error:
@@ -5938,6 +5948,11 @@ def registrar_resultado(campeonato_id, partido_id):
         partido.estado = "Finalizado"
 
         db.session.commit()
+        registrar_auditoria(
+            "REGISTRAR_RESULTADO",
+            "Campeonatos",
+            f"Se registró el resultado {partido.local_club.nombre} {goles_local}-{goles_visitante} {partido.visitante_club.nombre} en '{campeonato.nombre}'.",
+        )
 
         flash(
             f"Resultado guardado: {partido.local_club.nombre} {goles_local} - {goles_visitante} {partido.visitante_club.nombre}.",
@@ -5976,6 +5991,11 @@ def marcar_partido_programado(campeonato_id, partido_id):
         partido.goles_visitante = None
         partido.estado = "Programado"
         db.session.commit()
+        registrar_auditoria(
+            "RESTABLECER_PARTIDO",
+            "Campeonatos",
+            f"Se restableció a Programado el partido {partido.local_club.nombre} vs {partido.visitante_club.nombre} de '{campeonato.nombre}'.",
+        )
         flash("El partido volvió a estado Programado.", "success")
     except Exception as error:
         db.session.rollback()
