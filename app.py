@@ -7635,6 +7635,7 @@ def admin_tesoreria():
             )
             db.session.add(movimiento)
             db.session.commit()
+        registrar_auditoria("REGISTRAR_ABONO", "Tesorería", "Se registró un abono o pago en una cuenta.")
             flash("Abono registrado correctamente.", "success")
             return redirect(url_for("admin_tesoreria"))
 
@@ -8273,6 +8274,7 @@ def admin_tesoreria_cierre():
                 )
                 db.session.add(rendicion)
                 db.session.commit()
+        registrar_auditoria("CREAR_RENDICION", "Tesorería", "Se creó una rendición mensual.")
                 flash(f"Rendición {rendicion.numero_rendicion} creada en estado Borrador.", "success")
 
         elif accion == "revisar":
@@ -8285,6 +8287,7 @@ def admin_tesoreria_cierre():
                 rendicion.revisado_por = usuario
                 rendicion.revisado_en = datetime.utcnow()
                 db.session.commit()
+        registrar_auditoria("REVISAR_RENDICION", "Tesorería", "Se marcó una rendición mensual como revisada.")
                 flash("Rendición marcada como Revisada.", "success")
 
         elif accion == "cerrar":
@@ -8306,6 +8309,7 @@ def admin_tesoreria_cierre():
                 rendicion.cerrado_por = usuario
                 rendicion.cerrado_en = datetime.utcnow()
                 db.session.commit()
+        registrar_auditoria("CERRAR_RENDICION", "Tesorería", "Se cerró formalmente una rendición mensual.")
                 flash(f"Rendición {rendicion.numero_rendicion} cerrada. El período quedó bloqueado.", "success")
 
         elif accion == "reabrir":
@@ -8320,6 +8324,7 @@ def admin_tesoreria_cierre():
                     f" | Reabierta por {usuario} el {datetime.utcnow().strftime('%d/%m/%Y %H:%M')}"
                 ).strip(" |")
                 db.session.commit()
+        registrar_auditoria("REABRIR_RENDICION", "Tesorería", "Se reabrió una rendición mensual cerrada.")
                 flash("Rendición reabierta en estado Revisada. El período vuelve a estar editable.", "success")
 
         return redirect(url_for(
@@ -8716,6 +8721,7 @@ def eliminar_campeonato(campeonato_id):
         nombre = campeonato.nombre
         db.session.delete(campeonato)
         db.session.commit()
+        registrar_auditoria("ELIMINAR_CAMPEONATO", "Campeonatos", "Se eliminó un campeonato y sus datos dependientes.")
 
         flash(
             f"El campeonato «{nombre}» fue eliminado correctamente. "
