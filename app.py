@@ -137,13 +137,10 @@ class MovimientoTesoreria(db.Model):
     campeonato_id = db.Column(db.Integer, db.ForeignKey("campeonato.id"), nullable=True, index=True)
     serie = db.Column(db.String(80), nullable=True)
     cuenta_id = db.Column(db.Integer, nullable=True, index=True)
-    partido_id = db.Column(db.Integer, db.ForeignKey("partido.id"), nullable=True, index=True)
-    origen = db.Column(db.String(40), nullable=True, index=True)
     creado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     club = db.relationship("Club", foreign_keys=[club_id])
     campeonato = db.relationship("Campeonato", foreign_keys=[campeonato_id])
-    partido = db.relationship("Partido", foreign_keys=[partido_id])
 
 # ============================================================
 # MODELO CLUB
@@ -164,10 +161,13 @@ class CuentaTesoreria(db.Model):
     estado = db.Column(db.String(30), nullable=False, default="Pendiente")
     observaciones = db.Column(db.Text, nullable=True)
     creado_por = db.Column(db.String(160), nullable=True)
+    partido_id = db.Column(db.Integer, db.ForeignKey("partido.id"), nullable=True, index=True)
+    origen = db.Column(db.String(40), nullable=True, index=True)
     creado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     club = db.relationship("Club", foreign_keys=[club_id])
     campeonato = db.relationship("Campeonato", foreign_keys=[campeonato_id])
+    partido = db.relationship("Partido", foreign_keys=[partido_id])
 
     @property
     def saldo(self):
@@ -741,8 +741,6 @@ def preparar_base_datos():
             "campeonato_id": "INTEGER",
             "serie": "VARCHAR(80)",
             "cuenta_id": "INTEGER",
-            "partido_id": "INTEGER",
-            "origen": "VARCHAR(40)",
         }
 
         for nombre, tipo_columna in columnas_nuevas_tesoreria.items():
@@ -770,6 +768,42 @@ def preparar_base_datos():
             columnas_tesoreria = {
                 c["name"]
                 for c in inspector.get_columns("movimiento_tesoreria")
+            }
+
+        # V10.2 — trazabilidad de cuentas generadas desde partidos.
+        inspector = db.inspect(db.engine)
+        columnas_cuentas = {
+            c["name"] for c in inspector.get_columns("cuenta_tesoreria")
+        }
+        columnas_nuevas_cuentas = {
+            "partido_id": "INTEGER",
+            "origen": "VARCHAR(40)",
+        }
+
+        for nombre, tipo_columna in columnas_nuevas_cuentas.items():
+            if nombre in columnas_cuentas:
+                continue
+
+            if db.engine.dialect.name == "postgresql":
+                sql = (
+                    "ALTER TABLE cuenta_tesoreria "
+                    f"ADD COLUMN IF NOT EXISTS {nombre} {tipo_columna}"
+                )
+            elif db.engine.dialect.name == "sqlite":
+                sql = (
+                    "ALTER TABLE cuenta_tesoreria "
+                    f"ADD COLUMN {nombre} {tipo_columna}"
+                )
+            else:
+                raise RuntimeError(
+                    "Motor de base de datos no soportado para Tesorería."
+                )
+
+            db.session.execute(db.text(sql))
+            db.session.commit()
+            inspector = db.inspect(db.engine)
+            columnas_cuentas = {
+                c["name"] for c in inspector.get_columns("cuenta_tesoreria")
             }
 
         # AGREGAR ESTADO SI NO EXISTE
