@@ -1,71 +1,115 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Presidente Ríos · Portal Oficial</title>
 <style>
-:root{--navy:#071426;--navy2:#0d2340;--blue:#1769e0;--blue2:#0f55bd;--bg:#f4f7fb;--card:#fff;--text:#102033;--muted:#68788c;--line:#e6ebf2;--green:#087f5b;--violet:#6941c6;--gold:#b7791f;--shadow:0 12px 32px rgba(8,24,44,.08)}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif}.top{position:sticky;top:0;z-index:20;background:rgba(7,20,38,.97);color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}.top-in{max-width:1320px;margin:auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{display:flex;align-items:center;gap:11px;color:#fff;text-decoration:none}.crest{width:44px;height:44px;border-radius:13px;background:linear-gradient(145deg,#2b82f6,#124aa5);display:grid;place-items:center;font-weight:950;box-shadow:inset 0 1px rgba(255,255,255,.25)}.brand b{display:block;font-size:15px}.brand span{display:block;font-size:11px;color:#a9bbd2;margin-top:2px}.admin{color:#fff;text-decoration:none;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.08);padding:9px 13px;border-radius:10px;font-weight:800;font-size:13px}.wrap{max-width:1320px;margin:auto;padding:24px 20px 50px}.hero{position:relative;overflow:hidden;background:linear-gradient(125deg,var(--navy),#123b70 58%,var(--blue));color:#fff;border-radius:24px;padding:36px;margin-bottom:22px;box-shadow:var(--shadow)}.hero:after{content:"";position:absolute;width:280px;height:280px;border:45px solid rgba(255,255,255,.05);border-radius:50%;right:-70px;top:-95px}.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:11px;font-weight:900;color:#9dc5ff}.hero h1{font-size:clamp(29px,4vw,48px);margin:8px 0 9px;letter-spacing:-1px;max-width:760px}.hero p{margin:0;color:#d5e3f5;max-width:720px;line-height:1.55}.hero-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:20px}.hero-btn{display:inline-flex;padding:10px 14px;border-radius:10px;text-decoration:none;font-size:12px;font-weight:900;background:#fff;color:var(--navy)}.hero-btn.alt{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#fff}.section-head{display:flex;justify-content:space-between;align-items:end;gap:15px;margin:27px 0 12px}.section-head h2{margin:0;font-size:21px}.section-head p{margin:4px 0 0;color:var(--muted);font-size:13px}.series-nav{display:flex;gap:10px;flex-wrap:wrap}.series-btn{display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--navy);background:#fff;border:1px solid var(--line);padding:12px 15px;border-radius:13px;font-weight:900;box-shadow:0 5px 18px rgba(8,24,44,.04)}.series-btn:hover{border-color:#8bb9fa}.series-block{scroll-margin-top:85px;margin-top:28px}.series-title{display:flex;align-items:center;gap:10px}.series-title .dot{width:9px;height:9px;background:var(--blue);border-radius:50%;box-shadow:0 0 0 5px #dceaff}.series-title h2{margin:0}.series-title small{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:19px;padding:20px;box-shadow:var(--shadow)}.card-top{display:flex;justify-content:space-between;gap:14px}.pill{display:inline-flex;padding:5px 9px;border-radius:999px;background:#e8f7f0;color:#087f5b;font-size:11px;font-weight:900}.card h3{margin:8px 0 4px;font-size:19px}.meta{font-size:13px;color:var(--muted)}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:16px}.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;background:var(--blue);padding:9px 12px;border-radius:9px;font-weight:850;font-size:12px}.btn:hover{background:var(--blue2)}.btn.green{background:var(--green)}.btn.purple{background:var(--violet)}.next{margin-top:17px;border-top:1px solid var(--line);padding-top:14px}.next-title{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:900;margin-bottom:8px}.match{display:grid;grid-template-columns:54px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid #eef2f6}.match:last-child{border-bottom:0}.time{font-weight:950;color:var(--blue)}.teams{font-weight:750}.venue{display:block;color:var(--muted);font-size:11px;margin-top:3px}.results{margin-top:17px;border-top:1px solid var(--line);padding-top:14px}.result{display:grid;grid-template-columns:42px 1fr 48px;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid #eef2f6}.result:last-child{border-bottom:0}.round{font-size:10px;color:var(--muted);font-weight:800}.result-teams{font-size:12px;font-weight:750}.score{font-size:14px;font-weight:950;text-align:right}.featured{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}.featured-card{background:#fff;border:1px solid var(--line);border-radius:19px;padding:20px;box-shadow:var(--shadow)}.featured-card h3{margin:6px 0;font-size:21px}.featured-list{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:14px}.mini{background:#f7f9fc;border-radius:10px;padding:10px}.mini b{display:block;font-size:17px}.mini span{font-size:10px;color:var(--muted)}.empty{background:#fff;border:1px dashed #cbd5e1;border-radius:18px;padding:28px;text-align:center;color:var(--muted)}.count{color:var(--muted);font-size:12px;font-weight:700}.footer{text-align:center;color:#8290a3;font-size:12px;padding:20px}@media(max-width:850px){.featured{grid-template-columns:1fr}}@media(max-width:650px){.top-in{padding:10px 14px}.brand span{display:none}.wrap{padding:16px 13px 40px}.hero{padding:25px 21px;border-radius:19px}.admin{padding:8px 10px}.card{padding:16px}.card-top{display:block}.actions .btn{flex:1}.section-head{display:block}.series-nav{overflow:auto;flex-wrap:nowrap;padding-bottom:3px}.series-btn{white-space:nowrap}.featured-list{grid-template-columns:1fr 1fr}.result{grid-template-columns:36px 1fr 42px}.hero-actions .hero-btn{flex:1;justify-content:center}}
+:root{--navy:#071426;--navy2:#102b50;--blue:#1769e0;--bg:#eef2f6;--card:#fff;--text:#172033;--muted:#68788c;--line:#dfe5ec;--green:#087f5b;--violet:#6941c6;--shadow:0 8px 24px rgba(8,24,44,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,system-ui,sans-serif}.top{background:var(--navy);color:#fff}.top-in{max-width:1240px;margin:auto;padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:15px}.brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none}.crest{width:42px;height:42px;border-radius:10px;background:#1769e0;display:grid;place-items:center;font-weight:900}.brand b{display:block;font-size:15px}.brand span{font-size:10px;color:#aebed2}.top-links{display:flex;gap:7px}.top-links a{color:#fff;text-decoration:none;font-size:12px;font-weight:800;padding:8px 11px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:rgba(255,255,255,.06)}
+.wrap{max-width:1240px;margin:auto;padding:22px 18px 45px}.hero{background:linear-gradient(120deg,#0b1d35,#194f98 70%,#1769e0);color:#fff;border-radius:20px;padding:28px;margin-bottom:18px}.eyebrow{text-transform:uppercase;letter-spacing:.1em;font-size:10px;font-weight:900;color:#9fc8ff}.hero h1{margin:7px 0;font-size:34px}.hero p{margin:0;color:#d8e5f5;font-size:13px}.selector{margin-top:20px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:13px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}.selector label{font-size:11px;font-weight:900;text-transform:uppercase}.selector select{min-width:300px;border:0;border-radius:8px;padding:11px;font-weight:800;color:#172033;background:#fff}
+.layout{display:grid;grid-template-columns:230px 1fr;gap:16px}.menu{background:#fff;border:1px solid var(--line);border-radius:15px;overflow:hidden;height:max-content;position:sticky;top:15px}.menu-title{padding:14px;background:#12366a;color:#fff;font-weight:900;font-size:13px}.menu button{width:100%;border:0;border-bottom:1px solid #edf0f4;background:#fff;text-align:left;padding:13px 14px;font-weight:800;color:#172033;cursor:pointer}.menu button.active{background:#eaf2ff;color:#1459bd;border-left:4px solid #1769e0}.content{min-width:0}.champ{display:none}.champ.active{display:block}.champ-head{background:#fff;border:1px solid var(--line);border-radius:15px;padding:18px;margin-bottom:13px;display:flex;justify-content:space-between;gap:15px;align-items:center}.champ-head h2{margin:4px 0;font-size:23px}.meta{color:var(--muted);font-size:12px}.status{background:#e8f7f0;color:var(--green);padding:5px 9px;border-radius:20px;font-size:10px;font-weight:900}.panel{background:#fff;border:1px solid var(--line);border-radius:15px;margin-bottom:13px;overflow:hidden}.panel summary{cursor:pointer;padding:15px 17px;font-weight:900;list-style:none;display:flex;justify-content:space-between}.panel summary::-webkit-details-marker{display:none}.panel summary:after{content:'＋';color:#1769e0}.panel[open] summary:after{content:'−'}.panel-body{padding:0 17px 17px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:12px;min-width:650px}th{background:#071426;color:#fff;padding:9px 8px;text-align:center}td{padding:8px;border-bottom:1px solid #edf0f4;text-align:center}td.club{text-align:left;font-weight:800}.pos{font-weight:900;color:#1769e0}.links{display:flex;gap:7px;flex-wrap:wrap}.btn{display:inline-block;text-decoration:none;color:#fff;background:#1769e0;padding:9px 11px;border-radius:8px;font-size:11px;font-weight:900}.btn.green{background:var(--green)}.btn.purple{background:var(--violet)}.match{display:grid;grid-template-columns:65px 1fr 55px;gap:10px;padding:10px 0;border-bottom:1px solid #edf0f4;font-size:12px}.match:last-child{border-bottom:0}.score{text-align:right;font-weight:900}.venue{color:var(--muted);font-size:10px;margin-top:3px}.empty{padding:20px;color:var(--muted);font-size:12px}.footer{text-align:center;color:#8290a3;font-size:11px;padding:20px}
+@media(max-width:800px){.layout{grid-template-columns:1fr}.menu{position:static}.menu button{display:none}.menu:after{content:'Usa el selector superior para cambiar de campeonato';display:block;padding:12px;color:var(--muted);font-size:11px}.champ-head{display:block}.selector select{min-width:100%;width:100%}.hero h1{font-size:28px}}
 </style>
 </head>
-<body id="top">
+<body>
 <header class="top"><div class="top-in">
 <a class="brand" href="{{ url_for('publico') }}"><div class="crest">PR</div><div><b>Asociación Presidente Ríos</b><span>Portal oficial de campeonatos</span></div></a>
-<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><a class="admin" href="{{ url_for('publico_clubes') }}">👥 Clubes y planteles</a><a class="admin" href="{{ url_for('login') }}">🔐 Administración</a></div>
+<div class="top-links"><a href="{{ url_for('publico_clubes') }}">👥 Clubes</a><a href="{{ url_for('login') }}">🔐 Administración</a></div>
 </div></header>
-<main class="wrap">
-<section class="hero"><div class="eyebrow">Portal oficial · Asociación Presidente Ríos</div><h1>El fútbol de la Asociación, en un solo lugar.</h1><p>Consulta campeonatos, programación, resultados, posiciones, goleadores, Fair Play, clubes y planteles desde cualquier dispositivo.</p><div class="hero-actions"><a class="hero-btn" href="#campeonatos">🏆 Ver campeonatos</a><a class="hero-btn alt" href="{{ url_for('publico_clubes') }}">👥 Ver clubes y planteles</a><a class="hero-btn alt" href="{{ url_for('publico_campeones') }}">🏆 Campeones</a></div></section>
 
+<main class="wrap">
+<section class="hero">
+<div class="eyebrow">Portal oficial · Resultados y estadísticas</div>
+<h1>Campeonatos Presidente Ríos</h1>
+<p>Consulta directamente las posiciones y toda la información deportiva de cada campeonato.</p>
 {% if series_publicas %}
-<section class="featured">
-  <div class="featured-card">
-    <div class="eyebrow" style="color:#1769e0">Competición activa</div>
-    {% set destacado = series_publicas[0][1][0] %}
-    <h3>{{ destacado.campeonato.nombre }}</h3>
-    <div class="meta">{{ destacado.campeonato.serie }} · Temporada {{ destacado.campeonato.temporada }}</div>
-    <div class="featured-list">
-      <div class="mini"><b>{{ destacado.tabla|length }}</b><span>Clubes en tabla</span></div>
-      <div class="mini"><b>{{ destacado.goleadores|length }}</b><span>Goleadores</span></div>
-      <div class="mini"><b>{{ destacado.jornada or '—' }}</b><span>Próxima fecha</span></div>
-    </div>
-    <div class="actions"><a class="btn" href="{{ url_for('publico_campeonato',campeonato_id=destacado.campeonato.id) }}">Abrir campeonato →</a></div>
-  </div>
-  <div class="featured-card">
-    <div class="eyebrow" style="color:#087f5b">Accesos rápidos</div>
-    <h3>Consulta pública</h3>
-    <div class="meta">Información deportiva disponible sin iniciar sesión.</div>
-    <div class="actions">
-      <a class="btn green" href="{{ url_for('publico_clubes') }}">👥 Clubes y planteles</a>
-      {% if destacado.tabla %}<a class="btn" href="{{ url_for('publico_tabla',campeonato_id=destacado.campeonato.id) }}">📊 Posiciones</a>{% endif %}
-      <a class="btn purple" href="{{ url_for('publico_goleadores',campeonato_id=destacado.campeonato.id) }}">🥅 Goleadores</a>
-    </div>
-  </div>
+<div class="selector">
+<label for="champSelect">🏆 Campeonato</label>
+<select id="champSelect" onchange="seleccionarCampeonato(this.value)">
+{% for serie, panels in series_publicas %}
+<optgroup label="{{ serie }}">
+{% for p in panels %}<option value="champ-{{ p.campeonato.id }}">{{ p.campeonato.nombre }} · {{ p.campeonato.temporada }}</option>{% endfor %}
+</optgroup>
+{% endfor %}
+</select>
+</div>
+{% endif %}
 </section>
 
-<section id="campeonatos" class="section-head"><div><h2>🏆 Campeonatos por serie</h2><p>Selecciona la categoría que quieres consultar.</p></div></section>
-<div class="series-nav">{% for serie, panels in series_publicas %}<a class="series-btn" href="#serie-{{ loop.index }}">⚽ {{ serie }} <span class="count">{{ panels|length }} campeonato{% if panels|length != 1 %}s{% endif %}</span></a>{% endfor %}</div>
+{% if series_publicas %}
+<div class="layout">
+<nav class="menu" id="menu">
+<div class="menu-title">MENÚ DEL CAMPEONATO</div>
+<button class="active" data-target="posiciones" onclick="mostrarSeccion('posiciones',this)">📊 Posiciones</button>
+<button data-target="programacion" onclick="mostrarSeccion('programacion',this)">📅 Programación</button>
+<button data-target="resultados" onclick="mostrarSeccion('resultados',this)">⚽ Resultados</button>
+<button data-target="goleadores" onclick="mostrarSeccion('goleadores',this)">🥅 Goleadores</button>
+<button data-target="estadisticas" onclick="mostrarSeccion('estadisticas',this)">📈 Estadísticas</button>
+<button data-target="fairplay" onclick="mostrarSeccion('fairplay',this)">🟧 Fair Play</button>
+<button data-target="enlaces" onclick="mostrarSeccion('enlaces',this)">🔗 Más información</button>
+</nav>
 
+<div class="content">
 {% for serie, panels in series_publicas %}
-<section class="series-block" id="serie-{{ loop.index }}"><div class="section-head"><div class="series-title"><span class="dot"></span><div><h2>{{ serie }}</h2><small>{{ panels|length }} campeonato{% if panels|length != 1 %}s{% endif %} disponible{% if panels|length != 1 %}s{% endif %}</small></div></div><a class="count" href="#top">↑ Volver arriba</a></div>
-<div class="grid">
 {% for p in panels %}
-<article class="card">
-<div class="card-top"><div><span class="pill">{{ p.campeonato.estado or 'Activo' }}</span><h3>{{ p.campeonato.nombre }}</h3><div class="meta">{{ p.campeonato.temporada }} · {{ p.campeonato.serie }}</div></div><div style="font-size:27px">⚽</div></div>
-<div class="actions"><a class="btn" href="{{ url_for('publico_campeonato', campeonato_id=p.campeonato.id) }}">Ver campeonato</a><a class="btn green" href="{{ url_for('publico_tabla',campeonato_id=p.campeonato.id) }}">📊 Tabla</a><a class="btn purple" href="{{ url_for('publico_goleadores',campeonato_id=p.campeonato.id) }}">🥅 Goleadores</a></div>
-<div class="next"><div class="next-title">📅 Próxima jornada{% if p.jornada %} · Fecha {{ p.jornada }}{% endif %}</div>
-{% for partido in p.partidos %}<div class="match"><div class="time">{{ partido.hora or '--:--' }}</div><div><div class="teams">{{ partido.local_club.nombre }} <span style="color:#9aa8b8">vs</span> {{ partido.visitante_club.nombre }}</div><span class="venue">🏟️ {{ partido.cancha or 'Cancha por confirmar' }}{% if partido.turno_club %} · Turno: {{ partido.turno_club.nombre }}{% endif %}</span></div></div>{% else %}<div class="meta">No hay partidos pendientes.</div>{% endfor %}
+<section class="champ {% if loop.first and loop.parent is not defined %}active{% endif %}" id="champ-{{ p.campeonato.id }}" data-champ="{{ p.campeonato.id }}">
+<div class="champ-head"><div><div class="eyebrow" style="color:#1769e0">{{ serie }}</div><h2>{{ p.campeonato.nombre }}</h2><div class="meta">Temporada {{ p.campeonato.temporada }} · {{ p.campeonato.serie }}</div></div><span class="status">{{ p.campeonato.estado or 'Activo' }}</span></div>
+
+<div class="panel section-posiciones">
+<details open><summary>📊 Tabla de posiciones <span class="meta">Clasificación actual</span></summary><div class="panel-body"><div class="table-wrap">
+<table><thead><tr><th>#</th><th>CLUB</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th></tr></thead><tbody>
+{% for f in p.tabla %}<tr><td class="pos">{{ loop.index }}</td><td class="club">{{ f.club.nombre }}</td><td>{{ f.pj }}</td><td>{{ f.pg }}</td><td>{{ f.pe }}</td><td>{{ f.pp }}</td><td>{{ f.gf }}</td><td>{{ f.gc }}</td><td>{{ f.dg }}</td><td><strong>{{ f.pts }}</strong></td></tr>{% else %}<tr><td colspan="10">Sin información de posiciones.</td></tr>{% endfor %}
+</tbody></table></div></div></details></div>
+
+<div class="panel section-programacion"><details><summary>📅 Programación <span class="meta">{% if p.jornada %}Fecha {{ p.jornada }}{% else %}Próxima fecha{% endif %}</span></summary><div class="panel-body">
+{% for partido in p.partidos %}<div class="match"><div><strong>{{ partido.hora or '--:--' }}</strong></div><div><strong>{{ partido.local_club.nombre }} vs {{ partido.visitante_club.nombre }}</strong><div class="venue">🏟️ {{ partido.cancha or 'Por definir' }}{% if partido.turno_club %} · Turno: {{ partido.turno_club.nombre }}{% endif %}</div></div><div class="score">Prog.</div></div>{% else %}<div class="empty">No hay partidos pendientes.</div>{% endfor %}
+</div></details></div>
+
+<div class="panel section-resultados"><details><summary>⚽ Resultados <span class="meta">Últimos partidos</span></summary><div class="panel-body">
+{% for partido in p.resultados %}<div class="match"><div>F{{ partido.jornada }}</div><div><strong>{{ partido.local_club.nombre }} vs {{ partido.visitante_club.nombre }}</strong><div class="venue">{{ partido.fecha.strftime('%d/%m/%Y') if partido.fecha else 'Fecha por definir' }}</div></div><div class="score">{{ partido.goles_local }} - {{ partido.goles_visitante }}</div></div>{% else %}<div class="empty">Todavía no hay resultados.</div>{% endfor %}
+</div></details></div>
+
+<div class="panel section-goleadores"><details><summary>🥅 Goleadores <span class="meta">Ranking</span></summary><div class="panel-body"><div class="table-wrap"><table><tr><th>#</th><th>JUGADOR</th><th>CLUB</th><th>GOLES</th></tr>{% for jugador,total in p.goleadores %}<tr><td>{{ loop.index }}</td><td class="club">{{ jugador.nombre_completo }}</td><td>{{ jugador.club }}</td><td><strong>{{ total }}</strong></td></tr>{% else %}<tr><td colspan="4">Sin goles registrados.</td></tr>{% endfor %}</table></div></div></details></div>
+
+<div class="panel section-estadisticas"><details><summary>📈 Estadísticas <span class="meta">Resumen del campeonato</span></summary><div class="panel-body"><div class="links"><a class="btn" href="{{ url_for('publico_campeonato',campeonato_id=p.campeonato.id) }}">Ver campeonato completo</a><a class="btn purple" href="{{ url_for('publico_goleadores',campeonato_id=p.campeonato.id) }}">Goleadores completos</a></div></div></details></div>
+
+<div class="panel section-fairplay"><details><summary>🟧 Fair Play <span class="meta">Disciplina</span></summary><div class="panel-body"><div class="links"><a class="btn green" href="{{ url_for('publico_campeonato',campeonato_id=p.campeonato.id) }}#fair-play">Ver Fair Play del campeonato</a></div></div></details></div>
+
+<div class="panel section-enlaces"><details><summary>🔗 Más información <span class="meta">Accesos públicos</span></summary><div class="panel-body"><div class="links"><a class="btn" href="{{ url_for('publico_campeonato',campeonato_id=p.campeonato.id) }}">🏆 Campeonato</a><a class="btn green" href="{{ url_for('publico_tabla',campeonato_id=p.campeonato.id) }}">📊 Tabla</a><a class="btn purple" href="{{ url_for('publico_goleadores',campeonato_id=p.campeonato.id) }}">🥅 Goleadores</a><a class="btn" href="{{ url_for('publico_clubes') }}">👥 Clubes y planteles</a></div></div></details></div>
+</section>
+{% endfor %}
+{% endfor %}
 </div>
-{% if p.resultados %}
-<div class="results"><div class="next-title">⚽ Últimos resultados</div>
-{% for partido in p.resultados %}<div class="result"><div class="round">F{{ partido.jornada }}</div><div class="result-teams">{{ partido.local_club.nombre }}<br>{{ partido.visitante_club.nombre }}</div><div class="score">{{ partido.goles_local }}<br>{{ partido.goles_visitante }}</div></div>{% endfor %}
-</div>{% endif %}
-</article>
-{% endfor %}
-</div></section>
-{% endfor %}
+</div>
 {% else %}
-<div class="empty"><div style="font-size:35px">🏆</div><strong>No hay campeonatos activos.</strong><div>Cuando se publique un campeonato aparecerá automáticamente en este portal.</div></div>
+<div class="panel"><div class="empty">🏆 No hay campeonatos activos publicados.</div></div>
 {% endif %}
 </main>
 <div class="footer">Asociación de Fútbol Presidente Ríos · Portal oficial</div>
-</body></html>
+
+<script>
+const campeonatos=[...document.querySelectorAll('.champ')];
+function seleccionarCampeonato(id){
+  campeonatos.forEach(x=>x.classList.toggle('active',x.id===id));
+  document.querySelectorAll('#menu button').forEach((b,i)=>b.classList.toggle('active',i===0));
+  mostrarSeccion('posiciones',document.querySelector('#menu button[data-target="posiciones"]'));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function mostrarSeccion(seccion,boton){
+  document.querySelectorAll('#menu button').forEach(b=>b.classList.remove('active'));
+  if(boton)boton.classList.add('active');
+  const actual=document.querySelector('.champ.active');
+  if(!actual)return;
+  const map={posiciones:'.section-posiciones',programacion:'.section-programacion',resultados:'.section-resultados',goleadores:'.section-goleadores',estadisticas:'.section-estadisticas',fairplay:'.section-fairplay',enlaces:'.section-enlaces'};
+  Object.keys(map).forEach(k=>{const e=actual.querySelector(map[k]);if(e)e.style.display=(k===seccion?'block':'none');});
+  const visible=actual.querySelector(map[seccion]);
+  if(visible){const d=visible.querySelector('details');if(d)d.open=true;}
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const first=document.querySelector('.champ');
+  if(first){campeonatos.forEach(x=>x.classList.remove('active'));first.classList.add('active');mostrarSeccion('posiciones',document.querySelector('#menu button[data-target="posiciones"]'));}
+});
+</script>
+</body>
+</html>
