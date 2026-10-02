@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Tarjetas disciplinarias{% endblock %}
+{% block content %}
+<style>
+.wrap{max-width:1400px;margin:auto}.hero{background:linear-gradient(135deg,#111827,#7f1d1d);color:#fff;border-radius:18px;padding:24px;margin-bottom:18px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}.card,.panel{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:17px}.num{font-size:28px;font-weight:900}.lbl{font-size:10px;color:#64748b;font-weight:800;text-transform:uppercase}.filters{display:grid;grid-template-columns:1.2fr 1fr 1fr auto;gap:10px}.filters select,.filters input{padding:10px;border:1px solid #d6dee9;border-radius:9px}.btn{display:inline-block;border:0;border-radius:9px;padding:10px 14px;background:#7f1d1d;color:#fff;font-weight:800;font-size:11px}table{width:100%;border-collapse:collapse}th{font-size:9px;color:#64748b;text-align:left;padding:9px;border-bottom:1px solid #e5eaf1}td{font-size:11px;padding:10px 9px;border-bottom:1px solid #eef2f7}.yellow{color:#a16207;font-weight:900}.red{color:#b91c1c;font-weight:900}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}.muted{color:#64748b}@media(max-width:800px){.filters,.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}}
+</style>
+<div class="wrap">
+<div class="hero"><div style="font-size:10px;letter-spacing:.15em;font-weight:800;opacity:.75">V11.1 · CONTROL DISCIPLINARIO</div><h1>🟨🟥 Tarjetas por Partido y Serie</h1><p>Registro oficial consolidado desde las actas cerradas de cada partido.</p></div>
+<div class="stats"><div class="card"><div class="lbl">Partidos con eventos</div><div class="num">{{eventos|map(attribute='partido.id')|list|unique|list|length}}</div></div><div class="card"><div class="lbl">Amarillas</div><div class="num yellow">{{total_amarillas}}</div></div><div class="card"><div class="lbl">Rojas</div><div class="num red">{{total_rojas}}</div></div></div>
+<div class="panel"><form class="filters" method="get">
+<select name="campeonato_id"><option value="">Todos los campeonatos</option>{% for c in campeonatos %}<option value="{{c.id}}" {% if campeonato_id==c.id %}selected{% endif %}>{{c.nombre}}</option>{% endfor %}</select>
+<select name="serie"><option value="">Todas las series</option>{% for s in series %}<option value="{{s.nombre}}" {% if serie==s.nombre %}selected{% endif %}>{{s.nombre}}</option>{% endfor %}</select>
+<input name="q" value="{{q}}" placeholder="Buscar jugador">
+<button class="btn">Filtrar</button>
+</form></div>
+<div class="grid">
+<div class="panel"><h3>Resumen por jugador</h3><table><thead><tr><th>Jugador</th><th>Club</th><th>Serie</th><th>Amarillas</th><th>Rojas</th></tr></thead><tbody>{% for x in resumen_jugadores %}<tr><td><strong>{{x.jugador.nombre_completo}}</strong></td><td>{{x.club}}</td><td>{{x.serie}}</td><td class="yellow">{{x.amarillas}}</td><td class="red">{{x.rojas}}</td></tr>{% else %}<tr><td colspan="5" class="muted">No hay tarjetas registradas.</td></tr>{% endfor %}</tbody></table></div>
+<div class="panel"><h3>Detalle por partido</h3><table><thead><tr><th>Fecha</th><th>Partido</th><th>Serie</th><th>Jugador</th><th>Tarjetas</th></tr></thead><tbody>{% for x in eventos %}<tr><td>{{x.partido.fecha.strftime('%d/%m/%Y') if x.partido.fecha else '-'}}</td><td>J{{x.partido.jornada}} · {{x.partido.local_club.nombre}} vs {{x.partido.visitante_club.nombre}}</td><td>{{x.campeonato.serie}}</td><td>{{x.jugador.nombre_completo}}</td><td>{% if x.amarillas %}<span class="yellow">🟨 {{x.amarillas}}</span>{% endif %} {% if x.rojas %}<span class="red">🟥 {{x.rojas}}</span>{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+</div></div>
+{% endblock %}
