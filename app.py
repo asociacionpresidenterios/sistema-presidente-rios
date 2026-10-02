@@ -8579,6 +8579,33 @@ def admin_panel_maestro():
     )
 
     # -------------------------
+    # INDICADORES DISCIPLINA / TESORERÍA
+    # -------------------------
+    resoluciones_pendientes = safe_count(
+        ResolucionDisciplina.query.filter(
+            ResolucionDisciplina.estado.in_(["Borrador", "Cerrada"])
+        )
+    )
+    expulsiones_vigentes = safe_count(
+        ExpulsadoDisciplina.query.filter_by(
+            estado="Vigente",
+            publicado=True
+        )
+    )
+    cuentas_por_cobrar = safe_count(
+        CuentaTesoreria.query.filter(
+            CuentaTesoreria.tipo == "Por cobrar",
+            CuentaTesoreria.estado != "Pagado"
+        )
+    )
+    cuentas_por_pagar = safe_count(
+        CuentaTesoreria.query.filter(
+            CuentaTesoreria.tipo == "Por pagar",
+            CuentaTesoreria.estado != "Pagado"
+        )
+    )
+
+    # -------------------------
     # PENDIENTES / CONTROL
     # -------------------------
     partidos_sin_acta = safe_count(
@@ -8704,6 +8731,10 @@ def admin_panel_maestro():
         "total_goles": total_goles,
         "total_amarillas": total_amarillas,
         "total_rojas": total_rojas,
+        "resoluciones_pendientes": resoluciones_pendientes,
+        "expulsiones_vigentes": expulsiones_vigentes,
+        "cuentas_por_cobrar": cuentas_por_cobrar,
+        "cuentas_por_pagar": cuentas_por_pagar,
     }
 
     return render_template(
