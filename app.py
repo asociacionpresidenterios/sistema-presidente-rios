@@ -37,8 +37,15 @@ app = Flask(__name__)
 
 app.config["SECRET_KEY"] = os.environ.get(
     "SECRET_KEY",
-    "cambia-esta-clave-en-produccion"
+    "clave-local-solo-desarrollo"
 )
+
+# Seguridad de sesión.
+# En producción Railway debe definir SECRET_KEY y HTTPS está habilitado.
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SECURE"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=8)
 
 
 # ============================================================
@@ -1161,13 +1168,38 @@ PUBLIC_ENDPOINTS = {
 }
 
 
+@app.after_request
+def aplicar_cabeceras_seguridad(response):
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault(
+        "Permissions-Policy",
+        "camera=(), microphone=(), geolocation=()"
+    )
+    return response
+
+
 @app.before_request
 def exigir_login_administrativo():
     endpoint = request.endpoint
     if endpoint in PUBLIC_ENDPOINTS or (request.path or "").startswith("/static/"):
         return None
     if session.get("admin_id"):
-        rol = session.get("admin_rol") or "Administrador"
+        # La sesión se valida contra la base de datos en cada solicitud
+        # administrativa para revocar inmediatamente accesos eliminados
+        # o desactivados y evitar depender de un rol antiguo guardado en sesión.
+        admin_actual = db.session.get(AdminUser, session.get("admin_id"))
+        if not admin_actual or not admin_actual.activo:
+            session.clear()
+            flash("Tu sesión administrativa ya no está activa. Ingresa nuevamente.", "error")
+            return redirect(url_for("login"))
+
+        session["admin_username"] = admin_actual.username
+        session["admin_nombre"] = admin_actual.nombre
+        session["admin_rol"] = admin_actual.rol or "Administrador"
+
+        rol = session["admin_rol"]
         if rol != "Administrador":
             permitidos = ROLE_ENDPOINTS.get(rol, set())
             if endpoint not in permitidos and endpoint not in {"login", "logout"}:
