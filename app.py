@@ -3664,6 +3664,7 @@ def anular_resolucion_disciplina(resolucion_id):
     resolucion.actualizado_por = session.get("admin_nombre") or "Administrador"
     resolucion.actualizado_en = datetime.utcnow()
     db.session.commit()
+    registrar_auditoria("ANULAR_RESOLUCION", "Disciplina", f"Se anuló la resolución {resolucion.numero_resolucion}.")
     flash(f"La resolución {resolucion.numero_resolucion} fue anulada y retirada del portal público.", "warning")
     return redirect(url_for("ver_resolucion_disciplina", resolucion_id=resolucion.id))
 
@@ -4622,6 +4623,7 @@ def nueva_serie():
     )
 
     db.session.commit()
+    registrar_auditoria("CREAR_SERIE", "Clubes", f"Se registró la serie '{nombre}'.")
 
     flash(
         f"Serie '{nombre}' agregada correctamente.",
@@ -4687,6 +4689,7 @@ def cambiar_estado_serie(serie_id):
     serie.activo = not serie.activo
 
     db.session.commit()
+    registrar_auditoria("CAMBIAR_ESTADO_SERIE", "Clubes", f"Se {'activó' if serie.activo else 'desactivó'} la serie '{serie.nombre}'.")
 
     estado = (
         "activada"
@@ -5627,6 +5630,7 @@ def generar_fixture_campeonato(campeonato_id):
                 contador += 1
 
         db.session.commit()
+        registrar_auditoria("GENERAR_FIXTURE", "Campeonatos", f"Se generó el fixture del campeonato '{campeonato.nombre}' con {len(calendario)} jornadas y {contador} partidos.")
 
         flash(
             f"Fixture generado correctamente: {len(calendario)} jornadas y {contador} partidos.",
@@ -5682,6 +5686,7 @@ def configurar_jornada_fixture(campeonato_id, jornada):
             partido.cancha = cancha
 
         db.session.commit()
+        registrar_auditoria("CONFIGURAR_JORNADA", "Campeonatos", f"Se configuró la jornada {jornada} del campeonato '{campeonato.nombre}'.")
         flash(
             f"Jornada {jornada} actualizada: {fecha.strftime('%d/%m/%Y')} · {hora or 'sin hora'} · {cancha or 'sin cancha'}.",
             "success"
@@ -6174,7 +6179,7 @@ def registrar_gol_campeonato(campeonato_id):
     if not jugador: flash('El jugador no pertenece a la serie o clubes de este campeonato.','error'); return redirect(url_for('estadisticas_campeonato',campeonato_id=campeonato.id))
     try:
         db.session.add(Gol(jugador_id=jugador.id,fecha=date.today(),cantidad=cantidad,campeonato=campeonato.nombre,campeonato_id=campeonato.id,observaciones=request.form.get('observaciones','').strip()))
-        db.session.commit(); flash(f'Se registraron {cantidad} gol(es) para {jugador.nombre_completo}.','success')
+        db.session.commit(); registrar_auditoria("REGISTRAR_GOL", "Campeonatos", f"Se registraron {cantidad} gol(es) para {jugador.nombre_completo} en '{campeonato.nombre}."); flash(f'Se registraron {cantidad} gol(es) para {jugador.nombre_completo}.','success')
     except Exception as error:
         db.session.rollback(); print('ERROR GOL CAMPEONATO:',repr(error)); flash('No fue posible registrar el gol.','error')
     return redirect(url_for('estadisticas_campeonato',campeonato_id=campeonato.id))
@@ -6190,7 +6195,7 @@ def registrar_disciplina_campeonato(campeonato_id):
     try:
         db.session.add(RegistroDisciplinario(jugador_id=jugador.id,fecha=date.today(),tipo=tipo,cantidad=cantidad,campeonato=campeonato.nombre,campeonato_id=campeonato.id,motivo=request.form.get('motivo','').strip(),observaciones=request.form.get('observaciones','').strip()))
         if tipo=='Suspension': jugador.estado='Suspendido'
-        db.session.commit(); flash(f'{tipo} registrada para {jugador.nombre_completo}.','success')
+        db.session.commit(); registrar_auditoria("REGISTRAR_DISCIPLINA", "Disciplina", f"Se registró {tipo} para {jugador.nombre_completo} en '{campeonato.nombre}'."); flash(f'{tipo} registrada para {jugador.nombre_completo}.','success')
     except Exception as error:
         db.session.rollback(); print('ERROR DISCIPLINA CAMPEONATO:',repr(error)); flash('No fue posible registrar la disciplina.','error')
     return redirect(url_for('estadisticas_campeonato',campeonato_id=campeonato.id))
