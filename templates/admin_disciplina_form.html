@@ -9,7 +9,7 @@
 <div class="hero"><div style="font-size:10px;letter-spacing:.15em;font-weight:800;opacity:.75">COMITÉ DE DISCIPLINA</div><h1>➕ Nueva resolución</h1><div style="font-size:13px;color:#eadcff">La numeración oficial se genera automáticamente al guardar.</div></div>
 <form method="post">
 <div class="panel"><h3>1. Identificación</h3><div class="grid">
-<div><label>Fecha de sesión / resolución</label><input type="date" name="fecha" value="{{today if today is defined else ''}}" required></div>
+<div><label>Fecha de sesión / resolución</label><input type="date" name="fecha" value="{{today.strftime('%Y-%m-%d')}}" required></div>
 <div><label>Tipo de decisión</label><select name="tipo_decision"><option>Resolución</option><option>Suspensión</option><option>Multa</option><option>Amonestación</option><option>Advertencia</option><option>Absolución</option><option>Decisión administrativa</option></select></div>
 <div><label>Campeonato</label><select name="campeonato_id"><option value="">Sin campeonato</option>{% for c in campeonatos %}<option value="{{c.id}}">{{c.nombre}} · {{c.serie}}</option>{% endfor %}</select></div>
 <div><label>Serie</label><input name="serie" placeholder="Ej. Adultos"></div>
