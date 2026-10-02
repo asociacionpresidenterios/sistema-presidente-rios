@@ -133,11 +133,57 @@ class MovimientoTesoreria(db.Model):
     referencia = db.Column(db.String(120), nullable=True)
     observaciones = db.Column(db.Text, nullable=True)
     creado_por = db.Column(db.String(160), nullable=True)
+    club_id = db.Column(db.Integer, db.ForeignKey("club.id"), nullable=True, index=True)
+    campeonato_id = db.Column(db.Integer, db.ForeignKey("campeonato.id"), nullable=True, index=True)
+    serie = db.Column(db.String(80), nullable=True)
+    cuenta_id = db.Column(db.Integer, nullable=True, index=True)
     creado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    club = db.relationship("Club", foreign_keys=[club_id])
+    campeonato = db.relationship("Campeonato", foreign_keys=[campeonato_id])
 
 # ============================================================
 # MODELO CLUB
 # ============================================================
+
+class CuentaTesoreria(db.Model):
+
+    id = db.Column(db.Integer, primary_key=True)
+    fecha = db.Column(db.Date, nullable=False, default=date.today, index=True)
+    tipo = db.Column(db.String(20), nullable=False, index=True)  # Por cobrar / Por pagar
+    club_id = db.Column(db.Integer, db.ForeignKey("club.id"), nullable=True, index=True)
+    campeonato_id = db.Column(db.Integer, db.ForeignKey("campeonato.id"), nullable=True, index=True)
+    serie = db.Column(db.String(80), nullable=True)
+    concepto = db.Column(db.String(180), nullable=False)
+    monto_total = db.Column(db.Numeric(14, 0), nullable=False, default=0)
+    monto_pagado = db.Column(db.Numeric(14, 0), nullable=False, default=0)
+    vencimiento = db.Column(db.Date, nullable=True)
+    estado = db.Column(db.String(30), nullable=False, default="Pendiente")
+    observaciones = db.Column(db.Text, nullable=True)
+    creado_por = db.Column(db.String(160), nullable=True)
+    creado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    club = db.relationship("Club", foreign_keys=[club_id])
+    campeonato = db.relationship("Campeonato", foreign_keys=[campeonato_id])
+
+    @property
+    def saldo(self):
+        return max(
+            int(self.monto_total or 0) - int(self.monto_pagado or 0),
+            0
+        )
+
+    def actualizar_estado(self):
+        total = int(self.monto_total or 0)
+        pagado = int(self.monto_pagado or 0)
+
+        if pagado >= total and total > 0:
+            self.estado = "Pagado"
+        elif pagado > 0:
+            self.estado = "Abono"
+        else:
+            self.estado = "Pendiente"
+
 
 class Club(db.Model):
 
@@ -678,6 +724,48 @@ def preparar_base_datos():
             db.session.commit()
         db.session.execute(db.text("UPDATE admin_user SET rol = 'Administrador' WHERE rol IS NULL OR rol = ''"))
         db.session.commit()
+
+        # ----------------------------------------------------
+        # TESORERÍA — MIGRACIÓN SEGURA
+        # Vincula movimientos con club, campeonato, serie y cuenta.
+        # ----------------------------------------------------
+        inspector = db.inspect(db.engine)
+        columnas_tesoreria = {
+            c["name"] for c in inspector.get_columns("movimiento_tesoreria")
+        }
+        columnas_nuevas_tesoreria = {
+            "club_id": "INTEGER",
+            "campeonato_id": "INTEGER",
+            "serie": "VARCHAR(80)",
+            "cuenta_id": "INTEGER",
+        }
+
+        for nombre, tipo_columna in columnas_nuevas_tesoreria.items():
+            if nombre in columnas_tesoreria:
+                continue
+
+            if db.engine.dialect.name == "postgresql":
+                sql = (
+                    "ALTER TABLE movimiento_tesoreria "
+                    f"ADD COLUMN IF NOT EXISTS {nombre} {tipo_columna}"
+                )
+            elif db.engine.dialect.name == "sqlite":
+                sql = (
+                    "ALTER TABLE movimiento_tesoreria "
+                    f"ADD COLUMN {nombre} {tipo_columna}"
+                )
+            else:
+                raise RuntimeError(
+                    "Motor de base de datos no soportado para Tesorería."
+                )
+
+            db.session.execute(db.text(sql))
+            db.session.commit()
+            inspector = db.inspect(db.engine)
+            columnas_tesoreria = {
+                c["name"]
+                for c in inspector.get_columns("movimiento_tesoreria")
+            }
 
         # AGREGAR ESTADO SI NO EXISTE
         # ----------------------------------------------------
@@ -7233,6 +7321,120 @@ def admin_centro_jugador(jugador_id):
 @rol_permitido("Administrador", "Tesoreria")
 def admin_tesoreria():
     if request.method == "POST":
+        accion = (request.form.get("accion") or "movimiento").strip()
+
+        if accion == "cuenta":
+            tipo = (request.form.get("tipo_cuenta") or "").strip()
+            concepto = (request.form.get("concepto") or "").strip()
+            monto_raw = (request.form.get("monto_total") or "").strip().replace(".", "").replace(",", "")
+            fecha_raw = (request.form.get("fecha") or "").strip()
+            vencimiento_raw = (request.form.get("vencimiento") or "").strip()
+            club_id = request.form.get("club_id", type=int)
+            campeonato_id = request.form.get("campeonato_id", type=int)
+            serie = (request.form.get("serie") or "").strip()
+            observaciones = (request.form.get("observaciones") or "").strip()
+
+            if tipo not in {"Por cobrar", "Por pagar"}:
+                flash("Selecciona si la cuenta es por cobrar o por pagar.", "error")
+                return redirect(url_for("admin_tesoreria"))
+
+            if not concepto:
+                flash("Debes ingresar un concepto para la cuenta.", "error")
+                return redirect(url_for("admin_tesoreria"))
+
+            try:
+                monto_total = int(monto_raw)
+            except (TypeError, ValueError):
+                monto_total = 0
+
+            if monto_total <= 0:
+                flash("El monto total debe ser mayor que $0.", "error")
+                return redirect(url_for("admin_tesoreria"))
+
+            try:
+                fecha_cuenta = datetime.strptime(fecha_raw, "%Y-%m-%d").date() if fecha_raw else date.today()
+            except ValueError:
+                fecha_cuenta = date.today()
+
+            try:
+                vencimiento = datetime.strptime(vencimiento_raw, "%Y-%m-%d").date() if vencimiento_raw else None
+            except ValueError:
+                vencimiento = None
+
+            cuenta = CuentaTesoreria(
+                fecha=fecha_cuenta,
+                tipo=tipo,
+                club_id=club_id or None,
+                campeonato_id=campeonato_id or None,
+                serie=serie or None,
+                concepto=concepto,
+                monto_total=monto_total,
+                monto_pagado=0,
+                vencimiento=vencimiento,
+                observaciones=observaciones or None,
+                creado_por=session.get("admin_nombre") or session.get("admin_username"),
+            )
+            cuenta.actualizar_estado()
+            db.session.add(cuenta)
+            db.session.commit()
+            flash("Cuenta registrada correctamente.", "success")
+            return redirect(url_for("admin_tesoreria"))
+
+        if accion == "pago":
+            cuenta_id = request.form.get("cuenta_id", type=int)
+            monto_raw = (request.form.get("monto_pago") or "").strip().replace(".", "").replace(",", "")
+            fecha_raw = (request.form.get("fecha_pago") or "").strip()
+            medio_pago = (request.form.get("medio_pago_pago") or "").strip()
+            referencia = (request.form.get("referencia_pago") or "").strip()
+            observaciones = (request.form.get("observaciones_pago") or "").strip()
+
+            cuenta = db.session.get(CuentaTesoreria, cuenta_id) if cuenta_id else None
+            if not cuenta:
+                flash("La cuenta seleccionada no existe.", "error")
+                return redirect(url_for("admin_tesoreria"))
+
+            try:
+                monto_pago = int(monto_raw)
+            except (TypeError, ValueError):
+                monto_pago = 0
+
+            saldo_cuenta = cuenta.saldo
+            if monto_pago <= 0:
+                flash("El monto del abono debe ser mayor que $0.", "error")
+                return redirect(url_for("admin_tesoreria"))
+            if monto_pago > saldo_cuenta:
+                flash("El abono no puede superar el saldo pendiente de la cuenta.", "error")
+                return redirect(url_for("admin_tesoreria"))
+
+            try:
+                fecha_pago = datetime.strptime(fecha_raw, "%Y-%m-%d").date() if fecha_raw else date.today()
+            except ValueError:
+                fecha_pago = date.today()
+
+            cuenta.monto_pagado = int(cuenta.monto_pagado or 0) + monto_pago
+            cuenta.actualizar_estado()
+
+            movimiento = MovimientoTesoreria(
+                fecha=fecha_pago,
+                tipo="Ingreso" if cuenta.tipo == "Por cobrar" else "Egreso",
+                concepto=f"Abono: {cuenta.concepto}",
+                categoria="Cobros" if cuenta.tipo == "Por cobrar" else "Pagos",
+                monto=monto_pago,
+                medio_pago=medio_pago or None,
+                referencia=referencia or None,
+                observaciones=observaciones or None,
+                club_id=cuenta.club_id,
+                campeonato_id=cuenta.campeonato_id,
+                serie=cuenta.serie,
+                cuenta_id=cuenta.id,
+                creado_por=session.get("admin_nombre") or session.get("admin_username"),
+            )
+            db.session.add(movimiento)
+            db.session.commit()
+            flash("Abono registrado correctamente.", "success")
+            return redirect(url_for("admin_tesoreria"))
+
+        # Registro rápido de ingreso/egreso, manteniendo la funcionalidad anterior.
         tipo = request.form.get("tipo", "").strip()
         concepto = request.form.get("concepto", "").strip()
         categoria = request.form.get("categoria", "").strip()
@@ -7241,6 +7443,9 @@ def admin_tesoreria():
         medio_pago = request.form.get("medio_pago", "").strip()
         referencia = request.form.get("referencia", "").strip()
         observaciones = request.form.get("observaciones", "").strip()
+        club_id = request.form.get("club_id", type=int)
+        campeonato_id = request.form.get("campeonato_id", type=int)
+        serie = request.form.get("serie", "").strip()
 
         if tipo not in {"Ingreso", "Egreso"}:
             flash("Selecciona si el movimiento es un ingreso o un egreso.", "error")
@@ -7273,6 +7478,9 @@ def admin_tesoreria():
             medio_pago=medio_pago or None,
             referencia=referencia or None,
             observaciones=observaciones or None,
+            club_id=club_id or None,
+            campeonato_id=campeonato_id or None,
+            serie=serie or None,
             creado_por=session.get("admin_nombre") or session.get("admin_username"),
         )
         db.session.add(movimiento)
@@ -7280,38 +7488,87 @@ def admin_tesoreria():
         flash(f"{tipo} registrado correctamente.", "success")
         return redirect(url_for("admin_tesoreria"))
 
+    hoy = date.today()
+    try:
+        mes = int(request.args.get("mes")) if request.args.get("mes") else hoy.month
+    except ValueError:
+        mes = hoy.month
+    try:
+        anio = int(request.args.get("anio")) if request.args.get("anio") else hoy.year
+    except ValueError:
+        anio = hoy.year
+
+    mes = min(max(mes, 1), 12)
+
+    inicio_mes = date(anio, mes, 1)
+    fin_mes = date(anio + 1, 1, 1) if mes == 12 else date(anio, mes + 1, 1)
+
     movimientos = (
         MovimientoTesoreria.query
+        .filter(
+            MovimientoTesoreria.fecha >= inicio_mes,
+            MovimientoTesoreria.fecha < fin_mes,
+        )
         .order_by(MovimientoTesoreria.fecha.desc(), MovimientoTesoreria.id.desc())
-        .limit(100)
+        .limit(250)
+        .all()
+    )
+
+    cuentas = (
+        CuentaTesoreria.query
+        .order_by(
+            db.case(
+                (CuentaTesoreria.estado == "Pendiente", 0),
+                (CuentaTesoreria.estado == "Abono", 1),
+                else_=2,
+            ),
+            CuentaTesoreria.vencimiento.asc().nullslast(),
+            CuentaTesoreria.fecha.desc(),
+            CuentaTesoreria.id.desc(),
+        )
+        .limit(150)
         .all()
     )
 
     ingresos = db.session.query(
-        db.func.coalesce(
-            db.func.sum(MovimientoTesoreria.monto), 0
-        )
+        db.func.coalesce(db.func.sum(MovimientoTesoreria.monto), 0)
     ).filter(
-        MovimientoTesoreria.tipo == "Ingreso"
+        MovimientoTesoreria.tipo == "Ingreso",
+        MovimientoTesoreria.fecha >= inicio_mes,
+        MovimientoTesoreria.fecha < fin_mes,
     ).scalar() or 0
 
     egresos = db.session.query(
-        db.func.coalesce(
-            db.func.sum(MovimientoTesoreria.monto), 0
-        )
+        db.func.coalesce(db.func.sum(MovimientoTesoreria.monto), 0)
     ).filter(
-        MovimientoTesoreria.tipo == "Egreso"
+        MovimientoTesoreria.tipo == "Egreso",
+        MovimientoTesoreria.fecha >= inicio_mes,
+        MovimientoTesoreria.fecha < fin_mes,
     ).scalar() or 0
 
-    saldo = ingresos - egresos
+    por_cobrar = sum(x.saldo for x in cuentas if x.tipo == "Por cobrar" and x.saldo > 0)
+    por_pagar = sum(x.saldo for x in cuentas if x.tipo == "Por pagar" and x.saldo > 0)
+    saldo = int(ingresos) - int(egresos)
+
+    clubes = Club.query.filter_by(activo=True).order_by(Club.nombre.asc()).all()
+    campeonatos = Campeonato.query.order_by(Campeonato.temporada.desc(), Campeonato.id.desc()).all()
+    series = Serie.query.filter_by(activo=True).order_by(Serie.nombre.asc()).all()
 
     return render_template(
         "admin_tesoreria.html",
         movimientos=movimientos,
+        cuentas=cuentas,
         total_ingresos=int(ingresos),
         total_egresos=int(egresos),
         saldo=int(saldo),
-        today=date.today(),
+        por_cobrar=int(por_cobrar),
+        por_pagar=int(por_pagar),
+        today=hoy,
+        mes=mes,
+        anio=anio,
+        clubes=clubes,
+        campeonatos=campeonatos,
+        series=series,
     )
 
 @app.route("/admin/integracion")
