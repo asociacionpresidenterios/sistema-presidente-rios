@@ -2262,7 +2262,7 @@ def nuevo_jugador():
             )
 
             db.session.commit()
-    registrar_auditoria("CREAR_JUGADOR", "Jugadores", "Se registró un nuevo jugador.")
+            registrar_auditoria("CREAR_JUGADOR", "Jugadores", "Se registró un nuevo jugador.")
 
         except Exception as error:
 
