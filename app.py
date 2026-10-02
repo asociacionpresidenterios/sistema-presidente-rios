@@ -650,6 +650,49 @@ class RegistroDisciplinario(db.Model):
 
 
 # ============================================================
+# V11.0 — COMITÉ DE DISCIPLINA / RESOLUCIONES OFICIALES
+# ============================================================
+
+class ResolucionDisciplina(db.Model):
+    __tablename__ = "resolucion_disciplina"
+
+    id = db.Column(db.Integer, primary_key=True)
+    numero_resolucion = db.Column(db.String(40), unique=True, nullable=False, index=True)
+    fecha = db.Column(db.Date, nullable=False, default=date.today, index=True)
+    fecha_publicacion = db.Column(db.Date, nullable=True)
+
+    campeonato_id = db.Column(db.Integer, db.ForeignKey("campeonato.id"), nullable=True, index=True)
+    partido_id = db.Column(db.Integer, db.ForeignKey("partido.id"), nullable=True, index=True)
+    jugador_id = db.Column(db.Integer, db.ForeignKey("jugador.id"), nullable=True, index=True)
+    club_id = db.Column(db.Integer, db.ForeignKey("club.id"), nullable=True, index=True)
+    serie = db.Column(db.String(80), nullable=True)
+
+    tipo_decision = db.Column(db.String(60), nullable=False, default="Resolución")
+    titulo = db.Column(db.String(220), nullable=False)
+    antecedentes = db.Column(db.Text, nullable=True)
+    resolucion = db.Column(db.Text, nullable=False)
+    sancion = db.Column(db.String(255), nullable=True)
+    cantidad_sancion = db.Column(db.Integer, nullable=True)
+    unidad_sancion = db.Column(db.String(50), nullable=True)
+    fecha_inicio = db.Column(db.Date, nullable=True)
+    fecha_fin = db.Column(db.Date, nullable=True)
+    observaciones = db.Column(db.Text, nullable=True)
+
+    estado = db.Column(db.String(30), nullable=False, default="Borrador", index=True)
+    publicado = db.Column(db.Boolean, nullable=False, default=False, index=True)
+
+    creado_por = db.Column(db.String(160), nullable=True)
+    creado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    actualizado_por = db.Column(db.String(160), nullable=True)
+    actualizado_en = db.Column(db.DateTime, nullable=True)
+
+    campeonato = db.relationship("Campeonato", foreign_keys=[campeonato_id])
+    partido = db.relationship("Partido", foreign_keys=[partido_id])
+    jugador = db.relationship("Jugador", foreign_keys=[jugador_id])
+    club = db.relationship("Club", foreign_keys=[club_id])
+
+
+# ============================================================
 # MODELO GOLES
 # ============================================================
 
@@ -1077,6 +1120,8 @@ PUBLIC_ENDPOINTS = {
     "publico_campeonato",
     "publico_tabla",
     "publico_goleadores",
+    "publico_disciplina",
+    "publico_resolucion_disciplina",
     "health",
     "static",
 }
@@ -1107,7 +1152,7 @@ ROLES = {"Administrador": "Administrador", "Disciplina": "Disciplina", "Tesoreri
 
 ROLE_ENDPOINTS = {
     # Disciplina trabaja exclusivamente con las actas y sus registros.
-    "Disciplina": {"dashboard","admin_panel_maestro","mi_cuenta_admin","admin_actas","acta_partido","admin_centro_actas","registrar_gol","registrar_amarilla","registrar_roja","registrar_suspension","eliminar_gol","eliminar_registro_disciplinario","logout"},
+    "Disciplina": {"dashboard","admin_panel_maestro","mi_cuenta_admin","admin_actas","acta_partido","admin_centro_actas","admin_disciplina","crear_resolucion_disciplina","ver_resolucion_disciplina","publicar_resolucion_disciplina","registrar_gol","registrar_amarilla","registrar_roja","registrar_suspension","eliminar_gol","eliminar_registro_disciplinario","logout"},
     "Tesoreria": {"dashboard","admin_panel_maestro","mi_cuenta_admin","admin_tesoreria","logout"}
 }
 
@@ -3186,6 +3231,203 @@ def eliminar_registro_disciplinario(jugador_id, registro_id):
             jugador_id=jugador.id
         )
     )
+
+
+# ============================================================
+# V11.0 — CENTRO DE DISCIPLINA / COMITÉ
+# ============================================================
+
+@app.route("/admin/disciplina")
+@rol_permitido("Administrador", "Disciplina")
+def admin_disciplina():
+    estado = (request.args.get("estado") or "").strip()
+    serie = (request.args.get("serie") or "").strip()
+    campeonato_id = request.args.get("campeonato_id", type=int)
+
+    query = ResolucionDisciplina.query
+    if estado:
+        query = query.filter_by(estado=estado)
+    if serie:
+        query = query.filter(ResolucionDisciplina.serie == serie)
+    if campeonato_id:
+        query = query.filter(ResolucionDisciplina.campeonato_id == campeonato_id)
+
+    resoluciones = query.order_by(
+        ResolucionDisciplina.fecha.desc(),
+        ResolucionDisciplina.id.desc()
+    ).limit(200).all()
+
+    campeonatos = Campeonato.query.order_by(Campeonato.temporada.desc(), Campeonato.id.desc()).all()
+    series = Serie.query.filter_by(activo=True).order_by(Serie.nombre).all()
+
+    total = ResolucionDisciplina.query.count()
+    publicadas = ResolucionDisciplina.query.filter_by(publicado=True).count()
+    pendientes = ResolucionDisciplina.query.filter(ResolucionDisciplina.estado != "Cerrada").count()
+    sanciones = ResolucionDisciplina.query.filter(
+        ResolucionDisciplina.sancion.isnot(None),
+        ResolucionDisciplina.sancion != ""
+    ).count()
+
+    return render_template(
+        "admin_disciplina.html",
+        resoluciones=resoluciones,
+        campeonatos=campeonatos,
+        series=series,
+        estado=estado,
+        serie=serie,
+        campeonato_id=campeonato_id,
+        resumen={"total": total, "publicadas": publicadas, "pendientes": pendientes, "sanciones": sanciones},
+    )
+
+
+@app.route("/admin/disciplina/resolucion/nueva", methods=["GET", "POST"])
+@rol_permitido("Administrador", "Disciplina")
+def crear_resolucion_disciplina():
+    if request.method == "GET":
+        return render_template(
+            "admin_disciplina_form.html",
+            resolucion=None,
+            campeonatos=Campeonato.query.order_by(Campeonato.temporada.desc(), Campeonato.id.desc()).all(),
+            clubes=Club.query.filter_by(activo=True).order_by(Club.nombre).all(),
+            jugadores=Jugador.query.order_by(Jugador.club, Jugador.nombre_completo).all(),
+            partidos=Partido.query.order_by(Partido.fecha.desc().nullslast(), Partido.id.desc()).limit(300).all(),
+        )
+
+    try:
+        fecha = datetime.strptime(request.form.get("fecha") or date.today().isoformat(), "%Y-%m-%d").date()
+        fecha_inicio_raw = request.form.get("fecha_inicio") or ""
+        fecha_fin_raw = request.form.get("fecha_fin") or ""
+        fecha_inicio = datetime.strptime(fecha_inicio_raw, "%Y-%m-%d").date() if fecha_inicio_raw else None
+        fecha_fin = datetime.strptime(fecha_fin_raw, "%Y-%m-%d").date() if fecha_fin_raw else None
+
+        jugador_id = request.form.get("jugador_id", type=int) or None
+        club_id = request.form.get("club_id", type=int) or None
+        campeonato_id = request.form.get("campeonato_id", type=int) or None
+        partido_id = request.form.get("partido_id", type=int) or None
+        cantidad = request.form.get("cantidad_sancion", type=int) or None
+        aplicar = request.form.get("aplicar_sancion") == "1"
+
+        ultimo = ResolucionDisciplina.query.order_by(ResolucionDisciplina.id.desc()).first()
+        numero = f"CD-{fecha.year}-{(ultimo.id + 1 if ultimo else 1):04d}"
+
+        resolucion = ResolucionDisciplina(
+            numero_resolucion=numero,
+            fecha=fecha,
+            campeonato_id=campeonato_id,
+            partido_id=partido_id,
+            jugador_id=jugador_id,
+            club_id=club_id,
+            serie=(request.form.get("serie") or "").strip() or None,
+            tipo_decision=(request.form.get("tipo_decision") or "Resolución").strip(),
+            titulo=(request.form.get("titulo") or "").strip(),
+            antecedentes=(request.form.get("antecedentes") or "").strip(),
+            resolucion=(request.form.get("resolucion") or "").strip(),
+            sancion=(request.form.get("sancion") or "").strip() or None,
+            cantidad_sancion=cantidad,
+            unidad_sancion=(request.form.get("unidad_sancion") or "").strip() or None,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            observaciones=(request.form.get("observaciones") or "").strip(),
+            estado="Cerrada" if request.form.get("guardar_cerrar") == "1" else "Borrador",
+            publicado=False,
+            creado_por=session.get("admin_nombre") or "Administrador",
+        )
+        db.session.add(resolucion)
+        db.session.flush()
+
+        # Una resolución puede generar automáticamente un registro disciplinario.
+        if aplicar and jugador_id:
+            tipo_sancion = (request.form.get("tipo_registro") or "Suspension").strip()
+            registro = RegistroDisciplinario(
+                jugador_id=jugador_id,
+                fecha=fecha,
+                tipo=tipo_sancion,
+                cantidad=max(cantidad or 1, 1),
+                motivo=resolucion.titulo,
+                campeonato=(resolucion.campeonato.nombre if resolucion.campeonato else ""),
+                observaciones=f"Resolución {resolucion.numero_resolucion}: {resolucion.resolucion}",
+                campeonato_id=campeonato_id,
+            )
+            db.session.add(registro)
+            if tipo_sancion == "Suspension":
+                jugador = db.session.get(Jugador, jugador_id)
+                if jugador:
+                    jugador.estado = "Suspendido"
+            elif tipo_sancion == "Inhabilitacion":
+                jugador = db.session.get(Jugador, jugador_id)
+                if jugador:
+                    jugador.estado = "Inhabilitado"
+
+        db.session.commit()
+        flash(f"Resolución {resolucion.numero_resolucion} registrada correctamente.", "success")
+        return redirect(url_for("ver_resolucion_disciplina", resolucion_id=resolucion.id))
+    except Exception as error:
+        db.session.rollback()
+        app.logger.exception("Error creando resolución disciplinaria")
+        flash(f"No fue posible guardar la resolución: {error}", "error")
+        return redirect(url_for("crear_resolucion_disciplina"))
+
+
+@app.route("/admin/disciplina/resolucion/<int:resolucion_id>")
+@rol_permitido("Administrador", "Disciplina")
+def ver_resolucion_disciplina(resolucion_id):
+    resolucion = db.get_or_404(ResolucionDisciplina, resolucion_id)
+    return render_template("admin_disciplina_detalle.html", resolucion=resolucion)
+
+
+@app.route("/admin/disciplina/resolucion/<int:resolucion_id>/publicar", methods=["POST"])
+@rol_permitido("Administrador", "Disciplina")
+def publicar_resolucion_disciplina(resolucion_id):
+    resolucion = db.get_or_404(ResolucionDisciplina, resolucion_id)
+    if not (resolucion.titulo and resolucion.resolucion):
+        flash("La resolución debe tener título y decisión antes de publicarse.", "error")
+        return redirect(url_for("ver_resolucion_disciplina", resolucion_id=resolucion.id))
+    resolucion.publicado = True
+    resolucion.estado = "Cerrada"
+    resolucion.fecha_publicacion = date.today()
+    resolucion.actualizado_por = session.get("admin_nombre") or "Administrador"
+    resolucion.actualizado_en = datetime.utcnow()
+    db.session.commit()
+    flash(f"La resolución {resolucion.numero_resolucion} fue publicada en el portal público.", "success")
+    return redirect(url_for("ver_resolucion_disciplina", resolucion_id=resolucion.id))
+
+
+@app.route("/admin/disciplina/resolucion/<int:resolucion_id>/anular", methods=["POST"])
+@rol_permitido("Administrador")
+def anular_resolucion_disciplina(resolucion_id):
+    resolucion = db.get_or_404(ResolucionDisciplina, resolucion_id)
+    resolucion.estado = "Anulada"
+    resolucion.publicado = False
+    resolucion.actualizado_por = session.get("admin_nombre") or "Administrador"
+    resolucion.actualizado_en = datetime.utcnow()
+    db.session.commit()
+    flash(f"La resolución {resolucion.numero_resolucion} fue anulada y retirada del portal público.", "warning")
+    return redirect(url_for("ver_resolucion_disciplina", resolucion_id=resolucion.id))
+
+
+# ============================================================
+# V11.0 — PORTAL PÚBLICO DE DISCIPLINA
+# ============================================================
+
+@app.route("/disciplina")
+def publico_disciplina():
+    resoluciones = ResolucionDisciplina.query.filter_by(
+        publicado=True
+    ).filter(
+        ResolucionDisciplina.estado != "Anulada"
+    ).order_by(
+        ResolucionDisciplina.fecha_publicacion.desc(),
+        ResolucionDisciplina.id.desc()
+    ).limit(100).all()
+    return render_template("publico_disciplina.html", resoluciones=resoluciones)
+
+
+@app.route("/disciplina/resolucion/<int:resolucion_id>")
+def publico_resolucion_disciplina(resolucion_id):
+    resolucion = db.get_or_404(ResolucionDisciplina, resolucion_id)
+    if not resolucion.publicado or resolucion.estado == "Anulada":
+        return redirect(url_for("publico_disciplina"))
+    return render_template("publico_resolucion_disciplina.html", resolucion=resolucion)
 
 
 # ============================================================
