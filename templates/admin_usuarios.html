@@ -35,9 +35,12 @@
         <div style="text-align:right">
           <span class="role">{{ roles.get(u.rol or 'Administrador','Administrador') }}</span>
           {% if u.id != session.get('admin_id') %}
-          <div class="actions">
+          <div class="actions" style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">
             <form method="post" action="{{ url_for('cambiar_estado_admin',admin_id=u.id) }}">
               <button class="btn" type="submit" style="background:#f1f5f9;color:#334155">{{ 'Desactivar' if u.activo else 'Activar' }}</button>
+            </form>
+            <form method="post" action="{{ url_for('eliminar_admin',admin_id=u.id) }}" onsubmit="return confirm('¿Seguro que deseas eliminar este usuario? Esta acción no se puede deshacer.');">
+              <button class="btn" type="submit" style="background:#fee2e2;color:#b91c1c">Eliminar</button>
             </form>
           </div>
           {% endif %}
