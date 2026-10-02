@@ -1,4 +1,5 @@
 import os
+import secrets
 from functools import wraps
 from datetime import date, datetime, timedelta
 from io import BytesIO
@@ -37,7 +38,7 @@ app = Flask(__name__)
 
 app.config["SECRET_KEY"] = os.environ.get(
     "SECRET_KEY",
-    "clave-local-solo-desarrollo"
+    secrets.token_hex(32)
 )
 
 # Seguridad de sesión.
@@ -46,6 +47,9 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SECURE"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(hours=8)
+app.config["SESSION_REFRESH_EACH_REQUEST"] = True
+app.config["SESSION_COOKIE_NAME"] = "afpr_admin_session"
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 
 
 # ============================================================
@@ -1180,6 +1184,18 @@ def aplicar_cabeceras_seguridad(response):
     return response
 
 
+@app.after_request
+def cabeceras_seguridad(response):
+    """Aplica cabeceras de seguridad a las respuestas HTTP."""
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    if request.is_secure:
+        response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    return response
+
+
 @app.before_request
 def exigir_login_administrativo():
     endpoint = request.endpoint
@@ -1245,16 +1261,6 @@ def destino_inicial_por_rol():
     if rol == "Tesoreria":
         return url_for("admin_tesoreria")
     return url_for("admin_panel_maestro")
-
-def admin_required(view):
-    """Protege rutas internas que requieren una sesión administrativa."""
-    @wraps(view)
-    def wrapped(*args, **kwargs):
-        if not session.get("admin_id"):
-            return redirect(url_for("login", next=request.full_path))
-        return view(*args, **kwargs)
-    return wrapped
-
 
 def rol_permitido(*roles):
     def decorator(view):
