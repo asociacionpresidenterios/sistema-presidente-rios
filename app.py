@@ -4762,6 +4762,194 @@ def detalle_campeonato(campeonato_id):
 
 
 @app.route(
+    "/campeonatos/<int:campeonato_id>/club/<int:club_id>/retirar",
+    methods=["POST"]
+)
+@rol_permitido("Administrador")
+def retirar_club_campeonato(campeonato_id, club_id):
+    """
+    Da de baja un club del campeonato sin eliminarlo de la Asociación.
+
+    Regla:
+    - Los partidos FINALIZADOS se conservan como historial.
+    - Los partidos pendientes del club retirado se eliminan.
+    - El fixture futuro se reconstruye automáticamente para los clubes restantes.
+    - Los cruces ya FINALIZADOS entre los clubes restantes no se repiten.
+    """
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    club = db.get_or_404(Club, club_id)
+
+    participacion = CampeonatoClub.query.filter_by(
+        campeonato_id=campeonato.id,
+        club_id=club.id
+    ).first()
+
+    if not participacion:
+        flash("El club no está inscrito en este campeonato.", "error")
+        return redirect(url_for("detalle_campeonato", campeonato_id=campeonato.id))
+
+    try:
+        partidos = (
+            Partido.query
+            .filter_by(campeonato_id=campeonato.id)
+            .order_by(Partido.jornada.asc(), Partido.id.asc())
+            .all()
+        )
+
+        finalizados = [
+            p for p in partidos
+            if (p.estado or "").strip().lower() == "finalizado"
+            and p.goles_local is not None
+            and p.goles_visitante is not None
+        ]
+
+        pendientes = [
+            p for p in partidos
+            if p not in finalizados
+        ]
+
+        # Guardamos los cruces que ya se jugaron entre clubes que permanecen.
+        clubes_actuales = [
+            registro.club_id
+            for registro in CampeonatoClub.query.filter_by(
+                campeonato_id=campeonato.id
+            ).all()
+            if registro.club_id != club.id
+        ]
+        clubes_set = set(clubes_actuales)
+
+        cruces_jugados = set()
+        for p in finalizados:
+            if p.local_club_id in clubes_set and p.visitante_club_id in clubes_set:
+                cruces_jugados.add(
+                    tuple(sorted((p.local_club_id, p.visitante_club_id)))
+                )
+
+        # Primero retiramos la inscripción.
+        db.session.delete(participacion)
+
+        # Eliminamos solamente partidos NO finalizados que involucren al club retirado
+        # y cualquier otro partido pendiente del fixture, porque será reconstruido.
+        for p in pendientes:
+            db.session.delete(p)
+
+        db.session.flush()
+
+        # Si quedan menos de dos clubes, no existe fixture posible.
+        if len(clubes_actuales) < 2:
+            db.session.commit()
+            flash(
+                f"{club.nombre} fue dado de baja. Quedan {len(clubes_actuales)} clubes y no es posible generar fixture todavía.",
+                "success"
+            )
+            return redirect(url_for("detalle_campeonato", campeonato_id=campeonato.id))
+
+        # Generamos todos los cruces posibles de los clubes restantes.
+        calendario_completo = generar_calendario_todos_contra_todos(clubes_actuales)
+
+        # Convertimos el calendario a cruces únicos, manteniendo el orden de la rotación.
+        pendientes_nuevos = []
+        for jornada_original in calendario_completo:
+            jornada_filtrada = []
+            for local_id, visitante_id in jornada_original:
+                cruce = tuple(sorted((local_id, visitante_id)))
+                if cruce not in cruces_jugados:
+                    jornada_filtrada.append((local_id, visitante_id))
+                    cruces_jugados.add(("programado", cruce))
+            if jornada_filtrada:
+                pendientes_nuevos.append(jornada_filtrada)
+
+        # El marcador temporal anterior puede contener claves especiales; usamos
+        # el conjunto real de cruces ya jugados para evitar repeticiones.
+        cruces_finalizados = set()
+        for p in finalizados:
+            if p.local_club_id in clubes_set and p.visitante_club_id in clubes_set:
+                cruces_finalizados.add(tuple(sorted((p.local_club_id, p.visitante_club_id))))
+
+        # Recalcular correctamente los cruces pendientes desde cero.
+        pendientes_nuevos = []
+        for jornada_original in calendario_completo:
+            jornada_filtrada = []
+            for local_id, visitante_id in jornada_original:
+                cruce = tuple(sorted((local_id, visitante_id)))
+                if cruce in cruces_finalizados:
+                    continue
+                jornada_filtrada.append((local_id, visitante_id))
+            if jornada_filtrada:
+                pendientes_nuevos.append(jornada_filtrada)
+
+        ultima_jornada_finalizada = max(
+            [p.jornada for p in finalizados],
+            default=0
+        )
+
+        fecha_base = (
+            max(
+                [p.fecha for p in finalizados if p.fecha],
+                default=None
+            )
+        )
+        if fecha_base:
+            primera_fecha_futura = fecha_base + timedelta(days=7)
+        else:
+            primera_fecha_futura = siguiente_sabado(campeonato.fecha_inicio)
+
+        # Para mantener una lectura limpia, las nuevas jornadas continúan después
+        # de la última jornada con partidos finalizados.
+        nueva_jornada = ultima_jornada_finalizada + 1
+
+        creados = 0
+        for bloque in pendientes_nuevos:
+            fecha_jornada = primera_fecha_futura + timedelta(
+                days=(nueva_jornada - (ultima_jornada_finalizada + 1)) * 7
+            )
+
+            for local_id, visitante_id in bloque:
+                db.session.add(
+                    Partido(
+                        campeonato_id=campeonato.id,
+                        jornada=nueva_jornada,
+                        fecha=fecha_jornada,
+                        hora="17:00",
+                        cancha="Por definir",
+                        local_club_id=local_id,
+                        visitante_club_id=visitante_id,
+                        turno_club_id=None,
+                        goles_local=None,
+                        goles_visitante=None,
+                        estado="Programado"
+                    )
+                )
+                creados += 1
+
+            nueva_jornada += 1
+
+        db.session.commit()
+
+        flash(
+            f"{club.nombre} fue dado de baja correctamente. "
+            f"Se conservaron {len(finalizados)} partidos finalizados y se reorganizaron "
+            f"{creados} partidos pendientes para los {len(clubes_actuales)} clubes restantes.",
+            "success"
+        )
+
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR RETIRANDO CLUB DEL CAMPEONATO:", repr(error))
+        flash(
+            "No fue posible dar de baja al club ni reorganizar el fixture.",
+            "error"
+        )
+
+    return redirect(
+        url_for(
+            "detalle_campeonato",
+            campeonato_id=campeonato.id
+        )
+    )
+
+
+@app.route(
     "/campeonatos/<int:campeonato_id>/clubes",
     methods=["POST"]
 )
