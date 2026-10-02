@@ -137,10 +137,13 @@ class MovimientoTesoreria(db.Model):
     campeonato_id = db.Column(db.Integer, db.ForeignKey("campeonato.id"), nullable=True, index=True)
     serie = db.Column(db.String(80), nullable=True)
     cuenta_id = db.Column(db.Integer, nullable=True, index=True)
+    partido_id = db.Column(db.Integer, db.ForeignKey("partido.id"), nullable=True, index=True)
+    origen = db.Column(db.String(40), nullable=True, index=True)
     creado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     club = db.relationship("Club", foreign_keys=[club_id])
     campeonato = db.relationship("Campeonato", foreign_keys=[campeonato_id])
+    partido = db.relationship("Partido", foreign_keys=[partido_id])
 
 # ============================================================
 # MODELO CLUB
@@ -738,6 +741,8 @@ def preparar_base_datos():
             "campeonato_id": "INTEGER",
             "serie": "VARCHAR(80)",
             "cuenta_id": "INTEGER",
+            "partido_id": "INTEGER",
+            "origen": "VARCHAR(40)",
         }
 
         for nombre, tipo_columna in columnas_nuevas_tesoreria.items():
@@ -7569,6 +7574,249 @@ def admin_tesoreria():
         clubes=clubes,
         campeonatos=campeonatos,
         series=series,
+    )
+
+# ============================================================
+# V10.2 — TESORERÍA CONECTADA AL FIXTURE
+# Genera cuentas por cobrar/pagar a partir de una jornada real.
+# Las cuentas son obligaciones: NO generan movimiento de caja
+# hasta que se registre un abono/pago.
+# ============================================================
+
+@app.route("/admin/tesoreria/jornada", methods=["GET", "POST"])
+@rol_permitido("Administrador", "Tesoreria")
+def admin_tesoreria_jornada():
+    campeonatos = Campeonato.query.order_by(
+        Campeonato.temporada.desc(), Campeonato.id.desc()
+    ).all()
+
+    campeonato_id = request.form.get("campeonato_id", type=int) if request.method == "POST" else request.args.get("campeonato_id", type=int)
+    fecha_raw = (request.form.get("fecha") if request.method == "POST" else request.args.get("fecha") or "").strip()
+    cobro_club_raw = (request.form.get("cobro_club") if request.method == "POST" else request.args.get("cobro_club") or "0").strip()
+    cancha_raw = (request.form.get("cancha") if request.method == "POST" else request.args.get("cancha") or "0").strip()
+    arbitraje_raw = (request.form.get("arbitraje") if request.method == "POST" else request.args.get("arbitraje") or "0").strip()
+    vencimiento_raw = (request.form.get("vencimiento") if request.method == "POST" else request.args.get("vencimiento") or "").strip()
+
+    try:
+        fecha = datetime.strptime(fecha_raw, "%Y-%m-%d").date() if fecha_raw else None
+    except ValueError:
+        fecha = None
+
+    def monto_formulario(valor):
+        try:
+            return max(0, int(str(valor).replace(".", "").replace(",", "").strip() or 0))
+        except (TypeError, ValueError):
+            return 0
+
+    cobro_club = monto_formulario(cobro_club_raw)
+    monto_cancha = monto_formulario(cancha_raw)
+    monto_arbitraje = monto_formulario(arbitraje_raw)
+
+    try:
+        vencimiento = datetime.strptime(vencimiento_raw, "%Y-%m-%d").date() if vencimiento_raw else None
+    except ValueError:
+        vencimiento = None
+
+    campeonato = db.session.get(Campeonato, campeonato_id) if campeonato_id else None
+    partidos = []
+    if campeonato and fecha:
+        partidos = (
+            Partido.query
+            .filter(
+                Partido.campeonato_id == campeonato.id,
+                Partido.fecha == fecha,
+            )
+            .order_by(Partido.hora.asc().nullslast(), Partido.id.asc())
+            .all()
+        )
+
+    if request.method == "POST":
+        accion = (request.form.get("accion") or "").strip()
+
+        if accion == "generar":
+            if not campeonato:
+                flash("Selecciona un campeonato.", "error")
+                return redirect(url_for("admin_tesoreria_jornada"))
+            if not fecha:
+                flash("Selecciona una fecha de jornada válida.", "error")
+                return redirect(url_for("admin_tesoreria_jornada", campeonato_id=campeonato.id))
+            if not partidos:
+                flash("No existen partidos programados para ese campeonato y fecha.", "error")
+                return redirect(url_for(
+                    "admin_tesoreria_jornada",
+                    campeonato_id=campeonato.id,
+                    fecha=fecha.isoformat(),
+                    cobro_club=cobro_club,
+                    cancha=monto_cancha,
+                    arbitraje=monto_arbitraje,
+                ))
+            if cobro_club <= 0 and monto_cancha <= 0 and monto_arbitraje <= 0:
+                flash("Debes ingresar al menos un monto mayor que $0.", "error")
+                return redirect(url_for(
+                    "admin_tesoreria_jornada",
+                    campeonato_id=campeonato.id,
+                    fecha=fecha.isoformat(),
+                ))
+
+            creador = session.get("admin_nombre") or session.get("admin_username")
+            creadas = 0
+            existentes = 0
+
+            try:
+                for partido in partidos:
+                    origen = f"PARTIDO:{partido.id}"
+                    venc = vencimiento or partido.fecha or date.today()
+                    jornada_txt = f"Fecha {partido.jornada}"
+
+                    clubes_partido = [partido.local_club, partido.visitante_club]
+
+                    if cobro_club > 0:
+                        for club in clubes_partido:
+                            if not club:
+                                continue
+                            concepto = (
+                                f"Cobro jornada {jornada_txt} · "
+                                f"{partido.local_club.nombre} vs {partido.visitante_club.nombre}"
+                            )
+                            existe = (
+                                CuentaTesoreria.query
+                                .filter(
+                                    CuentaTesoreria.partido_id == partido.id,
+                                    CuentaTesoreria.tipo == "Por cobrar",
+                                    CuentaTesoreria.club_id == club.id,
+                                    CuentaTesoreria.origen == origen,
+                                )
+                                .first()
+                            )
+                            if existe:
+                                existentes += 1
+                            else:
+                                cuenta = CuentaTesoreria(
+                                    fecha=partido.fecha or fecha,
+                                    tipo="Por cobrar",
+                                    club_id=club.id,
+                                    campeonato_id=campeonato.id,
+                                    serie=campeonato.serie,
+                                    concepto=concepto,
+                                    monto_total=cobro_club,
+                                    monto_pagado=0,
+                                    vencimiento=venc,
+                                    observaciones=f"Generado desde fixture · cancha: {partido.cancha or 'Sin cancha'} · hora: {partido.hora or 'Sin hora'}",
+                                    creado_por=creador,
+                                )
+                                cuenta.origen = origen
+                                cuenta.actualizar_estado()
+                                db.session.add(cuenta)
+                                creadas += 1
+
+                    if monto_cancha > 0:
+                        concepto_cancha = (
+                            f"Cancha {partido.cancha or 'sin recinto'} · "
+                            f"{jornada_txt} · {partido.local_club.nombre} vs {partido.visitante_club.nombre}"
+                        )
+                        existe = (
+                            CuentaTesoreria.query
+                            .filter(
+                                CuentaTesoreria.partido_id == partido.id,
+                                CuentaTesoreria.tipo == "Por pagar",
+                                CuentaTesoreria.origen == origen,
+                                CuentaTesoreria.concepto == concepto_cancha,
+                            )
+                            .first()
+                        )
+                        if existe:
+                            existentes += 1
+                        else:
+                            cuenta = CuentaTesoreria(
+                                fecha=partido.fecha or fecha,
+                                tipo="Por pagar",
+                                campeonato_id=campeonato.id,
+                                serie=campeonato.serie,
+                                concepto=concepto_cancha,
+                                monto_total=monto_cancha,
+                                monto_pagado=0,
+                                vencimiento=venc,
+                                observaciones=f"Generado desde fixture · {partido.cancha or 'Sin cancha'}",
+                                creado_por=creador,
+                            )
+                            cuenta.origen = origen
+                            cuenta.actualizar_estado()
+                            db.session.add(cuenta)
+                            creadas += 1
+
+                    if monto_arbitraje > 0:
+                        arbitro = ""
+                        if partido.acta and partido.acta.arbitro:
+                            arbitro = partido.acta.arbitro.strip()
+                        nombre_arbitro = arbitro or "Árbitro del partido"
+                        concepto_arbitro = (
+                            f"Arbitraje · {nombre_arbitro} · {jornada_txt} · "
+                            f"{partido.local_club.nombre} vs {partido.visitante_club.nombre}"
+                        )
+                        existe = (
+                            CuentaTesoreria.query
+                            .filter(
+                                CuentaTesoreria.partido_id == partido.id,
+                                CuentaTesoreria.tipo == "Por pagar",
+                                CuentaTesoreria.origen == origen,
+                                CuentaTesoreria.concepto == concepto_arbitro,
+                            )
+                            .first()
+                        )
+                        if existe:
+                            existentes += 1
+                        else:
+                            cuenta = CuentaTesoreria(
+                                fecha=partido.fecha or fecha,
+                                tipo="Por pagar",
+                                campeonato_id=campeonato.id,
+                                serie=campeonato.serie,
+                                concepto=concepto_arbitro,
+                                monto_total=monto_arbitraje,
+                                monto_pagado=0,
+                                vencimiento=venc,
+                                observaciones="Generado desde fixture y acta de partido.",
+                                creado_por=creador,
+                            )
+                            cuenta.origen = origen
+                            cuenta.actualizar_estado()
+                            db.session.add(cuenta)
+                            creadas += 1
+
+                db.session.commit()
+                flash(
+                    f"Jornada procesada: {creadas} cuentas nuevas y {existentes} ya existentes. "
+                    "Las cuentas nuevas quedan pendientes hasta registrar sus abonos/pagos.",
+                    "success",
+                )
+            except Exception as error:
+                db.session.rollback()
+                print("ERROR GENERANDO TESORERÍA DESDE FIXTURE:", repr(error))
+                flash("No fue posible generar las cuentas de la jornada.", "error")
+
+            return redirect(url_for(
+                "admin_tesoreria_jornada",
+                campeonato_id=campeonato.id,
+                fecha=fecha.isoformat(),
+                cobro_club=cobro_club,
+                cancha=monto_cancha,
+                arbitraje=monto_arbitraje,
+                vencimiento=vencimiento.isoformat() if vencimiento else "",
+            ))
+
+    return render_template(
+        "admin_tesoreria_jornada.html",
+        campeonatos=campeonatos,
+        campeonato=campeonato,
+        campeonato_id=campeonato_id,
+        fecha=fecha,
+        fecha_raw=fecha.isoformat() if fecha else "",
+        cobro_club=cobro_club,
+        monto_cancha=monto_cancha,
+        monto_arbitraje=monto_arbitraje,
+        vencimiento=vencimiento,
+        vencimiento_raw=vencimiento.isoformat() if vencimiento else "",
+        partidos=partidos,
     )
 
 # ============================================================
