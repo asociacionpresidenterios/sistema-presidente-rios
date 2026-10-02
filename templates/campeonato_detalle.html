@@ -29,7 +29,7 @@
   .actions{display:flex;justify-content:flex-end;margin-top:18px;gap:10px}
   .empty{padding:25px;text-align:center;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b}
   .participants{display:flex;flex-wrap:wrap;gap:8px}
-  .pill{display:inline-flex;padding:7px 11px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:800;font-size:12px}
+  .pill{display:inline-flex;align-items:center;gap:8px;padding:7px 11px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:800;font-size:12px}.participant-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #e5e7eb;border-radius:12px;background:#fff;margin-bottom:8px}.participant-row .pill{background:transparent;padding:0}.withdraw-btn{border:1px solid #fecaca;background:#fff1f2;color:#b91c1c;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:800;cursor:pointer}
   .next{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:12px;padding:16px;color:#475569}
   @media(max-width:800px){.info-grid,.club-grid{grid-template-columns:1fr 1fr}}
   @media(max-width:520px){.camp-detail{padding:15px}.info-grid,.club-grid{grid-template-columns:1fr}.actions{justify-content:stretch}.actions .btn{width:100%;justify-content:center}}
@@ -114,12 +114,17 @@
 
   <div class="card">
     <h2>✅ Clubes actualmente inscritos</h2>
-    <p class="sub">Esta es la lista que utilizarán los siguientes módulos del campeonato.</p>
+    <p class="sub">Esta es la lista que utilizarán los siguientes módulos del campeonato. Si un club se baja, usa <strong>Dar de baja</strong> para que el sistema reorganice automáticamente el fixture.</p>
 
     {% if clubes_participantes %}
-      <div class="participants">
+      <div>
         {% for registro in clubes_participantes %}
-          <span class="pill">⚽ {{ registro.club.nombre }}</span>
+          <div class="participant-row">
+            <span class="pill">⚽ {{ registro.club.nombre }}</span>
+            <form method="POST" action="{{ url_for('retirar_club_campeonato', campeonato_id=campeonato.id, club_id=registro.club.id) }}" onsubmit="return confirmarRetiroClub({{ registro.club.nombre|tojson }});">
+              <button type="submit" class="withdraw-btn">↘️ Dar de baja</button>
+            </form>
+          </div>
         {% endfor %}
       </div>
     {% else %}
@@ -169,6 +174,14 @@
 
     boxes.forEach(box => box.addEventListener('change', actualizarContador));
   }
+  function confirmarRetiroClub(nombre) {
+    return confirm(
+      '⚠️ ¿Dar de baja a "' + nombre + '" de este campeonato?\\n\\n' +
+      'El club no se eliminará de la Asociación. El sistema retirará sus partidos pendientes y reorganizará automáticamente el fixture con los clubes restantes.\\n\\n' +
+      'Los partidos ya finalizados se conservarán como historial.\\n\\n¿Deseas continuar?'
+    );
+  }
+
   function confirmarEliminarCampeonato() {
     const nombre = {{ campeonato.nombre|tojson }};
     const primera = confirm('⚠️ ¿Eliminar el campeonato "' + nombre + '"?\n\nSe eliminarán su fixture, resultados, clubes inscritos y estadísticas vinculadas.');
