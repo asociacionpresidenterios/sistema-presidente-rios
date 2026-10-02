@@ -28,7 +28,6 @@
     <p>Estado financiero individual · cuentas, abonos y movimientos registrados en Tesorería.</p>
     <div class="actions">
       <a href="{{url_for('admin_tesoreria')}}">← Volver a Tesorería</a>
-      <a href="{{url_for('admin_planteles_campeonato', campeonato_id=campeonatos[0].id) if campeonatos else url_for('admin_tesoreria')}}">⚽ Campeonatos</a>
     </div>
   </div>
 
@@ -93,11 +92,11 @@
       <h2>📊 Movimientos del período</h2>
       {% set periodo = [] %}
       {% for m in movimientos %}
-        {% if m.fecha and m.fecha >= today.replace(day=1) and m.fecha.month == mes and m.fecha.year == anio %}{% set _ = periodo.append(m) %}{% endif %}
+        {% if m.fecha and inicio_mes <= m.fecha < fin_mes %}{% set _ = periodo.append(m) %}{% endif %}
       {% endfor %}
       {% if movimientos %}
       <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Categoría</th><th>Medio</th><th>Monto</th></tr></thead><tbody>
-      {% for m in movimientos if m.fecha and m.fecha >= today.replace(day=1) and m.fecha.month == mes and m.fecha.year == anio %}
+      {% for m in movimientos if m.fecha and inicio_mes <= m.fecha < fin_mes %}
       <tr><td>{{m.fecha.strftime('%d/%m/%Y')}}</td><td><span class="badge {% if m.tipo=='Ingreso' %}ingreso{% else %}egreso{% endif %}">{{m.tipo}}</span></td><td><strong>{{m.concepto}}</strong>{% if m.referencia %}<br><small class="muted">{{m.referencia}}</small>{% endif %}</td><td>{{m.categoria or '—'}}</td><td>{{m.medio_pago or '—'}}</td><td><strong>$ {{ "{:,.0f}".format(m.monto|int).replace(",", ".") }}</strong></td></tr>
       {% endfor %}</tbody></table></div>
       {% else %}<div class="empty">No hay movimientos registrados para este club.</div>{% endif %}
