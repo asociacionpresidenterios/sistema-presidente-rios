@@ -20,7 +20,7 @@
         <form method="post" class="form-grid">
           <input type="hidden" name="accion" value="generar">
           <div class="full"><label>Campeonato</label>
-            <select name="campeonato_id" required onchange="this.form.submit()">
+            <select name="campeonato_id" required>
               <option value="">Seleccionar campeonato</option>
               {% for c in campeonatos %}<option value="{{c.id}}" {% if campeonato_id==c.id %}selected{% endif %}>{{c.nombre}} · {{c.serie}} · {{c.temporada}}</option>{% endfor %}
             </select>
