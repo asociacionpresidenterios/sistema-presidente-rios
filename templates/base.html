@@ -83,8 +83,10 @@ a{text-decoration:none;color:inherit}
     <a class="nav-item {% if request.endpoint=='admin_tesoreria' %}active{% endif %}" href="{{ url_for('admin_tesoreria') }}"><span class="nav-icon">💰</span>Tesorería</a>
     {% endif %}
 
+    {% if session.get('admin_rol') != 'Disciplina' %}
     <div class="section-label">Cuenta</div>
     <a class="nav-item {% if request.endpoint=='mi_cuenta_admin' %}active{% endif %}" href="{{ url_for('mi_cuenta_admin') }}"><span class="nav-icon">👤</span>Mi cuenta</a>
+    {% endif %}
     {% if session.get('admin_rol') == 'Administrador' or not session.get('admin_rol') %}
     <div class="section-label">Sistema</div>
     <a class="nav-item {% if request.endpoint=='admin_usuarios' %}active{% endif %}" href="{{ url_for('admin_usuarios') }}"><span class="nav-icon">🔐</span>Usuarios</a>
