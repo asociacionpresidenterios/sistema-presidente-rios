@@ -8,13 +8,30 @@
 </style>
 <div class="wrap">
   <div class="hero">
-    <div class="eyebrow">V10.3 · RENDICIÓN MENSUAL AUTOMÁTICA</div>
+    <div class="eyebrow">V10.4 · RENDICIÓN MENSUAL Y CIERRE FORMAL</div>
     <h1>📒 Rendición {{nombre_mes}} {{anio}}</h1>
     <p>Resumen de caja, ingresos, egresos, categorías, cuentas generadas y obligaciones pendientes.</p>
     <div class="actions">
       <a href="{{url_for('admin_tesoreria')}}">← Volver a Tesorería</a>
       <a href="javascript:window.print()" class="print-btn">🖨️ Imprimir / Guardar PDF</a>
     </div>
+  </div>
+
+  <div class="panel no-print">
+    <h2>🔒 Estado del cierre</h2>
+    {% if rendicion %}
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <strong style="font-size:18px">{{rendicion.numero_rendicion}}</strong>
+        <span style="padding:7px 11px;border-radius:999px;font-weight:900;font-size:11px;background:{% if rendicion.estado=='Cerrada' %}#dcfce7{% elif rendicion.estado=='Revisada' %}#dbeafe{% else %}#fef3c7{% endif %};color:#111827">{{rendicion.estado}}</span>
+        {% if rendicion.cerrado_por %}<span class="muted">Cerrada por {{rendicion.cerrado_por}} · {{rendicion.cerrado_en.strftime('%d/%m/%Y %H:%M')}}</span>{% endif %}
+      </div>
+      {% if rendicion.estado == 'Cerrada' %}
+      <div class="note" style="margin-top:12px">🔒 Este período está cerrado. Las cifras de la rendición quedaron registradas como fotografía de cierre y las nuevas operaciones con fecha dentro del período están bloqueadas.</div>
+      {% endif %}
+    {% else %}
+      <div class="note">Esta rendición todavía no tiene un número formal. Puedes crearla y luego pasarla por revisión antes del cierre.</div>
+    {% endif %}
+    <a href="{{url_for('admin_tesoreria_cierre',mes=mes,anio=anio)}}" style="display:inline-block;margin-top:12px;text-decoration:none;border-radius:9px;padding:10px 14px;background:#111827;color:#fff;font-weight:800;font-size:11px">🔒 Administrar estado de cierre →</a>
   </div>
 
   <div class="panel no-print">
