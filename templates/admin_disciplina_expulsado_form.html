@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Registrar expulsión{% endblock %}
+{% block content %}
+<style>.wrap{max-width:950px;margin:auto}.hero{background:linear-gradient(135deg,#111827,#7f1d1d);color:#fff;border-radius:18px;padding:22px;margin-bottom:18px}.panel{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:20px;margin-bottom:15px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-column:1/-1}label{display:block;font-size:10px;color:#64748b;font-weight:800;text-transform:uppercase;margin-bottom:5px}input,select,textarea{width:100%;box-sizing:border-box;padding:10px;border:1px solid #d6dee9;border-radius:9px;font:inherit}textarea{min-height:110px}.btn{border:0;border-radius:9px;padding:11px 15px;background:#991b1b;color:#fff;font-weight:800;cursor:pointer}@media(max-width:700px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}</style>
+<div class="wrap"><div class="hero"><div style="font-size:10px;letter-spacing:.15em;font-weight:800">COMITÉ DE DISCIPLINA</div><h1>🚫 Registrar expulsión</h1><p>La publicación será independiente de la resolución para permitir revisión antes de comunicarla.</p></div>
+<form method="post"><div class="panel"><div class="grid">
+<div><label>Fecha</label><input type="date" name="fecha" value="{{today.strftime('%Y-%m-%d')}}" required></div>
+<div><label>N° resolución</label><input name="numero_resolucion" placeholder="Ej. CD-2026-0015"></div>
+<div><label>Tipo de afectado</label><select name="tipo_afectado"><option>Jugador</option><option>Club</option></select></div>
+<div><label>Jugador</label><select name="jugador_id"><option value="">Seleccionar</option>{% for j in jugadores %}<option value="{{j.id}}">{{j.nombre_completo}} · {{j.club}} · {{j.serie}}</option>{% endfor %}</select></div>
+<div><label>Club</label><select name="club_id"><option value="">Seleccionar</option>{% for c in clubes %}<option value="{{c.id}}">{{c.nombre}}</option>{% endfor %}</select></div>
+<div><label>Campeonato</label><select name="campeonato_id"><option value="">Sin campeonato</option>{% for c in campeonatos %}<option value="{{c.id}}">{{c.nombre}} · {{c.serie}}</option>{% endfor %}</select></div>
+<div><label>Serie</label><input name="serie" placeholder="Ej. Adultos"></div>
+<div><label>Inicio</label><input type="date" name="fecha_inicio"></div>
+<div><label>Fin</label><input type="date" name="fecha_fin"></div>
+<div class="full"><label>Motivo de la expulsión</label><textarea name="motivo" required></textarea></div>
+<div class="full"><label>Resolución oficial</label><textarea name="resolucion" required></textarea></div>
+<div class="full"><label>Observaciones</label><textarea name="observaciones" style="min-height:80px"></textarea></div>
+</div></div><button class="btn">💾 Guardar expulsión</button> <a class="btn" style="background:#64748b;text-decoration:none" href="{{url_for('admin_disciplina_expulsados')}}">Cancelar</a></form></div>
+{% endblock %}
