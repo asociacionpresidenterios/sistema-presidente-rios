@@ -7901,6 +7901,12 @@ def admin_tesoreria_rendicion():
     ingresos = sum(int(m.monto or 0) for m in movimientos if m.tipo == "Ingreso")
     egresos = sum(int(m.monto or 0) for m in movimientos if m.tipo == "Egreso")
     saldo_final = int(saldo_inicial) + ingresos - egresos
+    nombres_meses = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ]
+    nombre_mes = nombres_meses[mes - 1]
+    fecha_fin_periodo = fin_mes - timedelta(days=1)
 
     # Resumen por categoría para la rendición.
     categorias = {}
@@ -7983,8 +7989,10 @@ def admin_tesoreria_rendicion():
         "admin_tesoreria_rendicion.html",
         mes=mes,
         anio=anio,
+        nombre_mes=nombre_mes,
         inicio_mes=inicio_mes,
         fin_mes=fin_mes,
+        fecha_fin_periodo=fecha_fin_periodo,
         today=hoy,
         movimientos=movimientos,
         categorias=categorias,
