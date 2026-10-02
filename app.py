@@ -8816,6 +8816,11 @@ def admin_panel_maestro():
 
     partidos_con_resultado = total_partidos - finalizados_sin_resultado
     campeonatos_con_clubes = total_campeonatos - campeonatos_sin_clubes
+    partidos_sin_programacion = safe_count(Partido.query.filter(
+        Partido.estado == "Programado",
+        db.or_(Partido.fecha.is_(None), Partido.hora.is_(None), Partido.hora == "",
+               Partido.cancha.is_(None), Partido.cancha == ""),
+    ))
 
     indicadores_operativos = [
         {
