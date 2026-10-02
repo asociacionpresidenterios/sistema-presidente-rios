@@ -8558,6 +8558,20 @@ def construir_alertas_operativas():
         db.or_(Partido.fecha.is_(None), Partido.hora.is_(None), Partido.hora == "",
                Partido.cancha.is_(None), Partido.cancha == ""),
     ))
+    partidos_sin_arbitro = safe_count(Partido.query.join(
+        Campeonato, Campeonato.id == Partido.campeonato_id
+    ).outerjoin(
+        ActaPartido, ActaPartido.partido_id == Partido.id
+    ).filter(
+        Campeonato.estado == "Activo",
+        Partido.estado.in_([ "Programado", "Finalizado" ]),
+        db.or_(
+            ActaPartido.id.is_(None),
+            ActaPartido.arbitro.is_(None),
+            ActaPartido.arbitro == "",
+        ),
+    ))
+
     actas_pendientes = safe_count(ActaPartido.query.join(
         Partido, Partido.id == ActaPartido.partido_id
     ).join(
@@ -8607,6 +8621,7 @@ def construir_alertas_operativas():
         {"tipo":"danger","icono":"💸","titulo":"Cuentas vencidas","cantidad":cuentas_vencidas,"texto":"Obligaciones de tesorería cuyo vencimiento ya pasó.","url":url_for("admin_tesoreria")},
         {"tipo":"danger","icono":"📋","titulo":"Partidos sin acta","cantidad":partidos_sin_acta,"texto":"Partidos que todavía no tienen acta asociada.","url":url_for("admin_partidos")},
         {"tipo":"danger","icono":"⚠️","titulo":"Partidos sin programación completa","cantidad":partidos_sin_programacion,"texto":"Partidos programados sin fecha, hora o cancha completa.","url":url_for("admin_partidos")},
+        {"tipo":"warning","icono":"🧑‍⚖️","titulo":"Partidos sin árbitro registrado","cantidad":partidos_sin_arbitro,"texto":"Partidos activos sin árbitro informado en el acta.","url":url_for("admin_actas")},
         {"tipo":"warning","icono":"📝","titulo":"Actas pendientes","cantidad":actas_pendientes,"texto":"Actas que aún no están cerradas.","url":url_for("admin_actas")},
         {"tipo":"warning","icono":"👥","titulo":"Actas cerradas sin nómina","cantidad":actas_cerradas_sin_nomina,"texto":"Actas cerradas que no tienen jugadores asociados.","url":url_for("admin_actas")},
         {"tipo":"warning","icono":"⚽","titulo":"Finalizados sin resultado","cantidad":partidos_sin_resultado,"texto":"Partidos finalizados sin marcador completo.","url":url_for("admin_partidos")},
