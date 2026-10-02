@@ -8649,6 +8649,12 @@ def admin_panel_maestro():
     clubes_activos = safe_count(Club.query.filter_by(activo=True))
     total_campeonatos = safe_count(Campeonato.query)
     campeonatos_activos = safe_count(Campeonato.query.filter_by(estado="Activo"))
+    campeonatos_sin_clubes = safe_count(
+        Campeonato.query.outerjoin(
+            CampeonatoClub,
+            CampeonatoClub.campeonato_id == Campeonato.id
+        ).group_by(Campeonato.id).having(db.func.count(CampeonatoClub.id) == 0)
+    )
     total_partidos = safe_count(Partido.query)
     partidos_finalizados = safe_count(Partido.query.filter_by(estado="Finalizado"))
     partidos_programados = safe_count(Partido.query.filter_by(estado="Programado"))
