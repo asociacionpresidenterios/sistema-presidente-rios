@@ -8701,20 +8701,69 @@ def admin_panel_maestro():
     resumen_campeonatos = []
     for campeonato in campeonatos:
         partidos = Partido.query.filter_by(campeonato_id=campeonato.id)
+        total_clubes = safe_count(CampeonatoClub.query.filter_by(campeonato_id=campeonato.id))
+        total_partidos = safe_count(partidos)
+        finalizados = safe_count(partidos.filter_by(estado="Finalizado"))
+        actas = safe_count(
+            ActaPartido.query.join(Partido).filter(Partido.campeonato_id == campeonato.id)
+        )
+        actas_cerradas = safe_count(
+            ActaPartido.query.join(Partido).filter(
+                Partido.campeonato_id == campeonato.id,
+                ActaPartido.estado == "Cerrada"
+            )
+        )
+        sin_programacion = safe_count(
+            partidos.filter(
+                Partido.estado == "Programado",
+                db.or_(
+                    Partido.fecha.is_(None),
+                    Partido.hora.is_(None),
+                    Partido.hora == "",
+                    Partido.cancha.is_(None),
+                    Partido.cancha == ""
+                )
+            )
+        )
+        finalizados_sin_resultado = safe_count(
+            partidos.filter(
+                Partido.estado == "Finalizado",
+                db.or_(
+                    Partido.goles_local.is_(None),
+                    Partido.goles_visitante.is_(None)
+                )
+            )
+        )
+        partidos_sin_acta = safe_count(
+            partidos.outerjoin(
+                ActaPartido,
+                ActaPartido.partido_id == Partido.id
+            ).filter(
+                Partido.estado == "Finalizado",
+                ActaPartido.id.is_(None)
+            )
+        )
+
+        problemas = (
+            (1 if total_clubes == 0 and campeonato.estado == "Activo" else 0)
+            + (1 if sin_programacion > 0 else 0)
+            + (1 if finalizados_sin_resultado > 0 else 0)
+            + (1 if partidos_sin_acta > 0 else 0)
+        )
+        salud = "Crítica" if problemas >= 2 else ("Revisar" if problemas == 1 else "Operativa")
+
         resumen_campeonatos.append({
             "campeonato": campeonato,
-            "clubes": safe_count(CampeonatoClub.query.filter_by(campeonato_id=campeonato.id)),
-            "partidos": safe_count(partidos),
-            "finalizados": safe_count(partidos.filter_by(estado="Finalizado")),
-            "actas": safe_count(
-                ActaPartido.query.join(Partido).filter(Partido.campeonato_id == campeonato.id)
-            ),
-            "actas_cerradas": safe_count(
-                ActaPartido.query.join(Partido).filter(
-                    Partido.campeonato_id == campeonato.id,
-                    ActaPartido.estado == "Cerrada"
-                )
-            ),
+            "clubes": total_clubes,
+            "partidos": total_partidos,
+            "finalizados": finalizados,
+            "actas": actas,
+            "actas_cerradas": actas_cerradas,
+            "sin_programacion": sin_programacion,
+            "finalizados_sin_resultado": finalizados_sin_resultado,
+            "partidos_sin_acta": partidos_sin_acta,
+            "problemas": problemas,
+            "salud": salud,
         })
 
     # -------------------------
