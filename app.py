@@ -7580,6 +7580,43 @@ def admin_panel_maestro():
 # No crea tablas ni modifica registros.
 # ============================================================
 
+@app.route("/admin/campeonatos/<int:campeonato_id>/eliminar", methods=["POST"])
+@admin_required
+def eliminar_campeonato(campeonato_id):
+    """Elimina un campeonato y todos sus registros dependientes.
+    No elimina clubes ni jugadores maestros.
+    """
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+
+    try:
+        partidos = Partido.query.filter_by(campeonato_id=campeonato.id).all()
+        partido_ids = [p.id for p in partidos]
+
+        # Estadísticas y disciplina asociadas directamente al campeonato.
+        Gol.query.filter_by(campeonato_id=campeonato.id).delete(synchronize_session=False)
+        RegistroDisciplinario.query.filter_by(campeonato_id=campeonato.id).delete(synchronize_session=False)
+
+        # Actas y nóminas de los partidos.
+        if partido_ids:
+            ActaPartido.query.filter(ActaPartido.partido_id.in_(partido_ids)).delete(synchronize_session=False)
+            PartidoJugador.query.filter(PartidoJugador.partido_id.in_(partido_ids)).delete(synchronize_session=False)
+
+        Partido.query.filter_by(campeonato_id=campeonato.id).delete(synchronize_session=False)
+        CampeonatoClub.query.filter_by(campeonato_id=campeonato.id).delete(synchronize_session=False)
+
+        nombre = campeonato.nombre
+        db.session.delete(campeonato)
+        db.session.commit()
+
+        flash(f"El campeonato «{nombre}» fue eliminado correctamente. Los clubes y jugadores se conservaron.", "success")
+    except Exception as exc:
+        db.session.rollback()
+        app.logger.exception("Error al eliminar campeonato %s", campeonato_id)
+        flash("No fue posible eliminar el campeonato. No se realizaron cambios.", "error")
+
+    return redirect(url_for("admin_campeonatos"))
+
+ 
 @app.route("/admin/campeonatos/centro")
 def admin_centro_campeonatos():
     campeonatos = Campeonato.query.order_by(
