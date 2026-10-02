@@ -129,6 +129,43 @@ class AdminUser(db.Model):
 
 
 # ============================================================
+# FASE 2 — AUDITORÍA DE ACCIONES ADMINISTRATIVAS
+# ============================================================
+
+class RegistroAuditoria(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    fecha = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, index=True)
+    usuario_id = db.Column(db.Integer, nullable=True, index=True)
+    usuario = db.Column(db.String(80), nullable=False, default="Sistema")
+    rol = db.Column(db.String(30), nullable=False, default="Sistema")
+    accion = db.Column(db.String(80), nullable=False, index=True)
+    modulo = db.Column(db.String(80), nullable=False, default="General", index=True)
+    descripcion = db.Column(db.String(500), nullable=False)
+    ip = db.Column(db.String(64), nullable=True)
+    metodo = db.Column(db.String(10), nullable=True)
+
+    def __repr__(self):
+        return f"<RegistroAuditoria {self.accion} {self.usuario}>"
+
+def registrar_auditoria(accion, modulo, descripcion):
+    try:
+        registro = RegistroAuditoria(
+            usuario_id=session.get("admin_id"),
+            usuario=session.get("admin_username") or "Sistema",
+            rol=session.get("admin_rol") or "Sistema",
+            accion=accion,
+            modulo=modulo,
+            descripcion=str(descripcion)[:500],
+            ip=request.headers.get("X-Forwarded-For", request.remote_addr),
+            metodo=request.method,
+        )
+        db.session.add(registro)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("No fue posible registrar auditoría")
+
+# ============================================================
 # V9.0 — MODELO DE TESORERÍA
 # ============================================================
 
@@ -1784,6 +1821,11 @@ def admin_usuarios():
             admin.set_password(password)
             db.session.add(admin)
             db.session.commit()
+            registrar_auditoria(
+                "CREAR_USUARIO",
+                "Usuarios",
+                f"Se creó el usuario administrativo '{admin.username}' con rol {admin.rol}."
+            )
             flash("Administrador creado correctamente.", "success")
             return redirect(url_for("admin_usuarios"))
     usuarios = AdminUser.query.order_by(AdminUser.username).all()
@@ -1799,6 +1841,11 @@ def cambiar_estado_admin(admin_id):
     else:
         admin.activo = not admin.activo
         db.session.commit()
+        registrar_auditoria(
+            "CAMBIAR_ESTADO_USUARIO",
+            "Usuarios",
+            f"Se {'activó' if admin.activo else 'desactivó'} el usuario administrativo '{admin.username}'."
+        )
         flash("Estado del administrador actualizado.", "success")
     return redirect(url_for("admin_usuarios"))
 
@@ -1821,9 +1868,16 @@ def eliminar_admin(admin_id):
             return redirect(url_for("admin_usuarios"))
 
     try:
+        username_eliminado = admin.username
+        rol_eliminado = admin.rol
         db.session.delete(admin)
         db.session.commit()
-        flash(f"El usuario {admin.username} fue eliminado correctamente.", "success")
+        registrar_auditoria(
+            "ELIMINAR_USUARIO",
+            "Usuarios",
+            f"Se eliminó el usuario administrativo '{username_eliminado}' con rol {rol_eliminado}."
+        )
+        flash(f"El usuario {username_eliminado} fue eliminado correctamente.", "success")
     except Exception as error:
         db.session.rollback()
         app.logger.exception("Error eliminando usuario administrador")
