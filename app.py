@@ -1212,7 +1212,7 @@ def destino_inicial_por_rol():
         return url_for("admin_disciplina")
     if rol == "Tesoreria":
         return url_for("admin_tesoreria")
-    return url_for("dashboard")
+    return url_for("admin_panel_maestro")
 
 def admin_required(view):
     """Protege rutas internas que requieren una sesión administrativa."""
