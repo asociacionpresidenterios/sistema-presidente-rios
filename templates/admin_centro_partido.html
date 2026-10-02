@@ -12,8 +12,8 @@
       <div class="muted">{{ partido.campeonato.nombre }} · {{ partido.campeonato.serie }} · Jornada {{ partido.jornada }}</div>
     </div>
     <div class="actions">
-      <a class="btn" href="{{ url_for('admin_centro_partidos') }}">← Partidos</a>
-      <a class="btn" href="{{ url_for('admin_centro_campeonato', campeonato_id=partido.campeonato_id) }}">🏆 Campeonato</a>
+      <a class="btn" href="{{ url_for('admin_partidos') }}">← Partidos</a>
+      <a class="btn" href="{{ url_for('panel_campeonato', campeonato_id=partido.campeonato_id) }}">🏆 Campeonato</a>
       <a class="btn primary" href="{{ url_for('acta_partido', campeonato_id=partido.campeonato_id, partido_id=partido.id) }}">📋 Abrir acta</a>
     </div>
   </div>
