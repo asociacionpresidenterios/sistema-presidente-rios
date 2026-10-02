@@ -65,10 +65,10 @@ a{text-decoration:none;color:inherit}
     {% if session.get('admin_rol') == 'Administrador' or not session.get('admin_rol') %}
     <div class="section-label">Gestión deportiva</div>
     <a class="nav-item {% if request.endpoint in ['campeonatos','nuevo_campeonato','detalle_campeonato','panel_campeonato'] %}active{% endif %}" href="{{ url_for('campeonatos') }}"><span class="nav-icon">🏆</span>Campeonatos</a>
-    <a class="nav-item {% if request.endpoint in ['admin_clubes','admin_planteles','admin_ficha_club','admin_centro_club','admin_centro_clubes','admin_centro_club_series'] %}active{% endif %}" href="{{ url_for('admin_clubes') }}"><span class="nav-icon">🏟️</span>Clubes</a>
+    <a class="nav-item {% if request.endpoint in ['admin_clubes','admin_planteles','admin_ficha_club','admin_centro_club_series','admin_centro_club_estadisticas'] %}active{% endif %}" href="{{ url_for('admin_clubes') }}"><span class="nav-icon">🏟️</span>Clubes</a>
     <a class="nav-item {% if request.endpoint in ['index','nuevo_jugador','editar_jugador','importar_jugadores','ficha_jugador','historial_jugador','admin_centro_jugador'] %}active{% endif %}" href="{{ url_for('index') }}"><span class="nav-icon">👥</span>Jugadores</a>
     <a class="nav-item {% if request.endpoint in ['admin_partidos','admin_centro_partidos','admin_centro_partido'] %}active{% endif %}" href="{{ url_for('admin_partidos') }}"><span class="nav-icon">⚽</span>Partidos</a>
-    <a class="nav-item {% if request.endpoint in ['admin_actas','acta_partido','admin_centro_actas'] %}active{% endif %}" href="{{ url_for('admin_actas') }}"><span class="nav-icon">📋</span>Actas</a>
+    <a class="nav-item {% if request.endpoint in ['admin_actas','acta_partido','admin_centro_estadisticas'] %}active{% endif %}" href="{{ url_for('admin_actas') }}"><span class="nav-icon">📋</span>Actas</a>
     <a class="nav-item {% if request.endpoint in ['admin_disciplina','crear_resolucion_disciplina','ver_resolucion_disciplina','admin_disciplina_tarjetas','admin_disciplina_expulsados','crear_expulsado_disciplina','ver_expulsado_disciplina'] %}active{% endif %}" href="{{ url_for('admin_disciplina') }}"><span class="nav-icon">⚖️</span>Disciplina</a>
     <a class="nav-item {% if request.endpoint in ['admin_centro_estadisticas'] %}active{% endif %}" href="{{ url_for('admin_centro_estadisticas') }}"><span class="nav-icon">📊</span>Estadísticas</a>
     <a class="nav-item {% if request.endpoint=='admin_historia' %}active{% endif %}" href="{{ url_for('admin_historia') }}"><span class="nav-icon">🏛️</span>Historia</a>
