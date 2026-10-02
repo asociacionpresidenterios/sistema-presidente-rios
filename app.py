@@ -1173,7 +1173,7 @@ def exigir_login_administrativo():
             permitidos = ROLE_ENDPOINTS.get(rol, set())
             if endpoint not in permitidos and endpoint not in {"login", "logout"}:
                 flash("Tu perfil no tiene permisos para acceder a esta sección.", "error")
-                return redirect(url_for("dashboard"))
+                return redirect(destino_inicial_por_rol())
         return None
     destino = request.full_path.rstrip("?")
     return redirect(url_for("login", next=destino))
@@ -1186,10 +1186,34 @@ def exigir_login_administrativo():
 ROLES = {"Administrador": "Administrador", "Disciplina": "Disciplina", "Tesoreria": "Tesorería"}
 
 ROLE_ENDPOINTS = {
-    # Disciplina trabaja exclusivamente con las actas y sus registros.
-    "Disciplina": {"dashboard","admin_panel_maestro","mi_cuenta_admin","admin_actas","acta_partido","admin_centro_actas","admin_disciplina","crear_resolucion_disciplina","ver_resolucion_disciplina","publicar_resolucion_disciplina","admin_disciplina_tarjetas","admin_disciplina_expulsados","crear_expulsado_disciplina","ver_expulsado_disciplina","publicar_expulsado_disciplina","registrar_gol","registrar_amarilla","registrar_roja","registrar_suspension","eliminar_gol","eliminar_registro_disciplinario","logout"},
-    "Tesoreria": {"dashboard","admin_panel_maestro","mi_cuenta_admin","admin_tesoreria","logout"}
+    # Disciplina solo accede a los módulos propios de Disciplina.
+    "Disciplina": {
+        "admin_disciplina",
+        "crear_resolucion_disciplina",
+        "ver_resolucion_disciplina",
+        "publicar_resolucion_disciplina",
+        "admin_disciplina_tarjetas",
+        "admin_disciplina_expulsados",
+        "crear_expulsado_disciplina",
+        "ver_expulsado_disciplina",
+        "publicar_expulsado_disciplina",
+        "logout",
+    },
+    # Tesorería solo accede a Tesorería y su cuenta.
+    "Tesoreria": {
+        "mi_cuenta_admin",
+        "admin_tesoreria",
+        "logout",
+    }
 }
+
+def destino_inicial_por_rol():
+    rol = session.get("admin_rol") or "Administrador"
+    if rol == "Disciplina":
+        return url_for("admin_disciplina")
+    if rol == "Tesoreria":
+        return url_for("admin_tesoreria")
+    return url_for("dashboard")
 
 def rol_permitido(*roles):
     def decorator(view):
@@ -1637,7 +1661,7 @@ def obtener_datos_formulario_jugador():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if session.get("admin_id"):
-        return redirect(url_for("dashboard"))
+        return redirect(destino_inicial_por_rol())
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
@@ -1653,7 +1677,7 @@ def login():
             session.permanent = True
             destino = request.form.get("next", "").strip()
             if not destino.startswith("/") or destino.startswith("//"):
-                destino = url_for("dashboard")
+                destino = destino_inicial_por_rol()
             return redirect(destino)
 
         flash("Usuario o contraseña incorrectos, o el administrador está inactivo.", "error")
