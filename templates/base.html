@@ -75,8 +75,9 @@ a{text-decoration:none;color:inherit}
     <a class="nav-item {% if request.endpoint=='admin_tesoreria' %}active{% endif %}" href="{{ url_for('admin_tesoreria') }}"><span class="nav-icon">💰</span>Tesorería</a>
     {% elif session.get('admin_rol') == 'Disciplina' %}
     <div class="section-label">Disciplina</div>
-    <a class="nav-item {% if request.endpoint in ['admin_actas','acta_partido','admin_centro_actas'] %}active{% endif %}" href="{{ url_for('admin_actas') }}"><span class="nav-icon">📋</span>Actas</a>
     <a class="nav-item {% if request.endpoint in ['admin_disciplina','crear_resolucion_disciplina','ver_resolucion_disciplina'] %}active{% endif %}" href="{{ url_for('admin_disciplina') }}"><span class="nav-icon">⚖️</span>Comité de Disciplina</a>
+    <a class="nav-item {% if request.endpoint in ['admin_disciplina_tarjetas'] %}active{% endif %}" href="{{ url_for('admin_disciplina_tarjetas') }}"><span class="nav-icon">🟨</span>Control de tarjetas</a>
+    <a class="nav-item {% if request.endpoint in ['admin_disciplina_expulsados','crear_expulsado_disciplina','ver_expulsado_disciplina'] %}active{% endif %}" href="{{ url_for('admin_disciplina_expulsados') }}"><span class="nav-icon">🚫</span>Expulsados</a>
     {% elif session.get('admin_rol') == 'Tesoreria' %}
     <div class="section-label">Tesorería</div>
     <a class="nav-item {% if request.endpoint=='admin_tesoreria' %}active{% endif %}" href="{{ url_for('admin_tesoreria') }}"><span class="nav-icon">💰</span>Tesorería</a>
