@@ -4767,21 +4767,12 @@ def detalle_campeonato(campeonato_id):
 )
 @rol_permitido("Administrador")
 def retirar_club_campeonato(campeonato_id, club_id):
-    """
-    Da de baja un club del campeonato sin eliminarlo de la Asociación.
-
-    Regla:
-    - Los partidos FINALIZADOS se conservan como historial.
-    - Los partidos pendientes del club retirado se eliminan.
-    - El fixture futuro se reconstruye automáticamente para los clubes restantes.
-    - Los cruces ya FINALIZADOS entre los clubes restantes no se repiten.
-    """
+    """Da de baja un club y reorganiza automáticamente todo el fixture pendiente."""
     campeonato = db.get_or_404(Campeonato, campeonato_id)
     club = db.get_or_404(Club, club_id)
 
     participacion = CampeonatoClub.query.filter_by(
-        campeonato_id=campeonato.id,
-        club_id=club.id
+        campeonato_id=campeonato.id, club_id=club.id
     ).first()
 
     if not participacion:
@@ -4789,105 +4780,78 @@ def retirar_club_campeonato(campeonato_id, club_id):
         return redirect(url_for("detalle_campeonato", campeonato_id=campeonato.id))
 
     try:
-        partidos = (
-            Partido.query
-            .filter_by(campeonato_id=campeonato.id)
-            .order_by(Partido.jornada.asc(), Partido.id.asc())
-            .all()
-        )
+        partidos = Partido.query.filter_by(campeonato_id=campeonato.id).order_by(
+            Partido.jornada.asc(), Partido.id.asc()
+        ).all()
 
         finalizados = [
             p for p in partidos
             if (p.estado or "").strip().lower() == "finalizado"
-            and p.goles_local is not None
-            and p.goles_visitante is not None
+            and p.goles_local is not None and p.goles_visitante is not None
         ]
 
-        pendientes = [
-            p for p in partidos
-            if p not in finalizados
-        ]
+        for p in partidos:
+            if p not in finalizados:
+                db.session.delete(p)
 
-        # Guardamos los cruces que ya se jugaron entre clubes que permanecen.
+        db.session.delete(participacion)
+        db.session.flush()
+
         clubes_actuales = [
-            registro.club_id
-            for registro in CampeonatoClub.query.filter_by(
+            r.club_id for r in CampeonatoClub.query.filter_by(
                 campeonato_id=campeonato.id
-            ).all()
-            if registro.club_id != club.id
+            ).order_by(CampeonatoClub.id).all()
         ]
-        clubes_set = set(clubes_actuales)
 
-        # Los cruces finalizados entre los clubes que permanecen no se repetirán.
-        ultima_jornada_finalizada = max(
-            [p.jornada for p in finalizados],
-            default=0
+        cruces_jugados = {
+            frozenset((p.local_club_id, p.visitante_club_id))
+            for p in finalizados
+            if p.local_club_id in clubes_actuales and p.visitante_club_id in clubes_actuales
+        }
+
+        calendario = generar_calendario_todos_contra_todos(clubes_actuales)
+        calendario_pendiente = []
+        for jornada in calendario:
+            nuevos = [
+                par for par in jornada
+                if frozenset(par) not in cruces_jugados
+            ]
+            if nuevos:
+                calendario_pendiente.append(nuevos)
+
+        ultima_jornada = max((p.jornada for p in finalizados), default=0)
+        ultima_fecha = max((p.fecha for p in finalizados if p.fecha), default=None)
+        primera_fecha = (
+            ultima_fecha + timedelta(days=7)
+            if ultima_fecha else siguiente_sabado(campeonato.fecha_inicio)
         )
-
-        fecha_base = (
-            max(
-                [p.fecha for p in finalizados if p.fecha],
-                default=None
-            )
-        )
-        if fecha_base:
-            primera_fecha_futura = fecha_base + timedelta(days=7)
-        else:
-            primera_fecha_futura = siguiente_sabado(campeonato.fecha_inicio)
-
-        # Para mantener una lectura limpia, las nuevas jornadas continúan después
-        # de la última jornada con partidos finalizados.
-        nueva_jornada = ultima_jornada_finalizada + 1
 
         creados = 0
-        for bloque in pendientes_nuevos:
-            fecha_jornada = primera_fecha_futura + timedelta(
-                days=(nueva_jornada - (ultima_jornada_finalizada + 1)) * 7
-            )
-
-            for local_id, visitante_id in bloque:
-                db.session.add(
-                    Partido(
-                        campeonato_id=campeonato.id,
-                        jornada=nueva_jornada,
-                        fecha=fecha_jornada,
-                        hora="17:00",
-                        cancha="Por definir",
-                        local_club_id=local_id,
-                        visitante_club_id=visitante_id,
-                        turno_club_id=None,
-                        goles_local=None,
-                        goles_visitante=None,
-                        estado="Programado"
-                    )
-                )
+        for offset, jornada_partidos in enumerate(calendario_pendiente):
+            jornada_num = ultima_jornada + offset + 1
+            fecha_jornada = primera_fecha + timedelta(days=offset * 7)
+            for local_id, visitante_id in jornada_partidos:
+                db.session.add(Partido(
+                    campeonato_id=campeonato.id, jornada=jornada_num,
+                    fecha=fecha_jornada, hora="17:00", cancha="Por definir",
+                    local_club_id=local_id, visitante_club_id=visitante_id,
+                    turno_club_id=None, goles_local=None,
+                    goles_visitante=None, estado="Programado"
+                ))
                 creados += 1
 
-            nueva_jornada += 1
-
         db.session.commit()
-
         flash(
-            f"{club.nombre} fue dado de baja correctamente. "
-            f"Se conservaron {len(finalizados)} partidos finalizados y se reorganizaron "
-            f"{creados} partidos pendientes para los {len(clubes_actuales)} clubes restantes.",
+            f"{club.nombre} fue dado de baja. Se conservaron {len(finalizados)} "
+            f"partidos finalizados y se reorganizaron {creados} partidos pendientes.",
             "success"
         )
-
     except Exception as error:
         db.session.rollback()
         print("ERROR RETIRANDO CLUB DEL CAMPEONATO:", repr(error))
-        flash(
-            "No fue posible dar de baja al club ni reorganizar el fixture.",
-            "error"
-        )
+        flash("No fue posible dar de baja el club ni reorganizar el fixture.", "error")
 
-    return redirect(
-        url_for(
-            "detalle_campeonato",
-            campeonato_id=campeonato.id
-        )
-    )
+    return redirect(url_for("detalle_campeonato", campeonato_id=campeonato.id))
 
 
 @app.route(
