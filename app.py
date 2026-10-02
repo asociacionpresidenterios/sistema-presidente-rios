@@ -3662,6 +3662,10 @@ def crear_expulsado_disciplina():
             raise ValueError("Debes ingresar motivo y resolución oficial.")
 
         db.session.add(registro)
+        if tipo == "Jugador" and jugador_id:
+            jugador = db.session.get(Jugador, jugador_id)
+            if jugador:
+                jugador.estado = "Expulsado"
         db.session.commit()
         flash("Registro de expulsión creado correctamente.", "success")
         return redirect(url_for("ver_expulsado_disciplina", expulsado_id=registro.id))
