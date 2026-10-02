@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Tesorería · Rendición mensual{% endblock %}
+{% block content %}
+<style>
+.wrap{max-width:1380px;margin:auto}.hero{background:linear-gradient(135deg,#071426,#173f7a);color:#fff;border-radius:18px;padding:24px;margin-bottom:18px}.eyebrow{font-size:10px;letter-spacing:.14em;font-weight:800;opacity:.75}.hero h1{margin:5px 0;font-size:29px}.hero p{margin:0;color:#d9e7f8;font-size:13px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.actions a{display:inline-block;text-decoration:none;border-radius:9px;padding:9px 12px;background:#fff;color:#173f7a;font-weight:800;font-size:11px}.panel{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px;margin-bottom:18px}.panel h2{font-size:16px;margin:0 0 14px}.filter{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.filter div{min-width:150px}.filter label{display:block;font-size:10px;color:#64748b;font-weight:800;text-transform:uppercase;margin-bottom:5px}.filter select,.filter button{width:100%;box-sizing:border-box;border:1px solid #d6dee9;border-radius:9px;padding:10px;font:inherit;background:#fff}.filter button{background:#2563eb;color:#fff;border:0;font-weight:800;cursor:pointer}.cards{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}.card{background:#f8fafc;border:1px solid #e5eaf1;border-radius:12px;padding:14px}.label{font-size:9px;color:#64748b;font-weight:800;text-transform:uppercase}.amount{font-size:22px;font-weight:900;margin-top:5px}.positive{color:#166534}.negative{color:#b91c1c}.blue{color:#1d4ed8}.orange{color:#c2410c}.green{color:#047857}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th{text-align:left;font-size:9px;color:#64748b;padding:10px 8px;border-bottom:1px solid #e5eaf1;text-transform:uppercase;white-space:nowrap}td{padding:9px 8px;border-bottom:1px solid #eef2f7;font-size:11px;vertical-align:top}.right{text-align:right}.total{font-weight:900;background:#f8fafc}.note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:11px;padding:12px;font-size:11px;color:#1e3a8a;line-height:1.5}.muted{color:#64748b}.empty{text-align:center;padding:25px;color:#64748b}.print-btn{background:#0f766e!important}
+@media(max-width:1050px){.cards{grid-template-columns:repeat(3,1fr)}}@media(max-width:800px){.grid{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}}@media(max-width:520px){.cards{grid-template-columns:1fr}}
+@media print{body{background:#fff}.hero{color:#000;background:#fff;border:2px solid #111}.hero p{color:#333}.actions,.filter,.no-print{display:none!important}.panel{break-inside:avoid;box-shadow:none}.wrap{max-width:none}.cards{grid-template-columns:repeat(5,1fr)}}
+</style>
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">V10.3 · RENDICIÓN MENSUAL AUTOMÁTICA</div>
+    <h1>📒 Rendición {{inicio_mes.strftime('%B')|capitalize}} {{anio}}</h1>
+    <p>Resumen de caja, ingresos, egresos, categorías, cuentas generadas y obligaciones pendientes.</p>
+    <div class="actions">
+      <a href="{{url_for('admin_tesoreria')}}">← Volver a Tesorería</a>
+      <a href="javascript:window.print()" class="print-btn">🖨️ Imprimir / Guardar PDF</a>
+    </div>
+  </div>
+
+  <div class="panel no-print">
+    <h2>📅 Período de rendición</h2>
+    <form method="get" class="filter">
+      <div><label>Mes</label><select name="mes">
+        {% for n,nombre in [(1,'Enero'),(2,'Febrero'),(3,'Marzo'),(4,'Abril'),(5,'Mayo'),(6,'Junio'),(7,'Julio'),(8,'Agosto'),(9,'Septiembre'),(10,'Octubre'),(11,'Noviembre'),(12,'Diciembre')] %}
+        <option value="{{n}}" {% if mes==n %}selected{% endif %}>{{nombre}}</option>
+        {% endfor %}
+      </select></div>
+      <div><label>Año</label><select name="anio">
+        {% for y in range(today.year-3,today.year+2) %}<option value="{{y}}" {% if anio==y %}selected{% endif %}>{{y}}</option>{% endfor %}
+      </select></div>
+      <div><button type="submit">🔎 Generar rendición</button></div>
+    </form>
+  </div>
+
+  <div class="cards">
+    <div class="card"><div class="label">Saldo inicial</div><div class="amount blue">$ {{ "{:,.0f}".format(resumen.saldo_inicial).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Ingresos</div><div class="amount positive">$ {{ "{:,.0f}".format(resumen.ingresos).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Egresos</div><div class="amount negative">$ {{ "{:,.0f}".format(resumen.egresos).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Saldo final</div><div class="amount {% if resumen.saldo_final>=0 %}positive{% else %}negative{% endif %}">$ {{ "{:,.0f}".format(resumen.saldo_final).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Movimientos</div><div class="amount">{{resumen.movimientos}}</div></div>
+  </div>
+
+  <div class="panel">
+    <h2>🧾 Resumen de rendición</h2>
+    <div class="note">
+      <strong>Fórmula:</strong> saldo inicial + ingresos del mes − egresos del mes = saldo final.
+      El saldo corresponde a los movimientos de caja registrados en el sistema; las cuentas por cobrar/pagar pendientes no se consideran dinero disponible.
+    </div>
+    <div class="table-wrap" style="margin-top:12px"><table>
+      <tr><td>Saldo inicial al {{inicio_mes.strftime('%d/%m/%Y')}}</td><td class="right">$ {{ "{:,.0f}".format(resumen.saldo_inicial).replace(",", ".") }}</td></tr>
+      <tr><td>+ Total ingresos</td><td class="right positive">$ {{ "{:,.0f}".format(resumen.ingresos).replace(",", ".") }}</td></tr>
+      <tr><td>− Total egresos</td><td class="right negative">$ {{ "{:,.0f}".format(resumen.egresos).replace(",", ".") }}</td></tr>
+      <tr class="total"><td>Saldo final al {{(fin_mes - timedelta(days=1)).strftime('%d/%m/%Y')}}</td><td class="right">$ {{ "{:,.0f}".format(resumen.saldo_final).replace(",", ".") }}</td></tr>
+    </table></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>📊 Resumen por categoría</h2>
+      {% if categorias %}<div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Mov.</th><th class="right">Ingresos</th><th class="right">Egresos</th><th class="right">Neto</th></tr></thead><tbody>
+      {% for c in categorias %}<tr><td><strong>{{c.nombre}}</strong></td><td>{{c.movimientos}}</td><td class="right">$ {{"{:,.0f}".format(c.ingresos).replace(",", ".")}}</td><td class="right">$ {{"{:,.0f}".format(c.egresos).replace(",", ".")}}</td><td class="right">$ {{"{:,.0f}".format(c.neto).replace(",", ".")}}</td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<div class="empty">No hay movimientos en este período.</div>{% endif %}
+    </div>
+
+    <div class="panel">
+      <h2>🏦 Cuentas generadas en el mes</h2>
+      <div class="cards" style="grid-template-columns:1fr 1fr;margin:0 0 10px">
+        <div class="card"><div class="label">Por cobrar</div><div class="amount orange">$ {{"{:,.0f}".format(resumen.cuentas_cobrar).replace(",", ".")}}</div></div>
+        <div class="card"><div class="label">Por pagar</div><div class="amount negative">$ {{"{:,.0f}".format(resumen.cuentas_pagar).replace(",", ".")}}</div></div>
+      </div>
+      <div class="note">Estas cifras representan obligaciones generadas durante el período, no caja. Los abonos y pagos aparecen como ingresos/egresos cuando se registran.</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>⚠️ Pendientes por cobrar</h2>
+      {% if pendientes_cobrar %}<div class="table-wrap"><table><thead><tr><th>Club</th><th>Concepto</th><th>Vencimiento</th><th class="right">Saldo</th></tr></thead><tbody>
+      {% for c in pendientes_cobrar %}<tr><td>{{c.club.nombre if c.club else 'General'}}</td><td>{{c.concepto}}</td><td>{{c.vencimiento.strftime('%d/%m/%Y') if c.vencimiento else '—'}}</td><td class="right orange"><strong>$ {{"{:,.0f}".format(c.saldo).replace(",", ".")}}</strong></td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<div class="empty">No hay cuentas por cobrar pendientes.</div>{% endif %}
+    </div>
+    <div class="panel">
+      <h2>⚠️ Pendientes por pagar</h2>
+      {% if pendientes_pagar %}<div class="table-wrap"><table><thead><tr><th>Concepto</th><th>Vencimiento</th><th class="right">Saldo</th></tr></thead><tbody>
+      {% for c in pendientes_pagar %}<tr><td>{{c.concepto}}</td><td>{{c.vencimiento.strftime('%d/%m/%Y') if c.vencimiento else '—'}}</td><td class="right negative"><strong>$ {{"{:,.0f}".format(c.saldo).replace(",", ".")}}</strong></td></tr>{% endfor %}
+      </tbody></table></div>{% else %}<div class="empty">No hay cuentas por pagar pendientes.</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>🏟️ Resumen por club — movimientos reales del mes</h2>
+    {% if resumen_clubes %}<div class="table-wrap"><table><thead><tr><th>Club</th><th>Movimientos</th><th class="right">Ingresos</th><th class="right">Egresos</th><th class="right">Neto</th></tr></thead><tbody>
+    {% for x in resumen_clubes %}<tr><td><strong>{{x.club.nombre}}</strong></td><td>{{x.movimientos}}</td><td class="right">$ {{"{:,.0f}".format(x.ingresos).replace(",", ".")}}</td><td class="right">$ {{"{:,.0f}".format(x.egresos).replace(",", ".")}}</td><td class="right">$ {{"{:,.0f}".format(x.neto).replace(",", ".")}}</td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<div class="empty">No hay movimientos asociados a clubes en este mes.</div>{% endif %}
+  </div>
+
+  <div class="panel">
+    <h2>📋 Detalle de movimientos</h2>
+    {% if movimientos %}<div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Categoría</th><th>Club</th><th>Medio</th><th class="right">Monto</th></tr></thead><tbody>
+    {% for m in movimientos %}<tr><td>{{m.fecha.strftime('%d/%m/%Y')}}</td><td>{{m.tipo}}</td><td>{{m.concepto}}</td><td>{{m.categoria or 'Sin categoría'}}</td><td>{{m.club.nombre if m.club else 'General'}}</td><td>{{m.medio_pago or '—'}}</td><td class="right"><strong>$ {{"{:,.0f}".format(m.monto|int).replace(",", ".")}}</strong></td></tr>{% endfor %}
+    </tbody></table></div>{% else %}<div class="empty">No hay movimientos registrados en este período.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}
