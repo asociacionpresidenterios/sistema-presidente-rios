@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Expulsión oficial{% endblock %}
+{% block content %}
+<style>.doc{max-width:850px;margin:auto;background:#fff;border:1px solid #e5eaf1;border-radius:16px;padding:30px}.head{border-bottom:2px solid #111827;padding-bottom:15px}.num{color:#991b1b;font-weight:900}.section{margin-top:20px}.text{white-space:pre-wrap;line-height:1.7}.btn{display:inline-block;border:0;border-radius:9px;padding:10px 14px;background:#991b1b;color:#fff;font-weight:800;font-size:11px;margin:4px}.green{background:#166534}.gray{background:#64748b}</style>
+<div class="doc"><div class="head"><div class="num">ASOCIACIÓN PRESIDENTE RÍOS · COMITÉ DE DISCIPLINA</div><h1>🚫 Expulsión oficial</h1><div>{{expulsado.numero_resolucion or 'Sin resolución'}} · {{expulsado.fecha.strftime('%d/%m/%Y')}}</div></div>
+<div class="section"><strong>Afectado:</strong> {% if expulsado.jugador %}{{expulsado.jugador.nombre_completo}}{% elif expulsado.club %}{{expulsado.club.nombre}}{% endif %} · {{expulsado.tipo_afectado}}</div>
+<div class="section"><strong>Campeonato / Serie:</strong> {{expulsado.campeonato.nombre if expulsado.campeonato else '-'}} · {{expulsado.serie or '-'}}</div>
+<div class="section"><h3>MOTIVO</h3><div class="text">{{expulsado.motivo}}</div></div>
+<div class="section"><h3>RESOLUCIÓN</h3><div class="text">{{expulsado.resolucion}}</div></div>
+{% if expulsado.fecha_inicio %}<div class="section"><strong>Vigencia:</strong> {{expulsado.fecha_inicio.strftime('%d/%m/%Y')}}{% if expulsado.fecha_fin %} hasta {{expulsado.fecha_fin.strftime('%d/%m/%Y')}}{% endif %}</div>{% endif %}
+{% if expulsado.observaciones %}<div class="section"><h3>OBSERVACIONES</h3><div class="text">{{expulsado.observaciones}}</div></div>{% endif %}
+<div style="margin-top:25px"><span>Estado: <strong>{{expulsado.estado}}</strong> · {{'Publicado' if expulsado.publicado else 'Interno'}}</span></div>
+<div style="margin-top:20px">{% if not expulsado.publicado and expulsado.estado=='Vigente' %}<form method="post" action="{{url_for('publicar_expulsado_disciplina',expulsado_id=expulsado.id)}}" style="display:inline"><button class="btn green">🌐 Publicar en portal</button></form>{% endif %}{% if session.get('admin_rol')=='Administrador' and expulsado.estado!='Anulado' %}<form method="post" action="{{url_for('anular_expulsado_disciplina',expulsado_id=expulsado.id)}}" style="display:inline"><button class="btn">Anular</button></form>{% endif %}<button class="btn" onclick="window.print()">🖨️ Imprimir / PDF</button><a class="btn gray" href="{{url_for('admin_disciplina_expulsados')}}">← Volver</a></div></div>
+{% endblock %}
