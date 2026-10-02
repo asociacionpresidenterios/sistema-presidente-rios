@@ -6388,6 +6388,7 @@ def obtener_goleadores_publicos(campeonato, limite=50):
                  db.or_(Gol.campeonato_id == campeonato.id,
                        db.and_(Gol.campeonato_id.is_(None), Gol.campeonato == campeonato.nombre))))
              .filter(Jugador.id.in_(ids)).group_by(Jugador.id)
+             .having(db.func.sum(Gol.cantidad) > 0)
              .order_by(db.desc("total"), Jugador.nombre_completo).limit(limite).all())
     return filas
 
@@ -6842,6 +6843,10 @@ def publico_fair_play(campeonato_id):
                     suspensiones += cantidad
 
         puntos = amarillas + rojas * 3 + suspensiones * 2
+        # Solo publicar clubes con actividad disciplinaria.
+        if amarillas == 0 and rojas == 0 and suspensiones == 0:
+            continue
+
         equipos.append({
             "club": club,
             "amarillas": amarillas,
