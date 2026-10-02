@@ -10,5 +10,5 @@
 <div class="card"><h2>🏆 Informe general</h2><p>Tabla de posiciones, goleadores, estado del fixture y resumen completo del campeonato.</p><a class="action" href="{{ url_for('informe_campeonato',campeonato_id=campeonato.id) }}">Abrir informe</a></div>
 <div class="card"><h2>📝 Informes de partido</h2><p>Selecciona un partido para obtener su informe oficial con resultado, nómina y eventos.</p><a class="action" href="{{ url_for('admin_partidos',campeonato_id=campeonato.id) }}">Ver partidos</a></div>
 <div class="card"><h2>🏟️ Informe por club</h2><p>Campaña, resultados y plantel de cada club participante.</p><a class="action" href="{{ url_for('admin_clubes') }}">Ver clubes</a></div>
-<div class="card"><h2>👤 Informe de jugador</h2><p>Ficha histórica, partidos, goles y disciplina de un jugador.</p><a class="action" href="{{ url_for('admin_centro_jugadores') }}">Buscar jugador</a></div>
+<div class="card"><h2>👤 Informe de jugador</h2><p>Ficha histórica, partidos, goles y disciplina de un jugador.</p><a class="action" href="{{ url_for('index') }}">Buscar jugador</a></div>
 </div></div></body></html>
