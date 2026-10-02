@@ -6445,6 +6445,11 @@ def acta_partido(campeonato_id, partido_id):
                     partido.goles_visitante = None
                     partido.estado = "Programado"
                     db.session.commit()
+                    registrar_auditoria(
+                        "REABRIR_ACTA",
+                        "Actas",
+                        f"Se reabrió el acta del partido {partido.local_club.nombre} vs {partido.visitante_club.nombre} de '{campeonato.nombre}'.",
+                    )
                     flash("Acta reabierta. Se retiraron sus estadísticas derivadas hasta volver a cerrarla.", "success")
                 except Exception as error:
                     db.session.rollback()
@@ -6564,6 +6569,11 @@ def acta_partido(campeonato_id, partido_id):
                 goles_local = goles_visitante = 0
 
             db.session.commit()
+            registrar_auditoria(
+                "GUARDAR_ACTA",
+                "Actas",
+                f"Se {'cerró' if acta.estado == 'Cerrada' else 'guardó como borrador'} el acta del partido {partido.local_club.nombre} vs {partido.visitante_club.nombre} de '{campeonato.nombre}'.",
+            )
 
             if acta.estado == "Cerrada":
                 flash(
@@ -8027,6 +8037,11 @@ def admin_tesoreria_jornada():
                             creadas += 1
 
                 db.session.commit()
+                registrar_auditoria(
+                    "GENERAR_TESORERIA_JORNADA",
+                    "Tesorería",
+                    f"Se procesó la jornada de '{campeonato.nombre}' del {fecha.strftime('%d/%m/%Y')}: {creadas} cuentas nuevas y {existentes} ya existentes.",
+                )
                 flash(
                     f"Jornada procesada: {creadas} cuentas nuevas y {existentes} ya existentes. "
                     "Las cuentas nuevas quedan pendientes hasta registrar sus abonos/pagos.",
