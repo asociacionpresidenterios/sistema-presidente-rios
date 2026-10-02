@@ -4818,66 +4818,7 @@ def retirar_club_campeonato(campeonato_id, club_id):
         ]
         clubes_set = set(clubes_actuales)
 
-        cruces_jugados = set()
-        for p in finalizados:
-            if p.local_club_id in clubes_set and p.visitante_club_id in clubes_set:
-                cruces_jugados.add(
-                    tuple(sorted((p.local_club_id, p.visitante_club_id)))
-                )
-
-        # Primero retiramos la inscripción.
-        db.session.delete(participacion)
-
-        # Eliminamos solamente partidos NO finalizados que involucren al club retirado
-        # y cualquier otro partido pendiente del fixture, porque será reconstruido.
-        for p in pendientes:
-            db.session.delete(p)
-
-        db.session.flush()
-
-        # Si quedan menos de dos clubes, no existe fixture posible.
-        if len(clubes_actuales) < 2:
-            db.session.commit()
-            flash(
-                f"{club.nombre} fue dado de baja. Quedan {len(clubes_actuales)} clubes y no es posible generar fixture todavía.",
-                "success"
-            )
-            return redirect(url_for("detalle_campeonato", campeonato_id=campeonato.id))
-
-        # Generamos todos los cruces posibles de los clubes restantes.
-        calendario_completo = generar_calendario_todos_contra_todos(clubes_actuales)
-
-        # Convertimos el calendario a cruces únicos, manteniendo el orden de la rotación.
-        pendientes_nuevos = []
-        for jornada_original in calendario_completo:
-            jornada_filtrada = []
-            for local_id, visitante_id in jornada_original:
-                cruce = tuple(sorted((local_id, visitante_id)))
-                if cruce not in cruces_jugados:
-                    jornada_filtrada.append((local_id, visitante_id))
-                    cruces_jugados.add(("programado", cruce))
-            if jornada_filtrada:
-                pendientes_nuevos.append(jornada_filtrada)
-
-        # El marcador temporal anterior puede contener claves especiales; usamos
-        # el conjunto real de cruces ya jugados para evitar repeticiones.
-        cruces_finalizados = set()
-        for p in finalizados:
-            if p.local_club_id in clubes_set and p.visitante_club_id in clubes_set:
-                cruces_finalizados.add(tuple(sorted((p.local_club_id, p.visitante_club_id))))
-
-        # Recalcular correctamente los cruces pendientes desde cero.
-        pendientes_nuevos = []
-        for jornada_original in calendario_completo:
-            jornada_filtrada = []
-            for local_id, visitante_id in jornada_original:
-                cruce = tuple(sorted((local_id, visitante_id)))
-                if cruce in cruces_finalizados:
-                    continue
-                jornada_filtrada.append((local_id, visitante_id))
-            if jornada_filtrada:
-                pendientes_nuevos.append(jornada_filtrada)
-
+        # Los cruces finalizados entre los clubes que permanecen no se repetirán.
         ultima_jornada_finalizada = max(
             [p.jornada for p in finalizados],
             default=0
