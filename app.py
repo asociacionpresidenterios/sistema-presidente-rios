@@ -8621,7 +8621,7 @@ def construir_alertas_operativas():
 
 
 @app.route("/admin/alertas")
-@admin_required
+@rol_permitido("Administrador")
 def admin_alertas():
     alertas = construir_alertas_operativas()
     criticas = [a for a in alertas if a["tipo"] == "danger"]
