@@ -53,7 +53,7 @@
 <div class="content">
 {% for serie, panels in series_publicas %}
 {% for p in panels %}
-<section class="champ {% if loop.first and loop.parent is not defined %}active{% endif %}" id="champ-{{ p.campeonato.id }}" data-champ="{{ p.campeonato.id }}">
+<section class="champ {% if p.campeonato.id == series_publicas[0][1][0].campeonato.id %}active{% endif %}" id="champ-{{ p.campeonato.id }}" data-champ="{{ p.campeonato.id }}">
 <div class="champ-head"><div><div class="eyebrow" style="color:#1769e0">{{ serie }}</div><h2>{{ p.campeonato.nombre }}</h2><div class="meta">Temporada {{ p.campeonato.temporada }} · {{ p.campeonato.serie }}</div></div><span class="status">{{ p.campeonato.estado or 'Activo' }}</span></div>
 
 <div class="panel section-posiciones">
