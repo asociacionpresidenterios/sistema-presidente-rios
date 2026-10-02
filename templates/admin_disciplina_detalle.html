@@ -17,7 +17,7 @@
 <div class="section"><h3>ANTECEDENTES</h3><div class="text">{{resolucion.antecedentes or 'No se registraron antecedentes adicionales.'}}</div></div>
 <div class="section"><h3>RESOLUCIÓN DEL COMITÉ</h3><div class="text">{{resolucion.resolucion}}</div></div>
 {% if resolucion.observaciones %}<div class="section"><h3>OBSERVACIONES</h3><div class="text">{{resolucion.observaciones}}</div></div>{% endif %}
-<div style="margin-top:28px;font-size:11px;color:#64748b">Emitido por: {{resolucion.creado_por or 'Comité de Disciplina'}} · {% if resolucion.fecha_publicacion %}Publicado {{resolucion.fecha_publicacion.strftime('%d/%m/%Y')}{% else %}Documento interno{% endif %}</div>
+<div style="margin-top:28px;font-size:11px;color:#64748b">Emitido por: {{resolucion.creado_por or 'Comité de Disciplina'}} · {% if resolucion.fecha_publicacion %}Publicado {{resolucion.fecha_publicacion.strftime('%d/%m/%Y')}}{% else %}Documento interno{% endif %}</div>
 <div class="actions" style="margin-top:22px">
 <a class="btn gray" href="{{url_for('admin_disciplina')}}">← Centro</a>
 {% if not resolucion.publicado and resolucion.estado != 'Anulada' %}<form method="post" action="{{url_for('publicar_resolucion_disciplina',resolucion_id=resolucion.id)}}" style="display:inline"><button class="btn green" type="submit">🌐 Publicar comunicado</button></form>{% endif %}
