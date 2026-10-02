@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{resolucion.numero_resolucion}}{% endblock %}
+{% block content %}
+<style>
+.doc{max-width:950px;margin:auto;background:#fff;border:1px solid #e5eaf1;border-radius:16px;padding:32px}.head{border-bottom:2px solid #111827;padding-bottom:18px;margin-bottom:20px}.num{color:#5b21b6;font-weight:900}.meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:15px 0}.box{background:#f8fafc;border:1px solid #e5eaf1;border-radius:10px;padding:12px}.lbl{font-size:9px;color:#64748b;font-weight:800;text-transform:uppercase}.val{font-weight:700;font-size:12px;margin-top:4px}.section{margin-top:22px}.section h3{font-size:13px;border-bottom:1px solid #e5eaf1;padding-bottom:7px}.text{white-space:pre-wrap;line-height:1.65;font-size:13px}.san{background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:15px;font-weight:800}.btn{display:inline-block;border:0;border-radius:9px;padding:10px 14px;background:#5b21b6;color:#fff;font-weight:800;font-size:11px;margin:4px}.red{background:#991b1b}.green{background:#166534}.gray{background:#64748b}
+@media(max-width:700px){.meta{grid-template-columns:1fr}.doc{padding:20px}}
+@media print{.actions{display:none}.doc{border:0;margin:0;max-width:none}.main{margin:0}.sidebar,.topbar{display:none!important}}
+</style>
+<div class="doc">
+<div class="head"><div class="num">ASOCIACIÓN PRESIDENTE RÍOS · COMITÉ DE DISCIPLINA</div><h1 style="margin:7px 0">{{resolucion.titulo}}</h1><div style="font-size:12px;color:#64748b">{{resolucion.numero_resolucion}} · {{resolucion.fecha.strftime('%d/%m/%Y')}}</div></div>
+<div class="meta">
+<div class="box"><div class="lbl">Afectado</div><div class="val">{% if resolucion.jugador %}{{resolucion.jugador.nombre_completo}}{% elif resolucion.club %}{{resolucion.club.nombre}}{% else %}General{% endif %}</div></div>
+<div class="box"><div class="lbl">Campeonato / Serie</div><div class="val">{{resolucion.campeonato.nombre if resolucion.campeonato else '—'}}{% if resolucion.serie %} · {{resolucion.serie}}{% endif %}</div></div>
+<div class="box"><div class="lbl">Estado</div><div class="val">{{resolucion.estado}} · {% if resolucion.publicado %}Público{% else %}Interno{% endif %}</div></div>
+</div>
+{% if resolucion.sancion %}<div class="san">⚠️ Sanción: {{resolucion.sancion}}{% if resolucion.cantidad_sancion %} · {{resolucion.cantidad_sancion}} {{resolucion.unidad_sancion or ''}}{% endif %}{% if resolucion.fecha_inicio %} · Desde {{resolucion.fecha_inicio.strftime('%d/%m/%Y')}}{% endif %}{% if resolucion.fecha_fin %} hasta {{resolucion.fecha_fin.strftime('%d/%m/%Y')}}{% endif %}</div>{% endif %}
+<div class="section"><h3>ANTECEDENTES</h3><div class="text">{{resolucion.antecedentes or 'No se registraron antecedentes adicionales.'}}</div></div>
+<div class="section"><h3>RESOLUCIÓN DEL COMITÉ</h3><div class="text">{{resolucion.resolucion}}</div></div>
+{% if resolucion.observaciones %}<div class="section"><h3>OBSERVACIONES</h3><div class="text">{{resolucion.observaciones}}</div></div>{% endif %}
+<div style="margin-top:28px;font-size:11px;color:#64748b">Emitido por: {{resolucion.creado_por or 'Comité de Disciplina'}} · {% if resolucion.fecha_publicacion %}Publicado {{resolucion.fecha_publicacion.strftime('%d/%m/%Y')}{% else %}Documento interno{% endif %}</div>
+<div class="actions" style="margin-top:22px">
+<a class="btn gray" href="{{url_for('admin_disciplina')}}">← Centro</a>
+{% if not resolucion.publicado and resolucion.estado != 'Anulada' %}<form method="post" action="{{url_for('publicar_resolucion_disciplina',resolucion_id=resolucion.id)}}" style="display:inline"><button class="btn green" type="submit">🌐 Publicar comunicado</button></form>{% endif %}
+{% if session.get('admin_rol') == 'Administrador' and resolucion.estado != 'Anulada' %}<form method="post" action="{{url_for('anular_resolucion_disciplina',resolucion_id=resolucion.id)}}" style="display:inline"><button class="btn red" type="submit">Anular</button></form>{% endif %}
+<button class="btn" onclick="window.print()">🖨️ Imprimir / PDF</button>
+{% if resolucion.publicado %}<a class="btn" href="{{url_for('publico_resolucion_disciplina',resolucion_id=resolucion.id)}}">Ver versión pública</a>{% endif %}
+</div></div>
+{% endblock %}
