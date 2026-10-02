@@ -1757,8 +1757,11 @@ def mi_cuenta_admin():
         else:
             admin.set_password(nueva)
             db.session.commit()
-            flash("Contraseña actualizada correctamente.", "success")
-            return redirect(url_for("mi_cuenta_admin"))
+            # Rotar la sesión al cambiar la contraseña: obliga a autenticarse
+            # nuevamente y evita conservar una sesión administrativa anterior.
+            session.clear()
+            flash("Contraseña actualizada correctamente. Inicia sesión nuevamente.", "success")
+            return redirect(url_for("login"))
     return render_template("admin_cuenta.html", admin=admin)
 
 
