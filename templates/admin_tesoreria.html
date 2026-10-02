@@ -37,6 +37,21 @@
     <div class="card"><div class="label">Por pagar</div><div class="amount warning">$ {{ "{:,.0f}".format(por_pagar).replace(",", ".") }}</div></div>
   </div>
 
+  <div class="panel" style="margin-bottom:18px">
+    <h2>🏦 Estado financiero por club</h2>
+    <p class="muted">Consulta la cuenta individual de cada club: cuentas por cobrar, por pagar, abonos y movimientos históricos.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:14px">
+      {% for club in clubes %}
+      <a href="{{url_for('admin_tesoreria_club', club_id=club.id)}}" style="display:block;text-decoration:none;border:1px solid #e5eaf1;border-radius:12px;padding:13px;background:#f8fafc;color:#0f172a">
+        <strong style="display:block">{{club.nombre}}</strong>
+        <span style="font-size:10px;color:#64748b">Ver estado financiero →</span>
+      </a>
+      {% else %}
+      <div class="empty">No hay clubes activos registrados.</div>
+      {% endfor %}
+    </div>
+  </div>
+
   <div class="grid">
     <div class="panel">
       <h2>➕ Registrar movimiento</h2>
