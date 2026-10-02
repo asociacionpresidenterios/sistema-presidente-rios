@@ -2474,7 +2474,7 @@ def editar_jugador(jugador_id):
         try:
 
             db.session.commit()
-    registrar_auditoria("EDITAR_JUGADOR", "Jugadores", "Se actualizó la ficha de un jugador.")
+            registrar_auditoria("EDITAR_JUGADOR", "Jugadores", "Se actualizó la ficha de un jugador.")
 
         except Exception as error:
 
@@ -3620,7 +3620,7 @@ def crear_resolucion_disciplina():
                     jugador.estado = "Inhabilitado"
 
         db.session.commit()
-    registrar_auditoria("CREAR_RESOLUCION", "Disciplina", "Se creó una resolución del Comité de Disciplina.")
+        registrar_auditoria("CREAR_RESOLUCION", "Disciplina", "Se creó una resolución del Comité de Disciplina.")
         flash(f"Resolución {resolucion.numero_resolucion} registrada correctamente.", "success")
         return redirect(url_for("ver_resolucion_disciplina", resolucion_id=resolucion.id))
     except Exception as error:
@@ -3857,7 +3857,7 @@ def crear_expulsado_disciplina():
             if jugador:
                 jugador.estado = "Expulsado"
         db.session.commit()
-    registrar_auditoria("CREAR_EXPULSION", "Disciplina", "Se creó un registro de expulsión.")
+        registrar_auditoria("CREAR_EXPULSION", "Disciplina", "Se creó un registro de expulsión.")
         flash("Registro de expulsión creado correctamente.", "success")
         return redirect(url_for("ver_expulsado_disciplina", expulsado_id=registro.id))
     except Exception as error:
@@ -4788,7 +4788,7 @@ def nuevo_campeonato():
         try:
             db.session.add(campeonato)
             db.session.commit()
-    registrar_auditoria("CREAR_CAMPEONATO", "Campeonatos", "Se creó un nuevo campeonato.")
+            registrar_auditoria("CREAR_CAMPEONATO", "Campeonatos", "Se creó un nuevo campeonato.")
         except Exception as error:
             db.session.rollback()
             print("ERROR CREANDO CAMPEONATO:", repr(error))
@@ -5173,7 +5173,7 @@ def retirar_club_campeonato(campeonato_id, club_id):
                 creados += 1
 
         db.session.commit()
-    registrar_auditoria("RETIRAR_CLUB_CAMPEONATO", "Campeonatos", "Se dio de baja un club de un campeonato y se reorganizó el fixture.")
+        registrar_auditoria("RETIRAR_CLUB_CAMPEONATO", "Campeonatos", "Se dio de baja un club de un campeonato y se reorganizó el fixture.")
         flash(
             f"{club.nombre} fue dado de baja. Se conservaron {len(finalizados)} "
             f"partidos finalizados y se reorganizaron {creados} partidos pendientes.",
@@ -5244,7 +5244,7 @@ def guardar_clubes_campeonato(campeonato_id):
             )
 
         db.session.commit()
-    registrar_auditoria("ACTUALIZAR_CLUBES_CAMPEONATO", "Campeonatos", "Se actualizaron los clubes participantes de un campeonato.")
+        registrar_auditoria("ACTUALIZAR_CLUBES_CAMPEONATO", "Campeonatos", "Se actualizaron los clubes participantes de un campeonato.")
 
     except Exception as error:
         db.session.rollback()
@@ -7575,7 +7575,7 @@ def admin_tesoreria():
             cuenta.actualizar_estado()
             db.session.add(cuenta)
             db.session.commit()
-    registrar_auditoria("CREAR_CUENTA_TESORERIA", "Tesorería", "Se registró una cuenta en Tesorería.")
+            registrar_auditoria("CREAR_CUENTA_TESORERIA", "Tesorería", "Se registró una cuenta en Tesorería.")
             flash("Cuenta registrada correctamente.", "success")
             return redirect(url_for("admin_tesoreria"))
 
@@ -7635,7 +7635,7 @@ def admin_tesoreria():
             )
             db.session.add(movimiento)
             db.session.commit()
-        registrar_auditoria("REGISTRAR_ABONO", "Tesorería", "Se registró un abono o pago en una cuenta.")
+            registrar_auditoria("REGISTRAR_ABONO", "Tesorería", "Se registró un abono o pago en una cuenta.")
             flash("Abono registrado correctamente.", "success")
             return redirect(url_for("admin_tesoreria"))
 
@@ -8274,7 +8274,7 @@ def admin_tesoreria_cierre():
                 )
                 db.session.add(rendicion)
                 db.session.commit()
-        registrar_auditoria("CREAR_RENDICION", "Tesorería", "Se creó una rendición mensual.")
+                registrar_auditoria("CREAR_RENDICION", "Tesorería", "Se creó una rendición mensual.")
                 flash(f"Rendición {rendicion.numero_rendicion} creada en estado Borrador.", "success")
 
         elif accion == "revisar":
@@ -8287,7 +8287,7 @@ def admin_tesoreria_cierre():
                 rendicion.revisado_por = usuario
                 rendicion.revisado_en = datetime.utcnow()
                 db.session.commit()
-        registrar_auditoria("REVISAR_RENDICION", "Tesorería", "Se marcó una rendición mensual como revisada.")
+                registrar_auditoria("REVISAR_RENDICION", "Tesorería", "Se marcó una rendición mensual como revisada.")
                 flash("Rendición marcada como Revisada.", "success")
 
         elif accion == "cerrar":
@@ -8309,7 +8309,7 @@ def admin_tesoreria_cierre():
                 rendicion.cerrado_por = usuario
                 rendicion.cerrado_en = datetime.utcnow()
                 db.session.commit()
-        registrar_auditoria("CERRAR_RENDICION", "Tesorería", "Se cerró formalmente una rendición mensual.")
+                registrar_auditoria("CERRAR_RENDICION", "Tesorería", "Se cerró formalmente una rendición mensual.")
                 flash(f"Rendición {rendicion.numero_rendicion} cerrada. El período quedó bloqueado.", "success")
 
         elif accion == "reabrir":
@@ -8324,7 +8324,7 @@ def admin_tesoreria_cierre():
                     f" | Reabierta por {usuario} el {datetime.utcnow().strftime('%d/%m/%Y %H:%M')}"
                 ).strip(" |")
                 db.session.commit()
-        registrar_auditoria("REABRIR_RENDICION", "Tesorería", "Se reabrió una rendición mensual cerrada.")
+                registrar_auditoria("REABRIR_RENDICION", "Tesorería", "Se reabrió una rendición mensual cerrada.")
                 flash("Rendición reabierta en estado Revisada. El período vuelve a estar editable.", "success")
 
         return redirect(url_for(
