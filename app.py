@@ -1750,6 +1750,35 @@ def cambiar_estado_admin(admin_id):
         flash("Estado del administrador actualizado.", "success")
     return redirect(url_for("admin_usuarios"))
 
+@app.route("/admin/usuarios/<int:admin_id>/eliminar", methods=["POST"])
+@rol_permitido("Administrador")
+def eliminar_admin(admin_id):
+    admin = db.get_or_404(AdminUser, admin_id)
+
+    if admin.id == session.get("admin_id"):
+        flash("No puedes eliminar tu propia cuenta.", "error")
+        return redirect(url_for("admin_usuarios"))
+
+    if admin.rol == "Administrador":
+        administradores_activos = AdminUser.query.filter_by(
+            rol="Administrador",
+            activo=True
+        ).count()
+        if admin.activo and administradores_activos <= 1:
+            flash("No puedes eliminar el único administrador activo del sistema.", "error")
+            return redirect(url_for("admin_usuarios"))
+
+    try:
+        db.session.delete(admin)
+        db.session.commit()
+        flash(f"El usuario {admin.username} fue eliminado correctamente.", "success")
+    except Exception as error:
+        db.session.rollback()
+        app.logger.exception("Error eliminando usuario administrador")
+        flash(f"No fue posible eliminar el usuario: {error}", "error")
+
+    return redirect(url_for("admin_usuarios"))
+
 
 # ============================================================
 # INICIO / LISTADO
