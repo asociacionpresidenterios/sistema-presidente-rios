@@ -2989,6 +2989,7 @@ def api_jugadores():
     "/jugadores/<int:jugador_id>/gol",
     methods=["POST"]
 )
+@rol_permitido("Administrador")
 def registrar_gol(jugador_id):
 
     jugador = db.get_or_404(
@@ -3080,6 +3081,7 @@ def registrar_gol(jugador_id):
     "/jugadores/<int:jugador_id>/amarilla",
     methods=["POST"]
 )
+@rol_permitido("Administrador")
 def registrar_amarilla(jugador_id):
 
     jugador = db.get_or_404(
@@ -3183,6 +3185,7 @@ def registrar_amarilla(jugador_id):
     "/jugadores/<int:jugador_id>/roja",
     methods=["POST"]
 )
+@rol_permitido("Administrador")
 def registrar_roja(jugador_id):
 
     jugador = db.get_or_404(
@@ -3267,6 +3270,7 @@ def registrar_roja(jugador_id):
     "/jugadores/<int:jugador_id>/suspension",
     methods=["POST"]
 )
+@rol_permitido("Administrador")
 def registrar_suspension(jugador_id):
 
     jugador = db.get_or_404(
@@ -3365,6 +3369,7 @@ def registrar_suspension(jugador_id):
     "/jugadores/<int:jugador_id>/gol/<int:gol_id>/eliminar",
     methods=["POST"]
 )
+@rol_permitido("Administrador")
 def eliminar_gol(jugador_id, gol_id):
 
     jugador = db.get_or_404(
@@ -3428,6 +3433,7 @@ def eliminar_gol(jugador_id, gol_id):
     "/jugadores/<int:jugador_id>/disciplina/<int:registro_id>/eliminar",
     methods=["POST"]
 )
+@rol_permitido("Administrador")
 def eliminar_registro_disciplinario(jugador_id, registro_id):
 
     jugador = db.get_or_404(
@@ -7303,6 +7309,7 @@ def publico_resultados(campeonato_id):
 # ============================================================
 
 @app.route("/admin/planteles/club/<path:club_nombre>/nuevo", methods=["GET", "POST"])
+@rol_permitido("Administrador")
 def admin_nuevo_jugador_club(club_nombre):
     club_nombre = club_nombre.strip()
     clubes, series = obtener_datos_formulario_jugador()
@@ -7358,6 +7365,7 @@ def admin_nuevo_jugador_club(club_nombre):
 
 
 @app.route("/admin/planteles/jugador/<int:jugador_id>/editar", methods=["GET", "POST"])
+@rol_permitido("Administrador")
 def admin_editar_jugador_plantel(jugador_id):
     jugador = db.get_or_404(Jugador, jugador_id)
     clubes, series = obtener_datos_formulario_jugador()
@@ -7435,6 +7443,7 @@ def admin_editar_jugador_plantel(jugador_id):
 
 
 @app.route("/admin/planteles/jugador/<int:jugador_id>/estado", methods=["POST"])
+@rol_permitido("Administrador")
 def admin_cambiar_estado_plantel(jugador_id):
     jugador = db.get_or_404(Jugador, jugador_id)
     estado = normalizar_estado(request.form.get("estado", "Vigente"))
@@ -7447,6 +7456,7 @@ def admin_cambiar_estado_plantel(jugador_id):
 
 
 @app.route("/admin/planteles/jugador/<int:jugador_id>/mover", methods=["POST"])
+@rol_permitido("Administrador")
 def admin_mover_jugador_plantel(jugador_id):
     jugador = db.get_or_404(Jugador, jugador_id)
     club = request.form.get("club", "").strip()
