@@ -4487,53 +4487,6 @@ def nuevo_campeonato():
     )
 
 
-@app.route("/campeonatos/<int:campeonato_id>/eliminar", methods=["POST"])
-@rol_permitido("Administrador")
-def eliminar_campeonato(campeonato_id):
-    """Elimina un campeonato y todos sus datos exclusivos, sin tocar clubes ni jugadores."""
-    campeonato = db.get_or_404(Campeonato, campeonato_id)
-    nombre = campeonato.nombre
-
-    try:
-        # Primero eliminamos los datos que dependen directamente del campeonato.
-        # Se usan filtros por campeonato_id para no borrar registros de otros campeonatos.
-        partidos_eliminados = Partido.query.filter_by(
-            campeonato_id=campeonato.id
-        ).delete(synchronize_session=False)
-
-        goles_eliminados = Gol.query.filter_by(
-            campeonato_id=campeonato.id
-        ).delete(synchronize_session=False)
-
-        disciplina_eliminada = RegistroDisciplinario.query.filter_by(
-            campeonato_id=campeonato.id
-        ).delete(synchronize_session=False)
-
-        clubes_eliminados = CampeonatoClub.query.filter_by(
-            campeonato_id=campeonato.id
-        ).delete(synchronize_session=False)
-
-        db.session.delete(campeonato)
-        db.session.commit()
-
-        flash(
-            f"Campeonato '{nombre}' eliminado correctamente. "
-            f"Partidos: {partidos_eliminados}, goles: {goles_eliminados}, "
-            f"registros disciplinarios: {disciplina_eliminada}, clubes inscritos: {clubes_eliminados}.",
-            "success"
-        )
-
-    except Exception as error:
-        db.session.rollback()
-        print("ERROR ELIMINANDO CAMPEONATO:", repr(error))
-        flash(
-            "No fue posible eliminar el campeonato. No se modificaron los datos.",
-            "error"
-        )
-
-    return redirect(url_for("campeonatos"))
-
-
 @app.route("/campeonatos/<int:campeonato_id>/panel")
 @admin_required
 def panel_campeonato(campeonato_id):
