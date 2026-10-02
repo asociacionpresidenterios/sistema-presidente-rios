@@ -28,6 +28,7 @@
     <div class="panel"><h3>Acciones del campeonato</h3><div class="panel-body"><div class="navgrid">
       <a href="{{ url_for('admin_partidos', campeonato_id=campeonato.id) }}">⚽ Partidos</a>
       <a href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">📅 Fixture</a>
+      <a href="{{ url_for('detalle_campeonato', campeonato_id=campeonato.id) }}#clubes-participantes">👥 Clubes participantes</a>
       <a href="{{ url_for('tabla_campeonato', campeonato_id=campeonato.id) }}">📊 Tabla</a>
       <a href="{{ url_for('estadisticas_campeonato', campeonato_id=campeonato.id) }}">📈 Estadísticas</a>
       <a href="{{ url_for('informes_campeonato', campeonato_id=campeonato.id) }}">📄 Informes</a>
