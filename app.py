@@ -7854,6 +7854,160 @@ def admin_tesoreria_jornada():
     )
 
 # ============================================================
+# V10.3 — RENDICIÓN MENSUAL AUTOMÁTICA
+# No duplica información: calcula la rendición directamente
+# desde los movimientos y cuentas existentes.
+# ============================================================
+
+@app.route("/admin/tesoreria/rendicion")
+@rol_permitido("Administrador", "Tesoreria")
+def admin_tesoreria_rendicion():
+    hoy = date.today()
+    try:
+        mes = int(request.args.get("mes")) if request.args.get("mes") else hoy.month
+    except ValueError:
+        mes = hoy.month
+    try:
+        anio = int(request.args.get("anio")) if request.args.get("anio") else hoy.year
+    except ValueError:
+        anio = hoy.year
+
+    mes = min(max(mes, 1), 12)
+    inicio_mes = date(anio, mes, 1)
+    fin_mes = date(anio + 1, 1, 1) if mes == 12 else date(anio, mes + 1, 1)
+
+    # Saldo de caja basado exclusivamente en movimientos reales registrados.
+    saldo_inicial = db.session.query(
+        db.func.coalesce(
+            db.func.sum(
+                db.case(
+                    (MovimientoTesoreria.tipo == "Ingreso", MovimientoTesoreria.monto),
+                    else_=-MovimientoTesoreria.monto,
+                )
+            ), 0
+        )
+    ).filter(MovimientoTesoreria.fecha < inicio_mes).scalar() or 0
+
+    movimientos = (
+        MovimientoTesoreria.query
+        .filter(
+            MovimientoTesoreria.fecha >= inicio_mes,
+            MovimientoTesoreria.fecha < fin_mes,
+        )
+        .order_by(MovimientoTesoreria.fecha.asc(), MovimientoTesoreria.id.asc())
+        .all()
+    )
+
+    ingresos = sum(int(m.monto or 0) for m in movimientos if m.tipo == "Ingreso")
+    egresos = sum(int(m.monto or 0) for m in movimientos if m.tipo == "Egreso")
+    saldo_final = int(saldo_inicial) + ingresos - egresos
+
+    # Resumen por categoría para la rendición.
+    categorias = {}
+    for m in movimientos:
+        nombre = (m.categoria or "Sin categoría").strip() or "Sin categoría"
+        item = categorias.setdefault(nombre, {"ingresos": 0, "egresos": 0, "movimientos": 0})
+        item["movimientos"] += 1
+        if m.tipo == "Ingreso":
+            item["ingresos"] += int(m.monto or 0)
+        elif m.tipo == "Egreso":
+            item["egresos"] += int(m.monto or 0)
+
+    categorias = [
+        {"nombre": nombre, **datos, "neto": datos["ingresos"] - datos["egresos"]}
+        for nombre, datos in sorted(
+            categorias.items(),
+            key=lambda item: max(item[1]["ingresos"], item[1]["egresos"]),
+            reverse=True,
+        )
+    ]
+
+    # Cuentas generadas durante el mes.
+    cuentas_periodo = (
+        CuentaTesoreria.query
+        .filter(
+            CuentaTesoreria.fecha >= inicio_mes,
+            CuentaTesoreria.fecha < fin_mes,
+        )
+        .order_by(CuentaTesoreria.fecha.asc(), CuentaTesoreria.id.asc())
+        .all()
+    )
+
+    cuentas_cobrar_periodo = [
+        c for c in cuentas_periodo if c.tipo == "Por cobrar"
+    ]
+    cuentas_pagar_periodo = [
+        c for c in cuentas_periodo if c.tipo == "Por pagar"
+    ]
+
+    total_cuentas_cobrar = sum(int(c.monto_total or 0) for c in cuentas_cobrar_periodo)
+    total_cuentas_pagar = sum(int(c.monto_total or 0) for c in cuentas_pagar_periodo)
+
+    # Saldos pendientes actuales. Son obligaciones vigentes y no movimientos de caja.
+    cuentas_pendientes = (
+        CuentaTesoreria.query
+        .filter(CuentaTesoreria.estado.in_(["Pendiente", "Abono"]))
+        .order_by(
+            CuentaTesoreria.tipo.asc(),
+            CuentaTesoreria.vencimiento.asc().nullslast(),
+            CuentaTesoreria.fecha.asc(),
+            CuentaTesoreria.id.asc(),
+        )
+        .limit(300)
+        .all()
+    )
+
+    pendientes_cobrar = [c for c in cuentas_pendientes if c.tipo == "Por cobrar" and c.saldo > 0]
+    pendientes_pagar = [c for c in cuentas_pendientes if c.tipo == "Por pagar" and c.saldo > 0]
+
+    total_pendiente_cobrar = sum(c.saldo for c in pendientes_cobrar)
+    total_pendiente_pagar = sum(c.saldo for c in pendientes_pagar)
+
+    # Resumen por club de lo efectivamente cobrado/pagado en el mes.
+    clubes = Club.query.order_by(Club.nombre.asc()).all()
+    resumen_clubes = []
+    for club in clubes:
+        mov_club = [m for m in movimientos if m.club_id == club.id]
+        ing = sum(int(m.monto or 0) for m in mov_club if m.tipo == "Ingreso")
+        egr = sum(int(m.monto or 0) for m in mov_club if m.tipo == "Egreso")
+        if ing or egr:
+            resumen_clubes.append({
+                "club": club,
+                "ingresos": ing,
+                "egresos": egr,
+                "neto": ing - egr,
+                "movimientos": len(mov_club),
+            })
+
+    return render_template(
+        "admin_tesoreria_rendicion.html",
+        mes=mes,
+        anio=anio,
+        inicio_mes=inicio_mes,
+        fin_mes=fin_mes,
+        today=hoy,
+        movimientos=movimientos,
+        categorias=categorias,
+        cuentas_periodo=cuentas_periodo,
+        cuentas_cobrar_periodo=cuentas_cobrar_periodo,
+        cuentas_pagar_periodo=cuentas_pagar_periodo,
+        pendientes_cobrar=pendientes_cobrar,
+        pendientes_pagar=pendientes_pagar,
+        resumen_clubes=resumen_clubes,
+        resumen={
+            "saldo_inicial": int(saldo_inicial),
+            "ingresos": int(ingresos),
+            "egresos": int(egresos),
+            "saldo_final": int(saldo_final),
+            "cuentas_cobrar": int(total_cuentas_cobrar),
+            "cuentas_pagar": int(total_cuentas_pagar),
+            "pendiente_cobrar": int(total_pendiente_cobrar),
+            "pendiente_pagar": int(total_pendiente_pagar),
+            "movimientos": len(movimientos),
+        },
+    )
+
+# ============================================================
 # V10.1 — ESTADO FINANCIERO POR CLUB
 # Vista individual del historial financiero de cada club.
 # Utiliza exclusivamente cuentas y movimientos de Tesorería.
