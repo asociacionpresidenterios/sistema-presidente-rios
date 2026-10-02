@@ -14,7 +14,7 @@
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><a class="admin" href="{{ url_for('publico_clubes') }}">👥 Clubes y planteles</a><a class="admin" href="{{ url_for('login') }}">🔐 Administración</a></div>
 </div></header>
 <main class="wrap">
-<section class="hero"><div class="eyebrow">Portal oficial · Asociación Presidente Ríos</div><h1>El fútbol de la Asociación, en un solo lugar.</h1><p>Consulta campeonatos, programación, resultados, posiciones, goleadores, Fair Play, clubes y planteles desde cualquier dispositivo.</p><div class="hero-actions"><a class="hero-btn" href="#campeonatos">🏆 Ver campeonatos</a><a class="hero-btn alt" href="{{ url_for('publico_clubes') }}">👥 Ver clubes y planteles</a></div></section>
+<section class="hero"><div class="eyebrow">Portal oficial · Asociación Presidente Ríos</div><h1>El fútbol de la Asociación, en un solo lugar.</h1><p>Consulta campeonatos, programación, resultados, posiciones, goleadores, Fair Play, clubes y planteles desde cualquier dispositivo.</p><div class="hero-actions"><a class="hero-btn" href="#campeonatos">🏆 Ver campeonatos</a><a class="hero-btn alt" href="{{ url_for('publico_clubes') }}">👥 Ver clubes y planteles</a><a class="hero-btn alt" href="{{ url_for('publico_campeones') }}">🏆 Campeones</a></div></section>
 
 {% if series_publicas %}
 <section class="featured">
