@@ -21,6 +21,8 @@
       </div>
       <div class="actions">
         <a class="btnx white" href="{{ url_for('admin_nuevo_jugador_club', club_nombre=club_nombre) }}">➕ Agregar jugador</a>
+        <a class="btnx ghost" href="{{ url_for('admin_centro_club_series', club_id=club.id) }}">🏷️ Series y planteles</a>
+        <a class="btnx ghost" href="{{ url_for('admin_centro_club_estadisticas', club_id=club.id) }}">📊 Estadísticas</a>
         <a class="btnx ghost" href="{{ url_for('admin_planteles') }}">← Volver a clubes</a>
       </div>
     </div>
