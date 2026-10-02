@@ -69,7 +69,7 @@ a{text-decoration:none;color:inherit}
     <a class="nav-item {% if request.endpoint in ['admin_registro','index','nuevo_jugador','editar_jugador','importar_jugadores','ficha_jugador','historial_jugador','admin_centro_jugadores','admin_centro_jugador'] %}active{% endif %}" href="{{ url_for('admin_centro_jugadores') }}"><span class="nav-icon">👥</span>Jugadores</a>
     <a class="nav-item {% if request.endpoint in ['admin_partidos','admin_centro_partidos','admin_centro_partido'] %}active{% endif %}" href="{{ url_for('admin_partidos') }}"><span class="nav-icon">⚽</span>Partidos</a>
     <a class="nav-item {% if request.endpoint in ['admin_actas','acta_partido','admin_centro_actas'] %}active{% endif %}" href="{{ url_for('admin_actas') }}"><span class="nav-icon">📋</span>Actas</a>
-    <a class="nav-item {% if request.endpoint in ['admin_disciplina','crear_resolucion_disciplina','ver_resolucion_disciplina'] %}active{% endif %}" href="{{ url_for('admin_disciplina') }}"><span class="nav-icon">⚖️</span>Disciplina</a>
+    <a class="nav-item {% if request.endpoint in ['admin_disciplina','crear_resolucion_disciplina','ver_resolucion_disciplina','admin_disciplina_tarjetas','admin_disciplina_expulsados','crear_expulsado_disciplina','ver_expulsado_disciplina'] %}active{% endif %}" href="{{ url_for('admin_disciplina') }}"><span class="nav-icon">⚖️</span>Disciplina</a>
     <a class="nav-item {% if request.endpoint in ['admin_centro_estadisticas'] %}active{% endif %}" href="{{ url_for('admin_centro_estadisticas') }}"><span class="nav-icon">📊</span>Estadísticas</a>
     <a class="nav-item {% if request.endpoint=='admin_historia' %}active{% endif %}" href="{{ url_for('admin_historia') }}"><span class="nav-icon">🏛️</span>Historia</a>
     <a class="nav-item {% if request.endpoint=='admin_tesoreria' %}active{% endif %}" href="{{ url_for('admin_tesoreria') }}"><span class="nav-icon">💰</span>Tesorería</a>
@@ -104,7 +104,7 @@ a{text-decoration:none;color:inherit}
       <div class="breadcrumb"><strong>Asociación Presidente Ríos</strong> <span style="margin:0 6px;color:#94a3b8">/</span> Gestión</div>
     </div>
     <div class="top-actions">
-      <a class="top-btn" href="{{ url_for('publico_disciplina') }}">⚖️ Comunicados</a>
+      <a class="top-btn" href="{{ url_for('publico_disciplina') }}">⚖️ Disciplina</a><a class="top-btn" href="{{ url_for('publico_expulsados') }}">🚫 Expulsados</a>
       <a class="top-btn primary" href="{{ url_for('publico') }}">🌐 Ver portal público</a>
     </div>
   </header>
