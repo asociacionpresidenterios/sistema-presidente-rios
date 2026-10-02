@@ -90,7 +90,6 @@ a{text-decoration:none;color:inherit}
     {% if session.get('admin_rol') == 'Administrador' or not session.get('admin_rol') %}
     <div class="section-label">Sistema</div>
     <a class="nav-item {% if request.endpoint=='admin_usuarios' %}active{% endif %}" href="{{ url_for('admin_usuarios') }}"><span class="nav-icon">🔐</span>Usuarios</a>
-    <a class="nav-item {% if request.endpoint=='admin_integracion' %}active{% endif %}" href="{{ url_for('admin_integracion') }}"><span class="nav-icon">🛡️</span>Auditoría</a>
     <a class="nav-item {% if request.endpoint in ['identidad_visual','configuracion'] %}active{% endif %}" href="{{ url_for('configuracion') }}"><span class="nav-icon">⚙️</span>Configuración</a>
     {% endif %}
   </div>
