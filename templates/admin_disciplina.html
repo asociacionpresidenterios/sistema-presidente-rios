@@ -14,7 +14,7 @@
 <div class="card"><div class="label">Pendientes</div><div class="num">{{resumen.pendientes}}</div></div>
 <div class="card"><div class="label">Con sanción</div><div class="num">{{resumen.sanciones}}</div></div>
 </div>
-<div style="margin-bottom:18px"><a class="btn" href="{{url_for('crear_resolucion_disciplina')}}">➕ Nueva resolución del Comité</a><a class="btn btn2" style="margin-left:8px" href="{{url_for('publico_disciplina')}}">🌐 Ver comunicados públicos</a></div>
+<div style="margin-bottom:18px"><a class="btn" href="{{url_for('crear_resolucion_disciplina')}}">➕ Nueva resolución del Comité</a><a class="btn btn2" style="margin-left:8px" href="{{url_for('admin_disciplina_tarjetas')}}">🟨🟥 Control de tarjetas</a><a class="btn btn2" style="margin-left:8px" href="{{url_for('admin_disciplina_expulsados')}}">🚫 Expulsados</a><a class="btn btn2" style="margin-left:8px" href="{{url_for('publico_disciplina')}}">🌐 Comunicados públicos</a></div>
 <div class="grid">
 <div class="panel">
 <h3 style="margin-top:0">🔎 Filtrar</h3>
