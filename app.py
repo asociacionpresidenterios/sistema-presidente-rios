@@ -8631,45 +8631,6 @@ def admin_tesoreria_club(club_id):
     )
 
 
-@app.route("/admin/integracion")
-def admin_integracion():
-    """Panel técnico para verificar que los módulos usen el mismo registro maestro."""
-    jugadores = Jugador.query.count()
-    clubes = Club.query.count()
-    series = Serie.query.count()
-    campeonatos = Campeonato.query.count()
-    partidos = Partido.query.count()
-    actas = ActaPartido.query.count()
-    participaciones = PartidoJugador.query.count()
-    goles = Gol.query.count()
-    disciplina = RegistroDisciplinario.query.count()
-
-    actas_cerradas = ActaPartido.query.filter_by(estado="Cerrada").count()
-    participaciones_no_vigentes = (
-        PartidoJugador.query.join(Jugador, PartidoJugador.jugador_id == Jugador.id)
-        .filter(Jugador.estado != "Vigente").count()
-    )
-
-    inconsistencias_club = 0
-    for p in PartidoJugador.query.join(Partido).join(Jugador).all():
-        partido = p.partido
-        jugador = p.jugador
-        club_id = partido.local_club_id if p.equipo == "local" else partido.visitante_club_id
-        club = db.session.get(Club, club_id)
-        if club and _normalizar_texto_acta(jugador.club) != _normalizar_texto_acta(club.nombre):
-            inconsistencias_club += 1
-
-    resumen = {
-        "jugadores": jugadores, "clubes": clubes[:10], "series": series,
-        "campeonatos": campeonatos, "partidos": partidos, "actas": actas,
-        "actas_cerradas": actas_cerradas, "participaciones": participaciones,
-        "goles": goles, "disciplina": disciplina,
-        "participaciones_no_vigentes": participaciones_no_vigentes,
-        "inconsistencias_club": inconsistencias_club,
-    }
-    return render_template("admin_integracion.html", resumen=resumen)
-
-
 # ============================================================
 # V6.6 — PANEL MAESTRO DE LA ASOCIACIÓN
 # ============================================================
