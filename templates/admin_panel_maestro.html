@@ -30,7 +30,7 @@ ${style}</style>
       {% if session.get('admin_rol') == 'Tesoreria' %}
       <a class="hero-btn" href="{{ url_for('admin_tesoreria') }}">💰 Abrir tesorería</a>
       {% elif session.get('admin_rol') == 'Disciplina' %}
-      <a class="hero-btn" href="{{ url_for('admin_actas') }}">📋 Abrir actas</a>
+      <a class="hero-btn" href="{{ url_for('admin_disciplina') }}">⚖️ Abrir disciplina</a>
       {% else %}
       <a class="hero-btn" href="{{ url_for('campeonatos') }}">🏆 Campeonatos</a>
       <a class="hero-btn" href="{{ url_for('admin_clubes') }}">🏟️ Clubes</a>
