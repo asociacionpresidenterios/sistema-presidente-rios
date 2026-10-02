@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Nueva resolución disciplinaria{% endblock %}
+{% block content %}
+<style>
+.wrap{max-width:1100px;margin:auto}.hero{background:linear-gradient(135deg,#160d2e,#5b21b6);color:#fff;border-radius:18px;padding:22px;margin-bottom:18px}.hero h1{margin:5px 0}.panel{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:20px;margin-bottom:16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-column:1/-1}label{display:block;font-size:10px;color:#64748b;font-weight:800;text-transform:uppercase;margin-bottom:5px}input,select,textarea{width:100%;box-sizing:border-box;border:1px solid #d6dee9;border-radius:9px;padding:10px;font:inherit}textarea{min-height:115px;resize:vertical}.btn{border:0;border-radius:9px;padding:11px 15px;background:#5b21b6;color:#fff;font-weight:800;cursor:pointer}.note{padding:12px;border-radius:10px;background:#f5f3ff;color:#4c1d95;font-size:12px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+</style>
+<div class="wrap">
+<div class="hero"><div style="font-size:10px;letter-spacing:.15em;font-weight:800;opacity:.75">COMITÉ DE DISCIPLINA</div><h1>➕ Nueva resolución</h1><div style="font-size:13px;color:#eadcff">La numeración oficial se genera automáticamente al guardar.</div></div>
+<form method="post">
+<div class="panel"><h3>1. Identificación</h3><div class="grid">
+<div><label>Fecha de sesión / resolución</label><input type="date" name="fecha" value="{{today if today is defined else ''}}" required></div>
+<div><label>Tipo de decisión</label><select name="tipo_decision"><option>Resolución</option><option>Suspensión</option><option>Multa</option><option>Amonestación</option><option>Advertencia</option><option>Absolución</option><option>Decisión administrativa</option></select></div>
+<div><label>Campeonato</label><select name="campeonato_id"><option value="">Sin campeonato</option>{% for c in campeonatos %}<option value="{{c.id}}">{{c.nombre}} · {{c.serie}}</option>{% endfor %}</select></div>
+<div><label>Serie</label><input name="serie" placeholder="Ej. Adultos"></div>
+<div><label>Club afectado</label><select name="club_id"><option value="">Sin club específico</option>{% for c in clubes %}<option value="{{c.id}}">{{c.nombre}}</option>{% endfor %}</select></div>
+<div><label>Jugador afectado</label><select name="jugador_id"><option value="">Sin jugador específico</option>{% for j in jugadores %}<option value="{{j.id}}">{{j.nombre_completo}} · {{j.club}} · {{j.serie}}</option>{% endfor %}</select></div>
+<div class="full"><label>Partido relacionado</label><select name="partido_id"><option value="">Sin partido específico</option>{% for p in partidos %}<option value="{{p.id}}">{{p.fecha.strftime('%d/%m/%Y') if p.fecha else 'Sin fecha'}} · {{p.local_club.nombre}} vs {{p.visitante_club.nombre}} · {{p.campeonato.nombre}}</option>{% endfor %}</select></div>
+<div class="full"><label>Título / asunto oficial</label><input name="titulo" required placeholder="Ej. Sanción disciplinaria por expulsión"></div>
+</div></div>
+<div class="panel"><h3>2. Fundamentos y decisión</h3><div class="grid">
+<div class="full"><label>Antecedentes</label><textarea name="antecedentes" placeholder="Hechos, acta arbitral, descargos, antecedentes revisados por el Comité..."></textarea></div>
+<div class="full"><label>Resolución / decisión del Comité</label><textarea name="resolucion" required placeholder="Texto oficial de la decisión adoptada..."></textarea></div>
+<div><label>Sanción</label><input name="sancion" placeholder="Ej. Suspensión de 2 partidos"></div>
+<div><label>Cantidad</label><input type="number" name="cantidad_sancion" min="1"></div>
+<div><label>Unidad</label><select name="unidad_sancion"><option value="">—</option><option>partidos</option><option>fechas</option><option>días</option><option>pesos</option><option>advertencia</option></select></div>
+<div><label>Inicio de sanción</label><input type="date" name="fecha_inicio"></div>
+<div><label>Fin de sanción</label><input type="date" name="fecha_fin"></div>
+<div class="full"><label>Observaciones</label><textarea name="observaciones" style="min-height:80px"></textarea></div>
+</div></div>
+<div class="panel"><h3>3. Registro disciplinario</h3><div class="note">Si la resolución corresponde a una sanción individual, puedes registrarla también en la ficha del jugador para que quede reflejada en su historial disciplinario.</div><div class="grid" style="margin-top:12px">
+<div><label>Tipo de registro</label><select name="tipo_registro"><option value="Suspension">Suspensión</option><option value="Roja">Roja</option><option value="Amarilla">Amarilla</option><option value="Inhabilitacion">Inhabilitación</option></select></div>
+<div style="display:flex;align-items:end;gap:8px"><input id="aplicar" type="checkbox" name="aplicar_sancion" value="1" style="width:auto"><label for="aplicar" style="margin:0;text-transform:none;font-size:12px">Aplicar al historial del jugador</label></div>
+</div></div>
+<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" name="guardar_cerrar" value="0">💾 Guardar borrador</button><button class="btn" name="guardar_cerrar" value="1">🔒 Guardar y cerrar</button><a class="btn" style="background:#64748b;text-decoration:none" href="{{url_for('admin_disciplina')}}">Cancelar</a></div>
+</form></div>
+{% endblock %}
