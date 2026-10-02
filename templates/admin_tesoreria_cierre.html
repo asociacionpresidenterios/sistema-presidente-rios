@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Tesorería · Cierre mensual{% endblock %}
+{% block content %}
+<style>
+.wrap{max-width:1180px;margin:auto}.hero{background:linear-gradient(135deg,#111827,#374151);color:#fff;border-radius:18px;padding:24px;margin-bottom:18px}.eyebrow{font-size:10px;letter-spacing:.14em;font-weight:800;opacity:.75}.hero h1{margin:5px 0;font-size:29px}.hero p{margin:0;color:#e5e7eb;font-size:13px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.actions a{display:inline-block;text-decoration:none;border-radius:9px;padding:9px 12px;background:#fff;color:#111827;font-weight:800;font-size:11px}.panel{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px;margin-bottom:18px}.panel h2{font-size:16px;margin:0 0 14px}.filter{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.filter div{min-width:150px}.filter label{display:block;font-size:10px;color:#64748b;font-weight:800;text-transform:uppercase;margin-bottom:5px}.filter select,.filter button{width:100%;box-sizing:border-box;border:1px solid #d6dee9;border-radius:9px;padding:10px;font:inherit;background:#fff}.filter button{background:#2563eb;color:#fff;border:0;font-weight:800;cursor:pointer}.status{display:inline-flex;padding:8px 13px;border-radius:999px;font-weight:900;font-size:12px}.draft{background:#fef3c7;color:#92400e}.reviewed{background:#dbeafe;color:#1d4ed8}.closed{background:#dcfce7;color:#166534}.danger{background:#fee2e2;color:#991b1b}.note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:11px;padding:12px;font-size:11px;color:#1e3a8a;line-height:1.5}.success{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.actions-panel{display:flex;gap:10px;flex-wrap:wrap}.btn{border:0;border-radius:9px;padding:11px 15px;font-weight:900;cursor:pointer;font-size:11px}.blue{background:#2563eb;color:#fff}.green{background:#15803d;color:#fff}.dark{background:#111827;color:#fff}.red{background:#b91c1c;color:#fff}.muted{color:#64748b;font-size:11px}.snapshot{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.snap{background:#f8fafc;border:1px solid #e5eaf1;border-radius:11px;padding:12px}.snap b{display:block;font-size:19px;margin-top:4px}.label{font-size:9px;color:#64748b;text-transform:uppercase;font-weight:800}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.snapshot{grid-template-columns:1fr 1fr}}@media(max-width:520px){.snapshot{grid-template-columns:1fr}}
+</style>
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">V10.4 · CONTROL FORMAL DE TESORERÍA</div>
+    <h1>🔒 Cierre mensual · {{nombre_mes}} {{anio}}</h1>
+    <p>Flujo formal de rendición: Borrador → Revisada → Cerrada. El cierre bloquea nuevas modificaciones con fecha dentro del período.</p>
+    <div class="actions">
+      <a href="{{url_for('admin_tesoreria_rendicion',mes=mes,anio=anio)}}">← Volver a rendición</a>
+      <a href="{{url_for('admin_tesoreria')}}">🏦 Tesorería</a>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>📅 Seleccionar período</h2>
+    <form method="get" class="filter">
+      <div><label>Mes</label><select name="mes">
+        {% for n,nombre in [(1,'Enero'),(2,'Febrero'),(3,'Marzo'),(4,'Abril'),(5,'Mayo'),(6,'Junio'),(7,'Julio'),(8,'Agosto'),(9,'Septiembre'),(10,'Octubre'),(11,'Noviembre'),(12,'Diciembre')] %}
+        <option value="{{n}}" {% if mes==n %}selected{% endif %}>{{nombre}}</option>
+        {% endfor %}
+      </select></div>
+      <div><label>Año</label><select name="anio">
+        {% for y in range(today.year-3,today.year+2) %}<option value="{{y}}" {% if anio==y %}selected{% endif %}>{{y}}</option>{% endfor %}
+      </select></div>
+      <div><button type="submit">🔎 Cargar período</button></div>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h2>📋 Estado de la rendición</h2>
+    {% if rendicion %}
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <strong style="font-size:20px">{{rendicion.numero_rendicion}}</strong>
+        <span class="status {% if rendicion.estado=='Cerrada' %}closed{% elif rendicion.estado=='Revisada' %}reviewed{% else %}draft{% endif %}">{{rendicion.estado}}</span>
+      </div>
+      <p class="muted">
+        Creada por {{rendicion.creado_por or 'Sistema'}} · {{rendicion.creado_en.strftime('%d/%m/%Y %H:%M')}}
+        {% if rendicion.revisado_por %}<br>Revisada por {{rendicion.revisado_por}} · {{rendicion.revisado_en.strftime('%d/%m/%Y %H:%M')}}{% endif %}
+        {% if rendicion.cerrado_por %}<br>Cerrada por {{rendicion.cerrado_por}} · {{rendicion.cerrado_en.strftime('%d/%m/%Y %H:%M')}}{% endif %}
+      </p>
+    {% else %}
+      <div class="note">No existe todavía una rendición formal para este período. Al crearla se asignará automáticamente el número <strong>RND-{{anio}}-{{'%02d'|format(mes)}}</strong>.</div>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2>📊 Cifras que se congelarán al cerrar</h2>
+    <div class="snapshot">
+      <div class="snap"><div class="label">Saldo inicial</div><b>$ {{ "{:,.0f}".format(calculo.saldo_inicial).replace(",", ".") }}</b></div>
+      <div class="snap"><div class="label">Ingresos</div><b>$ {{ "{:,.0f}".format(calculo.ingresos).replace(",", ".") }}</b></div>
+      <div class="snap"><div class="label">Egresos</div><b>$ {{ "{:,.0f}".format(calculo.egresos).replace(",", ".") }}</b></div>
+      <div class="snap"><div class="label">Saldo final</div><b>$ {{ "{:,.0f}".format(calculo.saldo_final).replace(",", ".") }}</b></div>
+    </div>
+    <div class="note" style="margin-top:12px">Al cerrar se guarda una fotografía de estos valores junto con el responsable y la fecha de cierre. La rendición seguirá mostrando los movimientos existentes, pero no se podrán crear operaciones con fecha dentro del período mientras permanezca cerrada.</div>
+  </div>
+
+  <div class="panel">
+    <h2>⚙️ Acciones</h2>
+    <div class="actions-panel">
+      {% if not rendicion %}
+      <form method="post"><input type="hidden" name="accion" value="crear"><input type="hidden" name="mes" value="{{mes}}"><input type="hidden" name="anio" value="{{anio}}"><button class="btn blue">➕ Crear rendición</button></form>
+      {% elif rendicion.estado == 'Borrador' %}
+      <form method="post"><input type="hidden" name="accion" value="revisar"><input type="hidden" name="mes" value="{{mes}}"><input type="hidden" name="anio" value="{{anio}}"><button class="btn blue">✅ Marcar como Revisada</button></form>
+      {% elif rendicion.estado == 'Revisada' %}
+        <form method="post"><input type="hidden" name="accion" value="cerrar"><input type="hidden" name="mes" value="{{mes}}"><input type="hidden" name="anio" value="{{anio}}"><button class="btn green">🔒 Cerrar período</button></form>
+      {% elif rendicion.estado == 'Cerrada' and session.get('admin_rol') == 'Administrador' %}
+        <form method="post" onsubmit="return confirm('¿Reabrir este período? Volverá a estado Revisada y permitirá modificaciones con fecha dentro del mes.');"><input type="hidden" name="accion" value="reabrir"><input type="hidden" name="mes" value="{{mes}}"><input type="hidden" name="anio" value="{{anio}}"><button class="btn red">↩️ Reabrir período</button></form>
+      {% endif %}
+    </div>
+    {% if rendicion and rendicion.estado == 'Cerrada' %}
+      <div class="note success" style="margin-top:14px"><strong>🔒 PERÍODO CERRADO</strong><br>Las nuevas operaciones con fecha {{'%02d'|format(mes)}}/{{anio}} están bloqueadas. Un Administrador puede reabrirlo si existe una corrección justificada.</div>
+    {% elif rendicion and rendicion.estado == 'Revisada' %}
+      <div class="note" style="margin-top:14px"><strong>Listo para cierre.</strong> Solo un Administrador puede ejecutar el cierre definitivo.</div>
+    {% elif rendicion and rendicion.estado == 'Borrador' %}
+      <div class="note" style="margin-top:14px">Revisa la rendición antes de pasarla al estado Revisada.</div>
+    {% endif %}
+  </div>
+
+  {% if rendicion and rendicion.estado == 'Cerrada' %}
+  <div class="panel">
+    <h2>🧾 Registro del cierre</h2>
+    <div class="grid">
+      <div><strong>Número</strong><br>{{rendicion.numero_rendicion}}</div>
+      <div><strong>Responsable del cierre</strong><br>{{rendicion.cerrado_por or '—'}}</div>
+      <div><strong>Fecha de cierre</strong><br>{{rendicion.cerrado_en.strftime('%d/%m/%Y %H:%M') if rendicion.cerrado_en else '—'}}</div>
+      <div><strong>Movimientos</strong><br>{{rendicion.movimientos or 0}}</div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
