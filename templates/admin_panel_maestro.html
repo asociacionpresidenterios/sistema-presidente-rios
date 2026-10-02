@@ -13,7 +13,7 @@
 .empty{padding:24px 10px;text-align:center;color:var(--muted);font-size:12px}.flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.flow span{padding:6px 8px;border-radius:8px;background:#f1f5f9;font-size:10px;font-weight:800;color:#42536b}.flow i{font-style:normal;color:#94a3b8}
 @media(max-width:1150px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.layout{grid-template-columns:1fr}}
 @media(max-width:650px){.grid{grid-template-columns:1fr}.card-body[style*='grid-template-columns']{grid-template-columns:1fr 1fr!important}.hero-top{flex-direction:column}.hero h1{font-size:23px}.champ-stats{grid-template-columns:repeat(2,1fr)}}
-</style>
+${style}</style>
 {% endblock %}
 {% block content %}
 <div class="hero">
@@ -46,6 +46,18 @@
   <div class="metric"><div class="metric-label">Tesorería</div><div class="metric-row"><div><div class="metric-value">{{ resumen.cuentas_por_cobrar + resumen.cuentas_por_pagar }}</div><div class="metric-sub">{{ resumen.cuentas_por_cobrar }} por cobrar · {{ resumen.cuentas_por_pagar }} por pagar</div></div><div class="metric-icon">💰</div></div></div>
 </div>
 
+<div class="section-title"><h2>Indicadores operativos</h2><span>Estado global de la operación</span></div>
+<div class="ops-grid">
+  {% for indicador in indicadores_operativos %}
+  <div class="ops-card">
+    <div class="ops-top"><div class="ops-title">{{ indicador.titulo }}</div><div class="ops-icon">{{ indicador.icono }}</div></div>
+    <div class="ops-value">{{ indicador.valor }}%</div>
+    <div class="ops-detail">{{ indicador.detalle }}</div>
+    <div class="ops-track"><div class="ops-fill" style="width:{{ indicador.valor }}%"></div></div>
+    <div class="ops-status">{% if indicador.valor >= 90 %}Control operativo alto{% elif indicador.valor >= 70 %}Requiere seguimiento{% else %}Requiere atención{% endif %}</div>
+  </div>
+  {% endfor %}
+</div>
 <div class="section-title"><h2>Acciones rápidas</h2><span>Acceso directo a la operación</span></div>
 <div class="card" style="margin-bottom:20px">
   <div class="card-body" style="padding:14px;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px">
