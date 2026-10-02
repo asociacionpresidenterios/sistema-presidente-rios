@@ -21,7 +21,6 @@ from flask_sqlalchemy import SQLAlchemy
 from openpyxl import load_workbook
 
 from docx import Document
-from docx.enum.section import WD_SECTION
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.shared import Cm, Pt
@@ -1228,14 +1227,6 @@ def rol_permitido(*roles):
             return view(*args, **kwargs)
         return wrapped
     return decorator
-
-def admin_required(view):
-    @wraps(view)
-    def wrapped(*args, **kwargs):
-        if not session.get("admin_id"):
-            return redirect(url_for("login", next=request.full_path))
-        return view(*args, **kwargs)
-    return wrapped
 
 
 # ============================================================
