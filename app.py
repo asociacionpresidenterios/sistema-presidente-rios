@@ -8850,6 +8850,47 @@ def admin_panel_maestro():
     # -------------------------
     ultimos_jugadores = Jugador.query.order_by(Jugador.id.desc()).limit(6).all()
 
+    # -------------------------
+    # INDICADORES OPERATIVOS
+    # -------------------------
+    def porcentaje(parte, total):
+        try:
+            if not total:
+                return 100
+            return max(0, min(100, round((float(parte) / float(total)) * 100)))
+        except Exception:
+            return 0
+
+    partidos_con_resultado = total_partidos - partidos_sin_resultado
+    campeonatos_con_clubes = total_campeonatos - campeonatos_sin_clubes
+
+    indicadores_operativos = [
+        {
+            "titulo": "Actas cerradas",
+            "valor": porcentaje(actas_cerradas, total_actas),
+            "detalle": f"{actas_cerradas} de {total_actas}",
+            "icono": "📋",
+        },
+        {
+            "titulo": "Partidos con resultado",
+            "valor": porcentaje(partidos_con_resultado, total_partidos),
+            "detalle": f"{partidos_con_resultado} de {total_partidos}",
+            "icono": "⚽",
+        },
+        {
+            "titulo": "Programación completa",
+            "valor": porcentaje(total_partidos - partidos_sin_programacion, total_partidos),
+            "detalle": f"{total_partidos - partidos_sin_programacion} de {total_partidos}",
+            "icono": "📅",
+        },
+        {
+            "titulo": "Campeonatos con clubes",
+            "valor": porcentaje(campeonatos_con_clubes, total_campeonatos),
+            "detalle": f"{campeonatos_con_clubes} de {total_campeonatos}",
+            "icono": "🏆",
+        },
+    ]
+
     resumen = {
         "total_jugadores": total_jugadores,
         "jugadores_vigentes": jugadores_vigentes,
@@ -8878,6 +8919,7 @@ def admin_panel_maestro():
         proximos_partidos=proximos_partidos,
         ultimos_resultados=ultimos_resultados,
         ultimos_jugadores=ultimos_jugadores,
+        indicadores_operativos=indicadores_operativos,
     )
 
 
