@@ -94,7 +94,7 @@
     </div>
 
     <div class="card">
-      <div class="card-head"><strong>Últimos jugadores</strong><a href="{{ url_for('admin_centro_jugadores') }}">Ver jugadores →</a></div>
+      <div class="card-head"><strong>Últimos jugadores</strong><a href="{{ url_for('admin_clubes') }}">Ver jugadores →</a></div>
       <div class="card-body">
       {% for jugador in ultimos_jugadores %}
         <div style="display:flex;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)"><div><strong style="font-size:12px">{{ jugador.nombre_completo }}</strong><div class="muted" style="font-size:10px;margin-top:3px">{{ jugador.club or 'Sin club' }} · {{ jugador.serie or 'Sin serie' }}</div></div><span class="pill {% if jugador.estado == 'Vigente' %}active{% endif %}">{{ jugador.estado or '—' }}</span></div>
