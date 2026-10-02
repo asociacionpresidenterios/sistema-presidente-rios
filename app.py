@@ -6734,9 +6734,9 @@ def datos_estadisticas_publicas(campeonato):
 
     promedio_goles = round(total_goles / len(finalizados), 2) if finalizados else 0
     equipos = len(tabla)
-    mejor_ataque = max(tabla, key=lambda x: (x.gf, x.pts)) if tabla else None
-    mejor_defensa = min(tabla, key=lambda x: (x.gc, -x.pts)) if tabla else None
-    mayor_diferencia = max(tabla, key=lambda x: (x.dg, x.pts)) if tabla else None
+    mejor_ataque = max(tabla, key=lambda x: (x.get("gf", 0), x.get("pts", 0))) if tabla else None
+    mejor_defensa = min(tabla, key=lambda x: (x.get("gc", 0), -x.get("pts", 0))) if tabla else None
+    mayor_diferencia = max(tabla, key=lambda x: (x.get("dg", 0), x.get("pts", 0))) if tabla else None
 
     return {
         "partidos": len(partidos),
@@ -6775,7 +6775,9 @@ def publico_fair_play(campeonato_id):
     jugadores = jugadores_campeonato(campeonato)
 
     for fila in datos["tabla"]:
-        club = fila.club
+        club = fila.get("club") if isinstance(fila, dict) else getattr(fila, "club", None)
+        if not club:
+            continue
         amarillas = 0
         rojas = 0
         suspensiones = 0
