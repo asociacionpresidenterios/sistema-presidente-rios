@@ -3291,6 +3291,7 @@ def crear_resolucion_disciplina():
             clubes=Club.query.filter_by(activo=True).order_by(Club.nombre).all(),
             jugadores=Jugador.query.order_by(Jugador.club, Jugador.nombre_completo).all(),
             partidos=Partido.query.order_by(Partido.fecha.desc().nullslast(), Partido.id.desc()).limit(300).all(),
+            today=date.today(),
         )
 
     try:
