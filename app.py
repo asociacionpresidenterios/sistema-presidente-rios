@@ -8526,6 +8526,93 @@ def admin_tesoreria_club(club_id):
 # V6.6 — PANEL MAESTRO DE LA ASOCIACIÓN
 # ============================================================
 
+def construir_alertas_operativas():
+    """Genera las alertas operativas actuales a partir de datos reales."""
+    def safe_count(query):
+        try:
+            return query.count()
+        except Exception:
+            db.session.rollback()
+            return 0
+
+    hoy = date.today()
+    cuentas_vencidas = safe_count(CuentaTesoreria.query.filter(
+        CuentaTesoreria.estado != "Pagado",
+        CuentaTesoreria.vencimiento.isnot(None),
+        CuentaTesoreria.vencimiento < hoy,
+    ))
+    partidos_sin_acta = safe_count(Partido.query.outerjoin(
+        ActaPartido, ActaPartido.partido_id == Partido.id
+    ).filter(ActaPartido.id.is_(None)))
+    partidos_sin_programacion = safe_count(Partido.query.filter(
+        Partido.estado == "Programado",
+        db.or_(Partido.fecha.is_(None), Partido.hora.is_(None), Partido.hora == "",
+               Partido.cancha.is_(None), Partido.cancha == ""),
+    ))
+    actas_pendientes = safe_count(ActaPartido.query.filter(ActaPartido.estado != "Cerrada"))
+    actas_cerradas_sin_nomina = safe_count(ActaPartido.query.join(Partido).filter(
+        ActaPartido.estado == "Cerrada",
+        ~db.exists().where(PartidoJugador.partido_id == Partido.id),
+    ))
+    partidos_sin_resultado = safe_count(Partido.query.filter(
+        Partido.estado == "Finalizado",
+        db.or_(Partido.goles_local.is_(None), Partido.goles_visitante.is_(None)),
+    ))
+    campeonatos_sin_clubes = safe_count(Campeonato.query.filter(
+        Campeonato.estado == "Activo",
+        ~db.exists().where(CampeonatoClub.campeonato_id == Campeonato.id),
+    ))
+    resoluciones_pendientes = safe_count(ResolucionDisciplina.query.filter_by(estado="Borrador"))
+    resoluciones_no_publicadas = safe_count(ResolucionDisciplina.query.filter(
+        ResolucionDisciplina.estado == "Cerrada",
+        ResolucionDisciplina.publicado.is_(False),
+    ))
+    expulsiones_vencidas = safe_count(ExpulsadoDisciplina.query.filter(
+        ExpulsadoDisciplina.estado == "Vigente",
+        ExpulsadoDisciplina.fecha_fin.isnot(None),
+        ExpulsadoDisciplina.fecha_fin < hoy,
+    ))
+    jugadores_sin_club = safe_count(Jugador.query.filter(
+        db.or_(Jugador.club.is_(None), Jugador.club == "")
+    ))
+    jugadores_sin_serie = safe_count(Jugador.query.filter(
+        db.or_(Jugador.serie.is_(None), Jugador.serie == "")
+    ))
+
+    alertas = [
+        {"tipo":"danger","icono":"💸","titulo":"Cuentas vencidas","cantidad":cuentas_vencidas,"texto":"Obligaciones de tesorería cuyo vencimiento ya pasó.","url":url_for("admin_tesoreria")},
+        {"tipo":"danger","icono":"📋","titulo":"Partidos sin acta","cantidad":partidos_sin_acta,"texto":"Partidos que todavía no tienen acta asociada.","url":url_for("admin_partidos")},
+        {"tipo":"danger","icono":"⚠️","titulo":"Partidos sin programación completa","cantidad":partidos_sin_programacion,"texto":"Partidos programados sin fecha, hora o cancha completa.","url":url_for("admin_partidos")},
+        {"tipo":"warning","icono":"📝","titulo":"Actas pendientes","cantidad":actas_pendientes,"texto":"Actas que aún no están cerradas.","url":url_for("admin_actas")},
+        {"tipo":"warning","icono":"👥","titulo":"Actas cerradas sin nómina","cantidad":actas_cerradas_sin_nomina,"texto":"Actas cerradas que no tienen jugadores asociados.","url":url_for("admin_actas")},
+        {"tipo":"warning","icono":"⚽","titulo":"Finalizados sin resultado","cantidad":partidos_sin_resultado,"texto":"Partidos finalizados sin marcador completo.","url":url_for("admin_partidos")},
+        {"tipo":"warning","icono":"🏆","titulo":"Campeonatos activos sin clubes","cantidad":campeonatos_sin_clubes,"texto":"Campeonatos activos sin clubes participantes.","url":url_for("campeonatos")},
+        {"tipo":"warning","icono":"⚖️","titulo":"Resoluciones en borrador","cantidad":resoluciones_pendientes,"texto":"Resoluciones que requieren revisión.","url":url_for("admin_disciplina")},
+        {"tipo":"warning","icono":"📢","titulo":"Resoluciones cerradas sin publicar","cantidad":resoluciones_no_publicadas,"texto":"Resoluciones cerradas aún no comunicadas públicamente.","url":url_for("admin_disciplina")},
+        {"tipo":"warning","icono":"🚫","titulo":"Expulsiones con vigencia vencida","cantidad":expulsiones_vencidas,"texto":"Registros vigentes cuya fecha de término ya pasó.","url":url_for("admin_disciplina_expulsados")},
+        {"tipo":"info","icono":"👤","titulo":"Jugadores sin club","cantidad":jugadores_sin_club,"texto":"Registros maestros sin club informado.","url":url_for("index")},
+        {"tipo":"info","icono":"🏷️","titulo":"Jugadores sin serie","cantidad":jugadores_sin_serie,"texto":"Registros maestros sin serie informada.","url":url_for("index")},
+    ]
+    return [a for a in alertas if a["cantidad"] > 0]
+
+
+@app.route("/admin/alertas")
+@admin_required
+def admin_alertas():
+    alertas = construir_alertas_operativas()
+    criticas = [a for a in alertas if a["tipo"] == "danger"]
+    advertencias = [a for a in alertas if a["tipo"] == "warning"]
+    informativas = [a for a in alertas if a["tipo"] == "info"]
+    return render_template(
+        "admin_alertas.html",
+        alertas=alertas,
+        criticas=criticas,
+        advertencias=advertencias,
+        informativas=informativas,
+        total_alertas=len(alertas),
+    )
+
+
 @app.route("/admin/panel-maestro")
 @admin_required
 def admin_panel_maestro():
