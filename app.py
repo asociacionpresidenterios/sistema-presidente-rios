@@ -7571,6 +7571,135 @@ def admin_tesoreria():
         series=series,
     )
 
+# ============================================================
+# V10.1 — ESTADO FINANCIERO POR CLUB
+# Vista individual del historial financiero de cada club.
+# Utiliza exclusivamente cuentas y movimientos de Tesorería.
+# ============================================================
+
+@app.route("/admin/tesoreria/club/<int:club_id>")
+@rol_permitido("Administrador", "Tesoreria")
+def admin_tesoreria_club(club_id):
+    club = db.get_or_404(Club, club_id)
+
+    hoy = date.today()
+    try:
+        mes = int(request.args.get("mes")) if request.args.get("mes") else hoy.month
+    except ValueError:
+        mes = hoy.month
+    try:
+        anio = int(request.args.get("anio")) if request.args.get("anio") else hoy.year
+    except ValueError:
+        anio = hoy.year
+
+    mes = min(max(mes, 1), 12)
+    inicio_mes = date(anio, mes, 1)
+    fin_mes = date(anio + 1, 1, 1) if mes == 12 else date(anio, mes + 1, 1)
+
+    movimientos = (
+        MovimientoTesoreria.query
+        .filter(MovimientoTesoreria.club_id == club.id)
+        .order_by(MovimientoTesoreria.fecha.desc(), MovimientoTesoreria.id.desc())
+        .limit(300)
+        .all()
+    )
+
+    movimientos_periodo = [
+        m for m in movimientos
+        if m.fecha and inicio_mes <= m.fecha < fin_mes
+    ]
+
+    cuentas = (
+        CuentaTesoreria.query
+        .filter(CuentaTesoreria.club_id == club.id)
+        .order_by(
+            db.case(
+                (CuentaTesoreria.estado == "Pendiente", 0),
+                (CuentaTesoreria.estado == "Abono", 1),
+                else_=2,
+            ),
+            CuentaTesoreria.vencimiento.asc().nullslast(),
+            CuentaTesoreria.fecha.desc(),
+            CuentaTesoreria.id.desc(),
+        )
+        .all()
+    )
+
+    cuentas_cobrar = [c for c in cuentas if c.tipo == "Por cobrar"]
+    cuentas_pagar = [c for c in cuentas if c.tipo == "Por pagar"]
+
+    total_por_cobrar = sum(c.saldo for c in cuentas_cobrar if c.saldo > 0)
+    total_por_pagar = sum(c.saldo for c in cuentas_pagar if c.saldo > 0)
+    total_cobrado = sum(int(c.monto_pagado or 0) for c in cuentas_cobrar)
+    total_pagado = sum(int(c.monto_pagado or 0) for c in cuentas_pagar)
+
+    ingresos_periodo = sum(
+        int(m.monto or 0) for m in movimientos_periodo if m.tipo == "Ingreso"
+    )
+    egresos_periodo = sum(
+        int(m.monto or 0) for m in movimientos_periodo if m.tipo == "Egreso"
+    )
+
+    ingresos_historicos = sum(
+        int(m.monto or 0) for m in movimientos if m.tipo == "Ingreso"
+    )
+    egresos_historicos = sum(
+        int(m.monto or 0) for m in movimientos if m.tipo == "Egreso"
+    )
+
+    campeonatos = (
+        Campeonato.query
+        .join(CuentaTesoreria, CuentaTesoreria.campeonato_id == Campeonato.id)
+        .filter(CuentaTesoreria.club_id == club.id)
+        .distinct()
+        .order_by(Campeonato.temporada.desc(), Campeonato.id.desc())
+        .all()
+    )
+
+    categorias = {}
+    for m in movimientos:
+        categoria = (m.categoria or "Sin categoría").strip() or "Sin categoría"
+        categorias.setdefault(categoria, {"ingresos": 0, "egresos": 0})
+        if m.tipo == "Ingreso":
+            categorias[categoria]["ingresos"] += int(m.monto or 0)
+        elif m.tipo == "Egreso":
+            categorias[categoria]["egresos"] += int(m.monto or 0)
+
+    categorias = [
+        {"nombre": nombre, **datos}
+        for nombre, datos in sorted(
+            categorias.items(),
+            key=lambda item: item[0].lower()
+        )
+    ]
+
+    return render_template(
+        "admin_tesoreria_club.html",
+        club=club,
+        movimientos=movimientos,
+        cuentas=cuentas,
+        cuentas_cobrar=cuentas_cobrar,
+        cuentas_pagar=cuentas_pagar,
+        campeonatos=campeonatos,
+        categorias=categorias,
+        mes=mes,
+        anio=anio,
+        today=hoy,
+        resumen={
+            "por_cobrar": int(total_por_cobrar),
+            "por_pagar": int(total_por_pagar),
+            "cobrado": int(total_cobrado),
+            "pagado": int(total_pagado),
+            "ingresos_periodo": int(ingresos_periodo),
+            "egresos_periodo": int(egresos_periodo),
+            "saldo_periodo": int(ingresos_periodo - egresos_periodo),
+            "ingresos_historicos": int(ingresos_historicos),
+            "egresos_historicos": int(egresos_historicos),
+            "saldo_historico": int(ingresos_historicos - egresos_historicos),
+        },
+    )
+
+
 @app.route("/admin/integracion")
 def admin_integracion():
     """Panel técnico para verificar que los módulos usen el mismo registro maestro."""
