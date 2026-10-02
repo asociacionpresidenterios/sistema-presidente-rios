@@ -1210,18 +1210,6 @@ PUBLIC_ENDPOINTS = {
 
 
 @app.after_request
-def aplicar_cabeceras_seguridad(response):
-    response.headers.setdefault("X-Content-Type-Options", "nosniff")
-    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
-    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
-    response.headers.setdefault(
-        "Permissions-Policy",
-        "camera=(), microphone=(), geolocation=()"
-    )
-    return response
-
-
-@app.after_request
 def cabeceras_seguridad(response):
     """Aplica cabeceras de seguridad a las respuestas HTTP."""
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
@@ -1767,6 +1755,11 @@ def login():
                 destino = destino_inicial_por_rol()
             return redirect(destino)
 
+        registrar_auditoria(
+            "INICIO_SESION_FALLIDO",
+            "Seguridad",
+            f"Intento de inicio de sesión fallido para el usuario '{username}'."
+        )
         flash("Usuario o contraseña incorrectos, o el administrador está inactivo.", "error")
 
     return render_template("login.html", next=request.args.get("next", ""))
