@@ -2262,6 +2262,7 @@ def nuevo_jugador():
             )
 
             db.session.commit()
+    registrar_auditoria("CREAR_JUGADOR", "Jugadores", "Se registró un nuevo jugador.")
 
         except Exception as error:
 
@@ -2473,6 +2474,7 @@ def editar_jugador(jugador_id):
         try:
 
             db.session.commit()
+    registrar_auditoria("EDITAR_JUGADOR", "Jugadores", "Se actualizó la ficha de un jugador.")
 
         except Exception as error:
 
@@ -2538,6 +2540,7 @@ def eliminar_jugador(jugador_id):
         )
 
         db.session.commit()
+    registrar_auditoria("ELIMINAR_JUGADOR", "Jugadores", "Se eliminó un jugador.")
 
     except Exception as error:
 
@@ -3617,6 +3620,7 @@ def crear_resolucion_disciplina():
                     jugador.estado = "Inhabilitado"
 
         db.session.commit()
+    registrar_auditoria("CREAR_RESOLUCION", "Disciplina", "Se creó una resolución del Comité de Disciplina.")
         flash(f"Resolución {resolucion.numero_resolucion} registrada correctamente.", "success")
         return redirect(url_for("ver_resolucion_disciplina", resolucion_id=resolucion.id))
     except Exception as error:
@@ -3646,6 +3650,7 @@ def publicar_resolucion_disciplina(resolucion_id):
     resolucion.actualizado_por = session.get("admin_nombre") or "Administrador"
     resolucion.actualizado_en = datetime.utcnow()
     db.session.commit()
+    registrar_auditoria("PUBLICAR_RESOLUCION", "Disciplina", "Se publicó una resolución de disciplina.")
     flash(f"La resolución {resolucion.numero_resolucion} fue publicada en el portal público.", "success")
     return redirect(url_for("ver_resolucion_disciplina", resolucion_id=resolucion.id))
 
@@ -3852,6 +3857,7 @@ def crear_expulsado_disciplina():
             if jugador:
                 jugador.estado = "Expulsado"
         db.session.commit()
+    registrar_auditoria("CREAR_EXPULSION", "Disciplina", "Se creó un registro de expulsión.")
         flash("Registro de expulsión creado correctamente.", "success")
         return redirect(url_for("ver_expulsado_disciplina", expulsado_id=registro.id))
     except Exception as error:
@@ -3874,6 +3880,7 @@ def publicar_expulsado_disciplina(expulsado_id):
     expulsado.publicado = True
     expulsado.estado = "Vigente"
     db.session.commit()
+    registrar_auditoria("PUBLICAR_EXPULSION", "Disciplina", "Se publicó un registro de expulsión.")
     flash("El registro de expulsión fue publicado en el portal público.", "success")
     return redirect(url_for("ver_expulsado_disciplina", expulsado_id=expulsado.id))
 
@@ -4551,6 +4558,7 @@ def nuevo_club():
     )
 
     db.session.commit()
+    registrar_auditoria("CREAR_CLUB", "Clubes", "Se registró un nuevo club.")
 
     flash(
         f"Club '{nombre}' agregado correctamente.",
@@ -4643,6 +4651,7 @@ def cambiar_estado_club(club_id):
     club.activo = not club.activo
 
     db.session.commit()
+    registrar_auditoria("CAMBIAR_ESTADO_CLUB", "Clubes", "Se modificó el estado de un club.")
 
     estado = (
         "activado"
@@ -4779,6 +4788,7 @@ def nuevo_campeonato():
         try:
             db.session.add(campeonato)
             db.session.commit()
+    registrar_auditoria("CREAR_CAMPEONATO", "Campeonatos", "Se creó un nuevo campeonato.")
         except Exception as error:
             db.session.rollback()
             print("ERROR CREANDO CAMPEONATO:", repr(error))
@@ -5163,6 +5173,7 @@ def retirar_club_campeonato(campeonato_id, club_id):
                 creados += 1
 
         db.session.commit()
+    registrar_auditoria("RETIRAR_CLUB_CAMPEONATO", "Campeonatos", "Se dio de baja un club de un campeonato y se reorganizó el fixture.")
         flash(
             f"{club.nombre} fue dado de baja. Se conservaron {len(finalizados)} "
             f"partidos finalizados y se reorganizaron {creados} partidos pendientes.",
@@ -5233,6 +5244,7 @@ def guardar_clubes_campeonato(campeonato_id):
             )
 
         db.session.commit()
+    registrar_auditoria("ACTUALIZAR_CLUBES_CAMPEONATO", "Campeonatos", "Se actualizaron los clubes participantes de un campeonato.")
 
     except Exception as error:
         db.session.rollback()
@@ -7563,6 +7575,7 @@ def admin_tesoreria():
             cuenta.actualizar_estado()
             db.session.add(cuenta)
             db.session.commit()
+    registrar_auditoria("CREAR_CUENTA_TESORERIA", "Tesorería", "Se registró una cuenta en Tesorería.")
             flash("Cuenta registrada correctamente.", "success")
             return redirect(url_for("admin_tesoreria"))
 
