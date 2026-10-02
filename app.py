@@ -4839,6 +4839,190 @@ def guardar_clubes_campeonato(campeonato_id):
     )
 
 
+
+# ============================================================
+# V9.7 — RETIRO DE CLUB Y REORDENAMIENTO AUTOMÁTICO DEL FIXTURE
+# ============================================================
+
+@app.route(
+    "/campeonatos/<int:campeonato_id>/club/<int:club_id>/retirar",
+    methods=["POST"]
+)
+@rol_permitido("Administrador")
+def retirar_club_campeonato(campeonato_id, club_id):
+    """Retira un club del campeonato y reorganiza automáticamente los partidos pendientes.
+    
+    Los partidos ya finalizados se conservan como historial. Los partidos pendientes
+    se reconstruyen con los clubes que permanecen inscritos.
+    """
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    club = db.get_or_404(Club, club_id)
+
+    participacion = CampeonatoClub.query.filter_by(
+        campeonato_id=campeonato.id,
+        club_id=club.id
+    ).first()
+
+    if not participacion:
+        flash("El club no está inscrito en este campeonato.", "error")
+        return redirect(url_for("detalle_campeonato", campeonato_id=campeonato.id))
+
+    try:
+        partidos = (
+            Partido.query
+            .filter_by(campeonato_id=campeonato.id)
+            .order_by(Partido.jornada.asc(), Partido.id.asc())
+            .all()
+        )
+
+        partidos_finalizados = [
+            p for p in partidos
+            if p.estado == "Finalizado"
+        ]
+
+        # Guardamos la configuración de las jornadas pendientes para no perder
+        # las fechas/canchas/horarios que el administrador ya había programado.
+        jornadas_config = {}
+        for p in partidos:
+            if p.estado == "Finalizado":
+                continue
+            cfg = jornadas_config.setdefault(
+                p.jornada,
+                {"fecha": p.fecha, "hora": p.hora, "cancha": p.cancha}
+            )
+            if cfg["fecha"] is None and p.fecha is not None:
+                cfg["fecha"] = p.fecha
+            if not cfg["hora"] and p.hora:
+                cfg["hora"] = p.hora
+            if not cfg["cancha"] and p.cancha:
+                cfg["cancha"] = p.cancha
+
+        # Si ya existen resultados oficiales, conservamos esos partidos.
+        # Las decisiones reglamentarias sobre sus efectos quedan en manos de la Asociación.
+        partidos_finalizados_restantes = [
+            p for p in partidos_finalizados
+            if p.local_club_id != club.id and p.visitante_club_id != club.id
+        ]
+
+        # Eliminar solamente partidos pendientes y sus dependencias.
+        pendientes = [p for p in partidos if p.estado != "Finalizado"]
+        pendiente_ids = [p.id for p in pendientes]
+
+        if pendiente_ids:
+            ActaPartido.query.filter(
+                ActaPartido.partido_id.in_(pendiente_ids)
+            ).delete(synchronize_session=False)
+            PartidoJugador.query.filter(
+                PartidoJugador.partido_id.in_(pendiente_ids)
+            ).delete(synchronize_session=False)
+            Partido.query.filter(
+                Partido.id.in_(pendiente_ids)
+            ).delete(synchronize_session=False)
+
+        # Retirar la inscripción del campeonato, sin eliminar el club de la Asociación.
+        db.session.delete(participacion)
+        db.session.flush()
+
+        clubes_restantes = (
+            CampeonatoClub.query
+            .filter_by(campeonato_id=campeonato.id)
+            .order_by(CampeonatoClub.id)
+            .all()
+        )
+        club_ids = [r.club_id for r in clubes_restantes]
+
+        if len(club_ids) < 2:
+            db.session.commit()
+            flash(
+                f"{club.nombre} fue retirado del campeonato. Se necesitan al menos 2 clubes para reconstruir el fixture.",
+                "success"
+            )
+            return redirect(url_for("detalle_campeonato", campeonato_id=campeonato.id))
+
+        # Los cruces que ya tuvieron resultado oficial no se vuelven a programar.
+        cruces_jugados = {
+            tuple(sorted((p.local_club_id, p.visitante_club_id)))
+            for p in partidos_finalizados_restantes
+        }
+
+        calendario_completo = generar_calendario_todos_contra_todos(club_ids)
+        partidos_pendientes_nuevos = []
+        for ronda in calendario_completo:
+            ronda_filtrada = [
+                (local_id, visitante_id)
+                for local_id, visitante_id in ronda
+                if tuple(sorted((local_id, visitante_id))) not in cruces_jugados
+            ]
+            if ronda_filtrada:
+                partidos_pendientes_nuevos.append(ronda_filtrada)
+
+        # Si hay partidos finalizados, continuamos después de la última jornada
+        # oficialmente jugada. Si no, reconstruimos desde la jornada 1.
+        ultima_jornada_finalizada = max(
+            [p.jornada for p in partidos_finalizados_restantes],
+            default=0
+        )
+        jornada_inicial = ultima_jornada_finalizada + 1
+
+        fecha_base = None
+        if partidos_finalizados_restantes:
+            fechas_finalizadas = [p.fecha for p in partidos_finalizados_restantes if p.fecha]
+            if fechas_finalizadas:
+                fecha_base = max(fechas_finalizadas) + timedelta(days=7)
+        if not fecha_base:
+            fecha_base = siguiente_sabado(campeonato.fecha_inicio)
+
+        hora_default = "17:00"
+        cancha_default = "Por definir"
+
+        for offset, ronda in enumerate(partidos_pendientes_nuevos):
+            jornada_numero = jornada_inicial + offset
+            cfg = jornadas_config.get(jornada_numero) or {}
+            fecha_jornada = cfg.get("fecha") or (fecha_base + timedelta(days=offset * 7))
+            hora_jornada = cfg.get("hora") or hora_default
+            cancha_jornada = cfg.get("cancha") or cancha_default
+
+            for local_id, visitante_id in ronda:
+                db.session.add(
+                    Partido(
+                        campeonato_id=campeonato.id,
+                        jornada=jornada_numero,
+                        fecha=fecha_jornada,
+                        hora=hora_jornada,
+                        cancha=cancha_jornada,
+                        local_club_id=local_id,
+                        visitante_club_id=visitante_id,
+                        turno_club_id=None,
+                        goles_local=None,
+                        goles_visitante=None,
+                        estado="Programado",
+                    )
+                )
+
+        db.session.commit()
+
+        partidos_nuevos = sum(len(r) for r in partidos_pendientes_nuevos)
+        flash(
+            f"{club.nombre} fue retirado correctamente. "
+            f"El fixture se reorganizó automáticamente con {len(club_ids)} clubes y {partidos_nuevos} partidos pendientes.",
+            "success"
+        )
+
+    except Exception as error:
+        db.session.rollback()
+        app.logger.exception(
+            "Error retirando club %s del campeonato %s",
+            club_id,
+            campeonato_id
+        )
+        flash(
+            "No fue posible retirar el club y reorganizar el fixture. No se realizaron cambios.",
+            "error"
+        )
+
+    return redirect(url_for("detalle_campeonato", campeonato_id=campeonato.id))
+
+
 # ============================================================
 # PASO 5 — FIXTURE DEL CAMPEONATO
 # ============================================================
