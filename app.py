@@ -8541,23 +8541,44 @@ def construir_alertas_operativas():
         CuentaTesoreria.vencimiento.isnot(None),
         CuentaTesoreria.vencimiento < hoy,
     ))
-    partidos_sin_acta = safe_count(Partido.query.outerjoin(
+    partidos_sin_acta = safe_count(Partido.query.join(
+        Campeonato, Campeonato.id == Partido.campeonato_id
+    ).outerjoin(
         ActaPartido, ActaPartido.partido_id == Partido.id
     ).filter(
+        Campeonato.estado == "Activo",
         Partido.estado == "Finalizado",
         ActaPartido.id.is_(None)
     ))
-    partidos_sin_programacion = safe_count(Partido.query.filter(
+    partidos_sin_programacion = safe_count(Partido.query.join(
+        Campeonato, Campeonato.id == Partido.campeonato_id
+    ).filter(
+        Campeonato.estado == "Activo",
         Partido.estado == "Programado",
         db.or_(Partido.fecha.is_(None), Partido.hora.is_(None), Partido.hora == "",
                Partido.cancha.is_(None), Partido.cancha == ""),
     ))
-    actas_pendientes = safe_count(ActaPartido.query.filter(ActaPartido.estado != "Cerrada"))
-    actas_cerradas_sin_nomina = safe_count(ActaPartido.query.join(Partido).filter(
+    actas_pendientes = safe_count(ActaPartido.query.join(
+        Partido, Partido.id == ActaPartido.partido_id
+    ).join(
+        Campeonato, Campeonato.id == Partido.campeonato_id
+    ).filter(
+        Campeonato.estado == "Activo",
+        ActaPartido.estado != "Cerrada"
+    ))
+    actas_cerradas_sin_nomina = safe_count(ActaPartido.query.join(
+        Partido, Partido.id == ActaPartido.partido_id
+    ).join(
+        Campeonato, Campeonato.id == Partido.campeonato_id
+    ).filter(
+        Campeonato.estado == "Activo",
         ActaPartido.estado == "Cerrada",
         ~db.exists().where(PartidoJugador.partido_id == Partido.id),
     ))
-    partidos_sin_resultado = safe_count(Partido.query.filter(
+    partidos_sin_resultado = safe_count(Partido.query.join(
+        Campeonato, Campeonato.id == Partido.campeonato_id
+    ).filter(
+        Campeonato.estado == "Activo",
         Partido.estado == "Finalizado",
         db.or_(Partido.goles_local.is_(None), Partido.goles_visitante.is_(None)),
     ))
@@ -8612,7 +8633,7 @@ def admin_alertas():
         criticas=criticas,
         advertencias=advertencias,
         informativas=informativas,
-        total_alertas=len(alertas),
+        total_alertas=sum(a["cantidad"] for a in alertas),
     )
 
 
