@@ -122,6 +122,45 @@ class AdminUser(db.Model):
 # V9.0 — MODELO DE TESORERÍA
 # ============================================================
 
+class RendicionTesoreria(db.Model):
+    """
+    V10.4 — Cierre formal de rendiciones mensuales.
+    Un período puede estar en Borrador, Revisada o Cerrada.
+    Al cerrar se guardan los totales como fotografía/auditoría.
+    """
+    __tablename__ = "rendicion_tesoreria"
+
+    id = db.Column(db.Integer, primary_key=True)
+    periodo_mes = db.Column(db.Integer, nullable=False, index=True)
+    periodo_anio = db.Column(db.Integer, nullable=False, index=True)
+    numero_rendicion = db.Column(db.String(40), nullable=False, unique=True)
+    estado = db.Column(db.String(20), nullable=False, default="Borrador", index=True)
+
+    saldo_inicial = db.Column(db.Numeric(14, 0), nullable=True)
+    ingresos = db.Column(db.Numeric(14, 0), nullable=True)
+    egresos = db.Column(db.Numeric(14, 0), nullable=True)
+    saldo_final = db.Column(db.Numeric(14, 0), nullable=True)
+    movimientos = db.Column(db.Integer, nullable=True)
+    cuentas_por_cobrar = db.Column(db.Numeric(14, 0), nullable=True)
+    cuentas_por_pagar = db.Column(db.Numeric(14, 0), nullable=True)
+
+    creado_por = db.Column(db.String(160), nullable=True)
+    creado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    revisado_por = db.Column(db.String(160), nullable=True)
+    revisado_en = db.Column(db.DateTime, nullable=True)
+    cerrado_por = db.Column(db.String(160), nullable=True)
+    cerrado_en = db.Column(db.DateTime, nullable=True)
+    observaciones = db.Column(db.Text, nullable=True)
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "periodo_mes",
+            "periodo_anio",
+            name="uq_rendicion_tesoreria_periodo"
+        ),
+    )
+
+
 class MovimientoTesoreria(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     fecha = db.Column(db.Date, nullable=False, default=date.today, index=True)
@@ -186,6 +225,37 @@ class CuentaTesoreria(db.Model):
             self.estado = "Abono"
         else:
             self.estado = "Pendiente"
+
+
+def rango_periodo_tesoreria(mes, anio):
+    inicio = date(anio, mes, 1)
+    fin = date(anio + 1, 1, 1) if mes == 12 else date(anio, mes + 1, 1)
+    return inicio, fin
+
+
+def rendicion_tesoreria_periodo(fecha):
+    if not fecha:
+        return None
+    return RendicionTesoreria.query.filter_by(
+        periodo_mes=fecha.month,
+        periodo_anio=fecha.year,
+    ).first()
+
+
+def tesoreria_periodo_cerrado(fecha):
+    rendicion = rendicion_tesoreria_periodo(fecha)
+    return bool(rendicion and rendicion.estado == "Cerrada")
+
+
+def mensaje_periodo_cerrado(fecha):
+    rendicion = rendicion_tesoreria_periodo(fecha)
+    if not rendicion or rendicion.estado != "Cerrada":
+        return None
+    return (
+        f"El período {fecha.month:02d}/{fecha.year} está cerrado "
+        f"({rendicion.numero_rendicion}). No se permiten modificaciones "
+        f"con fecha dentro de ese período."
+    )
 
 
 class Club(db.Model):
@@ -7400,6 +7470,11 @@ def admin_tesoreria():
             except ValueError:
                 vencimiento = None
 
+            mensaje_cierre = mensaje_periodo_cerrado(fecha_cuenta)
+            if mensaje_cierre:
+                flash(mensaje_cierre, "error")
+                return redirect(url_for("admin_tesoreria"))
+
             cuenta = CuentaTesoreria(
                 fecha=fecha_cuenta,
                 tipo=tipo,
@@ -7449,6 +7524,11 @@ def admin_tesoreria():
                 fecha_pago = datetime.strptime(fecha_raw, "%Y-%m-%d").date() if fecha_raw else date.today()
             except ValueError:
                 fecha_pago = date.today()
+
+            mensaje_cierre = mensaje_periodo_cerrado(fecha_pago)
+            if mensaje_cierre:
+                flash(mensaje_cierre, "error")
+                return redirect(url_for("admin_tesoreria"))
 
             cuenta.monto_pagado = int(cuenta.monto_pagado or 0) + monto_pago
             cuenta.actualizar_estado()
@@ -7507,6 +7587,11 @@ def admin_tesoreria():
             fecha_movimiento = datetime.strptime(fecha_raw, "%Y-%m-%d").date() if fecha_raw else date.today()
         except ValueError:
             fecha_movimiento = date.today()
+
+        mensaje_cierre = mensaje_periodo_cerrado(fecha_movimiento)
+        if mensaje_cierre:
+            flash(mensaje_cierre, "error")
+            return redirect(url_for("admin_tesoreria"))
 
         movimiento = MovimientoTesoreria(
             fecha=fecha_movimiento,
@@ -7668,6 +7753,18 @@ def admin_tesoreria_jornada():
         accion = (request.form.get("accion") or "").strip()
 
         if accion == "generar":
+            if fecha and tesoreria_periodo_cerrado(fecha):
+                flash(mensaje_periodo_cerrado(fecha), "error")
+                return redirect(url_for(
+                    "admin_tesoreria_jornada",
+                    campeonato_id=campeonato.id if campeonato else campeonato_id,
+                    fecha=fecha.isoformat() if fecha else "",
+                    cobro_club=cobro_club,
+                    cancha=monto_cancha,
+                    arbitraje=monto_arbitraje,
+                    vencimiento=vencimiento.isoformat() if vencimiento else "",
+                ))
+
             if not campeonato:
                 flash("Selecciona un campeonato.", "error")
                 return redirect(url_for("admin_tesoreria_jornada"))
@@ -7854,29 +7951,13 @@ def admin_tesoreria_jornada():
     )
 
 # ============================================================
-# V10.3 — RENDICIÓN MENSUAL AUTOMÁTICA
-# No duplica información: calcula la rendición directamente
-# desde los movimientos y cuentas existentes.
+# ============================================================
+# V10.4 — RENDICIÓN MENSUAL Y CIERRE FORMAL
 # ============================================================
 
-@app.route("/admin/tesoreria/rendicion")
-@rol_permitido("Administrador", "Tesoreria")
-def admin_tesoreria_rendicion():
-    hoy = date.today()
-    try:
-        mes = int(request.args.get("mes")) if request.args.get("mes") else hoy.month
-    except ValueError:
-        mes = hoy.month
-    try:
-        anio = int(request.args.get("anio")) if request.args.get("anio") else hoy.year
-    except ValueError:
-        anio = hoy.year
+def calcular_rendicion_mensual(mes, anio):
+    inicio_mes, fin_mes = rango_periodo_tesoreria(mes, anio)
 
-    mes = min(max(mes, 1), 12)
-    inicio_mes = date(anio, mes, 1)
-    fin_mes = date(anio + 1, 1, 1) if mes == 12 else date(anio, mes + 1, 1)
-
-    # Saldo de caja basado exclusivamente en movimientos reales registrados.
     saldo_inicial = db.session.query(
         db.func.coalesce(
             db.func.sum(
@@ -7901,14 +7982,19 @@ def admin_tesoreria_rendicion():
     ingresos = sum(int(m.monto or 0) for m in movimientos if m.tipo == "Ingreso")
     egresos = sum(int(m.monto or 0) for m in movimientos if m.tipo == "Egreso")
     saldo_final = int(saldo_inicial) + ingresos - egresos
-    nombres_meses = [
-        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-    ]
-    nombre_mes = nombres_meses[mes - 1]
-    fecha_fin_periodo = fin_mes - timedelta(days=1)
 
-    # Resumen por categoría para la rendición.
+    cuentas_periodo = (
+        CuentaTesoreria.query
+        .filter(
+            CuentaTesoreria.fecha >= inicio_mes,
+            CuentaTesoreria.fecha < fin_mes,
+        )
+        .order_by(CuentaTesoreria.fecha.asc(), CuentaTesoreria.id.asc())
+        .all()
+    )
+    cuentas_cobrar_periodo = [c for c in cuentas_periodo if c.tipo == "Por cobrar"]
+    cuentas_pagar_periodo = [c for c in cuentas_periodo if c.tipo == "Por pagar"]
+
     categorias = {}
     for m in movimientos:
         nombre = (m.categoria or "Sin categoría").strip() or "Sin categoría"
@@ -7928,28 +8014,6 @@ def admin_tesoreria_rendicion():
         )
     ]
 
-    # Cuentas generadas durante el mes.
-    cuentas_periodo = (
-        CuentaTesoreria.query
-        .filter(
-            CuentaTesoreria.fecha >= inicio_mes,
-            CuentaTesoreria.fecha < fin_mes,
-        )
-        .order_by(CuentaTesoreria.fecha.asc(), CuentaTesoreria.id.asc())
-        .all()
-    )
-
-    cuentas_cobrar_periodo = [
-        c for c in cuentas_periodo if c.tipo == "Por cobrar"
-    ]
-    cuentas_pagar_periodo = [
-        c for c in cuentas_periodo if c.tipo == "Por pagar"
-    ]
-
-    total_cuentas_cobrar = sum(int(c.monto_total or 0) for c in cuentas_cobrar_periodo)
-    total_cuentas_pagar = sum(int(c.monto_total or 0) for c in cuentas_pagar_periodo)
-
-    # Saldos pendientes actuales. Son obligaciones vigentes y no movimientos de caja.
     cuentas_pendientes = (
         CuentaTesoreria.query
         .filter(CuentaTesoreria.estado.in_(["Pendiente", "Abono"]))
@@ -7962,14 +8026,9 @@ def admin_tesoreria_rendicion():
         .limit(300)
         .all()
     )
-
     pendientes_cobrar = [c for c in cuentas_pendientes if c.tipo == "Por cobrar" and c.saldo > 0]
     pendientes_pagar = [c for c in cuentas_pendientes if c.tipo == "Por pagar" and c.saldo > 0]
 
-    total_pendiente_cobrar = sum(c.saldo for c in pendientes_cobrar)
-    total_pendiente_pagar = sum(c.saldo for c in pendientes_pagar)
-
-    # Resumen por club de lo efectivamente cobrado/pagado en el mes.
     clubes = Club.query.order_by(Club.nombre.asc()).all()
     resumen_clubes = []
     for club in clubes:
@@ -7985,34 +8044,176 @@ def admin_tesoreria_rendicion():
                 "movimientos": len(mov_club),
             })
 
+    return {
+        "inicio_mes": inicio_mes,
+        "fin_mes": fin_mes,
+        "fecha_fin_periodo": fin_mes - timedelta(days=1),
+        "movimientos": movimientos,
+        "categorias": categorias,
+        "cuentas_periodo": cuentas_periodo,
+        "cuentas_cobrar_periodo": cuentas_cobrar_periodo,
+        "cuentas_pagar_periodo": cuentas_pagar_periodo,
+        "pendientes_cobrar": pendientes_cobrar,
+        "pendientes_pagar": pendientes_pagar,
+        "resumen_clubes": resumen_clubes,
+        "saldo_inicial": int(saldo_inicial),
+        "ingresos": int(ingresos),
+        "egresos": int(egresos),
+        "saldo_final": int(saldo_final),
+        "cuentas_cobrar": int(sum(int(c.monto_total or 0) for c in cuentas_cobrar_periodo)),
+        "cuentas_pagar": int(sum(int(c.monto_total or 0) for c in cuentas_pagar_periodo)),
+    }
+
+
+@app.route("/admin/tesoreria/rendicion")
+@rol_permitido("Administrador", "Tesoreria")
+def admin_tesoreria_rendicion():
+    hoy = date.today()
+    try:
+        mes = int(request.args.get("mes")) if request.args.get("mes") else hoy.month
+    except ValueError:
+        mes = hoy.month
+    try:
+        anio = int(request.args.get("anio")) if request.args.get("anio") else hoy.year
+    except ValueError:
+        anio = hoy.year
+
+    mes = min(max(mes, 1), 12)
+    calculo = calcular_rendicion_mensual(mes, anio)
+    rendicion = RendicionTesoreria.query.filter_by(
+        periodo_mes=mes,
+        periodo_anio=anio,
+    ).first()
+
+    nombres_meses = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ]
+
     return render_template(
         "admin_tesoreria_rendicion.html",
         mes=mes,
         anio=anio,
-        nombre_mes=nombre_mes,
-        inicio_mes=inicio_mes,
-        fin_mes=fin_mes,
-        fecha_fin_periodo=fecha_fin_periodo,
+        nombre_mes=nombres_meses[mes - 1],
         today=hoy,
-        movimientos=movimientos,
-        categorias=categorias,
-        cuentas_periodo=cuentas_periodo,
-        cuentas_cobrar_periodo=cuentas_cobrar_periodo,
-        cuentas_pagar_periodo=cuentas_pagar_periodo,
-        pendientes_cobrar=pendientes_cobrar,
-        pendientes_pagar=pendientes_pagar,
-        resumen_clubes=resumen_clubes,
+        rendicion=rendicion,
+        **calculo,
         resumen={
-            "saldo_inicial": int(saldo_inicial),
-            "ingresos": int(ingresos),
-            "egresos": int(egresos),
-            "saldo_final": int(saldo_final),
-            "cuentas_cobrar": int(total_cuentas_cobrar),
-            "cuentas_pagar": int(total_cuentas_pagar),
-            "pendiente_cobrar": int(total_pendiente_cobrar),
-            "pendiente_pagar": int(total_pendiente_pagar),
-            "movimientos": len(movimientos),
+            "saldo_inicial": calculo["saldo_inicial"],
+            "ingresos": calculo["ingresos"],
+            "egresos": calculo["egresos"],
+            "saldo_final": calculo["saldo_final"],
+            "cuentas_cobrar": calculo["cuentas_cobrar"],
+            "cuentas_pagar": calculo["cuentas_pagar"],
+            "movimientos": len(calculo["movimientos"]),
         },
+    )
+
+
+@app.route("/admin/tesoreria/cierre", methods=["GET", "POST"])
+@rol_permitido("Administrador", "Tesoreria")
+def admin_tesoreria_cierre():
+    hoy = date.today()
+    try:
+        mes = int(request.form.get("mes") if request.method == "POST" else request.args.get("mes")) if (request.form.get("mes") if request.method == "POST" else request.args.get("mes")) else hoy.month
+    except ValueError:
+        mes = hoy.month
+    try:
+        anio = int(request.form.get("anio") if request.method == "POST" else request.args.get("anio")) if (request.form.get("anio") if request.method == "POST" else request.args.get("anio")) else hoy.year
+    except ValueError:
+        anio = hoy.year
+
+    mes = min(max(mes, 1), 12)
+    rendicion = RendicionTesoreria.query.filter_by(
+        periodo_mes=mes,
+        periodo_anio=anio,
+    ).first()
+
+    if request.method == "POST":
+        accion = (request.form.get("accion") or "").strip()
+        usuario = session.get("admin_nombre") or session.get("admin_username") or "Sistema"
+        calculo = calcular_rendicion_mensual(mes, anio)
+
+        if accion == "crear":
+            if rendicion:
+                flash("La rendición de este período ya existe.", "error")
+            else:
+                rendicion = RendicionTesoreria(
+                    periodo_mes=mes,
+                    periodo_anio=anio,
+                    numero_rendicion=f"RND-{anio}-{mes:02d}",
+                    estado="Borrador",
+                    creado_por=usuario,
+                )
+                db.session.add(rendicion)
+                db.session.commit()
+                flash(f"Rendición {rendicion.numero_rendicion} creada en estado Borrador.", "success")
+
+        elif accion == "revisar":
+            if not rendicion:
+                flash("Primero debes crear la rendición.", "error")
+            elif rendicion.estado != "Borrador":
+                flash("Solo una rendición en Borrador puede pasar a Revisada.", "error")
+            else:
+                rendicion.estado = "Revisada"
+                rendicion.revisado_por = usuario
+                rendicion.revisado_en = datetime.utcnow()
+                db.session.commit()
+                flash("Rendición marcada como Revisada.", "success")
+
+        elif accion == "cerrar":
+            if session.get("admin_rol") != "Administrador":
+                flash("Solo un Administrador puede cerrar una rendición.", "error")
+            elif not rendicion:
+                flash("Primero debes crear la rendición.", "error")
+            elif rendicion.estado != "Revisada":
+                flash("La rendición debe estar Revisada antes de cerrarse.", "error")
+            else:
+                rendicion.estado = "Cerrada"
+                rendicion.saldo_inicial = calculo["saldo_inicial"]
+                rendicion.ingresos = calculo["ingresos"]
+                rendicion.egresos = calculo["egresos"]
+                rendicion.saldo_final = calculo["saldo_final"]
+                rendicion.movimientos = len(calculo["movimientos"])
+                rendicion.cuentas_por_cobrar = calculo["cuentas_cobrar"]
+                rendicion.cuentas_por_pagar = calculo["cuentas_pagar"]
+                rendicion.cerrado_por = usuario
+                rendicion.cerrado_en = datetime.utcnow()
+                db.session.commit()
+                flash(f"Rendición {rendicion.numero_rendicion} cerrada. El período quedó bloqueado.", "success")
+
+        elif accion == "reabrir":
+            if session.get("admin_rol") != "Administrador":
+                flash("Solo un Administrador puede reabrir una rendición.", "error")
+            elif not rendicion or rendicion.estado != "Cerrada":
+                flash("Solo una rendición Cerrada puede reabrirse.", "error")
+            else:
+                rendicion.estado = "Revisada"
+                rendicion.observaciones = (
+                    (rendicion.observaciones or "") +
+                    f" | Reabierta por {usuario} el {datetime.utcnow().strftime('%d/%m/%Y %H:%M')}"
+                ).strip(" |")
+                db.session.commit()
+                flash("Rendición reabierta en estado Revisada. El período vuelve a estar editable.", "success")
+
+        return redirect(url_for(
+            "admin_tesoreria_cierre",
+            mes=mes,
+            anio=anio,
+        ))
+
+    calculo = calcular_rendicion_mensual(mes, anio)
+    return render_template(
+        "admin_tesoreria_cierre.html",
+        mes=mes,
+        anio=anio,
+        nombre_mes=[
+            "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ][mes - 1],
+        today=hoy,
+        rendicion=rendicion,
+        calculo=calculo,
     )
 
 # ============================================================
