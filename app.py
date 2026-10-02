@@ -6516,6 +6516,39 @@ def construir_directorio_clubes():
     return resultado
 
 
+@app.route("/publico/campeones")
+def publico_campeones():
+    campeonatos = Campeonato.query.order_by(
+        Campeonato.temporada.desc(),
+        Campeonato.fecha_inicio.desc().nullslast(),
+        Campeonato.id.desc()
+    ).all()
+
+    historial = []
+    for campeonato in campeonatos:
+        partidos = Partido.query.filter_by(campeonato_id=campeonato.id).all()
+        finalizados = [
+            p for p in partidos
+            if (p.estado or "").strip().lower() == "finalizado"
+            and p.goles_local is not None
+            and p.goles_visitante is not None
+        ]
+        tabla = obtener_tabla_publica(campeonato)
+        terminado = (
+            (campeonato.estado or "").strip().lower() == "finalizado"
+            or (partidos and len(finalizados) == len(partidos))
+        )
+        campeon = tabla[0]["club"] if terminado and tabla else None
+        if campeon:
+            historial.append({
+                "campeonato": campeonato,
+                "club": campeon,
+                "temporada": campeonato.temporada,
+                "serie": campeonato.serie,
+            })
+
+    return render_template("publico_campeones.html", historial=historial)
+
 @app.route("/publico/clubes")
 def publico_clubes():
     """Directorio público de clubes, series y planteles registrados."""
