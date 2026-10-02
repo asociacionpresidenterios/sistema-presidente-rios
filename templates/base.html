@@ -59,7 +59,7 @@ a{text-decoration:none;color:inherit}
   </div>
   <div class="side-scroll">
     <div class="section-label">Inicio</div>
-    <a class="nav-item {% if request.endpoint in ['admin_panel_maestro','admin_operaciones','dashboard'] %}active{% endif %}" href="{{ url_for('admin_panel_maestro') }}"><span class="nav-icon">🏠</span>Inicio</a>
+    <a class="nav-item {% if request.endpoint == 'admin_panel_maestro' %}active{% endif %}" href="{{ url_for('admin_panel_maestro') }}"><span class="nav-icon">🏠</span>Inicio</a>
     <a class="nav-item {% if request.endpoint=='publico' %}active{% endif %}" href="{{ url_for('publico') }}"><span class="nav-icon">🌐</span>Portal público</a>
 
     {% if session.get('admin_rol') == 'Administrador' or not session.get('admin_rol') %}
