@@ -9,7 +9,7 @@
 <div class="wrap">
   <div class="hero">
     <div class="eyebrow">V10.3 · RENDICIÓN MENSUAL AUTOMÁTICA</div>
-    <h1>📒 Rendición {{inicio_mes.strftime('%B')|capitalize}} {{anio}}</h1>
+    <h1>📒 Rendición {{nombre_mes}} {{anio}}</h1>
     <p>Resumen de caja, ingresos, egresos, categorías, cuentas generadas y obligaciones pendientes.</p>
     <div class="actions">
       <a href="{{url_for('admin_tesoreria')}}">← Volver a Tesorería</a>
@@ -50,7 +50,7 @@
       <tr><td>Saldo inicial al {{inicio_mes.strftime('%d/%m/%Y')}}</td><td class="right">$ {{ "{:,.0f}".format(resumen.saldo_inicial).replace(",", ".") }}</td></tr>
       <tr><td>+ Total ingresos</td><td class="right positive">$ {{ "{:,.0f}".format(resumen.ingresos).replace(",", ".") }}</td></tr>
       <tr><td>− Total egresos</td><td class="right negative">$ {{ "{:,.0f}".format(resumen.egresos).replace(",", ".") }}</td></tr>
-      <tr class="total"><td>Saldo final al {{(fin_mes - timedelta(days=1)).strftime('%d/%m/%Y')}}</td><td class="right">$ {{ "{:,.0f}".format(resumen.saldo_final).replace(",", ".") }}</td></tr>
+      <tr class="total"><td>Saldo final al {{fecha_fin_periodo.strftime('%d/%m/%Y')}}</td><td class="right">$ {{ "{:,.0f}".format(resumen.saldo_final).replace(",", ".") }}</td></tr>
     </table></div>
   </div>
 
