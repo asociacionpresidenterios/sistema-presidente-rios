@@ -2540,7 +2540,7 @@ def eliminar_jugador(jugador_id):
         )
 
         db.session.commit()
-    registrar_auditoria("ELIMINAR_JUGADOR", "Jugadores", "Se eliminó un jugador.")
+        registrar_auditoria("ELIMINAR_JUGADOR", "Jugadores", "Se eliminó un jugador.")
 
     except Exception as error:
 
