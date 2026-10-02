@@ -4488,6 +4488,7 @@ def nuevo_campeonato():
 
 
 @app.route("/campeonatos/<int:campeonato_id>/eliminar", methods=["POST"])
+@rol_permitido("Administrador")
 def eliminar_campeonato(campeonato_id):
     """Elimina un campeonato y todos sus datos exclusivos, sin tocar clubes ni jugadores."""
     campeonato = db.get_or_404(Campeonato, campeonato_id)
