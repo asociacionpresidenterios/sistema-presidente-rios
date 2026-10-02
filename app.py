@@ -693,6 +693,39 @@ class ResolucionDisciplina(db.Model):
 
 
 # ============================================================
+# V11.1 — EXPULSADOS OFICIALES DE LA ASOCIACIÓN
+# ============================================================
+
+class ExpulsadoDisciplina(db.Model):
+    __tablename__ = "expulsado_disciplina"
+
+    id = db.Column(db.Integer, primary_key=True)
+    fecha = db.Column(db.Date, nullable=False, default=date.today, index=True)
+    numero_resolucion = db.Column(db.String(40), nullable=True, index=True)
+
+    tipo_afectado = db.Column(db.String(20), nullable=False, default="Jugador")
+    jugador_id = db.Column(db.Integer, db.ForeignKey("jugador.id"), nullable=True, index=True)
+    club_id = db.Column(db.Integer, db.ForeignKey("club.id"), nullable=True, index=True)
+    campeonato_id = db.Column(db.Integer, db.ForeignKey("campeonato.id"), nullable=True, index=True)
+    serie = db.Column(db.String(80), nullable=True)
+
+    motivo = db.Column(db.Text, nullable=False)
+    resolucion = db.Column(db.Text, nullable=False)
+    fecha_inicio = db.Column(db.Date, nullable=True)
+    fecha_fin = db.Column(db.Date, nullable=True)
+    observaciones = db.Column(db.Text, nullable=True)
+
+    estado = db.Column(db.String(30), nullable=False, default="Vigente", index=True)
+    publicado = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    creado_por = db.Column(db.String(160), nullable=True)
+    creado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    jugador = db.relationship("Jugador", foreign_keys=[jugador_id])
+    club = db.relationship("Club", foreign_keys=[club_id])
+    campeonato = db.relationship("Campeonato", foreign_keys=[campeonato_id])
+
+
+# ============================================================
 # MODELO GOLES
 # ============================================================
 
@@ -1122,6 +1155,8 @@ PUBLIC_ENDPOINTS = {
     "publico_goleadores",
     "publico_disciplina",
     "publico_resolucion_disciplina",
+    "publico_expulsados",
+    "publico_expulsado_detalle",
     "health",
     "static",
 }
@@ -1152,7 +1187,7 @@ ROLES = {"Administrador": "Administrador", "Disciplina": "Disciplina", "Tesoreri
 
 ROLE_ENDPOINTS = {
     # Disciplina trabaja exclusivamente con las actas y sus registros.
-    "Disciplina": {"dashboard","admin_panel_maestro","mi_cuenta_admin","admin_actas","acta_partido","admin_centro_actas","admin_disciplina","crear_resolucion_disciplina","ver_resolucion_disciplina","publicar_resolucion_disciplina","registrar_gol","registrar_amarilla","registrar_roja","registrar_suspension","eliminar_gol","eliminar_registro_disciplinario","logout"},
+    "Disciplina": {"dashboard","admin_panel_maestro","mi_cuenta_admin","admin_actas","acta_partido","admin_centro_actas","admin_disciplina","crear_resolucion_disciplina","ver_resolucion_disciplina","publicar_resolucion_disciplina","admin_disciplina_tarjetas","admin_disciplina_expulsados","crear_expulsado_disciplina","ver_expulsado_disciplina","publicar_expulsado_disciplina","registrar_gol","registrar_amarilla","registrar_roja","registrar_suspension","eliminar_gol","eliminar_registro_disciplinario","logout"},
     "Tesoreria": {"dashboard","admin_panel_maestro","mi_cuenta_admin","admin_tesoreria","logout"}
 }
 
@@ -1476,6 +1511,43 @@ def obtener_suspensiones(jugador_id):
         db.session.rollback()
         print("Advertencia obteniendo suspensiones:", error)
         return 0
+
+
+def crear_suspension_por_acumulacion_campeonato(jugador, campeonato):
+    """Controla 4 amarillas dentro del campeonato/serie actual."""
+    amarillas = sum(
+        int(x.cantidad or 0)
+        for x in RegistroDisciplinario.query.filter_by(
+            jugador_id=jugador.id,
+            campeonato_id=campeonato.id,
+            tipo="Amarilla"
+        ).all()
+    )
+    esperadas = amarillas // 4
+    existentes = sum(
+        int(x.cantidad or 0)
+        for x in RegistroDisciplinario.query.filter_by(
+            jugador_id=jugador.id,
+            campeonato_id=campeonato.id,
+            tipo="Suspension"
+        ).all()
+        if (x.motivo or "").startswith("Suspensión automática por acumulación")
+    )
+    nuevas = max(0, esperadas - existentes)
+    if nuevas:
+        jugador.estado = "Suspendido"
+        for _ in range(nuevas):
+            db.session.add(RegistroDisciplinario(
+                jugador_id=jugador.id,
+                fecha=date.today(),
+                tipo="Suspension",
+                cantidad=1,
+                motivo="Suspensión automática por acumulación de 4 tarjetas amarillas.",
+                campeonato=campeonato.nombre,
+                campeonato_id=campeonato.id,
+                observaciones=f"AUTO_ACUMULACION:{campeonato.id}:{jugador.id}",
+            ))
+    return nuevas
 
 
 def crear_suspension_por_acumulacion(
@@ -3429,6 +3501,219 @@ def publico_resolucion_disciplina(resolucion_id):
     if not resolucion.publicado or resolucion.estado == "Anulada":
         return redirect(url_for("publico_disciplina"))
     return render_template("publico_resolucion_disciplina.html", resolucion=resolucion)
+
+
+
+# ============================================================
+# V11.1 — CONTROL DE TARJETAS POR PARTIDO / SERIE
+# ============================================================
+
+@app.route("/admin/disciplina/tarjetas")
+@rol_permitido("Administrador", "Disciplina")
+def admin_disciplina_tarjetas():
+    campeonato_id = request.args.get("campeonato_id", type=int)
+    serie = (request.args.get("serie") or "").strip()
+    jugador_q = (request.args.get("q") or "").strip()
+
+    campeonatos = Campeonato.query.order_by(Campeonato.temporada.desc(), Campeonato.id.desc()).all()
+    series = Serie.query.filter_by(activo=True).order_by(Serie.nombre).all()
+
+    partidos_q = (
+        Partido.query
+        .join(Campeonato)
+        .filter(Partido.estado == "Finalizado")
+        .order_by(Partido.fecha.desc().nullslast(), Partido.jornada.desc(), Partido.id.desc())
+    )
+    if campeonato_id:
+        partidos_q = partidos_q.filter(Partido.campeonato_id == campeonato_id)
+    if serie:
+        partidos_q = partidos_q.filter(Campeonato.serie == serie)
+
+    partidos = partidos_q.limit(300).all()
+    partido_ids = [p.id for p in partidos]
+
+    eventos = []
+    resumen_jugadores = {}
+
+    if partido_ids:
+        filas = (
+            db.session.query(PartidoJugador, Jugador, Partido, Campeonato)
+            .join(Jugador, Jugador.id == PartidoJugador.jugador_id)
+            .join(Partido, Partido.id == PartidoJugador.partido_id)
+            .join(Campeonato, Campeonato.id == Partido.campeonato_id)
+            .filter(
+                PartidoJugador.partido_id.in_(partido_ids),
+                db.or_(PartidoJugador.amarillas > 0, PartidoJugador.rojas > 0),
+            )
+            .order_by(Partido.fecha.desc().nullslast(), Partido.jornada.desc(), Partido.id.desc())
+            .all()
+        )
+
+        for pj, jugador, partido, camp in filas:
+            if jugador_q and jugador_q.lower() not in jugador.nombre_completo.lower():
+                continue
+
+            clave = (jugador.id, camp.id)
+            fila = resumen_jugadores.setdefault(clave, {
+                "jugador": jugador,
+                "campeonato": camp,
+                "serie": camp.serie,
+                "club": jugador.club,
+                "amarillas": 0,
+                "rojas": 0,
+                "partidos": 0,
+            })
+            fila["amarillas"] += int(pj.amarillas or 0)
+            fila["rojas"] += int(pj.rojas or 0)
+            fila["partidos"] += 1
+
+            eventos.append({
+                "partido": partido,
+                "jugador": jugador,
+                "campeonato": camp,
+                "amarillas": int(pj.amarillas or 0),
+                "rojas": int(pj.rojas or 0),
+                "equipo": pj.equipo,
+            })
+
+    resumen_jugadores = sorted(
+        resumen_jugadores.values(),
+        key=lambda x: (-x["rojas"], -x["amarillas"], x["jugador"].nombre_completo.lower())
+    )
+
+    total_amarillas = sum(x["amarillas"] for x in resumen_jugadores)
+    total_rojas = sum(x["rojas"] for x in resumen_jugadores)
+
+    return render_template(
+        "admin_disciplina_tarjetas.html",
+        campeonatos=campeonatos,
+        series=series,
+        campeonato_id=campeonato_id,
+        serie=serie,
+        q=jugador_q,
+        eventos=eventos,
+        resumen_jugadores=resumen_jugadores,
+        total_amarillas=total_amarillas,
+        total_rojas=total_rojas,
+    )
+
+
+# ============================================================
+# V11.1 — EXPULSADOS OFICIALES
+# ============================================================
+
+@app.route("/admin/disciplina/expulsados")
+@rol_permitido("Administrador", "Disciplina")
+def admin_disciplina_expulsados():
+    expulsados = ExpulsadoDisciplina.query.order_by(
+        ExpulsadoDisciplina.fecha.desc(),
+        ExpulsadoDisciplina.id.desc()
+    ).limit(300).all()
+    return render_template("admin_disciplina_expulsados.html", expulsados=expulsados)
+
+
+@app.route("/admin/disciplina/expulsados/nuevo", methods=["GET", "POST"])
+@rol_permitido("Administrador", "Disciplina")
+def crear_expulsado_disciplina():
+    if request.method == "GET":
+        return render_template(
+            "admin_disciplina_expulsado_form.html",
+            clubes=Club.query.filter_by(activo=True).order_by(Club.nombre).all(),
+            jugadores=Jugador.query.order_by(Jugador.club, Jugador.nombre_completo).all(),
+            campeonatos=Campeonato.query.order_by(Campeonato.temporada.desc(), Campeonato.id.desc()).all(),
+            today=date.today(),
+        )
+
+    try:
+        fecha = datetime.strptime(request.form.get("fecha") or date.today().isoformat(), "%Y-%m-%d").date()
+        ini_raw = request.form.get("fecha_inicio") or ""
+        fin_raw = request.form.get("fecha_fin") or ""
+        ini = datetime.strptime(ini_raw, "%Y-%m-%d").date() if ini_raw else None
+        fin = datetime.strptime(fin_raw, "%Y-%m-%d").date() if fin_raw else None
+
+        tipo = (request.form.get("tipo_afectado") or "Jugador").strip()
+        jugador_id = request.form.get("jugador_id", type=int) or None
+        club_id = request.form.get("club_id", type=int) or None
+        campeonato_id = request.form.get("campeonato_id", type=int) or None
+
+        if tipo == "Jugador" and not jugador_id:
+            raise ValueError("Debes seleccionar el jugador expulsado.")
+        if tipo == "Club" and not club_id:
+            raise ValueError("Debes seleccionar el club expulsado.")
+
+        registro = ExpulsadoDisciplina(
+            fecha=fecha,
+            numero_resolucion=(request.form.get("numero_resolucion") or "").strip() or None,
+            tipo_afectado=tipo,
+            jugador_id=jugador_id if tipo == "Jugador" else None,
+            club_id=club_id if tipo == "Club" else None,
+            campeonato_id=campeonato_id,
+            serie=(request.form.get("serie") or "").strip() or None,
+            motivo=(request.form.get("motivo") or "").strip(),
+            resolucion=(request.form.get("resolucion") or "").strip(),
+            fecha_inicio=ini,
+            fecha_fin=fin,
+            observaciones=(request.form.get("observaciones") or "").strip(),
+            estado="Vigente",
+            publicado=False,
+            creado_por=session.get("admin_nombre") or "Disciplina",
+        )
+        if not registro.motivo or not registro.resolucion:
+            raise ValueError("Debes ingresar motivo y resolución oficial.")
+
+        db.session.add(registro)
+        db.session.commit()
+        flash("Registro de expulsión creado correctamente.", "success")
+        return redirect(url_for("ver_expulsado_disciplina", expulsado_id=registro.id))
+    except Exception as error:
+        db.session.rollback()
+        flash(f"No fue posible registrar la expulsión: {error}", "error")
+        return redirect(url_for("crear_expulsado_disciplina"))
+
+
+@app.route("/admin/disciplina/expulsados/<int:expulsado_id>")
+@rol_permitido("Administrador", "Disciplina")
+def ver_expulsado_disciplina(expulsado_id):
+    expulsado = db.get_or_404(ExpulsadoDisciplina, expulsado_id)
+    return render_template("admin_disciplina_expulsado_detalle.html", expulsado=expulsado)
+
+
+@app.route("/admin/disciplina/expulsados/<int:expulsado_id>/publicar", methods=["POST"])
+@rol_permitido("Administrador", "Disciplina")
+def publicar_expulsado_disciplina(expulsado_id):
+    expulsado = db.get_or_404(ExpulsadoDisciplina, expulsado_id)
+    expulsado.publicado = True
+    expulsado.estado = "Vigente"
+    db.session.commit()
+    flash("El registro de expulsión fue publicado en el portal público.", "success")
+    return redirect(url_for("ver_expulsado_disciplina", expulsado_id=expulsado.id))
+
+
+@app.route("/admin/disciplina/expulsados/<int:expulsado_id>/anular", methods=["POST"])
+@rol_permitido("Administrador")
+def anular_expulsado_disciplina(expulsado_id):
+    expulsado = db.get_or_404(ExpulsadoDisciplina, expulsado_id)
+    expulsado.estado = "Anulado"
+    expulsado.publicado = False
+    db.session.commit()
+    flash("El registro de expulsión fue anulado y retirado del portal público.", "success")
+    return redirect(url_for("ver_expulsado_disciplina", expulsado_id=expulsado.id))
+
+
+@app.route("/expulsados")
+def publico_expulsados():
+    expulsados = ExpulsadoDisciplina.query.filter_by(
+        publicado=True, estado="Vigente"
+    ).order_by(ExpulsadoDisciplina.fecha.desc(), ExpulsadoDisciplina.id.desc()).all()
+    return render_template("publico_expulsados.html", expulsados=expulsados)
+
+
+@app.route("/expulsados/<int:expulsado_id>")
+def publico_expulsado_detalle(expulsado_id):
+    expulsado = db.get_or_404(ExpulsadoDisciplina, expulsado_id)
+    if not expulsado.publicado or expulsado.estado != "Vigente":
+        return redirect(url_for("publico_expulsados"))
+    return render_template("publico_expulsado_detalle.html", expulsado=expulsado)
 
 
 # ============================================================
@@ -6411,6 +6696,11 @@ def sincronizar_estadisticas_desde_acta(campeonato, partido, nomina):
                 campeonato_id=campeonato.id,
                 observaciones=marcador,
             ))
+
+        if amarillas:
+            jugador_evento = db.session.get(Jugador, registro.jugador_id)
+            if jugador_evento:
+                crear_suspension_por_acumulacion_campeonato(jugador_evento, campeonato)
 
         if rojas:
             db.session.add(RegistroDisciplinario(
