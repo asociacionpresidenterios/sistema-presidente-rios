@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Comprobante {{rendicion.numero_rendicion}}{% endblock %}
+{% block content %}
+<style>
+.sheet{max-width:920px;margin:24px auto;background:#fff;border:1px solid #dbe2ea;border-radius:8px;box-shadow:0 10px 30px rgba(15,23,42,.08);padding:42px;color:#111827}.top{display:flex;justify-content:space-between;gap:25px;border-bottom:2px solid #111827;padding-bottom:18px}.org{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}.title{font-size:25px;font-weight:900;margin:5px 0}.subtitle{font-size:12px;color:#64748b}.number{text-align:right}.number strong{font-size:18px}.badge{display:inline-block;margin-top:7px;padding:6px 10px;border-radius:999px;font-size:10px;font-weight:900;background:#dcfce7;color:#166534}.info{display:grid;grid-template-columns:1fr 1fr;gap:8px 30px;margin:20px 0;padding:14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:7px;font-size:11px}.info b{display:block;font-size:9px;text-transform:uppercase;color:#64748b;margin-bottom:3px}.formula{display:flex;align-items:center;justify-content:center;gap:10px;margin:20px 0;padding:15px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;font-weight:900}.formula span{font-size:18px}.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:15px 0}.card{border:1px solid #e5e7eb;border-radius:8px;padding:13px}.card small{display:block;color:#64748b;font-size:9px;text-transform:uppercase;font-weight:800}.card strong{display:block;font-size:19px;margin-top:5px}.section{margin-top:24px}.section h2{font-size:14px;border-bottom:1px solid #dbe2ea;padding-bottom:8px}.table{width:100%;border-collapse:collapse;font-size:10px}.table th,.table td{padding:8px;border-bottom:1px solid #e5e7eb;text-align:left}.table th{background:#f8fafc;font-size:9px;text-transform:uppercase;color:#64748b}.right{text-align:right!important}.sign{display:grid;grid-template-columns:1fr 1fr;gap:70px;margin-top:70px}.line{border-top:1px solid #111827;padding-top:8px;text-align:center;font-size:10px}.foot{margin-top:30px;padding-top:12px;border-top:1px solid #dbe2ea;font-size:9px;color:#64748b;line-height:1.5}.actions{max-width:920px;margin:15px auto;display:flex;gap:8px}.btn{border:0;border-radius:8px;padding:10px 14px;text-decoration:none;background:#111827;color:#fff;font-size:11px;font-weight:800;cursor:pointer}@media(max-width:700px){.sheet{padding:20px}.top{flex-direction:column}.number{text-align:left}.cards{grid-template-columns:1fr 1fr}.info{grid-template-columns:1fr}.sign{gap:25px}}@media print{body{background:#fff!important}.actions{display:none!important}.sheet{box-shadow:none;border:0;margin:0;max-width:none;padding:12mm}.no-print{display:none!important}}
+</style>
+
+<div class="actions no-print">
+  <a class="btn" href="{{url_for('admin_tesoreria_rendicion',mes=rendicion.periodo_mes,anio=rendicion.periodo_anio)}}">← Volver</a>
+  <button class="btn" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+</div>
+
+<div class="sheet">
+  <div class="top">
+    <div>
+      <div class="org">Asociación Presidente Ríos</div>
+      <div class="title">Comprobante de Rendición de Tesorería</div>
+      <div class="subtitle">Documento interno de respaldo financiero mensual</div>
+    </div>
+    <div class="number">
+      <div class="subtitle">N.º DE RENDICIÓN</div>
+      <strong>{{rendicion.numero_rendicion}}</strong><br>
+      <span class="badge">{{rendicion.estado}}</span>
+    </div>
+  </div>
+
+  <div class="info">
+    <div><b>Período</b>{{nombre_mes}} {{rendicion.periodo_anio}}</div>
+    <div><b>Fecha de emisión</b>{{fecha_emision.strftime('%d/%m/%Y')}}</div>
+    <div><b>Responsable de creación</b>{{rendicion.creado_por or '—'}}</div>
+    <div><b>Fecha de creación</b>{{rendicion.creado_en.strftime('%d/%m/%Y %H:%M') if rendicion.creado_en else '—'}}</div>
+    <div><b>Responsable de revisión</b>{{rendicion.revisado_por or '—'}}</div>
+    <div><b>Fecha de revisión</b>{{rendicion.revisado_en.strftime('%d/%m/%Y %H:%M') if rendicion.revisado_en else '—'}}</div>
+    <div><b>Responsable de cierre</b>{{rendicion.cerrado_por or '—'}}</div>
+    <div><b>Fecha de cierre</b>{{rendicion.cerrado_en.strftime('%d/%m/%Y %H:%M') if rendicion.cerrado_en else '—'}}</div>
+  </div>
+
+  <div class="formula">
+    <span>$ {{ "{:,.0f}".format(resumen.saldo_inicial).replace(",", ".") }}</span>
+    <span>+</span>
+    <span>$ {{ "{:,.0f}".format(resumen.ingresos).replace(",", ".") }}</span>
+    <span>−</span>
+    <span>$ {{ "{:,.0f}".format(resumen.egresos).replace(",", ".") }}</span>
+    <span>=</span>
+    <span>$ {{ "{:,.0f}".format(resumen.saldo_final).replace(",", ".") }}</span>
+  </div>
+
+  <div class="cards">
+    <div class="card"><small>Saldo inicial</small><strong>$ {{ "{:,.0f}".format(resumen.saldo_inicial).replace(",", ".") }}</strong></div>
+    <div class="card"><small>Ingresos</small><strong>$ {{ "{:,.0f}".format(resumen.ingresos).replace(",", ".") }}</strong></div>
+    <div class="card"><small>Egresos</small><strong>$ {{ "{:,.0f}".format(resumen.egresos).replace(",", ".") }}</strong></div>
+    <div class="card"><small>Saldo final</small><strong>$ {{ "{:,.0f}".format(resumen.saldo_final).replace(",", ".") }}</strong></div>
+  </div>
+
+  <div class="section">
+    <h2>Resumen de obligaciones y actividad</h2>
+    <table class="table">
+      <tr><td>Movimientos registrados</td><td class="right"><strong>{{resumen.movimientos}}</strong></td></tr>
+      <tr><td>Cuentas por cobrar generadas en el período</td><td class="right"><strong>$ {{ "{:,.0f}".format(resumen.cuentas_cobrar).replace(",", ".") }}</strong></td></tr>
+      <tr><td>Cuentas por pagar generadas en el período</td><td class="right"><strong>$ {{ "{:,.0f}".format(resumen.cuentas_pagar).replace(",", ".") }}</strong></td></tr>
+      <tr><td>Obligaciones por cobrar pendientes al momento de consulta</td><td class="right"><strong>$ {{ "{:,.0f}".format(calculo.pendientes_cobrar|sum(attribute='saldo')).replace(",", ".") }}</strong></td></tr>
+      <tr><td>Obligaciones por pagar pendientes al momento de consulta</td><td class="right"><strong>$ {{ "{:,.0f}".format(calculo.pendientes_pagar|sum(attribute='saldo')).replace(",", ".") }}</strong></td></tr>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Resumen por categoría</h2>
+    <table class="table">
+      <thead><tr><th>Categoría</th><th class="right">Ingresos</th><th class="right">Egresos</th><th class="right">Neto</th></tr></thead>
+      <tbody>
+      {% for item in calculo.categorias %}
+        <tr><td>{{item.nombre}}</td><td class="right">$ {{ "{:,.0f}".format(item.ingresos).replace(",", ".") }}</td><td class="right">$ {{ "{:,.0f}".format(item.egresos).replace(",", ".") }}</td><td class="right">$ {{ "{:,.0f}".format(item.neto).replace(",", ".") }}</td></tr>
+      {% else %}
+        <tr><td colspan="4">Sin movimientos registrados.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2>Observaciones</h2>
+    <div style="min-height:55px;border:1px solid #e5e7eb;border-radius:7px;padding:10px;font-size:10px">{{rendicion.observaciones or 'Sin observaciones registradas.'}}</div>
+  </div>
+
+  <div class="sign">
+    <div class="line">Responsable de Tesorería<br>{{rendicion.revisado_por or '____________________________'}}</div>
+    <div class="line">Administrador / Aprobación<br>{{rendicion.cerrado_por or '____________________________'}}</div>
+  </div>
+
+  <div class="foot">
+    Este comprobante corresponde a la rendición {{rendicion.numero_rendicion}} del período {{nombre_mes}} {{rendicion.periodo_anio}}.
+    {% if rendicion.estado == 'Cerrada' %}Las cifras financieras principales corresponden a los valores congelados al momento del cierre formal.{% else %}El período aún no se encuentra cerrado y los valores pueden cambiar con nuevas operaciones.{% endif %}
+    Las cuentas por cobrar y por pagar representan obligaciones y no se consideran caja hasta registrar el pago o abono correspondiente.
+  </div>
+</div>
+{% endblock %}
