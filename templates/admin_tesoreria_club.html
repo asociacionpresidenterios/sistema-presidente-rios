@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Estado financiero · {{club.nombre}}{% endblock %}
+{% block content %}
+<style>
+.wrap{max-width:1280px;margin:auto}
+.hero{background:linear-gradient(135deg,#071426,#173f7a);color:#fff;border-radius:18px;padding:24px;margin-bottom:18px}
+.hero .eyebrow{font-size:10px;letter-spacing:.14em;font-weight:800;opacity:.75}
+.hero h1{margin:5px 0;font-size:29px}.hero p{margin:0;color:#d9e7f8;font-size:13px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.actions a{display:inline-block;text-decoration:none;border-radius:9px;padding:9px 12px;background:#fff;color:#173f7a;font-weight:800;font-size:11px}
+.toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:14px;margin-bottom:18px}
+.toolbar label{display:block;font-size:10px;color:#64748b;font-weight:800;text-transform:uppercase;margin-bottom:5px}
+.toolbar select,.toolbar input{border:1px solid #d6dee9;border-radius:9px;padding:10px;font:inherit;background:#fff}
+.toolbar button{border:0;border-radius:9px;padding:10px 14px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer}
+.summary{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:18px}
+.card{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:15px}.label{font-size:9px;color:#64748b;font-weight:800;text-transform:uppercase}.amount{font-size:21px;font-weight:900;margin-top:6px}.positive{color:#15803d}.negative{color:#b91c1c}.warning{color:#b45309}.blue{color:#1d4ed8}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}.panel{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px}.panel h2{font-size:16px;margin:0 0 14px}
+.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th{text-align:left;font-size:9px;color:#64748b;padding:10px 8px;border-bottom:1px solid #e5eaf1;text-transform:uppercase;white-space:nowrap}td{padding:10px 8px;border-bottom:1px solid #eef2f7;font-size:11px;vertical-align:top}
+.badge{display:inline-block;border-radius:999px;padding:4px 8px;font-size:9px;font-weight:800}.ingreso{background:#dcfce7;color:#166534}.egreso{background:#fee2e2;color:#991b1b}.pendiente{background:#fff7ed;color:#9a3412}.abono{background:#dbeafe;color:#1d4ed8}.pagado{background:#dcfce7;color:#166534}
+.muted{color:#64748b}.empty{padding:28px;text-align:center;color:#64748b}.big-number{font-size:30px;font-weight:900}
+@media(max-width:1100px){.summary{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.summary{grid-template-columns:1fr 1fr}.grid{grid-template-columns:1fr}}@media(max-width:500px){.summary{grid-template-columns:1fr}}
+</style>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">CUENTA FINANCIERA DEL CLUB</div>
+    <h1>🏦 {{club.nombre}}</h1>
+    <p>Estado financiero individual · cuentas, abonos y movimientos registrados en Tesorería.</p>
+    <div class="actions">
+      <a href="{{url_for('admin_tesoreria')}}">← Volver a Tesorería</a>
+      <a href="{{url_for('admin_planteles_campeonato', campeonato_id=campeonatos[0].id) if campeonatos else url_for('admin_tesoreria')}}">⚽ Campeonatos</a>
+    </div>
+  </div>
+
+  <form class="toolbar" method="get">
+    <div><label>Mes</label><select name="mes">{% for n,nombre in [(1,'Enero'),(2,'Febrero'),(3,'Marzo'),(4,'Abril'),(5,'Mayo'),(6,'Junio'),(7,'Julio'),(8,'Agosto'),(9,'Septiembre'),(10,'Octubre'),(11,'Noviembre'),(12,'Diciembre')] %}<option value="{{n}}" {% if mes==n %}selected{% endif %}>{{nombre}}</option>{% endfor %}</select></div>
+    <div><label>Año</label><input type="number" name="anio" value="{{anio}}" min="2020" max="2100"></div>
+    <button type="submit">🔎 Consultar período</button>
+  </form>
+
+  <div class="summary">
+    <div class="card"><div class="label">Por cobrar</div><div class="amount warning">$ {{ "{:,.0f}".format(resumen.por_cobrar).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Por pagar</div><div class="amount warning">$ {{ "{:,.0f}".format(resumen.por_pagar).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Cobrado histórico</div><div class="amount positive">$ {{ "{:,.0f}".format(resumen.cobrado).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Pagado histórico</div><div class="amount negative">$ {{ "{:,.0f}".format(resumen.pagado).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Ingreso del mes</div><div class="amount positive">$ {{ "{:,.0f}".format(resumen.ingresos_periodo).replace(",", ".") }}</div></div>
+    <div class="card"><div class="label">Egreso del mes</div><div class="amount negative">$ {{ "{:,.0f}".format(resumen.egresos_periodo).replace(",", ".") }}</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>📈 Resumen financiero</h2>
+      <p class="muted">El saldo histórico corresponde a ingresos menos egresos registrados para este club; no representa por sí solo el saldo bancario de la Asociación.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px">
+        <div><div class="label">Saldo del período</div><div class="big-number {% if resumen.saldo_periodo < 0 %}negative{% else %}positive{% endif %}">$ {{ "{:,.0f}".format(resumen.saldo_periodo).replace(",", ".") }}</div></div>
+        <div><div class="label">Saldo histórico registrado</div><div class="big-number {% if resumen.saldo_historico < 0 %}negative{% else %}positive{% endif %}">$ {{ "{:,.0f}".format(resumen.saldo_historico).replace(",", ".") }}</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>🏆 Campeonatos asociados</h2>
+      {% if campeonatos %}
+      <div class="table-wrap"><table><thead><tr><th>Campeonato</th><th>Serie</th><th>Temporada</th></tr></thead><tbody>
+      {% for c in campeonatos %}<tr><td><strong>{{c.nombre}}</strong></td><td>{{c.serie}}</td><td>{{c.temporada}}</td></tr>{% endfor %}
+      </tbody></table></div>
+      {% else %}<div class="empty">Aún no existen cuentas asociadas a campeonatos para este club.</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:18px">
+    <h2>🧾 Cuentas por cobrar y por pagar</h2>
+    {% if cuentas %}
+    <div class="table-wrap"><table>
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Campeonato</th><th>Total</th><th>Pagado</th><th>Saldo</th><th>Vencimiento</th><th>Estado</th></tr></thead>
+      <tbody>{% for c in cuentas %}
+      <tr>
+        <td>{{c.fecha.strftime('%d/%m/%Y')}}</td>
+        <td><span class="badge {% if c.tipo=='Por cobrar' %}ingreso{% else %}egreso{% endif %}">{{c.tipo}}</span></td>
+        <td><strong>{{c.concepto}}</strong>{% if c.observaciones %}<br><small class="muted">{{c.observaciones}}</small>{% endif %}</td>
+        <td>{{c.campeonato.nombre if c.campeonato else '—'}}{% if c.serie %}<br><small class="muted">{{c.serie}}</small>{% endif %}</td>
+        <td>$ {{ "{:,.0f}".format(c.monto_total|int).replace(",", ".") }}</td>
+        <td>$ {{ "{:,.0f}".format(c.monto_pagado|int).replace(",", ".") }}</td>
+        <td><strong>$ {{ "{:,.0f}".format(c.saldo).replace(",", ".") }}</strong></td>
+        <td>{{c.vencimiento.strftime('%d/%m/%Y') if c.vencimiento else '—'}}</td>
+        <td><span class="badge {% if c.estado=='Pagado' %}pagado{% elif c.estado=='Abono' %}abono{% else %}pendiente{% endif %}">{{c.estado}}</span></td>
+      </tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<div class="empty">No existen cuentas financieras registradas para este club.</div>{% endif %}
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>📊 Movimientos del período</h2>
+      {% set periodo = [] %}
+      {% for m in movimientos %}
+        {% if m.fecha and m.fecha >= today.replace(day=1) and m.fecha.month == mes and m.fecha.year == anio %}{% set _ = periodo.append(m) %}{% endif %}
+      {% endfor %}
+      {% if movimientos %}
+      <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Categoría</th><th>Medio</th><th>Monto</th></tr></thead><tbody>
+      {% for m in movimientos if m.fecha and m.fecha >= today.replace(day=1) and m.fecha.month == mes and m.fecha.year == anio %}
+      <tr><td>{{m.fecha.strftime('%d/%m/%Y')}}</td><td><span class="badge {% if m.tipo=='Ingreso' %}ingreso{% else %}egreso{% endif %}">{{m.tipo}}</span></td><td><strong>{{m.concepto}}</strong>{% if m.referencia %}<br><small class="muted">{{m.referencia}}</small>{% endif %}</td><td>{{m.categoria or '—'}}</td><td>{{m.medio_pago or '—'}}</td><td><strong>$ {{ "{:,.0f}".format(m.monto|int).replace(",", ".") }}</strong></td></tr>
+      {% endfor %}</tbody></table></div>
+      {% else %}<div class="empty">No hay movimientos registrados para este club.</div>{% endif %}
+    </div>
+
+    <div class="panel">
+      <h2>📂 Resumen por categoría</h2>
+      {% if categorias %}
+      <div class="table-wrap"><table><thead><tr><th>Categoría</th><th>Ingresos</th><th>Egresos</th><th>Neto</th></tr></thead><tbody>
+      {% for x in categorias %}<tr><td><strong>{{x.nombre}}</strong></td><td class="positive">$ {{ "{:,.0f}".format(x.ingresos).replace(",", ".") }}</td><td class="negative">$ {{ "{:,.0f}".format(x.egresos).replace(",", ".") }}</td><td>$ {{ "{:,.0f}".format(x.ingresos-x.egresos).replace(",", ".") }}</td></tr>{% endfor %}
+      </tbody></table></div>
+      {% else %}<div class="empty">No hay movimientos categorizados.</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>📚 Historial completo del club</h2>
+    {% if movimientos %}
+    <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Campeonato</th><th>Serie</th><th>Monto</th></tr></thead><tbody>
+    {% for m in movimientos %}
+    <tr><td>{{m.fecha.strftime('%d/%m/%Y')}}</td><td><span class="badge {% if m.tipo=='Ingreso' %}ingreso{% else %}egreso{% endif %}">{{m.tipo}}</span></td><td>{{m.concepto}}</td><td>{{m.campeonato.nombre if m.campeonato else '—'}}</td><td>{{m.serie or '—'}}</td><td><strong>$ {{ "{:,.0f}".format(m.monto|int).replace(",", ".") }}</strong></td></tr>
+    {% endfor %}</tbody></table></div>
+    {% else %}<div class="empty">No hay movimientos históricos registrados.</div>{% endif %}
+  </div>
+</div>
+{% endblock %}
