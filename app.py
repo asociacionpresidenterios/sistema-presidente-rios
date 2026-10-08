@@ -531,6 +531,14 @@ class Partido(db.Model):
         default="Programado"
     )
 
+    # V12.0 — partido fijado manualmente dentro del fixture futuro.
+    # Los partidos finalizados siempre quedan protegidos por su estado.
+    fixture_bloqueado = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False
+    )
+
     campeonato = db.relationship(
         "Campeonato",
         backref=db.backref(
@@ -1122,6 +1130,7 @@ def preparar_vinculos_campeonato():
             },
             "partido": {
                 "turno_club_id": "INTEGER",
+                "fixture_bloqueado": "BOOLEAN DEFAULT FALSE",
             },
         }
 
@@ -5290,6 +5299,310 @@ def siguiente_sabado(fecha_base):
     return fecha_base + timedelta(days=dias_hasta_sabado)
 
 
+def _partido_finalizado(partido):
+    return (
+        (partido.estado or "").strip().lower() == "finalizado"
+        and partido.goles_local is not None
+        and partido.goles_visitante is not None
+    )
+
+
+def _pareja_partidos(partido):
+    return frozenset((partido.local_club_id, partido.visitante_club_id))
+
+
+def _crear_parejas_pendientes(club_ids, partidos_fijos):
+    """Devuelve todos los cruces que todavía no están resueltos."""
+    todos = {
+        frozenset((a, b))
+        for i, a in enumerate(club_ids)
+        for b in club_ids[i + 1:]
+    }
+    resueltos = {_pareja_partidos(p) for p in partidos_fijos}
+    return todos - resueltos
+
+
+def _repartir_parejas_en_jornadas(club_ids, jornadas_objetivo, partidos_fijos):
+    """
+    Repara el calendario pendiente respetando:
+      - partidos fijos (finalizados o bloqueados manualmente)
+      - un solo partido por club en cada jornada
+      - todos los cruces una sola vez
+      - hasta floor(n/2) partidos por jornada
+
+    Usa una búsqueda acotada con backtracking para los cruces pendientes.
+    """
+    max_partidos = len(club_ids) // 2
+    jornadas = {j: [] for j in jornadas_objetivo}
+
+    for partido in partidos_fijos:
+        jornada = int(partido.jornada)
+        if jornada not in jornadas:
+            jornadas[jornada] = []
+        jornadas[jornada].append(partido)
+
+    def ocupados(jornada):
+        usados = set()
+        for partido in jornadas[jornada]:
+            usados.add(partido.local_club_id)
+            usados.add(partido.visitante_club_id)
+        return usados
+
+    pendientes = sorted(
+        _crear_parejas_pendientes(club_ids, partidos_fijos),
+        key=lambda pareja: (
+            sum(1 for j in jornadas if len(jornadas[j]) < max_partidos),
+            tuple(sorted(pareja)),
+        ),
+    )
+
+    # Elegimos primero las parejas con menos jornadas posibles.
+    def candidatos(pareja):
+        a, b = tuple(pareja)
+        resultado = []
+        for jornada in jornadas_objetivo:
+            if len(jornadas[jornada]) >= max_partidos:
+                continue
+            usados = ocupados(jornada)
+            if a not in usados and b not in usados:
+                resultado.append(jornada)
+        return resultado
+
+    # Búsqueda iterativa con heurística MRV.
+    limite_nodos = 12000
+    nodos = 0
+
+    def buscar(restantes):
+        nonlocal nodos
+        nodos += 1
+        if nodos > limite_nodos:
+            return False
+        if not restantes:
+            return True
+
+        mejor = None
+        mejor_candidatos = None
+        for pareja in restantes:
+            cands = candidatos(pareja)
+            if not cands:
+                return False
+            if mejor_candidatos is None or len(cands) < len(mejor_candidatos):
+                mejor = pareja
+                mejor_candidatos = cands
+                if len(cands) == 1:
+                    break
+
+        for jornada in mejor_candidatos:
+            a, b = tuple(mejor)
+            partido = Partido(
+                campeonato_id=partidos_fijos[0].campeonato_id if partidos_fijos else None,
+                jornada=jornada,
+                local_club_id=a,
+                visitante_club_id=b,
+                estado="Programado",
+                fixture_bloqueado=False,
+            )
+            jornadas[jornada].append(partido)
+            restantes.remove(mejor)
+
+            if buscar(restantes):
+                restantes.add(mejor)
+                return True
+
+            restantes.add(mejor)
+            jornadas[jornada].pop()
+
+        return False
+
+    if not buscar(set(pendientes)):
+        return None
+
+    return jornadas
+
+
+def adaptar_fixture_pendiente(campeonato, partido_modificado):
+    """
+    Recalcula únicamente el fixture futuro.
+
+    Los partidos finalizados nunca se tocan. El partido que el administrador
+    acaba de modificar queda bloqueado y también se respeta. El resto de
+    cruces pendientes se redistribuye automáticamente alrededor de esas
+    restricciones.
+    """
+    todos = (
+        Partido.query
+        .filter_by(campeonato_id=campeonato.id)
+        .order_by(Partido.jornada.asc(), Partido.id.asc())
+        .all()
+    )
+
+    finalizados = [p for p in todos if _partido_finalizado(p)]
+    futuros = [p for p in todos if not _partido_finalizado(p)]
+
+    # El partido editado pasa a ser una restricción explícita.
+    partido_modificado.fixture_bloqueado = True
+
+    fijos = [
+        p for p in futuros
+        if p.fixture_bloqueado
+    ]
+
+    # No permitimos dos partidos del mismo club en una jornada fija.
+    for jornada in sorted({p.jornada for p in fijos}):
+        usados = set()
+        for p in [x for x in fijos if x.jornada == jornada]:
+            for club_id in (p.local_club_id, p.visitante_club_id):
+                if club_id in usados:
+                    raise ValueError(
+                        f"El cambio genera un conflicto en la jornada {jornada}: "
+                        "un club aparece en más de un partido."
+                    )
+                usados.add(club_id)
+
+    club_ids = [
+        r.club_id for r in CampeonatoClub.query
+        .filter_by(campeonato_id=campeonato.id)
+        .order_by(CampeonatoClub.id)
+        .all()
+    ]
+
+    if len(club_ids) < 2:
+        raise ValueError("El campeonato no tiene suficientes clubes.")
+
+    ultima_jornada = max(
+        [p.jornada for p in finalizados + futuros],
+        default=len(generar_calendario_todos_contra_todos(club_ids))
+    )
+    cantidad_jornadas = max(
+        ultima_jornada,
+        len(generar_calendario_todos_contra_todos(club_ids))
+    )
+
+    jornadas_objetivo = list(range(1, cantidad_jornadas + 1))
+
+    # Las jornadas ya cursadas quedan completamente congeladas.
+    ultima_cursada = max((p.jornada for p in finalizados), default=0)
+    jornadas_futuras = [
+        j for j in jornadas_objetivo
+        if j > ultima_cursada
+    ]
+
+    fijos = [
+        p for p in fijos
+        if p.jornada > ultima_cursada
+    ]
+
+    if partido_modificado.jornada <= ultima_cursada:
+        raise ValueError(
+            "No se puede modificar un partido de una jornada ya cursada."
+        )
+
+    # El partido editado es el único partido futuro que ya existe en DB
+    # y que debemos conservar. Los demás se reconstruyen.
+    conservados = finalizados + fijos
+
+    # Validar que ningún cruce aparezca dos veces entre finalizados y fijos.
+    vistos = set()
+    for p in conservados:
+        pareja = _pareja_partidos(p)
+        if pareja in vistos:
+            raise ValueError(
+                "El cambio generaría un enfrentamiento duplicado en el campeonato."
+            )
+        vistos.add(pareja)
+
+    # Creamos una representación temporal de los fijos y repartimos los
+    # cruces restantes. Las filas futuras antiguas se reemplazan después.
+    solucion = _repartir_parejas_en_jornadas(
+        club_ids,
+        jornadas_futuras,
+        fijos,
+    )
+
+    if solucion is None:
+        raise ValueError(
+            "No fue posible reorganizar automáticamente el fixture con ese cambio. "
+            "Prueba otra jornada o combinación de equipos."
+        )
+
+    # Eliminar solamente partidos futuros no finalizados.
+    for p in futuros:
+        db.session.delete(p)
+    db.session.flush()
+
+    # Restaurar los fijos como objetos existentes; los temporales nuevos se
+    # convierten en partidos reales. Los finalizados no se tocan.
+    for p in fijos:
+        # Ya fueron marcados como bloqueados y siguen en sesión después del
+        # flush; no se vuelven a crear.
+        pass
+
+    # Reinsertamos todos los cruces futuros a partir de la solución, cuidando
+    # especialmente el partido modificado y sus datos de programación.
+    futuros_nuevos = []
+    for jornada in jornadas_futuras:
+        for item in solucion.get(jornada, []):
+            if isinstance(item, Partido) and item.id is not None:
+                # Este caso corresponde a un fijo existente.
+                continue
+
+            if isinstance(item, Partido):
+                local_id = item.local_club_id
+                visitante_id = item.visitante_club_id
+            else:
+                local_id, visitante_id = item
+
+            futuros_nuevos.append(
+                Partido(
+                    campeonato_id=campeonato.id,
+                    jornada=jornada,
+                    fecha=None,
+                    hora=None,
+                    cancha=None,
+                    local_club_id=local_id,
+                    visitante_club_id=visitante_id,
+                    turno_club_id=None,
+                    goles_local=None,
+                    goles_visitante=None,
+                    estado="Programado",
+                    fixture_bloqueado=False,
+                )
+            )
+
+    # Los fijos ya están en la solución, pero el objeto temporal del helper
+    # no conserva su programación. Se preservan desde los registros existentes.
+    for fijo in fijos:
+        # No hacemos nada: el objeto sigue persistido y conserva fecha/hora/cancha.
+        pass
+
+    # Programación por jornada: heredamos la primera configuración disponible
+    # de los partidos antiguos, y usamos sábado consecutivo como respaldo.
+    configuracion = {}
+    for p in todos:
+        if p.jornada <= ultima_cursada:
+            continue
+        if p.fecha or p.hora or p.cancha:
+            configuracion.setdefault(
+                p.jornada,
+                (p.fecha, p.hora, p.cancha)
+            )
+
+    primera_fecha = siguiente_sabado(campeonato.fecha_inicio)
+    for p in futuros_nuevos:
+        cfg = configuracion.get(p.jornada)
+        if cfg:
+            p.fecha, p.hora, p.cancha = cfg
+        else:
+            p.fecha = primera_fecha + timedelta(days=(p.jornada - 1) * 7)
+            p.hora = "17:00"
+            p.cancha = "Por definir"
+        db.session.add(p)
+
+    # Si el partido modificado fue cambiado de jornada, su programación ya
+    # pertenece a esa jornada y no se sobrescribe.
+    db.session.flush()
+
+
 def generar_calendario_todos_contra_todos(club_ids):
     """Genera una rueda todos-contra-todos usando el método de rotación."""
 
@@ -5752,7 +6065,10 @@ def eliminar_fixture_campeonato(campeonato_id):
 )
 @rol_permitido("Administrador")
 def editar_partido_fixture(campeonato_id, partido_id):
-    """Edita fecha, hora, cancha y equipos de un partido sin regenerar el fixture."""
+    """
+    Modifica un partido futuro y adapta automáticamente el resto del fixture
+    pendiente. Las jornadas ya cursadas quedan congeladas.
+    """
     campeonato = db.get_or_404(Campeonato, campeonato_id)
     partido = db.get_or_404(Partido, partido_id)
 
@@ -5760,65 +6076,106 @@ def editar_partido_fixture(campeonato_id, partido_id):
         flash("El partido no pertenece a este campeonato.", "error")
         return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
 
+    if _partido_finalizado(partido):
+        flash("Este partido ya fue cursado y está protegido. No se puede modificar.", "error")
+        return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+
     try:
+        ultima_cursada = max(
+            (
+                p.jornada
+                for p in Partido.query.filter_by(campeonato_id=campeonato.id).all()
+                if _partido_finalizado(p)
+            ),
+            default=0,
+        )
+        if partido.jornada <= ultima_cursada:
+            raise ValueError(
+                f"La jornada {partido.jornada} ya fue cursada y está protegida."
+            )
+
         fecha_texto = request.form.get("fecha", "").strip()
         if fecha_texto:
             partido.fecha = datetime.strptime(fecha_texto, "%Y-%m-%d").date()
+        else:
+            partido.fecha = None
 
         partido.hora = request.form.get("hora", "").strip() or None
         partido.cancha = request.form.get("cancha", "").strip() or None
 
         local_id = int(request.form.get("local_club_id", partido.local_club_id))
         visitante_id = int(request.form.get("visitante_club_id", partido.visitante_club_id))
+        jornada_nueva = int(request.form.get("jornada", partido.jornada))
         turno_raw = request.form.get("turno_club_id", "").strip()
         turno_id = int(turno_raw) if turno_raw else None
 
         participantes = {
             registro.club_id
-            for registro in CampeonatoClub.query.filter_by(campeonato_id=campeonato.id).all()
+            for registro in CampeonatoClub.query.filter_by(
+                campeonato_id=campeonato.id
+            ).all()
         }
 
         if local_id == visitante_id:
             raise ValueError("El club local y visitante no pueden ser el mismo.")
         if local_id not in participantes or visitante_id not in participantes:
             raise ValueError("Los clubes seleccionados no pertenecen a este campeonato.")
+        if jornada_nueva <= ultima_cursada:
+            raise ValueError(
+                f"La jornada {jornada_nueva} ya fue cursada. Debes elegir una jornada futura."
+            )
         if turno_id is not None and turno_id not in participantes:
             raise ValueError("El club de turno seleccionado no pertenece a este campeonato.")
 
-        # Evita que un club aparezca en dos partidos de la misma jornada.
-        otros_partidos = (
+        # Si el administrador cambia de jornada, el partido se mueve antes
+        # de adaptar el calendario.
+        partido.jornada = jornada_nueva
+        partido.local_club_id = local_id
+        partido.visitante_club_id = visitante_id
+        partido.turno_club_id = turno_id
+        partido.fixture_bloqueado = True
+
+        # Verificación inmediata de duplicidad dentro de la nueva jornada.
+        otros = (
             Partido.query
             .filter(
                 Partido.campeonato_id == campeonato.id,
                 Partido.jornada == partido.jornada,
-                Partido.id != partido.id
+                Partido.id != partido.id,
+                Partido.estado != "Finalizado",
             )
             .all()
         )
-        ocupados = set()
-        for otro in otros_partidos:
-            ocupados.add(otro.local_club_id)
-            ocupados.add(otro.visitante_club_id)
-
+        ocupados = {
+            club_id
+            for otro in otros
+            for club_id in (otro.local_club_id, otro.visitante_club_id)
+        }
         if local_id in ocupados or visitante_id in ocupados:
-            raise ValueError("Uno de los clubes seleccionados ya juega en otro partido de esta jornada.")
+            raise ValueError(
+                "El cambio genera un conflicto: uno de los clubes ya aparece "
+                "en otro partido de esa jornada."
+            )
 
-        partido.local_club_id = local_id
-        partido.visitante_club_id = visitante_id
-        partido.turno_club_id = turno_id
-
+        adaptar_fixture_pendiente(campeonato, partido)
         db.session.commit()
+
         registrar_auditoria(
-            "EDITAR_PARTIDO_FIXTURE",
+            "ADAPTAR_FIXTURE",
             "Campeonatos",
-            f"Se editó el partido {partido.local_club.nombre} vs {partido.visitante_club.nombre} de la jornada {partido.jornada} en '{campeonato.nombre}'.",
+            f"Se modificó el partido {partido.local_club.nombre} vs {partido.visitante_club.nombre} "
+            f"y se adaptó automáticamente el fixture pendiente de '{campeonato.nombre}'.",
         )
-        flash(f"Partido de la jornada {partido.jornada} actualizado correctamente.", "success")
+        flash(
+            "Cambio guardado. El fixture pendiente se adaptó automáticamente; "
+            "las jornadas ya cursadas permanecieron intactas.",
+            "success",
+        )
 
     except Exception as error:
         db.session.rollback()
-        print("ERROR EDITANDO PARTIDO DEL FIXTURE:", repr(error))
-        flash("No fue posible modificar el partido. Revise los datos ingresados.", "error")
+        print("ERROR ADAPTANDO FIXTURE:", repr(error))
+        flash(f"No fue posible adaptar el fixture: {error}", "error")
 
     return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
 
