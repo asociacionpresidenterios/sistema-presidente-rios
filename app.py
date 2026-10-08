@@ -6002,28 +6002,9 @@ def editar_partido_fixture(campeonato_id, partido_id):
         partido.turno_club_id = turno_id
         partido.fixture_bloqueado = True
 
-        # Verificación inmediata de duplicidad dentro de la nueva jornada.
-        otros = (
-            Partido.query
-            .filter(
-                Partido.campeonato_id == campeonato.id,
-                Partido.jornada == partido.jornada,
-                Partido.id != partido.id,
-                Partido.estado != "Finalizado",
-            )
-            .all()
-        )
-        ocupados = {
-            club_id
-            for otro in otros
-            for club_id in (otro.local_club_id, otro.visitante_club_id)
-        }
-        if local_id in ocupados or visitante_id in ocupados:
-            raise ValueError(
-                "El cambio genera un conflicto: uno de los clubes ya aparece "
-                "en otro partido de esa jornada."
-            )
-
+        # No rechazamos porque los clubes ya aparezcan en la jornada destino.
+        # Precisamente esa es la situación que el adaptador debe resolver:
+        # mueve/reordena las jornadas futuras y conserva el partido fijado.
         adaptar_fixture_pendiente(campeonato, partido)
         db.session.commit()
 
