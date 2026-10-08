@@ -5322,24 +5322,21 @@ def _crear_parejas_pendientes(club_ids, partidos_fijos):
     return todos - resueltos
 
 
-def _repartir_parejas_en_jornadas(club_ids, jornadas_objetivo, partidos_fijos):
+def _repartir_parejas_en_jornadas(club_ids, jornadas_objetivo, partidos_resueltos, partidos_fijos):
     """
-    Repara el calendario pendiente respetando:
-      - partidos fijos (finalizados o bloqueados manualmente)
+    Reparte los cruces pendientes respetando:
+      - partidos finalizados (solo como historial, nunca se mueven)
+      - partidos futuros bloqueados manualmente
       - un solo partido por club en cada jornada
       - todos los cruces una sola vez
-      - hasta floor(n/2) partidos por jornada
-
-    Usa una búsqueda acotada con backtracking para los cruces pendientes.
     """
     max_partidos = len(club_ids) // 2
     jornadas = {j: [] for j in jornadas_objetivo}
 
     for partido in partidos_fijos:
         jornada = int(partido.jornada)
-        if jornada not in jornadas:
-            jornadas[jornada] = []
-        jornadas[jornada].append(partido)
+        if jornada in jornadas:
+            jornadas[jornada].append(partido)
 
     def ocupados(jornada):
         usados = set()
@@ -5348,15 +5345,14 @@ def _repartir_parejas_en_jornadas(club_ids, jornadas_objetivo, partidos_fijos):
             usados.add(partido.visitante_club_id)
         return usados
 
-    pendientes = sorted(
-        _crear_parejas_pendientes(club_ids, partidos_fijos),
-        key=lambda pareja: (
-            sum(1 for j in jornadas if len(jornadas[j]) < max_partidos),
-            tuple(sorted(pareja)),
-        ),
-    )
+    todos = {
+        frozenset((a, b))
+        for i, a in enumerate(club_ids)
+        for b in club_ids[i + 1:]
+    }
+    resueltos = {_pareja_partidos(p) for p in partidos_resueltos}
+    pendientes = todos - resueltos
 
-    # Elegimos primero las parejas con menos jornadas posibles.
     def candidatos(pareja):
         a, b = tuple(pareja)
         resultado = []
@@ -5368,8 +5364,8 @@ def _repartir_parejas_en_jornadas(club_ids, jornadas_objetivo, partidos_fijos):
                 resultado.append(jornada)
         return resultado
 
-    # Búsqueda iterativa con heurística MRV.
-    limite_nodos = 12000
+    # MRV: primero los cruces que tienen menos opciones.
+    limite_nodos = 50000
     nodos = 0
 
     def buscar(restantes):
@@ -5392,25 +5388,20 @@ def _repartir_parejas_en_jornadas(club_ids, jornadas_objetivo, partidos_fijos):
                 if len(cands) == 1:
                     break
 
+        # Preferimos repartir por jornadas de forma uniforme.
+        mejor_candidatos.sort(key=lambda j: (len(jornadas[j]), j))
+
         for jornada in mejor_candidatos:
             a, b = tuple(mejor)
-            partido = Partido(
-                campeonato_id=partidos_fijos[0].campeonato_id if partidos_fijos else None,
-                jornada=jornada,
-                local_club_id=a,
-                visitante_club_id=b,
-                estado="Programado",
-                fixture_bloqueado=False,
-            )
-            jornadas[jornada].append(partido)
             restantes.remove(mejor)
+            jornadas[jornada].append((a, b))
 
             if buscar(restantes):
                 restantes.add(mejor)
                 return True
 
-            restantes.add(mejor)
             jornadas[jornada].pop()
+            restantes.add(mejor)
 
         return False
 
@@ -5516,6 +5507,7 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado):
     solucion = _repartir_parejas_en_jornadas(
         club_ids,
         jornadas_futuras,
+        finalizados + fijos,
         fijos,
     )
 
@@ -5525,32 +5517,23 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado):
             "Prueba otra jornada o combinación de equipos."
         )
 
-    # Eliminar solamente partidos futuros no finalizados.
+    # Eliminar solamente partidos futuros que NO están bloqueados.
+    # Los bloqueados (incluido el que acaba de editarse) se conservan con
+    # todos sus datos de programación. Los finalizados tampoco se tocan.
     for p in futuros:
-        db.session.delete(p)
+        if p not in fijos:
+            db.session.delete(p)
     db.session.flush()
-
-    # Restaurar los fijos como objetos existentes; los temporales nuevos se
-    # convierten en partidos reales. Los finalizados no se tocan.
-    for p in fijos:
-        # Ya fueron marcados como bloqueados y siguen en sesión después del
-        # flush; no se vuelven a crear.
-        pass
 
     # Reinsertamos todos los cruces futuros a partir de la solución, cuidando
     # especialmente el partido modificado y sus datos de programación.
     futuros_nuevos = []
     for jornada in jornadas_futuras:
         for item in solucion.get(jornada, []):
-            if isinstance(item, Partido) and item.id is not None:
-                # Este caso corresponde a un fijo existente.
+            if isinstance(item, Partido):
                 continue
 
-            if isinstance(item, Partido):
-                local_id = item.local_club_id
-                visitante_id = item.visitante_club_id
-            else:
-                local_id, visitante_id = item
+            local_id, visitante_id = item
 
             futuros_nuevos.append(
                 Partido(
