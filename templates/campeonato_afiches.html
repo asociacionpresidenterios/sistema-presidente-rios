@@ -1,28 +1,133 @@
 {% extends "base.html" %}
-{% block title %}Afiches · {{ campeonato.nombre }}{% endblock %}
+{% block title %}Afiche oficial · {{ campeonato.nombre }}{% endblock %}
+
 {% block head %}
 <style>
-.poster-page{max-width:1200px;margin:0 auto;padding:24px}.head{display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap;margin-bottom:18px}.head h1{margin:0}.toolbar{display:flex;gap:8px;flex-wrap:wrap}.btn{display:inline-block;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:800;border:1px solid #ddd;background:#111827;color:#fff}.btn.light{background:#fff;color:#111827}.btn.orange{background:#f97316;border-color:#f97316}.selector{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:18px;display:flex;gap:10px;align-items:end;flex-wrap:wrap}.selector label{display:block;font-size:11px;font-weight:800;margin-bottom:5px}.selector select{padding:9px;border-radius:8px;border:1px solid #cbd5e1}.layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px}.poster-wrap{background:#e5e7eb;padding:24px;border-radius:18px;display:flex;justify-content:center}.poster{width:min(100%,700px);background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 15px 40px rgba(0,0,0,.15)}.top{background:#111827;color:white;padding:28px;text-align:center;border-bottom:6px solid #f97316}.top .small{font-size:13px;font-weight:800;opacity:.8}.top h2{margin:8px 0 0;font-size:30px}.top p{margin:6px 0 0}.free{margin:18px;padding:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;text-align:center;font-weight:900;color:#9a3412}.matches{padding:8px 18px 22px}.match{border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin-top:10px}.time{text-align:center;font-weight:900;color:#2563eb}.teams{display:grid;grid-template-columns:1fr 45px 1fr;align-items:center;text-align:center;margin-top:8px}.team{font-size:17px;font-weight:900}.vs{font-size:11px;color:#94a3b8;font-weight:900}.meta{text-align:center;font-size:11px;color:#64748b;margin-top:8px}.turn{text-align:center;color:#166534;font-size:11px;font-weight:900;margin-top:7px}.foot{text-align:center;padding:14px;background:#f8fafc;border-top:1px solid #eee;font-size:11px;color:#64748b}.side{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px;height:max-content}.side h3{margin-top:0}.journeys a{display:block;padding:9px 10px;border:1px solid #e5e7eb;border-radius:8px;text-decoration:none;color:#111827;font-weight:800;margin-top:7px}.journeys a.active{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8}@media(max-width:850px){.layout{grid-template-columns:1fr}}@media print{.topbar,.footer,.flash-wrap,.head,.selector,.side{display:none!important}.poster-page{padding:0}.poster-wrap{padding:0;background:#fff}.poster{width:1080px;max-width:none;box-shadow:none;border-radius:0}}
+  :root{--lime:#a8ff00;--lime2:#79d900;--blue:#123cff;--green:#08a83a;--ink:#050708;--line:#b8ff00}
+  .poster-page{max-width:1450px;margin:0 auto;padding:24px}
+  .head{display:flex;justify-content:space-between;align-items:center;gap:15px;flex-wrap:wrap;margin-bottom:18px}
+  .head h1{margin:0;font-size:28px;font-weight:950}.head p{margin:5px 0 0;color:#64748b}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:850;border:1px solid #d1d5db;background:#111827;color:#fff;cursor:pointer}.btn.light{background:#fff;color:#111827}.btn.green{background:#16a34a;border-color:#16a34a}
+  .selector{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:18px;display:flex;gap:10px;align-items:end;flex-wrap:wrap}.selector label{display:block;font-size:11px;font-weight:900;margin-bottom:5px}.selector select{padding:9px;border-radius:8px;border:1px solid #cbd5e1}
+  .layout{display:grid;grid-template-columns:minmax(0,1080px) 260px;gap:20px;align-items:start}.poster-wrap{background:#dfe4ea;padding:22px;border-radius:18px;display:flex;justify-content:center}
+  .poster{width:1080px;max-width:100%;aspect-ratio:1/1;background:#030505;color:#fff;overflow:hidden;position:relative;box-shadow:0 22px 60px rgba(0,0,0,.25);font-family:Arial,Helvetica,sans-serif}
+  .poster:before,.poster:after{content:"";position:absolute;z-index:0;pointer-events:none}.poster:before{inset:0;background:radial-gradient(circle at 10% 10%,rgba(18,60,255,.7),transparent 18%),radial-gradient(circle at 92% 18%,rgba(18,60,255,.55),transparent 16%),radial-gradient(circle at 8% 91%,rgba(91,210,0,.65),transparent 18%),radial-gradient(circle at 93% 90%,rgba(18,60,255,.55),transparent 17%),linear-gradient(145deg,#071229 0%,#020303 28%,#050707 70%,#061022 100%)}
+  .poster:after{inset:0;background-image:radial-gradient(rgba(255,255,255,.11) 1px,transparent 1px);background-size:12px 12px;opacity:.16}
+  .poster-content{position:relative;z-index:1;padding:26px 34px 22px;height:100%;box-sizing:border-box;display:flex;flex-direction:column}
+  .topline{display:grid;grid-template-columns:170px 1fr 190px;align-items:center;gap:15px}
+  .assoc-logo{width:128px;height:128px;border-radius:50%;border:5px solid #ff3030;background:radial-gradient(circle,#fff 0 43%,#ff3030 44% 100%);color:#e11d2e;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:950;font-size:14px;line-height:1.05;box-shadow:0 0 0 4px rgba(255,255,255,.25),0 0 28px rgba(255,45,45,.25)}
+  .assoc-logo span{background:#fff;border-radius:50%;padding:10px 6px;max-width:88px}.football{font-size:36px;display:block;margin-bottom:4px}
+  .title{text-align:center}.title .comp{font-size:22px;letter-spacing:6px;font-weight:950}.title .stars{color:var(--lime);letter-spacing:7px;font-size:18px;margin:2px 0}.title .fecha{font-size:118px;line-height:.83;font-weight:1000;letter-spacing:-5px;font-style:italic;text-shadow:2px 3px 0 #7a7a7a}.title .serie{display:inline-block;margin-top:7px;padding:3px 32px;background:linear-gradient(90deg,transparent,var(--lime),transparent);color:#071000;font-size:31px;font-weight:1000;font-style:italic;letter-spacing:2px}
+  .slogan{text-align:right;font-size:30px;line-height:.9;font-weight:1000;font-style:italic;transform:skew(-8deg)}.slogan strong{color:var(--lime);display:block}.slogan span{display:block}
+  .datebar{display:flex;justify-content:center;align-items:center;gap:13px;margin:15px 0 10px;padding:9px 16px;border-top:2px solid var(--lime);border-bottom:2px solid var(--lime);font-size:29px;font-weight:1000;font-style:italic;letter-spacing:1px}.datebar .cal{font-size:30px;color:var(--lime)}.datebar .num{color:var(--lime);font-size:42px;line-height:.8}
+  .free{border:2px solid var(--lime);border-radius:14px;padding:9px 18px;margin:0 0 10px;background:rgba(0,0,0,.75);display:flex;align-items:center;gap:16px;min-height:48px;box-sizing:border-box}.free .icon{font-size:34px}.free small{font-size:18px;font-weight:900;font-style:italic}.free strong{display:block;color:var(--lime);font-size:31px;font-style:italic}
+  .blocks{display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}.court{border:2px solid var(--lime);border-radius:13px;overflow:hidden;background:rgba(0,0,0,.84);box-shadow:0 8px 18px rgba(0,0,0,.2)}.court-head{height:48px;display:flex;align-items:center;gap:14px;padding:0 16px;background:linear-gradient(90deg,#0735a5,#0d54dc 65%,#082b79);border-bottom:2px solid #d8ff00}.court:nth-child(even) .court-head{background:linear-gradient(90deg,#006f2b,#0a9e43 65%,#075b29)}.court-icon{font-size:28px}.court-name{font-size:25px;font-weight:1000;font-style:italic;letter-spacing:1px;text-transform:uppercase;text-shadow:1px 2px 0 #333}
+  .game{display:grid;grid-template-columns:125px 1fr 58px 1fr 205px;gap:10px;align-items:center;padding:8px 13px;border-bottom:1px solid rgba(255,255,255,.65);min-height:59px;box-sizing:border-box}.game:last-child{border-bottom:0}.time{font-size:23px;font-weight:1000;font-style:italic;white-space:nowrap}.time:before{content:"◷";color:var(--lime);font-size:27px;margin-right:8px}.team{display:flex;align-items:center;gap:8px;font-size:19px;font-weight:950;font-style:italic;text-transform:uppercase}.team.away{justify-content:flex-start}.crest{width:43px;height:43px;min-width:43px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f7f7f7;color:#111;border:2px solid #fff;font-size:12px;font-weight:1000;text-align:center;line-height:.9;box-shadow:0 1px 5px rgba(0,0,0,.5)}.vs{text-align:center;color:var(--lime);font-size:23px;font-weight:1000}.turn{border-left:2px solid var(--lime);padding-left:12px;text-align:left}.turn small{display:block;color:var(--lime);font-size:12px;font-weight:1000;font-style:italic}.turn strong{display:block;font-size:15px;font-style:italic;text-transform:uppercase}.footer-slogan{margin-top:10px;text-align:center;font-size:27px;font-weight:1000;font-style:italic}.footer-slogan .lime{color:var(--lime)}
+  .side{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:16px;height:max-content;position:sticky;top:15px}.side h3{margin-top:0}.journeys a{display:block;padding:9px 10px;border:1px solid #e5e7eb;border-radius:8px;text-decoration:none;color:#111827;font-weight:800;margin-top:7px}.journeys a.active{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8}
+  .empty{padding:45px;text-align:center;background:#fff;border:1px dashed #cbd5e1;border-radius:14px;color:#64748b}
+  @media(max-width:1100px){.layout{grid-template-columns:1fr}.side{position:static}.poster{width:100%}}
+  @media(max-width:760px){.poster-wrap{padding:0}.poster{aspect-ratio:auto;min-height:900px}.poster-content{padding:16px}.topline{grid-template-columns:70px 1fr}.assoc-logo{width:62px;height:62px;border-width:3px;font-size:7px}.assoc-logo span{padding:5px;max-width:45px}.football{font-size:18px}.title .comp{font-size:11px;letter-spacing:2px}.title .fecha{font-size:62px}.title .serie{font-size:16px;padding:2px 12px}.slogan{display:none}.datebar{font-size:17px}.datebar .num{font-size:25px}.free strong{font-size:22px}.court-name{font-size:17px}.game{grid-template-columns:75px 1fr 32px 1fr;min-height:54px}.turn{grid-column:1/-1;border-left:0;border-top:1px solid var(--lime);padding:4px 0 0;text-align:center}.team{font-size:13px}.crest{width:30px;height:30px;min-width:30px}.time{font-size:15px}.vs{font-size:17px}.footer-slogan{font-size:19px}}
+  @media print{body{background:#fff!important}.topbar,.footer,.flash-wrap,.head,.selector,.side{display:none!important}.poster-page{padding:0;max-width:none}.layout{display:block}.poster-wrap{padding:0;background:#fff}.poster{width:1080px;height:1080px;max-width:none;box-shadow:none}.poster-content{height:1080px}.game,.court,.poster{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style>
 {% endblock %}
+
+{% macro escudo(nombre) -%}
+  {% set partes = nombre.split() %}
+  {% if partes|length >= 2 %}
+    {{ (partes[0][0] ~ partes[-1][0]).upper() }}
+  {% else %}
+    {{ nombre[:3].upper() }}
+  {% endif %}
+{%- endmacro %}
+
 {% block content %}
 <div class="poster-page">
   <div class="head">
-    <div><h1>🎨 Generador de afiches</h1><div>{{ campeonato.nombre }} · {{ campeonato.serie }} · {{ campeonato.temporada }}</div></div>
-    <div class="toolbar"><a class="btn light" href="{{ url_for('panel_campeonato', campeonato_id=campeonato.id) }}">← Centro de control</a><a class="btn light" href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">⚽ Fixture</a><button class="btn orange" onclick="window.print()">🖨️ Imprimir / PDF</button></div>
+    <div>
+      <h1>🎨 Afiche oficial · {{ campeonato.nombre }}</h1>
+      <p>Diseño oficial Asociación Presidente Ríos · Jornada {{ jornada_seleccionada }}</p>
+    </div>
+    <div class="toolbar">
+      <a class="btn light" href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}">← Fixture</a>
+      <button class="btn green" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+    </div>
   </div>
+
   {% if jornadas %}
-  <form class="selector" method="GET"><div><label>Jornada</label><select name="jornada" onchange="this.form.submit()">{% for j in jornadas.keys()|sort %}<option value="{{j}}" {% if j==jornada_seleccionada %}selected{% endif %}>Jornada {{j}}</option>{% endfor %}</select></div></form>
+  <form class="selector" method="GET">
+    <div><label>Jornada</label><select name="jornada" onchange="this.form.submit()">
+      {% for j in jornadas.keys()|sort %}<option value="{{ j }}" {% if j == jornada_seleccionada %}selected{% endif %}>Jornada {{ j }}</option>{% endfor %}
+    </select></div>
+  </form>
+
   <div class="layout">
-    <div class="poster-wrap"><section class="poster">
-      <header class="top"><div class="small">ASOCIACIÓN PRESIDENTE RÍOS</div><h2>JORNADA {{ jornada_seleccionada }}</h2><p>{{ campeonato.nombre }} · {{ campeonato.serie }}</p></header>
-      {% if libres_por_jornada.get(jornada_seleccionada) %}{% for libre in libres_por_jornada.get(jornada_seleccionada) %}<div class="free">🆓 CLUB LIBRE · {{ libre.nombre }}</div>{% endfor %}{% endif %}
-      <div class="matches">
-      {% for partido in jornadas.get(jornada_seleccionada, []) %}<article class="match"><div class="time">{{ partido.hora or 'HORA POR DEFINIR' }}</div><div class="teams"><div class="team">{{ partido.local_club.nombre }}</div><div class="vs">VS</div><div class="team">{{ partido.visitante_club.nombre }}</div></div><div class="meta">🏟️ {{ partido.cancha or 'CANCHA POR DEFINIR' }}{% if partido.fecha %} · 📅 {{ partido.fecha.strftime('%d/%m/%Y') }}{% endif %}</div>{% if partido.turno_club %}<div class="turn">🔰 CLUB DE TURNO · {{ partido.turno_club.nombre }}</div>{% endif %}</article>{% endfor %}
-      </div><footer class="foot">Información oficial · Asociación Presidente Ríos</footer>
-    </section></div>
-    <aside class="side"><h3>📌 Jornadas</h3><p>Selecciona una jornada para preparar su afiche.</p><div class="journeys">{% for j in jornadas.keys()|sort %}<a class="{% if j==jornada_seleccionada %}active{% endif %}" href="{{ url_for('afiches_campeonato', campeonato_id=campeonato.id, jornada=j) }}">📅 Jornada {{j}} <span style="float:right">{{ jornadas[j]|length }}</span></a>{% endfor %}</div></aside>
+    <div class="poster-wrap">
+      <section class="poster">
+        <div class="poster-content">
+          <div class="topline">
+            <div class="assoc-logo"><span><span class="football">⚽</span>ASOCIACIÓN<br>PRESIDENTE RÍOS</span></div>
+            <div class="title">
+              <div class="comp">{{ campeonato.nombre|upper }}</div>
+              <div class="stars">★ ★ ★ ★ ★</div>
+              <div class="fecha">FECHA {{ jornada_seleccionada }}</div>
+              <div class="serie">{{ campeonato.serie|upper }}</div>
+            </div>
+            <div class="slogan"><span>SOMOS</span><strong>FÚTBOL</strong><span>SOMOS</span><strong>PASIÓN</strong></div>
+          </div>
+
+          <div class="datebar">
+            <span class="cal">▣</span>
+            <span>{{ dia_nombre }}</span>
+            <span class="num">{{ dia_numero }}</span>
+            <span>DE {{ mes_nombre }}</span>
+          </div>
+
+          {% if libres_por_jornada.get(jornada_seleccionada) %}
+            {% for libre in libres_por_jornada.get(jornada_seleccionada) %}
+              <div class="free">
+                <div class="icon">📣</div>
+                <div><small>CLUB LIBRE:</small><strong>{{ libre.nombre|upper }}</strong></div>
+              </div>
+            {% endfor %}
+          {% endif %}
+
+          <div class="blocks">
+            {% for bloque in bloques_cancha %}
+              <section class="court">
+                <div class="court-head"><div class="court-icon">🏟️</div><div class="court-name">{{ bloque.nombre }}</div></div>
+                {% for partido in bloque.partidos %}
+                  <article class="game">
+                    <div class="time">{{ partido.hora or 'POR DEFINIR' }} <small style="font-size:10px">HRS</small></div>
+                    <div class="team"><span class="crest">{{ escudo(partido.local_club.nombre) }}</span>{{ partido.local_club.nombre }}</div>
+                    <div class="vs">VS</div>
+                    <div class="team"><span class="crest">{{ escudo(partido.visitante_club.nombre) }}</span>{{ partido.visitante_club.nombre }}</div>
+                    <div class="turn">
+                      <small>🔰 TURNO:</small>
+                      <strong>{{ partido.turno_club.nombre if partido.turno_club else 'SIN ASIGNAR' }}</strong>
+                    </div>
+                  </article>
+                {% endfor %}
+              </section>
+            {% endfor %}
+          </div>
+
+          <div class="footer-slogan">▰ <span>LA PASIÓN</span> <span class="lime">NOS UNE</span> ▰</div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="side">
+      <h3>📌 Jornadas</h3>
+      <p>Selecciona una jornada para preparar su afiche.</p>
+      <div class="journeys">
+        {% for j in jornadas.keys()|sort %}
+          <a class="{% if j == jornada_seleccionada %}active{% endif %}" href="{{ url_for('afiches_campeonato', campeonato_id=campeonato.id, jornada=j) }}">📅 Jornada {{ j }} <span style="float:right">{{ jornadas[j]|length }}</span></a>
+        {% endfor %}
+      </div>
+    </aside>
   </div>
-  {% else %}<div class="side"><h3>⚠️ No hay jornadas</h3><p>Genera primero el fixture.</p></div>{% endif %}
+  {% else %}
+    <div class="empty"><h3>⚠️ No hay jornadas</h3><p>Genera primero el fixture.</p></div>
+  {% endif %}
 </div>
 {% endblock %}
