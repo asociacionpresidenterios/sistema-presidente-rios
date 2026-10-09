@@ -5036,9 +5036,9 @@ def _logo_data_uri(valor):
         raw = bytes(valor)
         if not raw:
             return None
-        if raw.startswith(b"\\x89PNG"):
+        if raw.startswith(b"\x89PNG"):
             mime = "image/png"
-        elif raw.startswith(b"\\xff\\xd8\\xff"):
+        elif raw.startswith(b"\xff\xd8\xff"):
             mime = "image/jpeg"
         elif raw.startswith(b"RIFF") and raw[8:12] == b"WEBP":
             mime = "image/webp"
