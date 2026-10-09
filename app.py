@@ -5527,6 +5527,27 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado):
         partido_modificado.fixture_bloqueado = True
         bloqueados.append(partido_modificado)
 
+    # Validar los partidos fijados manualmente antes de reconstruir el fixture.
+    # Evita que un club quede programado dos veces en la misma jornada y que
+    # el mismo enfrentamiento quede reservado más de una vez.
+    clubes_por_jornada = {}
+    parejas_por_jornada = {}
+    for p in bloqueados:
+        clubes_jornada = clubes_por_jornada.setdefault(p.jornada, set())
+        pareja = _pareja_partidos(p)
+        if pareja in parejas_por_jornada.setdefault(p.jornada, set()):
+            raise ValueError(
+                f"El enfrentamiento {p.local_club.nombre} vs {p.visitante_club.nombre} "
+                f"está repetido en la jornada {p.jornada}."
+            )
+        if p.local_club_id in clubes_jornada or p.visitante_club_id in clubes_jornada:
+            raise ValueError(
+                f"Conflicto en jornada {p.jornada}: un club aparece en más de un partido fijado. "
+                "Corrige los partidos manuales y vuelve a intentarlo."
+            )
+        clubes_jornada.update((p.local_club_id, p.visitante_club_id))
+        parejas_por_jornada[p.jornada].add(pareja)
+
     asignacion = {}
     usados_rondas = set()
 
