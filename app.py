@@ -20,6 +20,7 @@ from flask import (
 
 from flask_sqlalchemy import SQLAlchemy
 from openpyxl import load_workbook
+from sqlalchemy import inspect
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -918,7 +919,7 @@ def preparar_base_datos():
         # ----------------------------------------------------
         # AGREGAR ROL A ADMINISTRADORES SI NO EXISTE
         # ----------------------------------------------------
-        inspector = db.inspect(db.engine)
+        inspector = inspect(db.engine)
         columnas_admin = [c["name"] for c in inspector.get_columns("admin_user")]
         if "rol" not in columnas_admin:
             if db.engine.dialect.name == "postgresql":
