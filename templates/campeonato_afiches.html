@@ -15,8 +15,8 @@
 .poster:after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.17;background-image:repeating-linear-gradient(135deg,transparent 0 22px,#2c5aff 23px 25px,transparent 26px 46px)}
 .poster-content{position:relative;z-index:1;box-sizing:border-box;width:100%;height:100%;padding:25px 38px 20px;display:flex;flex-direction:column;gap:10px}
 .topline{display:grid;grid-template-columns:190px minmax(0,1fr) 185px;align-items:center;gap:12px;min-height:195px}
-.assoc-logo{width:165px;height:165px;box-sizing:border-box;border-radius:50%;border:5px solid #f22;background:#fff;color:#f22;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:950;font-size:14px;line-height:1.05;box-shadow:0 0 0 3px #ffffff45}
-.assoc-logo>span{display:block;padding:8px}.football{display:block;font-size:42px;margin-bottom:4px}
+.assoc-logo{width:165px;height:165px;box-sizing:border-box;border-radius:0;border:0;background:transparent;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:950;font-size:14px;line-height:1.05;box-shadow:none}
+.assoc-logo>span{display:block;padding:8px;background:transparent!important;border-radius:0!important}.football{display:block;font-size:42px;margin-bottom:4px}
 .title{text-align:center;min-width:0}.title .comp{font-size:22px;letter-spacing:5px;font-weight:950;white-space:nowrap}.title .stars{color:var(--lime);letter-spacing:7px;font-size:18px;margin:4px 0}
 .title .fecha{display:flex;justify-content:center;align-items:baseline;gap:12px;white-space:nowrap;font-size:clamp(60px,8.3vw,100px);line-height:.95;font-weight:1000;letter-spacing:-3px;font-style:italic;text-shadow:2px 3px #777}
 .title .fecha .num{color:var(--lime);font-size:1em;letter-spacing:-4px}
@@ -32,8 +32,8 @@
 .game{display:grid;grid-template-columns:126px minmax(0,1fr) 48px minmax(0,1fr) 170px;gap:7px;align-items:center;padding:6px 10px;border-bottom:1px solid #ffffff8a;min-height:61px;box-sizing:border-box}
 .game:last-child{border-bottom:0}.time{font-size:20px;font-weight:1000;font-style:italic;white-space:nowrap}.time:before{content:"◷";color:var(--lime);font-size:24px;margin-right:6px}
 .team{display:flex;align-items:center;gap:7px;min-width:0;font-size:17px;line-height:1.02;font-weight:950;font-style:italic;text-transform:uppercase}
-.team-name{display:block;min-width:0;overflow-wrap:anywhere}.crest{width:47px;height:47px;min-width:47px;box-sizing:border-box;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f7f7f7;color:#111;border:2px solid #fff;font-size:12px;font-weight:1000;text-align:center;line-height:.9;overflow:hidden}
-.crest img{width:100%;height:100%;object-fit:contain;border-radius:50%;display:block}.vs{text-align:center;color:var(--lime);font-size:22px;font-weight:1000}
+.team-name{display:block;min-width:0;overflow-wrap:anywhere}.crest{width:52px;height:52px;min-width:52px;box-sizing:border-box;border-radius:0;display:flex;align-items:center;justify-content:center;background:transparent;color:#fff;border:0;font-size:12px;font-weight:1000;text-align:center;line-height:.9;overflow:hidden}
+.crest img{width:100%;height:100%;object-fit:contain;border-radius:0;display:block}.vs{text-align:center;color:var(--lime);font-size:22px;font-weight:1000}
 .turn{border-left:2px solid var(--lime);padding-left:9px;min-width:0}.turn small{display:block;color:var(--lime);font-size:11px;font-weight:1000;font-style:italic}.turn strong{display:block;font-size:13px;line-height:1.05;font-style:italic;text-transform:uppercase;overflow-wrap:anywhere}
 .footer-slogan{margin-top:auto;padding-top:5px;text-align:center;font-size:25px;font-weight:1000;font-style:italic;white-space:nowrap}.footer-slogan .lime{color:var(--lime)}
 .side{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px;height:max-content}.side h3{margin-top:0}.journeys a{display:block;padding:9px 10px;border:1px solid #e5e7eb;border-radius:8px;text-decoration:none;color:#111827;font-weight:800;margin-top:7px}.journeys a.active{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8}
@@ -77,7 +77,7 @@
       <section class="poster">
         <div class="poster-content">
           <div class="topline">
-            <div class="assoc-logo"><span><span class="football">⚽</span>ASOCIACIÓN<br>PRESIDENTE RÍOS</span></div>
+            <div class="assoc-logo"><img src="{{ url_for('static', filename='icon.svg') }}" alt="Asociación de Fútbol Presidente Ríos" style="display:block;width:100%;height:100%;object-fit:contain"></div>
             <div class="title">
               <div class="comp">{{ campeonato.nombre|upper }}</div>
               <div class="stars">★ ★ ★ ★ ★</div>
