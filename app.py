@@ -5537,7 +5537,7 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado):
         pareja = _pareja_partidos(p)
         if pareja in parejas_por_jornada.setdefault(p.jornada, set()):
             raise ValueError(
-                f"El enfrentamiento {p.local_club.nombre} vs {p.visitante_club.nombre} "
+                f"El enfrentamiento entre los clubes ID {p.local_club_id} y {p.visitante_club_id} "
                 f"está repetido en la jornada {p.jornada}."
             )
         if p.local_club_id in clubes_jornada or p.visitante_club_id in clubes_jornada:
@@ -5555,7 +5555,7 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado):
         pareja = _pareja_partidos(p)
         ronda = ronda_por_pareja.get(pareja)
         if ronda is None:
-            raise ValueError(f"El cruce {p.local_club.nombre} vs {p.visitante_club.nombre} no pertenece al fixture base.")
+            raise ValueError(f"El cruce entre los clubes ID {p.local_club_id} y {p.visitante_club_id} no pertenece al fixture base.")
         if p.jornada <= ultima_cursada:
             raise ValueError("No se puede fijar un partido dentro de una jornada cursada.")
         if p.jornada in asignacion and asignacion[p.jornada] != ronda:
@@ -6191,7 +6191,7 @@ def editar_partido_fixture(campeonato_id, partido_id):
         registrar_auditoria(
             "ADAPTAR_FIXTURE",
             "Campeonatos",
-            f"Se modificó el partido {partido.local_club.nombre} vs {partido.visitante_club.nombre} "
+            f"Se modificó el partido entre los clubes ID {partido.local_club_id} y {partido.visitante_club_id} "
             f"y se adaptó automáticamente el fixture pendiente de '{campeonato.nombre}'.",
         )
         flash(
