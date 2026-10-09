@@ -5470,8 +5470,15 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado):
     )
 
     finalizados = [p for p in todos if _partido_finalizado(p)]
-    futuros = [p for p in todos if not _partido_finalizado(p)]
     ultima_cursada = max((p.jornada for p in finalizados), default=0)
+
+    # Proteger también los partidos pendientes de jornadas ya iniciadas.
+    # Solo se reconstruyen jornadas posteriores a la última jornada cursada.
+    # Así no se borran partidos sin resultado de una jornada parcialmente jugada.
+    futuros = [
+        p for p in todos
+        if p.jornada > ultima_cursada and not _partido_finalizado(p)
+    ]
 
     if partido_modificado.jornada <= ultima_cursada:
         raise ValueError(f"La jornada {partido_modificado.jornada} ya fue cursada y está protegida.")
