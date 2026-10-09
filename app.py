@@ -5197,6 +5197,7 @@ def afiches_campeonato(campeonato_id):
     return render_template(
         "campeonato_afiches.html",
         campeonato=campeonato,
+        escudos_clubes=_escudos_clubes([r.club for r in clubes_participantes]),
         clubes_participantes=clubes_participantes,
         jornadas=jornadas,
         libres_por_jornada=libres_por_jornada,
