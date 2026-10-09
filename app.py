@@ -5575,21 +5575,19 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado):
     if len(set(asignacion.values())) != len(asignacion):
         raise ValueError("No fue posible construir una distribución válida de jornadas.")
 
-    # Guardamos la configuración de CADA jornada antes de reconstruir.
-    # No usamos solo el primer partido, porque puede tener un campo vacío
-    # mientras otro partido de la misma jornada sí tiene la fecha/horario/cancha.
+    # Conservamos los espacios de programación por partido, no una sola
+    # configuración por jornada. Así no se pierden canchas/horarios distintos
+    # cuando una fecha usa varios recintos o turnos.
+    partidos_fijos_ids = {p.id for p in bloqueados if p.id is not None}
     configuracion = {}
     for p in futuros:
-        fila = configuracion.setdefault(
-            p.jornada,
-            {"fecha": None, "hora": None, "cancha": None}
-        )
-        if p.fecha is not None:
-            fila["fecha"] = p.fecha
-        if p.hora:
-            fila["hora"] = p.hora
-        if p.cancha:
-            fila["cancha"] = p.cancha
+        if p.id in partidos_fijos_ids:
+            continue
+        configuracion.setdefault(p.jornada, []).append({
+            "fecha": p.fecha,
+            "hora": p.hora,
+            "cancha": p.cancha,
+        })
 
     for p in futuros:
         db.session.delete(p)
@@ -5599,15 +5597,8 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado):
 
     for jornada in jornadas_futuras:
         ronda = asignacion[jornada]
-        cfg = configuracion.get(jornada)
-        if cfg:
-            fecha_partido = cfg["fecha"]
-            hora_partido = cfg["hora"] or "17:00"
-            cancha_partido = cfg["cancha"] or "Por definir"
-        else:
-            fecha_partido = primera_fecha + timedelta(days=(jornada - 1) * 7)
-            hora_partido = "17:00"
-            cancha_partido = "Por definir"
+        espacios = iter(configuracion.get(jornada, []))
+        indice_espacio = 0
 
         for local_id, visitante_id in calendario_base[ronda - 1]:
             fijo = next(
@@ -5628,11 +5619,17 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado):
                 turno_final = fijo.turno_club_id
                 bloqueado_final = True
             else:
+                cfg = next(espacios, None)
+                if cfg is None:
+                    fecha_final = primera_fecha + timedelta(days=(jornada - 1) * 7)
+                    hora_final = "17:00"
+                    cancha_final = "Por definir"
+                else:
+                    fecha_final = cfg["fecha"]
+                    hora_final = cfg["hora"] or "17:00"
+                    cancha_final = cfg["cancha"] or "Por definir"
                 local_final = local_id
                 visitante_final = visitante_id
-                fecha_final = fecha_partido
-                hora_final = hora_partido
-                cancha_final = cancha_partido
                 turno_final = None
                 bloqueado_final = False
 
