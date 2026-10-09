@@ -7147,7 +7147,16 @@ def informe_jugador(jugador_id):
 def obtener_tabla_publica(campeonato):
     registros = (CampeonatoClub.query.filter_by(campeonato_id=campeonato.id)
                  .join(Club, CampeonatoClub.club_id == Club.id).order_by(Club.nombre).all())
-    finalizados = Partido.query.filter_by(campeonato_id=campeonato.id, estado="Finalizado").all()
+    # Solo contar partidos realmente finalizados y con marcador completo.
+    # Se normaliza el estado para evitar diferencias de mayúsculas o espacios
+    # y mantener el mismo criterio que las estadísticas públicas.
+    partidos = Partido.query.filter_by(campeonato_id=campeonato.id).all()
+    finalizados = [
+        p for p in partidos
+        if (p.estado or "").strip().lower() == "finalizado"
+        and p.goles_local is not None
+        and p.goles_visitante is not None
+    ]
     tabla = {}
     for r in registros:
         tabla[r.club.id] = {"club": r.club, "pj": 0, "pg": 0, "pe": 0, "pp": 0, "gf": 0, "gc": 0, "dg": 0, "pts": 0}
