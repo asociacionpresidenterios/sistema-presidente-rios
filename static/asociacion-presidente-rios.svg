@@ -1,26 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
 <defs>
  <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff3216"/><stop offset="1" stop-color="#ff6a00"/></linearGradient>
- <path id="top" d="M 95,300 A 205,205 0 0,1 505,300"/>
- <path id="bottom" d="M 90,330 A 210,210 0 0,0 510,330"/>
+ <path id="top" d="M 92,300 A 208,208 0 0,1 508,300"/>
+ <path id="bottom" d="M 88,325 A 212,212 0 0,0 512,325"/>
 </defs>
 <circle cx="300" cy="300" r="282" fill="url(#red)" stroke="#fff" stroke-width="9"/>
 <circle cx="300" cy="300" r="219" fill="none" stroke="#fff" stroke-width="8"/>
-<text fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="43" font-weight="900" letter-spacing="1.5"><textPath href="#top" startOffset="50%" text-anchor="middle">ASOCIACIÓN DE FÚTBOL</textPath></text>
-<text fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="37" font-weight="900" letter-spacing="1"><textPath href="#bottom" startOffset="50%" text-anchor="middle">PRESIDENTE RÍOS</textPath></text>
+<text fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="43" font-weight="900" letter-spacing="1.2"><textPath href="#top" startOffset="50%" text-anchor="middle">ASOCIACIÓN DE FÚTBOL</textPath></text>
+<text fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="39" font-weight="900" letter-spacing="1"><textPath href="#bottom" startOffset="50%" text-anchor="middle">PRESIDENTE RÍOS</textPath></text>
 <text x="75" y="312" fill="#fff" font-family="Arial,sans-serif" font-size="30" font-weight="900" transform="rotate(-90 75 312)">1960</text>
 <text x="525" y="288" fill="#fff" font-family="Arial,sans-serif" font-size="30" font-weight="900" transform="rotate(90 525 288)">1960</text>
-<g transform="translate(300 300)">
- <circle r="154" fill="#fff"/>
- <g fill="#ff4b19" stroke="#ff4b19" stroke-width="8" stroke-linejoin="round">
-  <polygon points="0,-72 53,-54 59,2 0,40 -58,5 -53,-52"/>
-  <polygon points="0,-72 0,-128 46,-108 53,-54"/>
-  <polygon points="53,-54 105,-73 137,-26 98,17 59,2"/>
-  <polygon points="59,2 98,17 91,78 34,112 0,78 0,40"/>
-  <polygon points="0,40 0,78 -53,100 -97,58 -58,5"/>
-  <polygon points="-53,-52 -91,-80 -125,-36 -112,11 -58,5"/>
-  <polygon points="-53,-52 -46,-108 0,-128 0,-72"/>
- </g>
- <circle r="154" fill="none" stroke="#fff" stroke-width="5"/>
+<circle cx="300" cy="300" r="169" fill="url(#red)"/>
+<circle cx="300" cy="300" r="155" fill="#fff"/>
+<!-- balón blanco con costuras naranjas, siguiendo el escudo original -->
+<g transform="translate(300 300)" fill="none" stroke="#ff4b19" stroke-width="10" stroke-linejoin="round" stroke-linecap="round">
+ <path d="M0,-67 L59,-48 L72,10 L24,49 L-37,32 L-58,-24 Z" fill="#ff4b19"/>
+ <path d="M0,-67 L0,-142 M59,-48 L112,-78 L145,-22 L72,10 M72,10 L112,66 L99,126 L24,49 M24,49 L32,142 L-40,132 L-37,32 M-37,32 L-112,60 L-146,6 L-58,-24 M-58,-24 L-106,-82 L-54,-130 L0,-142 M-54,-130 L0,-67"/>
+ <path d="M0,-142 L59,-120 L59,-48 M112,-78 L59,-120 M-106,-82 L-54,-130 M-112,60 L-105,117 L-40,132 M112,66 L145,98 L99,126" />
 </g>
 </svg>
