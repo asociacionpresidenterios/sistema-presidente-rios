@@ -74,7 +74,7 @@
 
 <div class="panel section-estadisticas"><details><summary>📈 Estadísticas <span class="meta">Resumen del campeonato</span></summary><div class="panel-body"><div class="links"><a class="btn" href="{{ url_for('publico_campeonato',campeonato_id=p.campeonato.id) }}">Ver campeonato completo</a><a class="btn purple" href="{{ url_for('publico_goleadores',campeonato_id=p.campeonato.id) }}">Goleadores completos</a></div></div></details></div>
 
-<div class="panel section-fairplay"><details><summary>🟧 Fair Play <span class="meta">Disciplina</span></summary><div class="panel-body"><div class="links"><a class="btn green" href="{{ url_for('publico_campeonato',campeonato_id=p.campeonato.id) }}#fair-play">Ver Fair Play del campeonato</a></div></div></details></div>
+<div class="panel section-fairplay"><details><summary>🟧 Fair Play <span class="meta">Disciplina</span></summary><div class="panel-body"><div class="links"><a class="btn green" href="{{ url_for('publico_fair_play',campeonato_id=p.campeonato.id) }}">Ver Fair Play del campeonato</a></div></div></details></div>
 
 <div class="panel section-enlaces"><details><summary>🔗 Más información <span class="meta">Accesos públicos</span></summary><div class="panel-body"><div class="links"><a class="btn" href="{{ url_for('publico_campeonato',campeonato_id=p.campeonato.id) }}">🏆 Campeonato</a><a class="btn green" href="{{ url_for('publico_tabla',campeonato_id=p.campeonato.id) }}">📊 Tabla</a><a class="btn purple" href="{{ url_for('publico_goleadores',campeonato_id=p.campeonato.id) }}">🥅 Goleadores</a><a class="btn" href="{{ url_for('publico_clubes') }}">👥 Clubes y planteles</a></div></div></details></div>
 </section>
