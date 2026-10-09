@@ -1206,10 +1206,22 @@ with app.app_context():
 PUBLIC_ENDPOINTS = {
     "login",
     "logout",
+    # Portal público general
     "publico",
     "publico_campeonato",
+    "publico_campeones",
+    "publico_clubes",
+    "publico_club_ficha",
+    "publico_club",
+    "publico_jugador",
+    # Secciones públicas de cada campeonato
     "publico_tabla",
     "publico_goleadores",
+    "publico_estadisticas",
+    "publico_fair_play",
+    "publico_programacion",
+    "publico_resultados",
+    # Disciplina y resoluciones públicas
     "publico_disciplina",
     "publico_resolucion_disciplina",
     "publico_expulsados",
