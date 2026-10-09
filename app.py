@@ -5027,8 +5027,9 @@ def panel_campeonato(campeonato_id):
 
 @app.route("/campeonatos/<int:campeonato_id>/afiches")
 def afiches_campeonato(campeonato_id):
-    """Generador de afiches básico y compatible con la versión estable V5.8."""
+    """Generador de afiches oficiales de la jornada, con estilo Asociación Presidente Ríos."""
     campeonato = db.get_or_404(Campeonato, campeonato_id)
+
     clubes_participantes = (
         CampeonatoClub.query
         .filter_by(campeonato_id=campeonato.id)
@@ -5036,12 +5037,14 @@ def afiches_campeonato(campeonato_id):
         .order_by(Club.nombre)
         .all()
     )
+
     partidos = (
         Partido.query
         .filter_by(campeonato_id=campeonato.id)
         .order_by(Partido.jornada, Partido.fecha, Partido.hora, Partido.id)
         .all()
     )
+
     jornadas = {}
     for partido in partidos:
         jornadas.setdefault(partido.jornada, []).append(partido)
@@ -5053,11 +5056,59 @@ def afiches_campeonato(campeonato_id):
         for partido in lista:
             jugando.add(partido.local_club_id)
             jugando.add(partido.visitante_club_id)
-        libres_por_jornada[jornada] = [club for cid, club in todos.items() if cid not in jugando]
+        libres_por_jornada[jornada] = [
+            club for cid, club in todos.items() if cid not in jugando
+        ]
 
     jornada_seleccionada = request.args.get("jornada", type=int)
     if jornada_seleccionada not in jornadas and jornadas:
         jornada_seleccionada = min(jornadas)
+
+    # Agrupamos los partidos de la jornada por cancha para reproducir
+    # el formato visual del afiche oficial: una sección por recinto.
+    partidos_jornada = jornadas.get(jornada_seleccionada, [])
+    bloques_cancha = []
+    por_cancha = {}
+    orden_cancha = []
+
+    for partido in partidos_jornada:
+        nombre_cancha = (partido.cancha or "CANCHA POR DEFINIR").strip()
+        clave = nombre_cancha.lower()
+        if clave not in por_cancha:
+            por_cancha[clave] = {
+                "nombre": nombre_cancha,
+                "partidos": [],
+            }
+            orden_cancha.append(clave)
+        por_cancha[clave]["partidos"].append(partido)
+
+    for clave in orden_cancha:
+        bloques_cancha.append(por_cancha[clave])
+
+    # Datos de cabecera en español.
+    meses = [
+        "", "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
+        "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE"
+    ]
+    dias = [
+        "LUNES", "MARTES", "MIÉRCOLES", "JUEVES",
+        "VIERNES", "SÁBADO", "DOMINGO"
+    ]
+
+    fecha_jornada = next(
+        (p.fecha for p in partidos_jornada if p.fecha),
+        campeonato.fecha_inicio,
+    )
+    if fecha_jornada:
+        dia_numero = f"{fecha_jornada.day:02d}"
+        mes_nombre = meses[fecha_jornada.month]
+        dia_nombre = dias[fecha_jornada.weekday()]
+        fecha_completa = f"{dia_nombre} {dia_numero} DE {mes_nombre}"
+    else:
+        dia_numero = ""
+        mes_nombre = ""
+        dia_nombre = "FECHA POR DEFINIR"
+        fecha_completa = "FECHA POR DEFINIR"
 
     return render_template(
         "campeonato_afiches.html",
@@ -5066,6 +5117,12 @@ def afiches_campeonato(campeonato_id):
         jornadas=jornadas,
         libres_por_jornada=libres_por_jornada,
         jornada_seleccionada=jornada_seleccionada,
+        bloques_cancha=bloques_cancha,
+        fecha_jornada=fecha_jornada,
+        dia_numero=dia_numero,
+        mes_nombre=mes_nombre,
+        dia_nombre=dia_nombre,
+        fecha_completa=fecha_completa,
     )
 
 @app.route("/campeonatos/<int:campeonato_id>")
