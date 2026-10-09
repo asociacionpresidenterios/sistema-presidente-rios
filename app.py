@@ -7512,8 +7512,15 @@ def publico_goleadores(campeonato_id):
 def resumen_publico_campeonato(campeonato):
     """Indicadores ligeros para el nuevo portal público V6."""
     partidos = Partido.query.filter_by(campeonato_id=campeonato.id).all()
-    finalizados = [p for p in partidos if p.estado == "Finalizado"]
-    goles = sum(int(p.goles_local or 0) + int(p.goles_visitante or 0) for p in finalizados)
+    # Usar el mismo criterio que la tabla y las estadísticas: estado normalizado
+    # y ambos marcadores presentes, para no mostrar como jugados partidos incompletos.
+    finalizados = [
+        p for p in partidos
+        if (p.estado or "").strip().lower() == "finalizado"
+        and p.goles_local is not None
+        and p.goles_visitante is not None
+    ]
+    goles = sum(int(p.goles_local) + int(p.goles_visitante) for p in finalizados)
     equipos = CampeonatoClub.query.filter_by(campeonato_id=campeonato.id).count()
     tabla = obtener_tabla_publica(campeonato)
     lider = tabla[0] if tabla else None
