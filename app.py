@@ -5405,10 +5405,21 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado):
     if len(set(asignacion.values())) != len(asignacion):
         raise ValueError("No fue posible construir una distribución válida de jornadas.")
 
+    # Guardamos la configuración de CADA jornada antes de reconstruir.
+    # No usamos solo el primer partido, porque puede tener un campo vacío
+    # mientras otro partido de la misma jornada sí tiene la fecha/horario/cancha.
     configuracion = {}
     for p in futuros:
-        if p.fecha or p.hora or p.cancha:
-            configuracion.setdefault(p.jornada, (p.fecha, p.hora, p.cancha))
+        fila = configuracion.setdefault(
+            p.jornada,
+            {"fecha": None, "hora": None, "cancha": None}
+        )
+        if p.fecha is not None:
+            fila["fecha"] = p.fecha
+        if p.hora:
+            fila["hora"] = p.hora
+        if p.cancha:
+            fila["cancha"] = p.cancha
 
     for p in futuros:
         db.session.delete(p)
@@ -5420,7 +5431,9 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado):
         ronda = asignacion[jornada]
         cfg = configuracion.get(jornada)
         if cfg:
-            fecha_partido, hora_partido, cancha_partido = cfg
+            fecha_partido = cfg["fecha"]
+            hora_partido = cfg["hora"] or "17:00"
+            cancha_partido = cfg["cancha"] or "Por definir"
         else:
             fecha_partido = primera_fecha + timedelta(days=(jornada - 1) * 7)
             hora_partido = "17:00"
