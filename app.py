@@ -5025,6 +5025,89 @@ def panel_campeonato(campeonato_id):
     )
 
 
+def _logo_data_uri(valor):
+    """Convierte un escudo almacenado en BD en una URL utilizable por el navegador."""
+    if valor is None:
+        return None
+    if isinstance(valor, memoryview):
+        valor = valor.tobytes()
+    if isinstance(valor, (bytes, bytearray)):
+        raw = bytes(valor)
+        if not raw:
+            return None
+        if raw.startswith(b"\\x89PNG"):
+            mime = "image/png"
+        elif raw.startswith(b"\\xff\\xd8\\xff"):
+            mime = "image/jpeg"
+        elif raw.startswith(b"RIFF") and raw[8:12] == b"WEBP":
+            mime = "image/webp"
+        elif raw.startswith(b"<svg") or b"<svg" in raw[:500]:
+            mime = "image/svg+xml"
+        else:
+            mime = "image/png"
+        import base64
+        return f"data:{mime};base64,{base64.b64encode(raw).decode('ascii')}"
+    texto = str(valor).strip()
+    if not texto:
+        return None
+    if texto.startswith("data:image/") or texto.startswith("http://") or texto.startswith("https://") or texto.startswith("/"):
+        return texto
+    return url_for("static", filename=texto.lstrip("/"))
+
+
+def _escudos_clubes(clubes):
+    """Busca escudos existentes tanto en Club como en tablas auxiliares, sin romper instalaciones antiguas."""
+    resultado = {}
+    try:
+        inspector = db.inspect(db.engine)
+        tablas = inspector.get_table_names()
+
+        # Instalaciones donde el escudo está directamente en club.
+        if "club" in tablas:
+            columnas = {c["name"] for c in inspector.get_columns("club")}
+            candidatos = [
+                "escudo", "logo", "escudo_url", "logo_url",
+                "escudo_path", "logo_path", "imagen", "imagen_url"
+            ]
+            columna = next((c for c in candidatos if c in columnas), None)
+            if columna:
+                from sqlalchemy import text
+                filas = db.session.execute(
+                    text(f'SELECT id, "{columna}" FROM club')
+                ).fetchall()
+                for club_id, valor in filas:
+                    uri = _logo_data_uri(valor)
+                    if uri:
+                        resultado[int(club_id)] = uri
+
+        # Instalaciones donde los escudos viven en una tabla separada.
+        if not resultado:
+            for tabla in tablas:
+                nombre = tabla.lower()
+                if not any(x in nombre for x in ("escudo", "logo", "club_imagen", "club_logo")):
+                    continue
+                columnas = {c["name"] for c in inspector.get_columns(tabla)}
+                id_col = next((c for c in ("club_id", "id_club") if c in columnas), None)
+                valor_col = next((c for c in (
+                    "escudo", "logo", "imagen", "archivo", "contenido",
+                    "datos", "url", "ruta", "archivo_url"
+                ) if c in columnas), None)
+                if not id_col or not valor_col:
+                    continue
+                from sqlalchemy import text
+                filas = db.session.execute(
+                    text(f'SELECT "{id_col}", "{valor_col}" FROM "{tabla}"')
+                ).fetchall()
+                for club_id, valor in filas:
+                    uri = _logo_data_uri(valor)
+                    if uri:
+                        resultado[int(club_id)] = uri
+    except Exception as error:
+        app.logger.warning("No fue posible cargar escudos para afiches: %r", error)
+
+    return resultado
+
+
 @app.route("/campeonatos/<int:campeonato_id>/afiches")
 def afiches_campeonato(campeonato_id):
     """Generador de afiches oficiales de la jornada, con estilo Asociación Presidente Ríos."""
