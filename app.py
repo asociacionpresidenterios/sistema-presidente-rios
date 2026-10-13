@@ -870,6 +870,35 @@ class PartidoJugador(db.Model):
 
 
 # ============================================================
+# RESOLUCIONES ADMINISTRATIVAS DE PUNTOS POR SECRETARÍA
+# Tabla independiente: no altera marcadores ni columnas existentes.
+# ============================================================
+
+class ResolucionPuntosSecretaria(db.Model):
+    __tablename__ = "resolucion_puntos_secretaria"
+
+    id = db.Column(db.Integer, primary_key=True)
+    numero_resolucion = db.Column(db.String(40), unique=True, nullable=False, index=True)
+    campeonato_id = db.Column(db.Integer, db.ForeignKey("campeonato.id"), nullable=False, index=True)
+    partido_id = db.Column(db.Integer, db.ForeignKey("partido.id"), nullable=False, index=True)
+    efecto = db.Column(db.String(40), nullable=False)
+    club_infractor_id = db.Column(db.Integer, db.ForeignKey("club.id"), nullable=True, index=True)
+    puntos = db.Column(db.Integer, nullable=False, default=0)
+    motivo = db.Column(db.Text, nullable=False)
+    estado = db.Column(db.String(20), nullable=False, default="Aplicada", index=True)
+    publicada = db.Column(db.Boolean, nullable=False, default=True, index=True)
+    creada_por = db.Column(db.String(160), nullable=True)
+    creada_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    anulada_por = db.Column(db.String(160), nullable=True)
+    anulada_en = db.Column(db.DateTime, nullable=True)
+    motivo_anulacion = db.Column(db.Text, nullable=True)
+
+    campeonato = db.relationship("Campeonato")
+    partido = db.relationship("Partido")
+    club_infractor = db.relationship("Club")
+
+
+# ============================================================
 # CREACIÓN / ACTUALIZACIÓN SEGURA DE BASE DE DATOS
 # ============================================================
 
@@ -7201,9 +7230,6 @@ def informe_jugador(jugador_id):
 def obtener_tabla_publica(campeonato):
     registros = (CampeonatoClub.query.filter_by(campeonato_id=campeonato.id)
                  .join(Club, CampeonatoClub.club_id == Club.id).order_by(Club.nombre).all())
-    # Solo contar partidos realmente finalizados y con marcador completo.
-    # Se normaliza el estado para evitar diferencias de mayúsculas o espacios
-    # y mantener el mismo criterio que las estadísticas públicas.
     partidos = Partido.query.filter_by(campeonato_id=campeonato.id).all()
     finalizados = [
         p for p in partidos
@@ -7211,9 +7237,17 @@ def obtener_tabla_publica(campeonato):
         and p.goles_local is not None
         and p.goles_visitante is not None
     ]
+    resoluciones_activas = ResolucionPuntosSecretaria.query.filter_by(
+        campeonato_id=campeonato.id, estado="Aplicada"
+    ).order_by(ResolucionPuntosSecretaria.id).all()
+    por_partido = {}
+    ajustes_por_club = {}
+    for resolucion in resoluciones_activas:
+        por_partido.setdefault(resolucion.partido_id, []).append(resolucion)
     tabla = {}
     for r in registros:
-        tabla[r.club.id] = {"club": r.club, "pj": 0, "pg": 0, "pe": 0, "pp": 0, "gf": 0, "gc": 0, "dg": 0, "pts": 0}
+        tabla[r.club.id] = {"club": r.club, "pj": 0, "pg": 0, "pe": 0, "pp": 0,
+                            "gf": 0, "gc": 0, "dg": 0, "pts": 0, "ajuste_pts": 0}
     for p in finalizados:
         if p.local_club_id not in tabla or p.visitante_club_id not in tabla:
             continue
@@ -7221,15 +7255,39 @@ def obtener_tabla_publica(campeonato):
         l, v = tabla[p.local_club_id], tabla[p.visitante_club_id]
         l["pj"] += 1; v["pj"] += 1; l["gf"] += gl; l["gc"] += gv; v["gf"] += gv; v["gc"] += gl
         if gl > gv:
-            l["pg"] += 1; v["pp"] += 1; l["pts"] += 3
+            l["pg"] += 1; v["pp"] += 1
+            puntos_local, puntos_visitante = 3, 0
         elif gv > gl:
-            v["pg"] += 1; l["pp"] += 1; v["pts"] += 3
+            v["pg"] += 1; l["pp"] += 1
+            puntos_local, puntos_visitante = 0, 3
         else:
-            l["pe"] += 1; v["pe"] += 1; l["pts"] += 1; v["pts"] += 1
+            l["pe"] += 1; v["pe"] += 1
+            puntos_local, puntos_visitante = 1, 1
+        # Solo cambia la puntuación del partido si existe una resolución vigente
+        # de tipo "sin_puntos_ambos". El marcador y las estadísticas deportivas permanecen intactos.
+        resoluciones = por_partido.get(p.id, [])
+        if any(r.efecto == "sin_puntos_ambos" for r in resoluciones):
+            puntos_local, puntos_visitante = 0, 0
+        l["pts"] += puntos_local
+        v["pts"] += puntos_visitante
+        for resolucion in resoluciones:
+            if resolucion.efecto not in ("descuento_infractor", "descuento_transferencia"):
+                continue
+            infractor_id = resolucion.club_infractor_id
+            cantidad = max(0, int(resolucion.puntos or 0))
+            rival_id = p.visitante_club_id if infractor_id == p.local_club_id else p.local_club_id
+            if infractor_id in tabla:
+                tabla[infractor_id]["pts"] -= cantidad
+                tabla[infractor_id]["ajuste_pts"] -= cantidad
+            if resolucion.efecto == "descuento_transferencia" and rival_id in tabla:
+                tabla[rival_id]["pts"] += cantidad
+                tabla[rival_id]["ajuste_pts"] += cantidad
     filas = list(tabla.values())
-    for f in filas: f["dg"] = f["gf"] - f["gc"]
+    for f in filas:
+        f["dg"] = f["gf"] - f["gc"]
     filas.sort(key=lambda f: (-f["pts"], -f["dg"], -f["gf"], f["club"].nombre.lower()))
-    for pos, f in enumerate(filas, 1): f["pos"] = pos
+    for pos, f in enumerate(filas, 1):
+        f["pos"] = pos
     return filas
 
 
@@ -7775,6 +7833,105 @@ def publico_fair_play(campeonato_id):
         equipos=equipos,
     )
 
+@app.route("/campeonatos/<int:campeonato_id>/partido/<int:partido_id>/resolucion-puntos", methods=["GET", "POST"])
+@rol_permitido("Administrador")
+def resolucion_puntos_secretaria(campeonato_id, partido_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    partido = db.get_or_404(Partido, partido_id)
+    if partido.campeonato_id != campeonato.id:
+        abort(404)
+    clubes = {club.id: club for club in Club.query.filter(
+        Club.id.in_([partido.local_club_id, partido.visitante_club_id])
+    ).all()}
+    historial = ResolucionPuntosSecretaria.query.filter_by(
+        campeonato_id=campeonato.id, partido_id=partido.id
+    ).order_by(ResolucionPuntosSecretaria.id.desc()).all()
+    activa = next((r for r in historial if r.estado == "Aplicada"), None)
+
+    if request.method == "POST":
+        accion = (request.form.get("accion") or "crear").strip()
+        usuario = session.get("admin_username") or "Administrador"
+        if accion == "anular":
+            resolucion_id = request.form.get("resolucion_id", type=int)
+            motivo_anulacion = (request.form.get("motivo_anulacion") or "").strip()
+            resolucion = ResolucionPuntosSecretaria.query.filter_by(
+                id=resolucion_id, campeonato_id=campeonato.id, partido_id=partido.id
+            ).first()
+            if not resolucion or resolucion.estado != "Aplicada":
+                flash("La resolución seleccionada no está vigente.", "error")
+                return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
+            if len(motivo_anulacion) < 5:
+                flash("Indica el motivo de la anulación (mínimo 5 caracteres).", "error")
+                return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
+            resolucion.estado = "Anulada"
+            resolucion.anulada_por = usuario
+            resolucion.anulada_en = datetime.utcnow()
+            resolucion.motivo_anulacion = motivo_anulacion
+            try:
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                flash("No se pudo anular la resolución. No se guardaron cambios.", "error")
+                return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
+            registrar_auditoria("ANULAR_RESOLUCION_PUNTOS", "Secretaría", f"{resolucion.numero_resolucion}; campeonato={campeonato.id}; partido={partido.id}; motivo={motivo_anulacion}")
+            flash("Resolución anulada. La tabla pública recalculará los puntos automáticamente; el marcador queda intacto.", "success")
+            return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
+
+        if activa:
+            flash("Este partido ya tiene una resolución de puntos vigente. Anúlala con su motivo antes de registrar una nueva.", "error")
+            return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
+        efecto = (request.form.get("efecto") or "").strip()
+        motivo = (request.form.get("motivo") or "").strip()
+        publicada = request.form.get("publicada") == "on"
+        club_infractor_id = request.form.get("club_infractor_id", type=int)
+        puntos = request.form.get("puntos", type=int)
+        efectos_validos = {"descuento_infractor", "descuento_transferencia", "sin_puntos_ambos"}
+        if efecto not in efectos_validos:
+            flash("Selecciona un efecto administrativo válido.", "error")
+            return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
+        if len(motivo) < 10:
+            flash("El fundamento debe tener al menos 10 caracteres.", "error")
+            return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
+        if efecto in ("descuento_infractor", "descuento_transferencia"):
+            if club_infractor_id not in (partido.local_club_id, partido.visitante_club_id) or not puntos or puntos < 1 or puntos > 100:
+                flash("Selecciona el club infractor y un descuento entre 1 y 100 puntos.", "error")
+                return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
+        else:
+            club_infractor_id = None
+            puntos = 0
+        ultimo = ResolucionPuntosSecretaria.query.filter_by(campeonato_id=campeonato.id).order_by(ResolucionPuntosSecretaria.id.desc()).first()
+        correlativo = (ultimo.id + 1) if ultimo else 1
+        numero = f"SP-{campeonato.temporada}-{correlativo:04d}"
+        resolucion = ResolucionPuntosSecretaria(
+            numero_resolucion=numero,
+            campeonato_id=campeonato.id,
+            partido_id=partido.id,
+            efecto=efecto,
+            club_infractor_id=club_infractor_id,
+            puntos=puntos or 0,
+            motivo=motivo,
+            estado="Aplicada",
+            publicada=publicada,
+            creada_por=usuario,
+        )
+        try:
+            db.session.add(resolucion)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash("No se pudo guardar la resolución. No se aplicaron cambios.", "error")
+            return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
+        registrar_auditoria("CREAR_RESOLUCION_PUNTOS", "Secretaría", f"{numero}; efecto={efecto}; campeonato={campeonato.id}; partido={partido.id}; club_infractor={club_infractor_id}; puntos={puntos or 0}")
+        flash(f"Resolución {numero} aplicada. La tabla se recalcula sin modificar el marcador deportivo.", "success")
+        return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
+
+    return render_template(
+        "admin_resolucion_puntos_form.html",
+        campeonato=campeonato, partido=partido, clubes=clubes,
+        historial=historial, activa=activa
+    )
+
+
 @app.route("/publico/campeonato/<int:campeonato_id>/programacion")
 def publico_programacion(campeonato_id):
     campeonato = db.get_or_404(Campeonato, campeonato_id)
@@ -7800,9 +7957,21 @@ def publico_resultados(campeonato_id):
                 )
                 .order_by(Partido.jornada.desc(), Partido.fecha.desc(), Partido.hora.desc(), Partido.id.desc()).all())
     jornadas = {}
+    ids_partidos = [p.id for p in partidos]
+    resoluciones_publicadas = {}
+    if ids_partidos:
+        resoluciones = ResolucionPuntosSecretaria.query.filter(
+            ResolucionPuntosSecretaria.campeonato_id == campeonato.id,
+            ResolucionPuntosSecretaria.partido_id.in_(ids_partidos),
+            ResolucionPuntosSecretaria.estado == "Aplicada",
+            ResolucionPuntosSecretaria.publicada.is_(True),
+        ).all()
+        for resolucion in resoluciones:
+            resoluciones_publicadas.setdefault(resolucion.partido_id, []).append(resolucion)
     for partido in partidos:
         jornadas.setdefault(partido.jornada, []).append(partido)
-    return render_template("publico_resultados.html", campeonato=campeonato, jornadas=jornadas)
+    return render_template("publico_resultados.html", campeonato=campeonato, jornadas=jornadas,
+                           resoluciones_publicadas=resoluciones_publicadas)
 
 
 # ============================================================
