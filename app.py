@@ -9543,6 +9543,38 @@ def construir_alertas_operativas():
     jugadores_marcados_suspendidos = safe_count(
         Jugador.query.filter_by(estado="Suspendido")
     )
+
+    # Detectar nóminas ya guardadas en partidos futuros que incluyan
+    # jugadores que dejaron de estar habilitados por estado o sanción.
+    jugadores_no_habilitados_en_nominas = 0
+    try:
+        partidos_con_nomina = Partido.query.join(
+            Campeonato, Campeonato.id == Partido.campeonato_id
+        ).filter(
+            Campeonato.estado == "Activo",
+            Partido.estado == "Programado",
+        ).all()
+        casos_no_habilitados = set()
+        for partido_programado in partidos_con_nomina:
+            nomina = PartidoJugador.query.filter_by(
+                partido_id=partido_programado.id
+            ).all()
+            for participacion in nomina:
+                jugador_nomina = participacion.jugador
+                if jugador_nomina and not jugador_habilitado_para_campeonato(
+                    jugador_nomina,
+                    partido_programado.campeonato,
+                ):
+                    casos_no_habilitados.add(
+                        (partido_programado.id, jugador_nomina.id)
+                    )
+        jugadores_no_habilitados_en_nominas = len(casos_no_habilitados)
+    except Exception:
+        db.session.rollback()
+        app.logger.exception(
+            "No fue posible revisar jugadores no habilitados en nóminas programadas"
+        )
+
     jugadores_cerca_suspension = 0
     try:
         amarillas_por_jugador = db.session.query(
@@ -9579,6 +9611,7 @@ def construir_alertas_operativas():
         {"tipo":"warning","icono":"📢","titulo":"Resoluciones cerradas sin publicar","cantidad":resoluciones_no_publicadas,"texto":"Resoluciones cerradas aún no comunicadas públicamente.","url":url_for("admin_disciplina")},
         {"tipo":"warning","icono":"🚫","titulo":"Expulsiones con vigencia vencida","cantidad":expulsiones_vencidas,"texto":"Registros vigentes cuya fecha de término ya pasó.","url":url_for("admin_disciplina_expulsados")},
         {"tipo":"warning","icono":"🟨","titulo":"Jugadores a una amarilla de suspensión","cantidad":jugadores_cerca_suspension,"texto":"Jugadores con 3, 7, 11 u otras acumulaciones que están a una amarilla del siguiente umbral de suspensión en un campeonato activo.","url":url_for("admin_disciplina_tarjetas")},
+        {"tipo":"warning","icono":"🚫","titulo":"Jugadores no habilitados en nóminas programadas","cantidad":jugadores_no_habilitados_en_nominas,"texto":"Nóminas guardadas de partidos futuros que incluyen jugadores con estado o sanciones que requieren revisión.","url":url_for("admin_partidos")},
         {"tipo":"warning","icono":"🚫","titulo":"Jugadores marcados como suspendidos","cantidad":jugadores_marcados_suspendidos,"texto":"Revisar el estado disciplinario de estos jugadores antes de habilitarlos para un partido.","url":url_for("index")},
         {"tipo":"info","icono":"👤","titulo":"Jugadores sin club","cantidad":jugadores_sin_club,"texto":"Registros maestros sin club informado.","url":url_for("index")},
         {"tipo":"info","icono":"🏷️","titulo":"Jugadores sin serie","cantidad":jugadores_sin_serie,"texto":"Registros maestros sin serie informada.","url":url_for("index")},
