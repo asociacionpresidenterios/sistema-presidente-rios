@@ -1634,9 +1634,9 @@ def obtener_suspensiones(jugador_id):
 
 
 def crear_suspension_por_acumulacion_campeonato(jugador, campeonato):
-    """Controla 4 amarillas dentro del campeonato/serie actual."""
+    """Sincroniza suspensiones automáticas con las amarillas actuales del campeonato."""
     amarillas = sum(
-        int(x.cantidad or 0)
+        max(0, int(x.cantidad or 0))
         for x in RegistroDisciplinario.query.filter_by(
             jugador_id=jugador.id,
             campeonato_id=campeonato.id,
@@ -1644,19 +1644,25 @@ def crear_suspension_por_acumulacion_campeonato(jugador, campeonato):
         ).all()
     )
     esperadas = amarillas // 4
-    existentes = sum(
-        int(x.cantidad or 0)
-        for x in RegistroDisciplinario.query.filter_by(
+    existentes = (
+        RegistroDisciplinario.query.filter_by(
             jugador_id=jugador.id,
             campeonato_id=campeonato.id,
             tipo="Suspension"
-        ).all()
-        if (x.motivo or "").startswith("Suspensión automática por acumulación")
+        )
+        .filter(RegistroDisciplinario.motivo.like("Suspensión automática por acumulación%"))
+        .order_by(RegistroDisciplinario.id.asc())
+        .all()
     )
-    nuevas = max(0, esperadas - existentes)
-    if nuevas:
-        jugador.estado = "Suspendido"
-        for _ in range(nuevas):
+
+    cantidad_actual = len(existentes)
+    if cantidad_actual > esperadas:
+        # Solo elimina suspensiones identificadas como automáticas; conserva
+        # las sanciones manuales y las suspensiones de otros campeonatos.
+        for registro in existentes[esperadas:]:
+            db.session.delete(registro)
+    elif cantidad_actual < esperadas:
+        for _ in range(esperadas - cantidad_actual):
             db.session.add(RegistroDisciplinario(
                 jugador_id=jugador.id,
                 fecha=date.today(),
@@ -1667,7 +1673,9 @@ def crear_suspension_por_acumulacion_campeonato(jugador, campeonato):
                 campeonato_id=campeonato.id,
                 observaciones=f"AUTO_ACUMULACION:{campeonato.id}:{jugador.id}",
             ))
-    return nuevas
+        jugador.estado = "Suspendido"
+
+    return esperadas - cantidad_actual
 
 
 def crear_suspension_por_acumulacion(
@@ -6683,6 +6691,15 @@ def sincronizar_estadisticas_desde_acta(campeonato, partido, nomina):
     """
     marcador = f"ACTA_PARTIDO:{partido.id}"
 
+    jugadores_afectados = {
+        jugador_id
+        for (jugador_id,) in db.session.query(RegistroDisciplinario.jugador_id)
+        .filter_by(campeonato_id=campeonato.id, observaciones=marcador)
+        .distinct()
+        .all()
+    }
+    jugadores_afectados.update(registro.jugador_id for registro in nomina)
+
     Gol.query.filter(
         Gol.campeonato_id == campeonato.id,
         Gol.observaciones == marcador,
@@ -6728,11 +6745,6 @@ def sincronizar_estadisticas_desde_acta(campeonato, partido, nomina):
                 observaciones=marcador,
             ))
 
-        if amarillas:
-            jugador_evento = db.session.get(Jugador, registro.jugador_id)
-            if jugador_evento:
-                crear_suspension_por_acumulacion_campeonato(jugador_evento, campeonato)
-
         if rojas:
             db.session.add(RegistroDisciplinario(
                 jugador_id=registro.jugador_id,
@@ -6744,6 +6756,12 @@ def sincronizar_estadisticas_desde_acta(campeonato, partido, nomina):
                 campeonato_id=campeonato.id,
                 observaciones=marcador,
             ))
+
+    db.session.flush()
+    for jugador_id in jugadores_afectados:
+        jugador_evento = db.session.get(Jugador, jugador_id)
+        if jugador_evento:
+            crear_suspension_por_acumulacion_campeonato(jugador_evento, campeonato)
 
     return goles_local, goles_visitante
 
