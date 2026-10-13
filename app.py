@@ -6817,6 +6817,14 @@ def _normalizar_texto_acta(valor):
 
 def jugador_habilitado_para_campeonato(jugador, campeonato):
     """Evalúa estado general y suspensiones automáticas activas por campeonato."""
+    estado_original = str(jugador.estado or "").strip()
+
+    # "Expulsado" se registra desde el módulo de disciplina, pero no forma
+    # parte de los estados administrativos generales normalizados. Debe
+    # bloquear la habilitación aunque normalizar_estado lo desconozca.
+    if estado_original.lower() == "expulsado":
+        return False
+
     estado = normalizar_estado(jugador.estado)
 
     if estado in {"Pendiente", "Inhabilitado"}:
