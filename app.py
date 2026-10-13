@@ -3783,7 +3783,12 @@ def publico_resolucion_disciplina(resolucion_id):
 @app.route("/admin/disciplina/suspensiones")
 @rol_permitido("Administrador", "Disciplina")
 def admin_suspensiones_automaticas():
-    registros = (
+    campeonato_id = request.args.get("campeonato_id", type=int)
+    campeonatos = Campeonato.query.order_by(
+        Campeonato.temporada.desc(), Campeonato.id.desc()
+    ).all()
+
+    consulta = (
         RegistroDisciplinario.query
         .filter(
             RegistroDisciplinario.tipo == "Suspension",
@@ -3793,9 +3798,12 @@ def admin_suspensiones_automaticas():
             ~RegistroDisciplinario.observaciones.like("%|CUMPLIDA%"),
         ),
         )
-        .order_by(RegistroDisciplinario.fecha.desc(), RegistroDisciplinario.id.desc())
-        .all()
     )
+    if campeonato_id:
+        consulta = consulta.filter(RegistroDisciplinario.campeonato_id == campeonato_id)
+    registros = consulta.order_by(
+        RegistroDisciplinario.fecha.desc(), RegistroDisciplinario.id.desc()
+    ).all()
     pendientes = [
         r for r in registros
         if r.jugador and r.campeonato_id and r.campeonato_id > 0
@@ -3818,6 +3826,8 @@ def admin_suspensiones_automaticas():
         "admin_suspensiones_automaticas.html",
         suspensiones=pendientes,
         umbrales=umbrales,
+        campeonatos=campeonatos,
+        campeonato_id=campeonato_id,
     )
 
 
