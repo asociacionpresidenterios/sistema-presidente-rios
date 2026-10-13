@@ -9474,11 +9474,25 @@ def construir_alertas_operativas():
         ActaPartido, ActaPartido.partido_id == Partido.id
     ).filter(
         Campeonato.estado == "Activo",
-        Partido.estado.in_([ "Programado", "Finalizado" ]),
         db.or_(
-            ActaPartido.id.is_(None),
-            ActaPartido.arbitro.is_(None),
-            ActaPartido.arbitro == "",
+            # Partido finalizado: debe quedar el árbitro registrado en el acta.
+            db.and_(
+                Partido.estado == "Finalizado",
+                db.or_(
+                    ActaPartido.id.is_(None),
+                    ActaPartido.arbitro.is_(None),
+                    ActaPartido.arbitro == "",
+                ),
+            ),
+            # Partido programado: alertar solo si ya existe un acta sin árbitro.
+            db.and_(
+                Partido.estado == "Programado",
+                ActaPartido.id.isnot(None),
+                db.or_(
+                    ActaPartido.arbitro.is_(None),
+                    ActaPartido.arbitro == "",
+                ),
+            ),
         ),
     ))
 
