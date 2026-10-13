@@ -7193,7 +7193,7 @@ def obtener_tabla_publica(campeonato):
 
 def obtener_proxima_jornada(campeonato):
     partidos = (Partido.query.filter_by(campeonato_id=campeonato.id)
-                .filter(Partido.estado != "Finalizado")
+                .filter(db.func.lower(db.func.trim(Partido.estado)) != "finalizado")
                 .order_by(Partido.jornada, Partido.fecha, Partido.hora, Partido.id).all())
     if not partidos:
         return None, []
@@ -7225,7 +7225,7 @@ def publico():
         jornada, partidos = obtener_proxima_jornada(campeonato)
         resultados_recientes = (Partido.query
                                .filter(Partido.campeonato_id == campeonato.id,
-                                       Partido.estado == "Finalizado",
+                                       db.func.lower(db.func.trim(Partido.estado)) == "finalizado",
                                        Partido.goles_local.isnot(None),
                                        Partido.goles_visitante.isnot(None))
                                .order_by(Partido.jornada.desc(), Partido.id.desc())
