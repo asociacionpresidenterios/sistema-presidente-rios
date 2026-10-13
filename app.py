@@ -9573,6 +9573,22 @@ def construir_alertas_operativas():
     jugadores_marcados_suspendidos = safe_count(
         Jugador.query.filter_by(estado="Suspendido")
     )
+    suspensiones_automaticas_pendientes = safe_count(
+        RegistroDisciplinario.query.join(
+            Campeonato,
+            Campeonato.id == RegistroDisciplinario.campeonato_id,
+        ).filter(
+            Campeonato.estado == "Activo",
+            RegistroDisciplinario.tipo == "Suspension",
+            RegistroDisciplinario.motivo.like(
+                "Suspensión automática por acumulación%"
+            ),
+            db.or_(
+                RegistroDisciplinario.observaciones.is_(None),
+                ~RegistroDisciplinario.observaciones.like("%|CUMPLIDA%"),
+            ),
+        )
+    )
 
     # Detectar nóminas ya guardadas en partidos futuros que incluyan
     # jugadores que dejaron de estar habilitados por estado o sanción.
@@ -9665,6 +9681,7 @@ def construir_alertas_operativas():
         {"tipo":"warning","icono":"🟨","titulo":"Jugadores a una amarilla de suspensión","cantidad":jugadores_cerca_suspension,"texto":"Jugadores con 3, 7, 11 u otras acumulaciones que están a una amarilla del siguiente umbral de suspensión en un campeonato activo.","url":url_for("admin_disciplina_tarjetas")},
         {"tipo":"warning","icono":"🚫","titulo":"Casos de jugadores no habilitados en nóminas programadas","cantidad":jugadores_no_habilitados_en_nominas,"texto":"Cada caso corresponde a un jugador inscrito en un partido futuro que presenta un estado o sanción que requiere revisión.","url":url_for("admin_partidos")},
         {"tipo":"warning","icono":"🚫","titulo":"Jugadores marcados como suspendidos","cantidad":jugadores_marcados_suspendidos,"texto":"Revisar el estado disciplinario de estos jugadores antes de habilitarlos para un partido.","url":url_for("index")},
+        {"tipo":"danger","icono":"⛔","titulo":"Suspensiones automáticas pendientes","cantidad":suspensiones_automaticas_pendientes,"texto":"Suspensiones por acumulación de amarillas que aún no están marcadas como cumplidas en campeonatos activos.","url":url_for("admin_suspensiones_automaticas")},
         {"tipo":"info","icono":"👤","titulo":"Jugadores sin club","cantidad":jugadores_sin_club,"texto":"Registros maestros sin club informado.","url":url_for("index")},
         {"tipo":"info","icono":"🏷️","titulo":"Jugadores sin serie","cantidad":jugadores_sin_serie,"texto":"Registros maestros sin serie informada.","url":url_for("index")},
     ]
