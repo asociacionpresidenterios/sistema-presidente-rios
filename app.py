@@ -6728,7 +6728,7 @@ def estadisticas_campeonato_data(campeonato):
             clave_tipo = "Suspension"
         else:
             continue
-        disciplina_por_tipo[clave_tipo][registro.jugador_id] += int(registro.cantidad or 0)
+        disciplina_por_tipo[clave_tipo][registro.jugador_id] += int(registro.cantidad or 1)
 
     def ordenar_ranking(totales):
         filas = [(jugador, totales.get(jugador.id, 0)) for jugador in jugadores]
