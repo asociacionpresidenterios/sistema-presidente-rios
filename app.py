@@ -3853,7 +3853,10 @@ def admin_disciplina_tarjetas():
     if serie:
         partidos_q = partidos_q.filter(Campeonato.serie == serie)
 
-    partidos = partidos_q.limit(300).all()
+    # El resumen disciplinario debe considerar todos los partidos finalizados
+    # del filtro seleccionado; limitar a 300 podía ocultar tarjetas antiguas
+    # y mostrar acumulados incorrectos en campeonatos largos.
+    partidos = partidos_q.all()
     partido_ids = [p.id for p in partidos]
 
     eventos = []
