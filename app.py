@@ -1698,12 +1698,16 @@ def crear_suspension_por_acumulacion_campeonato(jugador, campeonato):
     ]
     pendientes_esperadas = max(0, esperadas - len(cumplidas))
 
+    nuevas = max(0, pendientes_esperadas - len(pendientes))
     if len(pendientes) > pendientes_esperadas:
         # Retirar solo registros automáticos pendientes sobrantes.
         for registro in pendientes[pendientes_esperadas:]:
             db.session.delete(registro)
-    elif len(pendientes) < pendientes_esperadas:
-        for _ in range(pendientes_esperadas - len(pendientes)):
+    elif nuevas:
+        # Guardar el umbral que originó cada suspensión nueva permite
+        # auditar acumulaciones futuras sin alterar registros históricos.
+        for indice in range(nuevas):
+            numero_umbral = len(cumplidas) + len(pendientes) + indice + 1
             db.session.add(RegistroDisciplinario(
                 jugador_id=jugador.id,
                 fecha=date.today(),
@@ -1712,12 +1716,15 @@ def crear_suspension_por_acumulacion_campeonato(jugador, campeonato):
                 motivo="Suspensión automática por acumulación de 4 tarjetas amarillas.",
                 campeonato=campeonato.nombre,
                 campeonato_id=campeonato.id,
-                observaciones=f"AUTO_ACUMULACION:{campeonato.id}:{jugador.id}",
+                observaciones=(
+                    f"AUTO_ACUMULACION:{campeonato.id}:{jugador.id}"
+                    f"|UMBRAL:{numero_umbral * 4}|"
+                ),
             ))
         # La suspensión es específica de este campeonato. No cambiar el
         # estado maestro del jugador, que afecta a todas las competencias.
 
-    return pendientes_esperadas - len(pendientes)
+    return nuevas
 
 
 def crear_suspension_por_acumulacion(
