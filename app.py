@@ -7615,7 +7615,7 @@ def datos_estadisticas_publicas(campeonato):
                 registro.campeonato_id == campeonato.id
                 or (
                     registro.campeonato_id is None
-                    and (registro.campeonato or "").strip().lower() == (campeonato.nombre or "").strip().lower()
+                    and normalizar_nombre_publico(registro.campeonato) == normalizar_nombre_publico(campeonato.nombre)
                 )
             )
             if not pertenece:
@@ -7693,7 +7693,7 @@ def publico_fair_play(campeonato_id):
                     registro.campeonato_id == campeonato.id
                     or (
                         registro.campeonato_id is None
-                        and (registro.campeonato or "").strip().lower() == (campeonato.nombre or "").strip().lower()
+                        and normalizar_nombre_publico(registro.campeonato) == normalizar_nombre_publico(campeonato.nombre)
                     )
                 )
                 if not pertenece:
