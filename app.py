@@ -6522,9 +6522,19 @@ def tabla_campeonato(campeonato_id):
 
     partidos_finalizados = (
         Partido.query
-        .filter_by(campeonato_id=campeonato.id, estado="Finalizado")
+        .filter_by(campeonato_id=campeonato.id)
+        .filter(db.func.lower(db.func.trim(Partido.estado)) == "finalizado")
+        .filter(Partido.goles_local.isnot(None), Partido.goles_visitante.isnot(None))
         .all()
     )
+
+    resoluciones_activas = ResolucionPuntosSecretaria.query.filter_by(
+        campeonato_id=campeonato.id,
+        estado="Aplicada",
+    ).order_by(ResolucionPuntosSecretaria.id).all()
+    resoluciones_por_partido = {}
+    for resolucion in resoluciones_activas:
+        resoluciones_por_partido.setdefault(resolucion.partido_id, []).append(resolucion)
 
     tabla = {}
     for registro in clubes_participantes:
@@ -6539,17 +6549,15 @@ def tabla_campeonato(campeonato_id):
             "gc": 0,
             "dg": 0,
             "pts": 0,
+            "ajuste_pts": 0,
         }
 
     for partido in partidos_finalizados:
-        # Solo contabilizamos partidos cuyos clubes siguen inscritos
-        # en este campeonato.
         if partido.local_club_id not in tabla or partido.visitante_club_id not in tabla:
             continue
 
-        gl = partido.goles_local if partido.goles_local is not None else 0
-        gv = partido.goles_visitante if partido.goles_visitante is not None else 0
-
+        gl = int(partido.goles_local or 0)
+        gv = int(partido.goles_visitante or 0)
         local = tabla[partido.local_club_id]
         visitante = tabla[partido.visitante_club_id]
 
@@ -6563,23 +6571,44 @@ def tabla_campeonato(campeonato_id):
         if gl > gv:
             local["pg"] += 1
             visitante["pp"] += 1
-            local["pts"] += 3
+            puntos_local, puntos_visitante = 3, 0
         elif gl < gv:
             visitante["pg"] += 1
             local["pp"] += 1
-            visitante["pts"] += 3
+            puntos_local, puntos_visitante = 0, 3
         else:
             local["pe"] += 1
             visitante["pe"] += 1
-            local["pts"] += 1
-            visitante["pts"] += 1
+            puntos_local, puntos_visitante = 1, 1
+
+        resoluciones = resoluciones_por_partido.get(partido.id, [])
+        if any(r.efecto == "sin_puntos_ambos" for r in resoluciones):
+            puntos_local, puntos_visitante = 0, 0
+
+        local["pts"] += puntos_local
+        visitante["pts"] += puntos_visitante
+
+        for resolucion in resoluciones:
+            if resolucion.efecto not in ("descuento_infractor", "descuento_transferencia"):
+                continue
+            infractor_id = resolucion.club_infractor_id
+            cantidad = max(0, int(resolucion.puntos or 0))
+            rival_id = (
+                partido.visitante_club_id
+                if infractor_id == partido.local_club_id
+                else partido.local_club_id
+            )
+            if infractor_id in tabla:
+                tabla[infractor_id]["pts"] -= cantidad
+                tabla[infractor_id]["ajuste_pts"] -= cantidad
+            if resolucion.efecto == "descuento_transferencia" and rival_id in tabla:
+                tabla[rival_id]["pts"] += cantidad
+                tabla[rival_id]["ajuste_pts"] += cantidad
 
     filas = list(tabla.values())
     for fila in filas:
         fila["dg"] = fila["gf"] - fila["gc"]
 
-    # Orden oficial de clasificación: puntos, diferencia de goles,
-    # goles a favor y nombre del club como desempate final.
     filas.sort(
         key=lambda fila: (
             -fila["pts"],
