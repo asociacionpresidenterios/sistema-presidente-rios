@@ -63,6 +63,7 @@ a{text-decoration:none;color:inherit}
     <a class="nav-item {% if request.endpoint=='publico' %}active{% endif %}" href="{{ url_for('publico') }}"><span class="nav-icon">🌐</span>Portal público</a>
 
     {% if session.get('admin_rol') == 'Administrador' or not session.get('admin_rol') %}
+    <a class="nav-item {% if request.endpoint=='admin_alertas' %}active{% endif %}" href="{{ url_for('admin_alertas') }}"><span class="nav-icon">🚨</span>Centro de Alertas</a>
     <div class="section-label">Gestión deportiva</div>
     <a class="nav-item {% if request.endpoint in ['campeonatos','nuevo_campeonato','detalle_campeonato','panel_campeonato'] %}active{% endif %}" href="{{ url_for('campeonatos') }}"><span class="nav-icon">🏆</span>Campeonatos</a>
     <a class="nav-item {% if request.endpoint in ['admin_clubes','admin_planteles','admin_ficha_club','admin_centro_club_series','admin_centro_club_estadisticas'] %}active{% endif %}" href="{{ url_for('admin_clubes') }}"><span class="nav-icon">🏟️</span>Clubes</a>
