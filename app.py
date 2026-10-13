@@ -6689,20 +6689,48 @@ def jugadores_campeonato(campeonato):
     return resultado
 
 def estadisticas_campeonato_data(campeonato):
-    ids=[j.id for j in jugadores_campeonato(campeonato)]
-    if not ids: return [],[],[],[]
-    def rank(tipo=None):
-        q=(db.session.query(Jugador, db.func.coalesce(db.func.sum(RegistroDisciplinario.cantidad),0).label('total'))
-           .outerjoin(RegistroDisciplinario, db.and_(RegistroDisciplinario.jugador_id==Jugador.id,
-               *( [RegistroDisciplinario.tipo==tipo] if tipo else [] ),
-               db.or_(RegistroDisciplinario.campeonato_id==campeonato.id,
-                      db.and_(RegistroDisciplinario.campeonato_id.is_(None), RegistroDisciplinario.campeonato==campeonato.nombre)) ))
-           .filter(Jugador.id.in_(ids)).group_by(Jugador.id))
-        return q.order_by(db.desc('total'),Jugador.nombre_completo).all()
-    goles=(db.session.query(Jugador,db.func.coalesce(db.func.sum(Gol.cantidad),0).label('total'))
-      .outerjoin(Gol,db.and_(Gol.jugador_id==Jugador.id,db.or_(Gol.campeonato_id==campeonato.id,db.and_(Gol.campeonato_id.is_(None),Gol.campeonato==campeonato.nombre))))
-      .filter(Jugador.id.in_(ids)).group_by(Jugador.id).order_by(db.desc('total'),Jugador.nombre_completo).all())
-    return goles,rank('Amarilla'),rank('Roja'),rank('Suspension')
+    """Construye rankings administrativos incluyendo registros históricos con nombres normalizados."""
+    jugadores = jugadores_campeonato(campeonato)
+    ids = [j.id for j in jugadores]
+    if not ids:
+        return [], [], [], []
+
+    nombre_campeonato = normalizar_nombre_publico(campeonato.nombre)
+
+    def pertenece_al_campeonato(registro):
+        if registro.campeonato_id == campeonato.id:
+            return True
+        return (
+            registro.campeonato_id is None
+            and normalizar_nombre_publico(registro.campeonato) == nombre_campeonato
+        )
+
+    goles_por_jugador = {jugador_id: 0 for jugador_id in ids}
+    for gol in Gol.query.filter(Gol.jugador_id.in_(ids)).all():
+        if pertenece_al_campeonato(gol):
+            goles_por_jugador[gol.jugador_id] += int(gol.cantidad or 0)
+
+    disciplina_por_tipo = {
+        tipo: {jugador_id: 0 for jugador_id in ids}
+        for tipo in ("Amarilla", "Roja", "Suspension")
+    }
+    for registro in RegistroDisciplinario.query.filter(
+        RegistroDisciplinario.jugador_id.in_(ids)
+    ).all():
+        if not pertenece_al_campeonato(registro):
+            continue
+        if registro.tipo in disciplina_por_tipo:
+            disciplina_por_tipo[registro.tipo][registro.jugador_id] += int(registro.cantidad or 0)
+
+    def ordenar_ranking(totales):
+        filas = [(jugador, totales.get(jugador.id, 0)) for jugador in jugadores]
+        return sorted(filas, key=lambda fila: (-fila[1], (fila[0].nombre_completo or "").lower()))
+
+    goles = ordenar_ranking(goles_por_jugador)
+    amarillas = ordenar_ranking(disciplina_por_tipo["Amarilla"])
+    rojas = ordenar_ranking(disciplina_por_tipo["Roja"])
+    suspensiones = ordenar_ranking(disciplina_por_tipo["Suspension"])
+    return goles, amarillas, rojas, suspensiones
 
 @app.route('/campeonatos/<int:campeonato_id>/estadisticas')
 def estadisticas_campeonato(campeonato_id):
