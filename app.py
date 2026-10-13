@@ -6957,7 +6957,14 @@ def acta_partido(campeonato_id, partido_id):
                 jid = int(raw_id)
                 equipo = equipos[i] if i < len(equipos) else "local"
                 if jid not in permitidos.get(equipo, set()):
-                    raise ValueError("Jugador no perteneciente al club seleccionado.")
+                    jugador_rechazado = db.session.get(Jugador, jid)
+                    if jugador_rechazado and normalizar_estado(jugador_rechazado.estado) != "Vigente":
+                        raise ValueError(
+                            f"No se puede incluir a {jugador_rechazado.nombre_completo}: "
+                            f"su estado actual es '{normalizar_estado(jugador_rechazado.estado)}'. "
+                            "Revise su habilitación antes de cerrar el acta."
+                        )
+                    raise ValueError("El jugador no pertenece al club seleccionado o no está habilitado para este campeonato.")
 
                 def iv(lst):
                     try:
@@ -7059,7 +7066,10 @@ def acta_partido(campeonato_id, partido_id):
         except Exception as error:
             db.session.rollback()
             print("ERROR GUARDANDO ACTA V5.8:", repr(error))
-            flash("No fue posible guardar el acta. Revise los datos e inténtelo nuevamente.", "error")
+            if isinstance(error, ValueError):
+                flash(str(error), "error")
+            else:
+                flash("No fue posible guardar el acta. Revise los datos e inténtelo nuevamente.", "error")
 
         return redirect(url_for("acta_partido", campeonato_id=campeonato.id, partido_id=partido.id))
 
