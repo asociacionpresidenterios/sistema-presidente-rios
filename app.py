@@ -7946,14 +7946,16 @@ def datos_estadisticas_publicas(campeonato):
             if not pertenece:
                 continue
 
-            tipo = (registro.tipo or "").strip().lower()
-            cantidad = int(registro.cantidad or 1)
+            tipo = normalizar_nombre_publico(registro.tipo)
+            cantidad = max(
+                0, int(registro.cantidad if registro.cantidad is not None else 1)
+            )
 
             if "amarilla" in tipo:
                 total_amarillas += cantidad
             elif "roja" in tipo:
                 total_rojas += cantidad
-            elif "suspension" in tipo or "suspensión" in tipo:
+            elif "suspension" in tipo:
                 total_suspensiones += cantidad
 
     promedio_goles = round(total_goles / len(finalizados), 2) if finalizados else 0
@@ -8025,14 +8027,16 @@ def publico_fair_play(campeonato_id):
                 if not pertenece:
                     continue
 
-                tipo = (registro.tipo or "").strip().lower()
-                cantidad = int(registro.cantidad or 1)
+                tipo = normalizar_nombre_publico(registro.tipo)
+                cantidad = max(
+                    0, int(registro.cantidad if registro.cantidad is not None else 1)
+                )
 
                 if "amarilla" in tipo:
                     amarillas += cantidad
                 elif "roja" in tipo:
                     rojas += cantidad
-                elif "suspension" in tipo or "suspensión" in tipo:
+                elif "suspension" in tipo:
                     suspensiones += cantidad
 
         puntos = amarillas + rojas * 3 + suspensiones * 2
