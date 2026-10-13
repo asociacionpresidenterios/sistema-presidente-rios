@@ -6735,37 +6735,41 @@ def _normalizar_texto_acta(valor):
 
 
 def jugador_habilitado_para_campeonato(jugador, campeonato):
-    """Evalúa el estado general y las suspensiones automáticas por campeonato."""
+    """Evalúa estado general y suspensiones automáticas activas por campeonato."""
     estado = normalizar_estado(jugador.estado)
 
     if estado in {"Pendiente", "Inhabilitado"}:
         return False
 
-    suspensiones_automaticas = RegistroDisciplinario.query.filter(
+    suspensiones = RegistroDisciplinario.query.filter(
         RegistroDisciplinario.jugador_id == jugador.id,
         RegistroDisciplinario.tipo == "Suspension",
-        RegistroDisciplinario.motivo.like("Suspensión automática por acumulación%"),
-        db.or_(
-            RegistroDisciplinario.observaciones.is_(None),
-            ~RegistroDisciplinario.observaciones.like("%|CUMPLIDA%"),
-        ),
     ).all()
 
-    # Un estado Suspendido respaldado por suspensiones automáticas se trata
-    # como disciplinario y se limita al campeonato correspondiente.
-    if estado == "Suspendido":
-        if not suspensiones_automaticas:
-            return False
-        return not any(
-            registro.campeonato_id == campeonato.id
-            for registro in suspensiones_automaticas
+    automáticas = [
+        registro for registro in suspensiones
+        if (registro.motivo or "").startswith(
+            "Suspensión automática por acumulación"
         )
+    ]
+    manuales = [registro for registro in suspensiones if registro not in automáticas]
 
+    # Una sanción manual o un registro automático antiguo sin campeonato
+    # conserva el bloqueo general cuando el estado maestro es Suspendido.
+    if estado == "Suspendido":
+        if manuales or not automáticas:
+            return False
+        if any(registro.campeonato_id is None for registro in automáticas):
+            return False
+
+    automáticas_activas = [
+        registro for registro in automáticas
+        if "|CUMPLIDA|" not in (registro.observaciones or "")
+    ]
     return not any(
         registro.campeonato_id == campeonato.id
-        for registro in suspensiones_automaticas
+        for registro in automáticas_activas
     )
-
 
 def jugadores_disponibles_para_equipo(campeonato, club):
     """Obtiene jugadores habilitados para este campeonato, club y serie."""
