@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Resolución por secretaría · {{ campeonato.nombre }}{% endblock %}
+{% block content %}
+<div style="max-width:1000px;margin:24px auto;padding:0 16px;color:#172033">
+  <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
+    <div><h1 style="margin-bottom:5px">⚖️ Resolución de puntos por secretaría</h1><p style="color:#64748b;margin-top:0">{{ campeonato.nombre }} · Jornada {{ partido.jornada }}</p></div>
+    <a href="{{ url_for('fixture_campeonato', campeonato_id=campeonato.id) }}" style="padding:10px 13px;background:#111827;color:white;border-radius:9px;text-decoration:none;font-weight:800">← Volver al fixture</a>
+  </div>
+  <section style="background:white;border:1px solid #e2e8f0;border-radius:16px;padding:20px;margin:16px 0">
+    <h2 style="margin-top:0">Partido asociado</h2>
+    <div style="font-size:20px;font-weight:900">{{ partido.local_club.nombre }} <span style="color:#94a3b8">vs</span> {{ partido.visitante_club.nombre }}</div>
+    <p style="color:#475569">Marcador deportivo: <strong>{{ partido.goles_local if partido.goles_local is not none else '—' }} : {{ partido.goles_visitante if partido.goles_visitante is not none else '—' }}</strong> · Estado: {{ partido.estado }}</p>
+    <div style="padding:12px;border-radius:10px;background:#eff6ff;color:#1e40af">La resolución nunca modifica el marcador, los goles ni las estadísticas deportivas. Solo afecta los puntos de la tabla de posiciones.</div>
+  </section>
+  {% if activa %}
+  <section style="background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:18px;margin:16px 0">
+    <h2 style="margin-top:0">Resolución vigente: {{ activa.numero_resolucion }}</h2>
+    <p><strong>Efecto:</strong> {% if activa.efecto == 'sin_puntos_ambos' %}ambos clubes reciben 0 puntos por este partido{% elif activa.efecto == 'descuento_transferencia' %}descuento al infractor y transferencia de igual cantidad al rival{% else %}descuento de puntos al club infractor{% endif %}</p>
+    {% if activa.club_infractor %}<p><strong>Club infractor:</strong> {{ activa.club_infractor.nombre }} · <strong>Puntos:</strong> {{ activa.puntos }}</p>{% endif %}
+    <p><strong>Fundamento:</strong> {{ activa.motivo }}</p>
+    <p><strong>Publicada en portal:</strong> {{ 'Sí' if activa.publicada else 'No' }}</p>
+    <form method="POST" onsubmit="return confirm('¿Anular esta resolución? La acción quedará en el historial y la tabla se recalculará.');" style="margin-top:15px">
+      <input type="hidden" name="accion" value="anular"><input type="hidden" name="resolucion_id" value="{{ activa.id }}">
+      <label for="motivo_anulacion" style="display:block;font-weight:800;margin-bottom:6px">Motivo obligatorio de anulación</label>
+      <textarea id="motivo_anulacion" name="motivo_anulacion" required minlength="5" rows="2" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:10px" placeholder="Explica por qué se deja sin efecto esta resolución"></textarea>
+      <button type="submit" style="margin-top:10px;border:0;border-radius:9px;background:#b91c1c;color:white;padding:11px 15px;font-weight:900;cursor:pointer">Anular y recalcular tabla</button>
+    </form>
+  </section>
+  {% else %}
+  <section style="background:white;border:1px solid #e2e8f0;border-radius:16px;padding:20px;margin:16px 0">
+    <h2 style="margin-top:0">Registrar nueva resolución</h2>
+    <p style="color:#64748b">Solo puede existir una resolución vigente por partido. Para reemplazarla, primero debe anularse dejando constancia del motivo.</p>
+    <form method="POST">
+      <div style="margin:14px 0"><label for="efecto" style="display:block;font-weight:900;margin-bottom:6px">Efecto administrativo</label>
+        <select id="efecto" name="efecto" required style="width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:9px">
+          <option value="">Selecciona una opción</option>
+          <option value="descuento_infractor">Descontar puntos solo al club infractor</option>
+          <option value="descuento_transferencia">Descontar al infractor y otorgar esos puntos al rival</option>
+          <option value="sin_puntos_ambos">Asignar 0 puntos a ambos clubes por este partido</option>
+        </select>
+      </div>
+      <div id="club-wrap" style="margin:14px 0"><label for="club_infractor_id" style="display:block;font-weight:900;margin-bottom:6px">Club infractor</label>
+        <select id="club_infractor_id" name="club_infractor_id" style="width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:9px">
+          <option value="{{ partido.local_club_id }}">{{ partido.local_club.nombre }} (local)</option>
+          <option value="{{ partido.visitante_club_id }}">{{ partido.visitante_club.nombre }} (visitante)</option>
+        </select>
+      </div>
+      <div id="puntos-wrap" style="margin:14px 0"><label for="puntos" style="display:block;font-weight:900;margin-bottom:6px">Cantidad de puntos</label>
+        <input id="puntos" name="puntos" type="number" min="1" max="100" value="3" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid #cbd5e1;border-radius:9px">
+      </div>
+      <div style="margin:14px 0"><label for="motivo" style="display:block;font-weight:900;margin-bottom:6px">Fundamento / motivo oficial</label>
+        <textarea id="motivo" name="motivo" required minlength="10" rows="4" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid #cbd5e1;border-radius:9px" placeholder="Indica el fundamento y la decisión de secretaría"></textarea>
+      </div>
+      <label style="display:flex;gap:9px;align-items:center;margin:14px 0"><input type="checkbox" name="publicada" checked> Publicar la resolución en el portal público</label>
+      <div style="padding:12px;border-radius:10px;background:#f8fafc;color:#475569;font-size:13px">Antes de guardar, verifica que el efecto y la cantidad de puntos coincidan con la resolución oficial. El cambio de puntos se reflejará automáticamente en la tabla.</div>
+      <button type="submit" style="margin-top:15px;border:0;border-radius:9px;background:#166534;color:white;padding:12px 16px;font-weight:900;cursor:pointer">Guardar resolución y recalcular</button>
+    </form>
+    <script>
+      (function(){
+        const efecto=document.getElementById('efecto');
+        const club=document.getElementById('club-wrap');
+        const puntos=document.getElementById('puntos-wrap');
+        function actualizar(){
+          const sinPuntos=efecto.value==='sin_puntos_ambos';
+          club.style.display=sinPuntos?'none':'block';
+          puntos.style.display=sinPuntos?'none':'block';
+        }
+        efecto.addEventListener('change',actualizar);actualizar();
+      })();
+    </script>
+  </section>
+  {% endif %}
+  <section style="background:white;border:1px solid #e2e8f0;border-radius:16px;padding:20px;margin:16px 0">
+    <h2 style="margin-top:0">Historial de resoluciones</h2>
+    {% if historial %}
+      {% for r in historial %}
+      <article style="padding:13px 0;border-bottom:1px solid #e2e8f0">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><strong>{{ r.numero_resolucion }}</strong><strong style="color:{{ '#166534' if r.estado == 'Aplicada' else '#b91c1c' }}">{{ r.estado }}</strong></div>
+        <p style="margin:7px 0">{% if r.efecto == 'sin_puntos_ambos' %}Ambos clubes: 0 puntos por este partido{% elif r.efecto == 'descuento_transferencia' %}Descuento y transferencia{% else %}Descuento al infractor{% endif %}{% if r.club_infractor %} · {{ r.club_infractor.nombre }} · {{ r.puntos }} puntos{% endif %}</p>
+        <p style="margin:5px 0;color:#475569">{{ r.motivo }}</p>
+        <small style="color:#64748b">Registrada por {{ r.creada_por or 'Administrador' }} · {{ r.creada_en.strftime('%d/%m/%Y %H:%M') if r.creada_en else '' }}{% if r.estado == 'Anulada' %} · Anulada por {{ r.anulada_por or 'Administrador' }}{% if r.anulada_en %} el {{ r.anulada_en.strftime('%d/%m/%Y %H:%M') }}{% endif %} · Motivo: {{ r.motivo_anulacion }}{% endif %}</small>
+      </article>
+      {% endfor %}
+    {% else %}<p style="color:#64748b">Todavía no hay resoluciones registradas para este partido.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}
