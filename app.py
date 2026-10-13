@@ -3759,6 +3759,62 @@ def publico_resolucion_disciplina(resolucion_id):
 
 
 # ============================================================
+# CONTROL DE CUMPLIMIENTO DE SUSPENSIONES AUTOMÁTICAS
+# ============================================================
+
+@app.route("/admin/disciplina/suspensiones")
+@rol_permitido("Administrador", "Disciplina")
+def admin_suspensiones_automaticas():
+    registros = (
+        RegistroDisciplinario.query
+        .filter(
+            RegistroDisciplinario.tipo == "Suspension",
+            RegistroDisciplinario.motivo.like("Suspensión automática por acumulación%"),
+            ~RegistroDisciplinario.observaciones.like("%|CUMPLIDA%"),
+        )
+        .order_by(RegistroDisciplinario.fecha.desc(), RegistroDisciplinario.id.desc())
+        .all()
+    )
+    pendientes = [
+        r for r in registros
+        if r.jugador and r.campeonato_id and r.campeonato_id > 0
+    ]
+    return render_template(
+        "admin_suspensiones_automaticas.html",
+        suspensiones=pendientes,
+    )
+
+
+@app.route("/admin/disciplina/suspensiones/<int:registro_id>/cumplir", methods=["POST"])
+@rol_permitido("Administrador", "Disciplina")
+def cumplir_suspension_automatica(registro_id):
+    registro = db.get_or_404(RegistroDisciplinario, registro_id)
+    motivo_valido = (registro.motivo or "").startswith(
+        "Suspensión automática por acumulación"
+    )
+    if registro.tipo != "Suspension" or not motivo_valido:
+        flash("Este registro no es una suspensión automática por acumulación.", "error")
+        return redirect(url_for("admin_suspensiones_automaticas"))
+
+    observaciones = registro.observaciones or ""
+    if "|CUMPLIDA|" in observaciones:
+        flash("Esta suspensión ya estaba marcada como cumplida.", "info")
+        return redirect(url_for("admin_suspensiones_automaticas"))
+
+    registro.observaciones = f"{observaciones}|CUMPLIDA|{date.today().isoformat()}"
+    db.session.commit()
+    registrar_auditoria(
+        "CUMPLIR_SUSPENSION_AUTOMATICA",
+        "Disciplina",
+        f"Se marcó cumplida la suspensión automática #{registro.id} de "
+        f"{registro.jugador.nombre_completo if registro.jugador else 'jugador desconocido'} "
+        f"en el campeonato {registro.campeonato or registro.campeonato_id}.",
+    )
+    flash("Suspensión marcada como cumplida. El jugador vuelve a quedar habilitado en ese campeonato, salvo otras sanciones vigentes.", "success")
+    return redirect(url_for("admin_suspensiones_automaticas"))
+
+
+# ============================================================
 # V11.1 — CONTROL DE TARJETAS POR PARTIDO / SERIE
 # ============================================================
 
@@ -6686,6 +6742,7 @@ def jugador_habilitado_para_campeonato(jugador, campeonato):
         RegistroDisciplinario.jugador_id == jugador.id,
         RegistroDisciplinario.tipo == "Suspension",
         RegistroDisciplinario.motivo.like("Suspensión automática por acumulación%"),
+        ~RegistroDisciplinario.observaciones.like("%|CUMPLIDA%"),
     ).all()
 
     # Un estado Suspendido respaldado por suspensiones automáticas se trata
