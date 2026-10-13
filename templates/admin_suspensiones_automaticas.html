@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Cumplimiento de suspensiones{% endblock %}
+{% block content %}
+<style>
+.wrap{max-width:1300px;margin:auto}.hero{background:linear-gradient(135deg,#111827,#7f1d1d);color:#fff;border-radius:16px;padding:24px;margin-bottom:18px}.panel{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px;overflow:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #eef2f7;font-size:12px}th{font-size:10px;color:#64748b;text-transform:uppercase}.btn{border:0;border-radius:8px;padding:9px 12px;background:#166534;color:white;font-weight:800;cursor:pointer}.muted{color:#64748b}.warning{background:#fff7ed;color:#9a3412;padding:12px;border-radius:10px;margin-bottom:16px;font-size:13px}
+</style>
+<div class="wrap">
+ <div class="hero"><div style="font-size:10px;letter-spacing:.14em;font-weight:800;opacity:.8">CONTROL DISCIPLINARIO</div><h1>⏳ Cumplimiento de suspensiones</h1><p>Marca una suspensión automática como cumplida solo después de confirmar que el jugador ya cumplió el partido de sanción.</p></div>
+ <div class="warning"><strong>Importante:</strong> marcar como cumplida habilita al jugador nuevamente en ese campeonato, salvo que tenga otra sanción vigente. Esta acción no modifica actas ni marcadores.</div>
+ <div class="panel"><table><thead><tr><th>Jugador</th><th>Club</th><th>Campeonato</th><th>Fecha registro</th><th>Motivo</th><th>Acción</th></tr></thead><tbody>
+ {% for r in suspensiones %}
+ <tr><td><strong>{{r.jugador.nombre_completo}}</strong></td><td>{{r.jugador.club or '—'}}</td><td>{{r.campeonato or 'Campeonato #' ~ r.campeonato_id}}</td><td>{{r.fecha.strftime('%d/%m/%Y') if r.fecha else '—'}}</td><td>{{r.motivo}}</td><td><form method="post" action="{{url_for('cumplir_suspension_automatica', registro_id=r.id)}}" onsubmit="return confirm('¿Confirmas que este jugador ya cumplió la suspensión en este campeonato?');"><button class="btn" type="submit">Marcar cumplida</button></form></td></tr>
+ {% else %}<tr><td colspan="6" class="muted">No hay suspensiones automáticas pendientes de cumplimiento.</td></tr>{% endfor %}
+ </tbody></table></div>
+</div>
+{% endblock %}
