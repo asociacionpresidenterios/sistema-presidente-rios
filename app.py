@@ -7137,12 +7137,20 @@ def acta_partido(campeonato_id, partido_id):
                 equipo = equipos[i] if i < len(equipos) else "local"
                 if jid not in permitidos.get(equipo, set()):
                     jugador_rechazado = db.session.get(Jugador, jid)
-                    if jugador_rechazado and normalizar_estado(jugador_rechazado.estado) != "Vigente":
-                        raise ValueError(
-                            f"No se puede incluir a {jugador_rechazado.nombre_completo}: "
-                            f"su estado actual es '{normalizar_estado(jugador_rechazado.estado)}'. "
-                            "Revise su habilitación antes de cerrar el acta."
-                        )
+                    if jugador_rechazado:
+                        estado_original = str(jugador_rechazado.estado or "").strip()
+                        if estado_original.lower() == "expulsado":
+                            raise ValueError(
+                                f"No se puede incluir a {jugador_rechazado.nombre_completo}: "
+                                "figura como Expulsado y no está habilitado para jugar."
+                            )
+                        estado_actual = normalizar_estado(jugador_rechazado.estado)
+                        if estado_actual != "Vigente":
+                            raise ValueError(
+                                f"No se puede incluir a {jugador_rechazado.nombre_completo}: "
+                                f"su estado actual es '{estado_actual}'. "
+                                "Revise su habilitación antes de cerrar el acta."
+                            )
                     raise ValueError("El jugador no pertenece al club seleccionado o no está habilitado para este campeonato.")
 
                 def iv(lst):
