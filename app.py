@@ -7713,7 +7713,15 @@ def publico_programacion(campeonato_id):
 @app.route("/publico/campeonato/<int:campeonato_id>/resultados")
 def publico_resultados(campeonato_id):
     campeonato = db.get_or_404(Campeonato, campeonato_id)
-    partidos = (Partido.query.filter_by(campeonato_id=campeonato.id, estado="Finalizado")
+    # Mantener el mismo criterio que portada, tabla y estadísticas:
+    # estado normalizado y marcador completo para considerar un partido jugado.
+    partidos = (Partido.query
+                .filter(
+                    Partido.campeonato_id == campeonato.id,
+                    db.func.lower(db.func.trim(Partido.estado)) == "finalizado",
+                    Partido.goles_local.isnot(None),
+                    Partido.goles_visitante.isnot(None),
+                )
                 .order_by(Partido.jornada.desc(), Partido.fecha.desc(), Partido.hora.desc(), Partido.id.desc()).all())
     jornadas = {}
     for partido in partidos:
