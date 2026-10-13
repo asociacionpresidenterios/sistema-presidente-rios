@@ -61,7 +61,7 @@
         <table>
           <thead>
             <tr>
-              <th>Pos</th><th>Club</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>PTS</th>
+              <th>Pos</th><th>Club</th><th>PJ</th><th>PG</th><th>PE</th><th>PP</th><th>GF</th><th>GC</th><th>DG</th><th>Ajuste</th><th>PTS</th>
             </tr>
           </thead>
           <tbody>
@@ -71,6 +71,7 @@
                 <td class="club">{% if fila.pos == 1 %}🥇 {% elif fila.pos == 2 %}🥈 {% elif fila.pos == 3 %}🥉 {% endif %}{{ fila.club.nombre }}</td>
                 <td>{{ fila.pj }}</td><td>{{ fila.pg }}</td><td>{{ fila.pe }}</td><td>{{ fila.pp }}</td>
                 <td>{{ fila.gf }}</td><td>{{ fila.gc }}</td><td>{% if fila.dg > 0 %}+{{ fila.dg }}{% else %}{{ fila.dg }}{% endif %}</td>
+                <td>{% if fila.ajuste_pts %}<strong style="color:{{ '#15803d' if fila.ajuste_pts > 0 else '#b91c1c' }}">{{ '%+d'|format(fila.ajuste_pts) }}</strong>{% else %}—{% endif %}</td>
                 <td class="pts">{{ fila.pts }}</td>
               </tr>
             {% endfor %}
