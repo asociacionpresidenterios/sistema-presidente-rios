@@ -7872,12 +7872,16 @@ def resumen_publico_campeonato(campeonato):
     partidos = Partido.query.filter_by(campeonato_id=campeonato.id).all()
     # Usar el mismo criterio que la tabla y las estadísticas: estado normalizado
     # y ambos marcadores presentes, para no mostrar como jugados partidos incompletos.
-    finalizados = [
+    estados_finalizados = [
         p for p in partidos
         if (p.estado or "").strip().lower() == "finalizado"
-        and p.goles_local is not None
-        and p.goles_visitante is not None
     ]
+    finalizados = [
+        p for p in estados_finalizados
+        if p.goles_local is not None and p.goles_visitante is not None
+    ]
+    incompletos = len(estados_finalizados) - len(finalizados)
+    pendientes = sum(1 for p in partidos if (p.estado or "").strip().lower() != "finalizado")
     goles = sum(int(p.goles_local) + int(p.goles_visitante) for p in finalizados)
     equipos = CampeonatoClub.query.filter_by(campeonato_id=campeonato.id).count()
     tabla = obtener_tabla_publica(campeonato)
@@ -7886,7 +7890,8 @@ def resumen_publico_campeonato(campeonato):
         "equipos": equipos,
         "partidos_totales": len(partidos),
         "partidos_jugados": len(finalizados),
-        "partidos_pendientes": max(0, len(partidos) - len(finalizados)),
+        "partidos_pendientes": pendientes,
+        "partidos_incompletos": incompletos,
         "goles": goles,
         "lider": lider,
     }
@@ -7898,12 +7903,16 @@ def datos_estadisticas_publicas(campeonato):
     Se evita depender de funciones SQL específicas para que funcione igual en PostgreSQL y SQLite.
     """
     partidos = Partido.query.filter_by(campeonato_id=campeonato.id).all()
-    finalizados = [
+    estados_finalizados = [
         p for p in partidos
         if (p.estado or "").strip().lower() == "finalizado"
-        and p.goles_local is not None
-        and p.goles_visitante is not None
     ]
+    finalizados = [
+        p for p in estados_finalizados
+        if p.goles_local is not None and p.goles_visitante is not None
+    ]
+    incompletos = len(estados_finalizados) - len(finalizados)
+    pendientes = sum(1 for p in partidos if (p.estado or "").strip().lower() != "finalizado")
 
     total_goles = sum(int(p.goles_local or 0) + int(p.goles_visitante or 0) for p in finalizados)
     victorias_local = sum(1 for p in finalizados if int(p.goles_local or 0) > int(p.goles_visitante or 0))
@@ -7950,7 +7959,8 @@ def datos_estadisticas_publicas(campeonato):
     return {
         "partidos": len(partidos),
         "finalizados": len(finalizados),
-        "pendientes": max(0, len(partidos) - len(finalizados)),
+        "pendientes": pendientes,
+        "incompletos": incompletos,
         "goles": total_goles,
         "promedio_goles": promedio_goles,
         "victorias_local": victorias_local,
