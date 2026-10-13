@@ -9290,6 +9290,28 @@ def construir_alertas_operativas():
     jugadores_marcados_suspendidos = safe_count(
         Jugador.query.filter_by(estado="Suspendido")
     )
+    jugadores_cerca_suspension = 0
+    try:
+        amarillas_por_jugador = db.session.query(
+            RegistroDisciplinario.jugador_id,
+            RegistroDisciplinario.campeonato_id,
+            db.func.sum(RegistroDisciplinario.cantidad)
+        ).join(
+            Campeonato, Campeonato.id == RegistroDisciplinario.campeonato_id
+        ).filter(
+            Campeonato.estado == "Activo",
+            RegistroDisciplinario.tipo == "Amarilla"
+        ).group_by(
+            RegistroDisciplinario.jugador_id,
+            RegistroDisciplinario.campeonato_id
+        ).all()
+        jugadores_cerca_suspension = sum(
+            1 for _, _, total in amarillas_por_jugador
+            if int(total or 0) > 0 and int(total or 0) % 4 == 3
+        )
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("No fue posible calcular alertas por acumulación de amarillas")
 
     alertas = [
         {"tipo":"danger","icono":"💸","titulo":"Cuentas vencidas","cantidad":cuentas_vencidas,"texto":"Obligaciones de tesorería cuyo vencimiento ya pasó.","url":url_for("admin_tesoreria")},
@@ -9303,6 +9325,7 @@ def construir_alertas_operativas():
         {"tipo":"warning","icono":"⚖️","titulo":"Resoluciones en borrador","cantidad":resoluciones_pendientes,"texto":"Resoluciones que requieren revisión.","url":url_for("admin_disciplina")},
         {"tipo":"warning","icono":"📢","titulo":"Resoluciones cerradas sin publicar","cantidad":resoluciones_no_publicadas,"texto":"Resoluciones cerradas aún no comunicadas públicamente.","url":url_for("admin_disciplina")},
         {"tipo":"warning","icono":"🚫","titulo":"Expulsiones con vigencia vencida","cantidad":expulsiones_vencidas,"texto":"Registros vigentes cuya fecha de término ya pasó.","url":url_for("admin_disciplina_expulsados")},
+        {"tipo":"warning","icono":"🟨","titulo":"Jugadores a una amarilla de suspensión","cantidad":jugadores_cerca_suspension,"texto":"Jugadores con 3, 7, 11 u otras acumulaciones que están a una amarilla del siguiente umbral de suspensión en un campeonato activo.","url":url_for("admin_disciplina_tarjetas")},
         {"tipo":"warning","icono":"🚫","titulo":"Jugadores marcados como suspendidos","cantidad":jugadores_marcados_suspendidos,"texto":"Revisar el estado disciplinario de estos jugadores antes de habilitarlos para un partido.","url":url_for("index")},
         {"tipo":"info","icono":"👤","titulo":"Jugadores sin club","cantidad":jugadores_sin_club,"texto":"Registros maestros sin club informado.","url":url_for("index")},
         {"tipo":"info","icono":"🏷️","titulo":"Jugadores sin serie","cantidad":jugadores_sin_serie,"texto":"Registros maestros sin serie informada.","url":url_for("index")},
