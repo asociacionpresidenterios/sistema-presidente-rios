@@ -7,10 +7,10 @@
 <div class="wrap">
  <div class="hero"><div style="font-size:10px;letter-spacing:.14em;font-weight:800;opacity:.8">CONTROL DISCIPLINARIO</div><h1>⏳ Cumplimiento de suspensiones</h1><p>Marca una suspensión automática como cumplida solo después de confirmar que el jugador ya cumplió el partido de sanción.</p></div>
  <div class="warning"><strong>Importante:</strong> marcar como cumplida habilita al jugador nuevamente en ese campeonato, salvo que tenga otra sanción vigente. Esta acción no modifica actas ni marcadores.</div>
- <div class="panel"><table><thead><tr><th>Jugador</th><th>Club</th><th>Campeonato</th><th>Fecha registro</th><th>Motivo</th><th>Acción</th></tr></thead><tbody>
+ <div class="panel"><table><thead><tr><th>Jugador</th><th>Club</th><th>Campeonato</th><th>Fecha registro</th><th>Umbral</th><th>Motivo</th><th>Acción</th></tr></thead><tbody>
  {% for r in suspensiones %}
- <tr><td><strong>{{r.jugador.nombre_completo}}</strong></td><td>{{r.jugador.club or '—'}}</td><td>{{r.campeonato or 'Campeonato #' ~ r.campeonato_id}}</td><td>{{r.fecha.strftime('%d/%m/%Y') if r.fecha else '—'}}</td><td>{{r.motivo}}</td><td><form method="post" action="{{url_for('cumplir_suspension_automatica', registro_id=r.id)}}" onsubmit="return confirm('¿Confirmas que este jugador ya cumplió la suspensión en este campeonato?');"><button class="btn" type="submit">Marcar cumplida</button></form></td></tr>
- {% else %}<tr><td colspan="6" class="muted">No hay suspensiones automáticas pendientes de cumplimiento.</td></tr>{% endfor %}
+ <tr><td><strong>{{r.jugador.nombre_completo}}</strong></td><td>{{r.jugador.club or '—'}}</td><td>{{r.campeonato or 'Campeonato #' ~ r.campeonato_id}}</td><td>{{r.fecha.strftime('%d/%m/%Y') if r.fecha else '—'}}</td><td>{% if umbrales.get(r.id) %}<strong>{{umbrales.get(r.id)}} amarillas</strong>{% else %}<span class="muted">Histórico sin umbral</span>{% endif %}</td><td>{{r.motivo}}</td><td><form method="post" action="{{url_for('cumplir_suspension_automatica', registro_id=r.id)}}" onsubmit="return confirm('¿Confirmas que este jugador ya cumplió la suspensión en este campeonato?');"><button class="btn" type="submit">Marcar cumplida</button></form></td></tr>
+ {% else %}<tr><td colspan="7" class="muted">No hay suspensiones automáticas pendientes de cumplimiento.</td></tr>{% endfor %}
  </tbody></table></div>
 </div>
 {% endblock %}
