@@ -91,8 +91,11 @@
 <script>
 const campeonatos=[...document.querySelectorAll('.champ')];
 function seleccionarCampeonato(id){
+  const elegido=document.getElementById(id);
+  if(!elegido)return;
   campeonatos.forEach(x=>x.classList.toggle('active',x.id===id));
-  document.querySelectorAll('#menu button').forEach((b,i)=>b.classList.toggle('active',i===0));
+  const select=document.getElementById('champSelect');
+  if(select && select.value!==id)select.value=id;
   mostrarSeccion('posiciones',document.querySelector('#menu button[data-target="posiciones"]'));
   window.scrollTo({top:0,behavior:'smooth'});
 }
@@ -107,8 +110,9 @@ function mostrarSeccion(seccion,boton){
   if(visible){const d=visible.querySelector('details');if(d)d.open=true;}
 }
 document.addEventListener('DOMContentLoaded',()=>{
-  const first=document.querySelector('.champ');
-  if(first){campeonatos.forEach(x=>x.classList.remove('active'));first.classList.add('active');mostrarSeccion('posiciones',document.querySelector('#menu button[data-target="posiciones"]'));}
+  const select=document.getElementById('champSelect');
+  const firstId=select?.value || document.querySelector('.champ')?.id;
+  if(firstId)seleccionarCampeonato(firstId);
 });
 </script>
 </body>
