@@ -7650,7 +7650,9 @@ def publico_fair_play(campeonato_id):
         suspensiones = 0
 
         for jugador in jugadores:
-            if (jugador.club or "").strip().lower() != (club.nombre or "").strip().lower():
+            # Usar la misma normalización de nombres que el portal público:
+            # evita perder tarjetas por tildes, guiones o espacios diferentes.
+            if normalizar_nombre_publico(jugador.club) != normalizar_nombre_publico(club.nombre):
                 continue
 
             registros = RegistroDisciplinario.query.filter_by(jugador_id=jugador.id).all()
