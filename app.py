@@ -7202,18 +7202,50 @@ def obtener_proxima_jornada(campeonato):
 
 
 def obtener_goleadores_publicos(campeonato, limite=50):
-    ids = [j.id for j in jugadores_campeonato(campeonato)]
+    jugadores = jugadores_campeonato(campeonato)
+    ids = {j.id for j in jugadores}
     if not ids:
         return []
-    filas = (db.session.query(Jugador, db.func.coalesce(db.func.sum(Gol.cantidad), 0).label("total"))
-             .outerjoin(Gol, db.and_(Gol.jugador_id == Jugador.id,
-                 db.or_(Gol.campeonato_id == campeonato.id,
-                       db.and_(Gol.campeonato_id.is_(None), Gol.campeonato == campeonato.nombre))))
-             .filter(Jugador.id.in_(ids)).group_by(Jugador.id)
-             .having(db.func.sum(Gol.cantidad) > 0)
-             .order_by(db.desc("total"), Jugador.nombre_completo).limit(limite).all())
-    return filas
 
+    # Los goles vinculados por campeonato_id son la fuente principal.
+    # Para registros históricos sin ID, comparar el nombre normalizado evita
+    # perder goles por tildes, mayúsculas o espacios diferentes.
+    goles = (Gol.query
+             .filter(Gol.jugador_id.in_(ids))
+             .filter(db.or_(
+                 Gol.campeonato_id == campeonato.id,
+                 Gol.campeonato_id.is_(None)
+             ))
+             .all())
+
+    totales = {}
+    nombre_campeonato = normalizar_nombre_publico(campeonato.nombre)
+    for gol in goles:
+        if gol.campeonato_id == campeonato.id:
+            pertenece = True
+        else:
+            pertenece = (
+                normalizar_nombre_publico(gol.campeonato) == nombre_campeonato
+            )
+
+        if not pertenece:
+            continue
+
+        cantidad = max(0, int(gol.cantidad or 0))
+        if cantidad:
+            totales[gol.jugador_id] = totales.get(gol.jugador_id, 0) + cantidad
+
+    if not totales:
+        return []
+
+    jugadores_por_id = {j.id: j for j in jugadores}
+    filas = [
+        (jugadores_por_id[jugador_id], total)
+        for jugador_id, total in totales.items()
+        if jugador_id in jugadores_por_id
+    ]
+    filas.sort(key=lambda fila: (-fila[1], fila[0].nombre_completo.lower()))
+    return filas[:max(0, int(limite))]
 
 @app.route("/publico")
 def publico():
