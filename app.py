@@ -6719,8 +6719,16 @@ def estadisticas_campeonato_data(campeonato):
     ).all():
         if not pertenece_al_campeonato(registro):
             continue
-        if registro.tipo in disciplina_por_tipo:
-            disciplina_por_tipo[registro.tipo][registro.jugador_id] += int(registro.cantidad or 0)
+        tipo_normalizado = normalizar_nombre_publico(registro.tipo)
+        if "amarilla" in tipo_normalizado:
+            clave_tipo = "Amarilla"
+        elif "roja" in tipo_normalizado:
+            clave_tipo = "Roja"
+        elif "suspension" in tipo_normalizado:
+            clave_tipo = "Suspension"
+        else:
+            continue
+        disciplina_por_tipo[clave_tipo][registro.jugador_id] += int(registro.cantidad or 0)
 
     def ordenar_ranking(totales):
         filas = [(jugador, totales.get(jugador.id, 0)) for jugador in jugadores]
