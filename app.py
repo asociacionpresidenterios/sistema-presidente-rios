@@ -3770,7 +3770,10 @@ def admin_suspensiones_automaticas():
         .filter(
             RegistroDisciplinario.tipo == "Suspension",
             RegistroDisciplinario.motivo.like("Suspensión automática por acumulación%"),
+            db.or_(
+            RegistroDisciplinario.observaciones.is_(None),
             ~RegistroDisciplinario.observaciones.like("%|CUMPLIDA%"),
+        ),
         )
         .order_by(RegistroDisciplinario.fecha.desc(), RegistroDisciplinario.id.desc())
         .all()
