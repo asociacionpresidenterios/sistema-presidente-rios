@@ -2,11 +2,20 @@
 {% block title %}Cumplimiento de suspensiones{% endblock %}
 {% block content %}
 <style>
-.wrap{max-width:1300px;margin:auto}.hero{background:linear-gradient(135deg,#111827,#7f1d1d);color:#fff;border-radius:16px;padding:24px;margin-bottom:18px}.panel{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px;overflow:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #eef2f7;font-size:12px}th{font-size:10px;color:#64748b;text-transform:uppercase}.btn{border:0;border-radius:8px;padding:9px 12px;background:#166534;color:white;font-weight:800;cursor:pointer}.muted{color:#64748b}.warning{background:#fff7ed;color:#9a3412;padding:12px;border-radius:10px;margin-bottom:16px;font-size:13px}
+.wrap{max-width:1300px;margin:auto}.hero{background:linear-gradient(135deg,#111827,#7f1d1d);color:#fff;border-radius:16px;padding:24px;margin-bottom:18px}.panel{background:#fff;border:1px solid #e5eaf1;border-radius:14px;padding:18px;overflow:auto}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #eef2f7;font-size:12px}th{font-size:10px;color:#64748b;text-transform:uppercase}.btn{border:0;border-radius:8px;padding:9px 12px;background:#166534;color:white;font-weight:800;cursor:pointer}.muted{color:#64748b}.warning{background:#fff7ed;color:#9a3412;padding:12px;border-radius:10px;margin-bottom:16px;font-size:13px}.summary-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}.summary-card{border:1px solid #e5eaf1;border-radius:12px;padding:14px;background:#fff}.summary-card small{display:block;color:#64748b;font-size:11px;font-weight:800;text-transform:uppercase}.summary-card strong{display:block;font-size:25px;margin-top:5px}@media(max-width:650px){.summary-grid{grid-template-columns:1fr}}
 </style>
 <div class="wrap">
  <div class="hero"><div style="font-size:10px;letter-spacing:.14em;font-weight:800;opacity:.8">CONTROL DISCIPLINARIO</div><h1>⏳ Cumplimiento de suspensiones</h1><p>Marca una suspensión automática como cumplida solo después de confirmar que el jugador ya cumplió el partido de sanción.</p></div>
  <div class="warning"><strong>Importante:</strong> marcar como cumplida habilita al jugador nuevamente en ese campeonato, salvo que tenga otra sanción vigente. Esta acción no modifica actas ni marcadores.</div>
+ {% set ns = namespace(con_umbral=0, sin_umbral=0) %}
+ {% for r in suspensiones %}
+  {% if umbrales.get(r.id) %}{% set ns.con_umbral = ns.con_umbral + 1 %}{% else %}{% set ns.sin_umbral = ns.sin_umbral + 1 %}{% endif %}
+ {% endfor %}
+ <div class="summary-grid">
+  <div class="summary-card"><small>Suspensiones pendientes</small><strong>{{suspensiones|length}}</strong></div>
+  <div class="summary-card"><small>Con umbral registrado</small><strong>{{ns.con_umbral}}</strong></div>
+  <div class="summary-card"><small>Históricos sin umbral</small><strong>{{ns.sin_umbral}}</strong></div>
+ </div>
  <div class="panel">
   <form method="get" style="display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin-bottom:16px">
    <label style="display:grid;gap:5px;font-size:12px;font-weight:800;color:#334155">Filtrar por campeonato
