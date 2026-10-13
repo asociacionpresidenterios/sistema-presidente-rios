@@ -1703,7 +1703,8 @@ def crear_suspension_por_acumulacion_campeonato(jugador, campeonato):
                 campeonato_id=campeonato.id,
                 observaciones=f"AUTO_ACUMULACION:{campeonato.id}:{jugador.id}",
             ))
-        jugador.estado = "Suspendido"
+        # La suspensión es específica de este campeonato. No cambiar el
+        # estado maestro del jugador, que afecta a todas las competencias.
 
     return esperadas - cantidad_actual
 
@@ -1735,7 +1736,10 @@ def crear_suspension_por_acumulacion(
     if nuevas_suspensiones <= 0:
         return 0
 
-    jugador.estado = "Suspendido"
+    # Si la suspensión está asociada a un campeonato, conservar su alcance
+    # local y no modificar el estado general del jugador.
+    if campeonato is None:
+        jugador.estado = "Suspendido"
 
     for _ in range(
         nuevas_suspensiones
@@ -6671,14 +6675,37 @@ def _normalizar_texto_acta(valor):
     return " ".join(texto.split())
 
 
-def jugadores_disponibles_para_equipo(campeonato, club):
-    """Obtiene los jugadores habilitados para el club del partido.
+def jugador_habilitado_para_campeonato(jugador, campeonato):
+    """Evalúa el estado general y las suspensiones automáticas por campeonato."""
+    estado = normalizar_estado(jugador.estado)
 
-    Primero intenta coincidir club + serie de forma normalizada. Si la serie
-    fue registrada con una variante de nombre (por ejemplo, 'Senior' frente
-    a 'Serie Senior'), utiliza los jugadores del mismo club como respaldo.
-    Esto evita que la nómina aparezca vacía por diferencias de escritura.
-    """
+    if estado in {"Pendiente", "Inhabilitado"}:
+        return False
+
+    suspensiones_automaticas = RegistroDisciplinario.query.filter(
+        RegistroDisciplinario.jugador_id == jugador.id,
+        RegistroDisciplinario.tipo == "Suspension",
+        RegistroDisciplinario.motivo.like("Suspensión automática por acumulación%"),
+    ).all()
+
+    # Un estado Suspendido respaldado por suspensiones automáticas se trata
+    # como disciplinario y se limita al campeonato correspondiente.
+    if estado == "Suspendido":
+        if not suspensiones_automaticas:
+            return False
+        return not any(
+            registro.campeonato_id == campeonato.id
+            for registro in suspensiones_automaticas
+        )
+
+    return not any(
+        registro.campeonato_id == campeonato.id
+        for registro in suspensiones_automaticas
+    )
+
+
+def jugadores_disponibles_para_equipo(campeonato, club):
+    """Obtiene jugadores habilitados para este campeonato, club y serie."""
     if not club:
         return []
 
@@ -6695,7 +6722,7 @@ def jugadores_disponibles_para_equipo(campeonato, club):
     por_club = [
         jugador for jugador in jugadores_club
         if _normalizar_texto_acta(jugador.club) == nombre_club
-        and normalizar_estado(jugador.estado) == "Vigente"
+        and jugador_habilitado_para_campeonato(jugador, campeonato)
     ]
 
     por_club_y_serie = [
@@ -6703,13 +6730,9 @@ def jugadores_disponibles_para_equipo(campeonato, club):
         if _normalizar_texto_acta(jugador.serie) == serie_campeonato
     ]
 
-    # Caso habitual: club y serie coinciden exactamente.
     if por_club_y_serie:
         return por_club_y_serie
 
-    # Respaldo: algunas cargas históricas usan nombres distintos para la
-    # misma serie. Para el acta es preferible mostrar los jugadores del club
-    # antes que dejar la nómina completamente vacía.
     return por_club
 
 def sincronizar_estadisticas_desde_acta(campeonato, partido, nomina):
