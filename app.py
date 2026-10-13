@@ -9554,6 +9554,8 @@ def construir_alertas_operativas():
 
     # Detectar nóminas ya guardadas en partidos futuros que incluyan
     # jugadores que dejaron de estar habilitados por estado o sanción.
+    # Se cargan todas las nóminas en una consulta y se reutiliza la
+    # habilitación por jugador/campeonato para evitar consultas repetidas.
     jugadores_no_habilitados_en_nominas = 0
     try:
         partidos_con_nomina = Partido.query.join(
@@ -9563,16 +9565,36 @@ def construir_alertas_operativas():
             Partido.estado == "Programado",
         ).all()
         casos_no_habilitados = set()
-        for partido_programado in partidos_con_nomina:
-            nomina = PartidoJugador.query.filter_by(
-                partido_id=partido_programado.id
+        habilitacion_cache = {}
+        ids_partidos_programados = [
+            partido.id for partido in partidos_con_nomina
+        ]
+        if ids_partidos_programados:
+            nominas_programadas = PartidoJugador.query.filter(
+                PartidoJugador.partido_id.in_(ids_partidos_programados)
             ).all()
-            for participacion in nomina:
+            partidos_por_id = {
+                partido.id: partido for partido in partidos_con_nomina
+            }
+            for participacion in nominas_programadas:
+                partido_programado = partidos_por_id.get(
+                    participacion.partido_id
+                )
                 jugador_nomina = participacion.jugador
-                if jugador_nomina and not jugador_habilitado_para_campeonato(
-                    jugador_nomina,
-                    partido_programado.campeonato,
-                ):
+                if not partido_programado or not jugador_nomina:
+                    continue
+                clave_habilitacion = (
+                    jugador_nomina.id,
+                    partido_programado.campeonato_id,
+                )
+                if clave_habilitacion not in habilitacion_cache:
+                    habilitacion_cache[clave_habilitacion] = (
+                        jugador_habilitado_para_campeonato(
+                            jugador_nomina,
+                            partido_programado.campeonato,
+                        )
+                    )
+                if not habilitacion_cache[clave_habilitacion]:
                     casos_no_habilitados.add(
                         (partido_programado.id, jugador_nomina.id)
                     )
