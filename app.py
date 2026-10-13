@@ -9287,6 +9287,9 @@ def construir_alertas_operativas():
     jugadores_sin_serie = safe_count(Jugador.query.filter(
         db.or_(Jugador.serie.is_(None), Jugador.serie == "")
     ))
+    jugadores_marcados_suspendidos = safe_count(
+        Jugador.query.filter_by(estado="Suspendido")
+    )
 
     alertas = [
         {"tipo":"danger","icono":"💸","titulo":"Cuentas vencidas","cantidad":cuentas_vencidas,"texto":"Obligaciones de tesorería cuyo vencimiento ya pasó.","url":url_for("admin_tesoreria")},
@@ -9300,6 +9303,7 @@ def construir_alertas_operativas():
         {"tipo":"warning","icono":"⚖️","titulo":"Resoluciones en borrador","cantidad":resoluciones_pendientes,"texto":"Resoluciones que requieren revisión.","url":url_for("admin_disciplina")},
         {"tipo":"warning","icono":"📢","titulo":"Resoluciones cerradas sin publicar","cantidad":resoluciones_no_publicadas,"texto":"Resoluciones cerradas aún no comunicadas públicamente.","url":url_for("admin_disciplina")},
         {"tipo":"warning","icono":"🚫","titulo":"Expulsiones con vigencia vencida","cantidad":expulsiones_vencidas,"texto":"Registros vigentes cuya fecha de término ya pasó.","url":url_for("admin_disciplina_expulsados")},
+        {"tipo":"warning","icono":"🚫","titulo":"Jugadores marcados como suspendidos","cantidad":jugadores_marcados_suspendidos,"texto":"Revisar el estado disciplinario de estos jugadores antes de habilitarlos para un partido.","url":url_for("index")},
         {"tipo":"info","icono":"👤","titulo":"Jugadores sin club","cantidad":jugadores_sin_club,"texto":"Registros maestros sin club informado.","url":url_for("index")},
         {"tipo":"info","icono":"🏷️","titulo":"Jugadores sin serie","cantidad":jugadores_sin_serie,"texto":"Registros maestros sin serie informada.","url":url_for("index")},
     ]
