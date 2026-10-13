@@ -7004,9 +7004,41 @@ def acta_partido(campeonato_id, partido_id):
             resultado_local = entero_resultado(resultado_local_raw)
             resultado_visitante = entero_resultado(resultado_visitante_raw)
 
+            jugadores_que_alcanzan_umbral = []
+
             if acta.estado == "Cerrada":
                 if resultado_local is None or resultado_visitante is None:
                     raise ValueError("Debes ingresar el resultado de ambos equipos antes de cerrar el acta.")
+
+                # Advertencia preventiva: detectar si las amarillas de esta
+                # acta alcanzan un nuevo umbral de 4, sin bloquear el cierre.
+                marcador_acta = f"ACTA_PARTIDO:{partido.id}"
+                for registro in nomina_actual:
+                    amarillas_nuevas = max(0, int(registro.amarillas or 0))
+                    if amarillas_nuevas <= 0:
+                        continue
+
+                    registros_previos = RegistroDisciplinario.query.filter_by(
+                        jugador_id=registro.jugador_id,
+                        campeonato_id=campeonato.id,
+                        tipo="Amarilla",
+                    ).filter(
+                        db.or_(
+                            RegistroDisciplinario.observaciones.is_(None),
+                            RegistroDisciplinario.observaciones != marcador_acta,
+                        )
+                    ).all()
+                    amarillas_previas = sum(
+                        max(0, int(item.cantidad or 0))
+                        for item in registros_previos
+                    )
+                    total_tras_acta = amarillas_previas + amarillas_nuevas
+                    if amarillas_previas // 4 < total_tras_acta // 4:
+                        jugador_umbral = db.session.get(Jugador, registro.jugador_id)
+                        if jugador_umbral:
+                            jugadores_que_alcanzan_umbral.append(
+                                (jugador_umbral.nombre_completo, total_tras_acta)
+                            )
 
                 # El marcador ingresado en el acta es el resultado oficial.
                 # Los goles por jugador son datos de goleadores y pueden
@@ -7057,6 +7089,18 @@ def acta_partido(campeonato_id, partido_id):
                     "Estadísticas y disciplina sincronizadas.",
                     "success",
                 )
+                if jugadores_que_alcanzan_umbral:
+                    detalle_umbral = "; ".join(
+                        f"{nombre} ({total} amarillas)"
+                        for nombre, total in jugadores_que_alcanzan_umbral
+                    )
+                    flash(
+                        "Advertencia disciplinaria para próximos partidos: "
+                        f"{detalle_umbral}. Se revisó la suspensión automática; "
+                        "verifique la habilitación antes de alinearlos nuevamente. "
+                        "Esta advertencia no impide cerrar el acta.",
+                        "warning",
+                    )
             else:
                 flash(
                     "Acta guardada como borrador. Goles y disciplina quedaron sincronizados.",
