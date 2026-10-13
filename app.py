@@ -1664,7 +1664,7 @@ def obtener_suspensiones(jugador_id):
 
 
 def crear_suspension_por_acumulacion_campeonato(jugador, campeonato):
-    """Sincroniza suspensiones automáticas con las amarillas actuales del campeonato."""
+    """Sincroniza suspensiones automáticas sin borrar cumplimientos históricos."""
     amarillas = sum(
         max(0, int(x.cantidad or 0))
         for x in RegistroDisciplinario.query.filter_by(
@@ -1685,14 +1685,25 @@ def crear_suspension_por_acumulacion_campeonato(jugador, campeonato):
         .all()
     )
 
-    cantidad_actual = len(existentes)
-    if cantidad_actual > esperadas:
-        # Solo elimina suspensiones identificadas como automáticas; conserva
-        # las sanciones manuales y las suspensiones de otros campeonatos.
-        for registro in existentes[esperadas:]:
+    # Una suspensión ya cumplida es parte del historial disciplinario y no
+    # debe borrarse al corregir o reabrir un acta. Se conserva y se calcula
+    # cuántas suspensiones pendientes hacen falta según las amarillas actuales.
+    cumplidas = [
+        registro for registro in existentes
+        if "|CUMPLIDA|" in (registro.observaciones or "")
+    ]
+    pendientes = [
+        registro for registro in existentes
+        if "|CUMPLIDA|" not in (registro.observaciones or "")
+    ]
+    pendientes_esperadas = max(0, esperadas - len(cumplidas))
+
+    if len(pendientes) > pendientes_esperadas:
+        # Retirar solo registros automáticos pendientes sobrantes.
+        for registro in pendientes[pendientes_esperadas:]:
             db.session.delete(registro)
-    elif cantidad_actual < esperadas:
-        for _ in range(esperadas - cantidad_actual):
+    elif len(pendientes) < pendientes_esperadas:
+        for _ in range(pendientes_esperadas - len(pendientes)):
             db.session.add(RegistroDisciplinario(
                 jugador_id=jugador.id,
                 fecha=date.today(),
@@ -1706,7 +1717,7 @@ def crear_suspension_por_acumulacion_campeonato(jugador, campeonato):
         # La suspensión es específica de este campeonato. No cambiar el
         # estado maestro del jugador, que afecta a todas las competencias.
 
-    return esperadas - cantidad_actual
+    return pendientes_esperadas - len(pendientes)
 
 
 def crear_suspension_por_acumulacion(
