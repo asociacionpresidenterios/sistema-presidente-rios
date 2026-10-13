@@ -6733,7 +6733,8 @@ def estadisticas_campeonato_data(campeonato):
         # No permitir que una corrección con cantidad negativa reste tarjetas
         # o suspensiones acumuladas en los rankings.
         disciplina_por_tipo[clave_tipo][registro.jugador_id] += max(
-            0, int(registro.cantidad or 1)
+            0,
+            int(registro.cantidad if registro.cantidad is not None else 1),
         )
 
     def ordenar_ranking(totales):
