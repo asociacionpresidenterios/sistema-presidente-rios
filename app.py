@@ -6708,7 +6708,9 @@ def estadisticas_campeonato_data(campeonato):
     goles_por_jugador = {jugador_id: 0 for jugador_id in ids}
     for gol in Gol.query.filter(Gol.jugador_id.in_(ids)).all():
         if pertenece_al_campeonato(gol):
-            goles_por_jugador[gol.jugador_id] += int(gol.cantidad or 0)
+            # Mantener el mismo criterio que el ranking público: cantidades
+            # negativas o nulas no deben restar goles del campeonato.
+            goles_por_jugador[gol.jugador_id] += max(0, int(gol.cantidad or 0))
 
     disciplina_por_tipo = {
         tipo: {jugador_id: 0 for jugador_id in ids}
@@ -6728,7 +6730,11 @@ def estadisticas_campeonato_data(campeonato):
             clave_tipo = "Suspension"
         else:
             continue
-        disciplina_por_tipo[clave_tipo][registro.jugador_id] += int(registro.cantidad or 1)
+        # No permitir que una corrección con cantidad negativa reste tarjetas
+        # o suspensiones acumuladas en los rankings.
+        disciplina_por_tipo[clave_tipo][registro.jugador_id] += max(
+            0, int(registro.cantidad or 1)
+        )
 
     def ordenar_ranking(totales):
         filas = [(jugador, totales.get(jugador.id, 0)) for jugador in jugadores]
