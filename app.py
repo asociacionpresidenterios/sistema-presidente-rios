@@ -6745,7 +6745,10 @@ def jugador_habilitado_para_campeonato(jugador, campeonato):
         RegistroDisciplinario.jugador_id == jugador.id,
         RegistroDisciplinario.tipo == "Suspension",
         RegistroDisciplinario.motivo.like("Suspensión automática por acumulación%"),
-        ~RegistroDisciplinario.observaciones.like("%|CUMPLIDA%"),
+        db.or_(
+            RegistroDisciplinario.observaciones.is_(None),
+            ~RegistroDisciplinario.observaciones.like("%|CUMPLIDA%"),
+        ),
     ).all()
 
     # Un estado Suspendido respaldado por suspensiones automáticas se trata
