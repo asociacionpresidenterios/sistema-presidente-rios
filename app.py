@@ -3800,9 +3800,24 @@ def admin_suspensiones_automaticas():
         r for r in registros
         if r.jugador and r.campeonato_id and r.campeonato_id > 0
     ]
+    # Los registros nuevos incluyen el umbral de amarillas que los originó.
+    # Los históricos sin ese dato se identifican como tales, sin inferirlo.
+    umbrales = {}
+    for registro in pendientes:
+        observaciones = registro.observaciones or ""
+        marca = "|UMBRAL:"
+        if marca in observaciones:
+            try:
+                valor = observaciones.split(marca, 1)[1].split("|", 1)[0]
+                umbrales[registro.id] = int(valor)
+            except (TypeError, ValueError):
+                umbrales[registro.id] = None
+        else:
+            umbrales[registro.id] = None
     return render_template(
         "admin_suspensiones_automaticas.html",
         suspensiones=pendientes,
+        umbrales=umbrales,
     )
 
 
