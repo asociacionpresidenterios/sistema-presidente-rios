@@ -6852,8 +6852,20 @@ def acta_partido(campeonato_id, partido_id):
             else:
                 try:
                     marcador = f"ACTA_PARTIDO:{partido.id}"
+                    jugadores_afectados = {
+                        jugador_id
+                        for (jugador_id,) in db.session.query(RegistroDisciplinario.jugador_id)
+                        .filter_by(campeonato_id=campeonato.id, observaciones=marcador)
+                        .distinct()
+                        .all()
+                    }
                     Gol.query.filter_by(campeonato_id=campeonato.id, observaciones=marcador).delete(synchronize_session=False)
                     RegistroDisciplinario.query.filter_by(campeonato_id=campeonato.id, observaciones=marcador).delete(synchronize_session=False)
+                    db.session.flush()
+                    for jugador_id in jugadores_afectados:
+                        jugador_afectado = db.session.get(Jugador, jugador_id)
+                        if jugador_afectado:
+                            crear_suspension_por_acumulacion_campeonato(jugador_afectado, campeonato)
                     acta.estado = "Borrador"
                     partido.goles_local = None
                     partido.goles_visitante = None
@@ -6975,8 +6987,20 @@ def acta_partido(campeonato_id, partido_id):
                 # estadística derivada previa de esta acta para mantener una
                 # sola fuente de verdad: el acta cerrada.
                 marcador = f"ACTA_PARTIDO:{partido.id}"
+                jugadores_afectados = {
+                    jugador_id
+                    for (jugador_id,) in db.session.query(RegistroDisciplinario.jugador_id)
+                    .filter_by(campeonato_id=campeonato.id, observaciones=marcador)
+                    .distinct()
+                    .all()
+                }
                 Gol.query.filter_by(campeonato_id=campeonato.id, observaciones=marcador).delete(synchronize_session=False)
                 RegistroDisciplinario.query.filter_by(campeonato_id=campeonato.id, observaciones=marcador).delete(synchronize_session=False)
+                db.session.flush()
+                for jugador_id in jugadores_afectados:
+                    jugador_afectado = db.session.get(Jugador, jugador_id)
+                    if jugador_afectado:
+                        crear_suspension_por_acumulacion_campeonato(jugador_afectado, campeonato)
                 partido.goles_local = None
                 partido.goles_visitante = None
                 partido.estado = "Programado"
