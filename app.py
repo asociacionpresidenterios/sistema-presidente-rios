@@ -6737,8 +6737,17 @@ def estadisticas_campeonato_data(campeonato):
         )
 
     def ordenar_ranking(totales):
-        filas = [(jugador, totales.get(jugador.id, 0)) for jugador in jugadores]
-        return sorted(filas, key=lambda fila: (-fila[1], (fila[0].nombre_completo or "").lower()))
+        # Los rankings muestran solo jugadores con actividad real; la lista
+        # completa de jugadores sigue disponible en el formulario de registro.
+        filas = [
+            (jugador, totales.get(jugador.id, 0))
+            for jugador in jugadores
+            if totales.get(jugador.id, 0) > 0
+        ]
+        return sorted(
+            filas,
+            key=lambda fila: (-fila[1], (fila[0].nombre_completo or "").lower())
+        )
 
     goles = ordenar_ranking(goles_por_jugador)
     amarillas = ordenar_ranking(disciplina_por_tipo["Amarilla"])
