@@ -7446,14 +7446,18 @@ def publico_club(campeonato_id, club_id):
     ultimos = list(reversed(finalizados[-5:]))
     proximos = proximos[:5]
 
+    # El plantel visible muestra solo jugadores vigentes, pero la disciplina
+    # debe considerar también suspendidos/inhabilitados para no ocultar tarjetas.
     jugadores = (Jugador.query.filter_by(club=club.nombre, serie=campeonato.serie, estado='Vigente')
                   .order_by(Jugador.nombre_completo.asc()).all())
+    jugadores_disciplina = (Jugador.query.filter_by(club=club.nombre, serie=campeonato.serie)
+                            .all())
     goleadores = obtener_goleadores_publicos(campeonato, 500)
     goleadores_club = [(j, t) for j, t in goleadores if (j.club or '').strip().lower() == club.nombre.strip().lower()]
     goleadores_club.sort(key=lambda x: (-x[1], x[0].nombre_completo.lower()))
 
     amarillas = rojas = 0
-    for j in jugadores:
+    for j in jugadores_disciplina:
         registros = RegistroDisciplinario.query.filter_by(jugador_id=j.id, campeonato_id=campeonato.id).all()
         amarillas += sum((r.cantidad or 1) for r in registros if (r.tipo or '').lower() in ('amarilla','amarillas','tarjeta amarilla'))
         rojas += sum((r.cantidad or 1) for r in registros if (r.tipo or '').lower() in ('roja','rojas','tarjeta roja'))
