@@ -6313,6 +6313,11 @@ def editar_partido_fixture(campeonato_id, partido_id):
                 f"La jornada {partido.jornada} ya fue cursada y está protegida."
             )
 
+        # Guardar el estado previo para distinguir cambios de programación
+        # (fecha/hora/cancha/turno) de cambios estructurales del fixture.
+        jornada_original = partido.jornada
+        pareja_original = _pareja_partidos(partido)
+
         fecha_texto = request.form.get("fecha", "").strip()
         if fecha_texto:
             partido.fecha = datetime.strptime(fecha_texto, "%Y-%m-%d").date()
@@ -6354,10 +6359,17 @@ def editar_partido_fixture(campeonato_id, partido_id):
         partido.turno_club_id = turno_id
         partido.fixture_bloqueado = True
 
-        # No rechazamos porque los clubes ya aparezcan en la jornada destino.
-        # Precisamente esa es la situación que el adaptador debe resolver:
-        # mueve/reordena las jornadas futuras y conserva el partido fijado.
-        adaptar_fixture_pendiente(campeonato, partido)
+        # Si solo se cambió fecha, hora, cancha o turno, guardar directamente.
+        # Recalcular el fixture completo solo si cambia el cruce o la jornada;
+        # así una edición de programación no queda bloqueada por incompatibilidades
+        # ajenas en otras jornadas futuras.
+        cambio_estructural = (
+            jornada_nueva != jornada_original
+            or _pareja_partidos(partido) != pareja_original
+        )
+        if cambio_estructural:
+            # El adaptador protege las jornadas cursadas y valida los cruces futuros.
+            adaptar_fixture_pendiente(campeonato, partido)
         db.session.commit()
 
         registrar_auditoria(
@@ -6366,11 +6378,16 @@ def editar_partido_fixture(campeonato_id, partido_id):
             f"Se modificó el partido entre los clubes ID {partido.local_club_id} y {partido.visitante_club_id} "
             f"y se adaptó automáticamente el fixture pendiente de '{campeonato.nombre}'.",
         )
-        flash(
-            "Cambio guardado. El fixture pendiente se adaptó automáticamente; "
-            "las jornadas ya cursadas permanecieron intactas.",
-            "success",
-        )
+        if cambio_estructural:
+            mensaje_exito = (
+                "Cambio guardado. El fixture pendiente se adaptó automáticamente; "
+                "las jornadas ya cursadas permanecieron intactas."
+            )
+        else:
+            mensaje_exito = (
+                "Cambios de fecha, hora, cancha y turno guardados correctamente."
+            )
+        flash(mensaje_exito, "success")
 
     except Exception as error:
         db.session.rollback()
