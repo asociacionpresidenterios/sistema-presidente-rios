@@ -6377,12 +6377,21 @@ def generar_fixture_campeonato(campeonato_id):
 
 @app.route(
     "/campeonatos/<int:campeonato_id>/fixture/jornada/<int:jornada>/configurar",
-    methods=["POST"]
+    methods=["GET", "POST"]
 )
 @rol_permitido("Administrador")
 def configurar_jornada_fixture(campeonato_id, jornada):
-    """Asigna fecha, hora y cancha a todos los partidos de una jornada."""
+    """Configura la jornada; una apertura directa redirige al fixture."""
     campeonato = db.get_or_404(Campeonato, campeonato_id)
+
+    # Esta URL es un destino de formulario, no una página independiente.
+    # Si se abre desde la barra del navegador (GET), evita el error 405.
+    if request.method == "GET":
+        flash(
+            f"Para configurar la jornada {jornada}, utiliza el formulario del fixture.",
+            "info"
+        )
+        return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
 
     try:
         partidos_jornada = (
