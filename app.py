@@ -6276,15 +6276,19 @@ def eliminar_fixture_campeonato(campeonato_id):
 
 @app.route(
     "/campeonatos/<int:campeonato_id>/fixture/partido/<int:partido_id>/editar",
-    methods=["POST"]
+    methods=["GET", "POST"]
 )
 @rol_permitido("Administrador")
 def editar_partido_fixture(campeonato_id, partido_id):
     """
     Modifica un partido futuro y adapta automáticamente el resto del fixture
     pendiente. Las jornadas ya cursadas quedan congeladas.
+    La ruta es una acción POST; si se abre directamente por GET, vuelve al fixture.
     """
     campeonato = db.get_or_404(Campeonato, campeonato_id)
+    if request.method == "GET":
+        flash("Para modificar un partido, utiliza la acción de edición desde el fixture.", "info")
+        return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
     partido = db.get_or_404(Partido, partido_id)
 
     if partido.campeonato_id != campeonato.id:
