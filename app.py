@@ -6212,22 +6212,35 @@ def configurar_jornada_fixture(campeonato_id, jornada):
             raise ValueError("Debes indicar una fecha.")
 
         fecha = datetime.strptime(fecha_texto, "%Y-%m-%d").date()
-        hora = request.form.get("hora", "").strip() or None
-        cancha = request.form.get("cancha", "").strip() or None
 
-        # La configuración general de la jornada cambia la fecha y la cancha,
-        # pero respeta la hora individual de cada partido. Solo usa la hora
-        # general como valor inicial para partidos que aún no tienen hora.
+        # Horarios oficiales por recinto: cada cancha recibe el patrón
+        # 17:30, 18:40 y 20:00 según el orden de sus partidos en la jornada.
+        # No se reemplazan las canchas ni se modifica el orden de los cruces.
+        horarios_oficiales = ("17:30", "18:40", "20:00")
+        partidos_por_cancha = {}
+        for partido in sorted(partidos_jornada, key=lambda p: (p.cancha or "").strip().casefold(),):
+            clave_cancha = (partido.cancha or "").strip()
+            partidos_por_cancha.setdefault(clave_cancha, []).append(partido)
+
         for partido in partidos_jornada:
             partido.fecha = fecha
-            if not (partido.hora or "").strip():
-                partido.hora = hora
-            partido.cancha = cancha
+
+        for cancha_nombre, partidos_recinto in partidos_por_cancha.items():
+            for indice, partido in enumerate(
+                sorted(partidos_recinto, key=lambda p: (p.id or 0))
+            ):
+                partido.hora = horarios_oficiales[min(indice, len(horarios_oficiales) - 1)]
 
         db.session.commit()
-        registrar_auditoria("CONFIGURAR_JORNADA", "Campeonatos", f"Se configuró la jornada {jornada} del campeonato '{campeonato.nombre}'.")
+        registrar_auditoria(
+            "CONFIGURAR_JORNADA",
+            "Campeonatos",
+            f"Se configuró la jornada {jornada} del campeonato '{campeonato.nombre}' con horarios oficiales 17:30, 18:40 y 20:00 por recinto.",
+        )
         flash(
-            f"Jornada {jornada} actualizada: {fecha.strftime('%d/%m/%Y')} · {hora or 'sin hora'} · {cancha or 'sin cancha'}.",
+            f"Jornada {jornada} actualizada: {fecha.strftime('%d/%m/%Y')}. "
+            "Se aplicaron los horarios oficiales 17:30, 18:40 y 20:00 por recinto, "
+            "respetando la cancha de cada partido.",
             "success"
         )
 
