@@ -7960,8 +7960,30 @@ def publico():
         for partido_programado in todos_los_partidos:
             jornadas_programacion.setdefault(partido_programado.jornada, []).append(partido_programado)
 
+        # Calcular los clubes libres por cada jornada, no solo para la próxima fecha.
+        clubes_inscritos_programacion = (
+            CampeonatoClub.query
+            .filter_by(campeonato_id=campeonato.id)
+            .join(Club, CampeonatoClub.club_id == Club.id)
+            .order_by(Club.nombre)
+            .all()
+        )
+        clubes_libres_por_jornada = {}
+        for numero_jornada, partidos_de_jornada in jornadas_programacion.items():
+            clubes_que_juegan_jornada = set()
+            for partido_programado in partidos_de_jornada:
+                if partido_programado.local_club_id:
+                    clubes_que_juegan_jornada.add(partido_programado.local_club_id)
+                if partido_programado.visitante_club_id:
+                    clubes_que_juegan_jornada.add(partido_programado.visitante_club_id)
+            clubes_libres_por_jornada[numero_jornada] = [
+                registro.club for registro in clubes_inscritos_programacion
+                if registro.club_id not in clubes_que_juegan_jornada
+            ]
+
         panel = {"campeonato": campeonato, "jornada": jornada, "partidos": partidos,
                  "jornadas_programacion": jornadas_programacion,
+                 "clubes_libres_por_jornada": clubes_libres_por_jornada,
                  "resultados": resultados_recientes,
                  "clubes_libres": clubes_libres,
                  "tabla": obtener_tabla_publica(campeonato),
