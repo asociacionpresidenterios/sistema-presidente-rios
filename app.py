@@ -6215,9 +6215,13 @@ def configurar_jornada_fixture(campeonato_id, jornada):
         hora = request.form.get("hora", "").strip() or None
         cancha = request.form.get("cancha", "").strip() or None
 
+        # La configuración general de la jornada cambia la fecha y la cancha,
+        # pero respeta la hora individual de cada partido. Solo usa la hora
+        # general como valor inicial para partidos que aún no tienen hora.
         for partido in partidos_jornada:
             partido.fecha = fecha
-            partido.hora = hora
+            if not (partido.hora or "").strip():
+                partido.hora = hora
             partido.cancha = cancha
 
         db.session.commit()
