@@ -79,6 +79,28 @@
 {% for f in p.tabla %}<tr><td class="pos">{{ loop.index }}</td><td class="club">{{ f.club.nombre }}</td><td>{{ f.pj }}</td><td>{{ f.pg }}</td><td>{{ f.pe }}</td><td>{{ f.pp }}</td><td>{{ f.gf }}</td><td>{{ f.gc }}</td><td>{{ f.dg }}</td><td><strong>{{ f.pts }}</strong></td></tr>{% else %}<tr><td colspan="10">Sin información de posiciones.</td></tr>{% endfor %}
 </tbody></table></div></div></details></div>
 
+{% if p.jornada_programacion_seleccionada and p.jornadas_programacion.get(p.jornada_programacion_seleccionada) %}
+{% set jornada_destacada = p.jornadas_programacion.get(p.jornada_programacion_seleccionada) %}
+{% set fecha_destacada = (jornada_destacada|selectattr('fecha')|map(attribute='fecha')|list|first) %}
+<div class="panel" style="border:2px solid #1769e0;box-shadow:0 8px 22px rgba(23,105,224,.10)">
+<div style="padding:15px 17px;background:linear-gradient(110deg,#0b1d35,#194f98);color:#fff">
+<div style="font-size:10px;font-weight:900;letter-spacing:.1em;color:#a8ceff;text-transform:uppercase">Acceso rápido · Programación destacada</div>
+<div style="font-size:21px;font-weight:900;margin-top:5px">📅 Fecha {{ p.jornada_programacion_seleccionada }}{% if fecha_destacada %} · {{ fecha_destacada.strftime('%d/%m/%Y') }}{% endif %}</div>
+<div style="font-size:12px;color:#d8e5f5;margin-top:5px">{{ jornada_destacada|length }} partido(s) programado(s) · {{ p.campeonato.nombre }}</div>
+</div>
+<div style="padding:4px 17px 15px">
+{% for partido_destacado in jornada_destacada|sort(attribute='hora') %}
+<div class="match"><div><strong>{{ partido_destacado.hora or '--:--' }}</strong><div class="venue">{{ partido_destacado.fecha.strftime('%d/%m') if partido_destacado.fecha else 'Por confirmar' }}</div></div><div><strong>{{ partido_destacado.local_club.nombre }} vs {{ partido_destacado.visitante_club.nombre }}</strong><div class="venue">🏟️ {{ partido_destacado.cancha or 'Cancha por confirmar' }}</div></div><div class="score">{% if partido_destacado.estado and partido_destacado.estado|lower == 'finalizado' and partido_destacado.goles_local is not none and partido_destacado.goles_visitante is not none %}{{ partido_destacado.goles_local }} - {{ partido_destacado.goles_visitante }}{% else %}Prog.{% endif %}</div></div>
+{% endfor %}
+{% set libres_destacada = p.clubes_libres_por_jornada.get(p.jornada_programacion_seleccionada, []) %}
+{% if libres_destacada %}<div style="margin:12px 0;padding:11px 13px;border-radius:9px;background:#fff6e8;border:1px solid #f3d19b;color:#814b08;font-size:12px"><strong>🆓 Clubes libres:</strong> {% for club_libre in libres_destacada %}{{ club_libre.nombre }}{% if not loop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+<div class="links" style="margin-top:12px">
+<a class="btn" href="{{ url_for('publico_programacion',campeonato_id=p.campeonato.id) }}">Ver toda la programación</a>
+<a class="btn whatsapp" target="_blank" rel="noopener noreferrer" href="https://wa.me/?text={{ ('Programación destacada · ' ~ p.campeonato.nombre ~ ' · Fecha ' ~ p.jornada_programacion_seleccionada ~ ((' · ' ~ fecha_destacada.strftime('%d/%m/%Y')) if fecha_destacada else '') ~ '. Consulta partidos, horarios, canchas y clubes libres en https://asociacionpresidenterios.cl/publico')|urlencode }}">📲 Compartir fecha por WhatsApp</a>
+</div>
+</div>
+</div>
+{% endif %}
 <div class="panel section-programacion"><details open><summary>📅 Programación completa <span class="meta">{{ p.jornadas_programacion|length }} fechas</span></summary><div class="panel-body">
 {% if p.jornadas_programacion %}
 <label for="selector-fechas-{{ p.campeonato.id }}" style="display:block;margin:4px 0 8px;font-size:12px;font-weight:900;color:#52657d">SELECCIONAR FECHA</label>
