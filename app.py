@@ -7949,7 +7949,19 @@ def publico():
             if registro.club_id not in clubes_que_juegan
         ]
 
+        # Toda la programación del campeonato, organizada por jornada.
+        todos_los_partidos = (
+            Partido.query
+            .filter_by(campeonato_id=campeonato.id)
+            .order_by(Partido.jornada, Partido.fecha, Partido.hora, Partido.id)
+            .all()
+        )
+        jornadas_programacion = {}
+        for partido_programado in todos_los_partidos:
+            jornadas_programacion.setdefault(partido_programado.jornada, []).append(partido_programado)
+
         panel = {"campeonato": campeonato, "jornada": jornada, "partidos": partidos,
+                 "jornadas_programacion": jornadas_programacion,
                  "resultados": resultados_recientes,
                  "clubes_libres": clubes_libres,
                  "tabla": obtener_tabla_publica(campeonato),
