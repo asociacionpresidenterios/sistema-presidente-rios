@@ -10,12 +10,12 @@
     <h2 style="margin-top:0">Partido asociado</h2>
     <div style="font-size:20px;font-weight:900">{{ partido.local_club.nombre }} <span style="color:#94a3b8">vs</span> {{ partido.visitante_club.nombre }}</div>
     <p style="color:#475569">Marcador deportivo: <strong>{{ partido.goles_local if partido.goles_local is not none else '—' }} : {{ partido.goles_visitante if partido.goles_visitante is not none else '—' }}</strong> · Estado: {{ partido.estado }}</p>
-    <div style="padding:12px;border-radius:10px;background:#eff6ff;color:#1e40af">La resolución nunca modifica el marcador, los goles ni las estadísticas deportivas. Solo afecta los puntos de la tabla de posiciones.</div>
+    <div style="padding:12px;border-radius:10px;background:#eff6ff;color:#1e40af">Las resoluciones habituales solo afectan los puntos. La opción “Derrota administrativa 0-3” aplica un marcador oficial para la tabla y el portal, sin sobrescribir el marcador deportivo original guardado.</div>
   </section>
   {% if activa %}
   <section style="background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:18px;margin:16px 0">
     <h2 style="margin-top:0">Resolución vigente: {{ activa.numero_resolucion }}</h2>
-    <p><strong>Efecto:</strong> {% if activa.efecto == 'sin_puntos_ambos' %}ambos clubes reciben 0 puntos por este partido{% elif activa.efecto == 'descuento_transferencia' %}descuento al infractor y transferencia de igual cantidad al rival{% else %}descuento de puntos al club infractor{% endif %}</p>
+    <p><strong>Efecto:</strong> {% if activa.efecto == 'sin_puntos_ambos' %}ambos clubes reciben 0 puntos por este partido{% elif activa.efecto == 'descuento_transferencia' %}descuento al infractor y transferencia de igual cantidad al rival{% elif activa.efecto == 'marcador_0_3' %}derrota administrativa: infractor 0 goles, rival 3 goles y 0 puntos para el infractor{% else %}descuento de puntos al club infractor{% endif %}</p>
     {% if activa.club_infractor %}<p><strong>Club infractor:</strong> {{ activa.club_infractor.nombre }} · <strong>Puntos:</strong> {{ activa.puntos }}</p>{% endif %}
     <p><strong>Fundamento:</strong> {{ activa.motivo }}</p>
     <p><strong>Publicada en portal:</strong> {{ 'Sí' if activa.publicada else 'No' }}</p>
@@ -37,6 +37,7 @@
           <option value="descuento_infractor">Descontar puntos solo al club infractor</option>
           <option value="descuento_transferencia">Descontar al infractor y otorgar esos puntos al rival</option>
           <option value="sin_puntos_ambos">Asignar 0 puntos a ambos clubes por este partido</option>
+          <option value="marcador_0_3">Derrota administrativa: infractor 0-3 rival y pierde los 3 puntos</option>
         </select>
       </div>
       <div id="club-wrap" style="margin:14px 0"><label for="club_infractor_id" style="display:block;font-weight:900;margin-bottom:6px">Club infractor</label>
@@ -62,8 +63,9 @@
         const puntos=document.getElementById('puntos-wrap');
         function actualizar(){
           const sinPuntos=efecto.value==='sin_puntos_ambos';
+          const marcadorAdministrativo=efecto.value==='marcador_0_3';
           club.style.display=sinPuntos?'none':'block';
-          puntos.style.display=sinPuntos?'none':'block';
+          puntos.style.display=(sinPuntos||marcadorAdministrativo)?'none':'block';
         }
         efecto.addEventListener('change',actualizar);actualizar();
       })();
