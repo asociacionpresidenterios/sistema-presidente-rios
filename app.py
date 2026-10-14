@@ -5026,13 +5026,30 @@ def panel_campeonato(campeonato_id):
         .all()
     )
 
+    resoluciones_activas = ResolucionPuntosSecretaria.query.filter_by(
+        campeonato_id=campeonato.id,
+        estado="Aplicada",
+    ).order_by(ResolucionPuntosSecretaria.id).all()
+    resoluciones_por_partido = {}
+    for resolucion in resoluciones_activas:
+        resoluciones_por_partido.setdefault(resolucion.partido_id, []).append(resolucion)
+    partidos_con_derrota_administrativa = {
+        r.partido_id for r in resoluciones_activas if r.efecto == "marcador_0_3"
+    }
+
     partidos_finalizados = [
         p for p in partidos
-        if p.estado == "Finalizado"
-        and p.goles_local is not None
-        and p.goles_visitante is not None
+        if (
+            (p.estado == "Finalizado"
+             and p.goles_local is not None
+             and p.goles_visitante is not None)
+            or p.id in partidos_con_derrota_administrativa
+        )
     ]
-    partidos_pendientes = [p for p in partidos if p.estado != "Finalizado"]
+    partidos_pendientes = [
+        p for p in partidos
+        if p.estado != "Finalizado" and p.id not in partidos_con_derrota_administrativa
+    ]
 
     tabla = {}
     for registro in clubes_participantes:
