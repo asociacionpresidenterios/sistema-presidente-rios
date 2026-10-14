@@ -7751,8 +7751,28 @@ def publico():
                                        Partido.goles_visitante.isnot(None))
                                .order_by(Partido.jornada.desc(), Partido.id.desc())
                                .limit(5).all())
+
+        # Identificar el club libre en la jornada pública mostrada.
+        clubes_participantes = (
+            CampeonatoClub.query
+            .filter_by(campeonato_id=campeonato.id)
+            .join(Club, CampeonatoClub.club_id == Club.id)
+            .order_by(Club.nombre)
+            .all()
+        )
+        clubes_que_juegan = {
+            club_id
+            for partido in partidos
+            for club_id in (partido.local_club_id, partido.visitante_club_id)
+        }
+        clubes_libres = [
+            registro.club for registro in clubes_participantes
+            if registro.club_id not in clubes_que_juegan
+        ]
+
         panel = {"campeonato": campeonato, "jornada": jornada, "partidos": partidos,
                  "resultados": resultados_recientes,
+                 "clubes_libres": clubes_libres,
                  "tabla": obtener_tabla_publica(campeonato),
                  "goleadores": obtener_goleadores_publicos(campeonato, 10)}
         paneles.append(panel)
