@@ -3784,6 +3784,7 @@ def publico_resolucion_disciplina(resolucion_id):
 @rol_permitido("Administrador", "Disciplina")
 def admin_suspensiones_automaticas():
     campeonato_id = request.args.get("campeonato_id", type=int)
+    busqueda = (request.args.get("q") or "").strip()
     campeonatos = Campeonato.query.order_by(
         Campeonato.temporada.desc(), Campeonato.id.desc()
     ).all()
@@ -3808,6 +3809,13 @@ def admin_suspensiones_automaticas():
         r for r in registros
         if r.jugador and r.campeonato_id and r.campeonato_id > 0
     ]
+    if busqueda:
+        termino = busqueda.casefold()
+        pendientes = [
+            r for r in pendientes
+            if termino in (r.jugador.nombre_completo or "").casefold()
+            or termino in (r.jugador.club or "").casefold()
+        ]
     # Los registros nuevos incluyen el umbral de amarillas que los originó.
     # Los históricos sin ese dato se identifican como tales, sin inferirlo.
     umbrales = {}
@@ -3828,6 +3836,7 @@ def admin_suspensiones_automaticas():
         umbrales=umbrales,
         campeonatos=campeonatos,
         campeonato_id=campeonato_id,
+        busqueda=busqueda,
     )
 
 
