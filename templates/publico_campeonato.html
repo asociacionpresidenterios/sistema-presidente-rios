@@ -2,6 +2,15 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071426">
+<meta name="description" content="Consulta la información oficial, programación, resultados y estadísticas de {{ campeonato.nombre }}.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_CL">
+<meta property="og:site_name" content="Asociación de Fútbol Presidente Ríos">
+<meta property="og:title" content="{{ campeonato.nombre }} · Presidente Ríos">
+<meta property="og:description" content="Consulta la información oficial, programación, resultados y estadísticas de {{ campeonato.nombre }}.">
+<meta property="og:url" content="{{ url_for('publico_campeonato', campeonato_id=campeonato.id, _external=True) }}">
+<link rel="canonical" href="{{ url_for('publico_campeonato', campeonato_id=campeonato.id, _external=True) }}">
 <title>{{ campeonato.nombre }} · Presidente Ríos</title>
 <style>
 :root{--navy:#0a1d3a;--navy2:#123b73;--blue:#1d65c1;--sky:#eaf2fb;--bg:#edf1f5;--text:#17202c;--muted:#718096;--line:#dbe2ea;--white:#fff;--green:#13845d;--shadow:0 8px 22px rgba(12,35,66,.10)}
