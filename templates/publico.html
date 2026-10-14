@@ -63,7 +63,7 @@
 </tbody></table></div></div></details></div>
 
 <div class="panel section-programacion"><details><summary>📅 Programación <span class="meta">{% if p.jornada %}Fecha {{ p.jornada }}{% else %}Próxima fecha{% endif %}</span></summary><div class="panel-body">
-{% for partido in p.partidos %}<div class="match"><div><strong>{{ partido.hora or '--:--' }}</strong></div><div><strong>{{ partido.local_club.nombre }} vs {{ partido.visitante_club.nombre }}</strong><div class="venue">🏟️ {{ partido.cancha or 'Por definir' }}{% if partido.turno_club %} · Turno: {{ partido.turno_club.nombre }}{% endif %}</div></div><div class="score">Prog.</div></div>{% else %}<div class="empty">No hay partidos pendientes.</div>{% endfor %}
+{% for cancha_nombre, partidos_recinto in p.partidos|groupby('cancha') %}<div class="venue-group" style="margin-bottom:14px"><h3 style="margin:8px 0;padding:10px 12px;border-radius:8px;background:#eaf1ff;color:#173b70;font-size:14px">🏟️ {{ cancha_nombre or 'Cancha por definir' }}</h3>{% for partido in partidos_recinto|sort(attribute='hora') %}<div class="match"><div><strong>{{ partido.hora or '--:--' }}</strong></div><div><strong>{{ partido.local_club.nombre }} vs {{ partido.visitante_club.nombre }}</strong><div class="venue">{% if partido.turno_club %}Turno: {{ partido.turno_club.nombre }}{% endif %}</div></div><div class="score">Prog.</div></div>{% endfor %}</div>{% else %}<div class="empty">No hay partidos pendientes.</div>{% endfor %}
 </div></details></div>
 
 <div class="panel section-resultados"><details><summary>⚽ Resultados <span class="meta">Últimos partidos</span></summary><div class="panel-body">
