@@ -150,7 +150,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
         <div><h2>🧹 Administración avanzada</h2><p class="sub" style="margin-bottom:0">Puedes configurar cada jornada, modificar partidos individualmente o eliminar el fixture completo si necesitas reconstruirlo desde cero.</p></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <form method="POST" action="{{ url_for('reorganizar_fixture_pendiente', campeonato_id=campeonato.id) }}" onsubmit="return confirm('Se reorganizarán solo los partidos pendientes. Los partidos finalizados y sus resultados se conservarán. ¿Continuar?');"><button class="btn success" type="submit">🔄 Reparar jornadas pendientes</button></form>
+
           <form method="POST" action="{{ url_for('eliminar_fixture_campeonato', campeonato_id=campeonato.id) }}" onsubmit="return confirm('¿Eliminar TODO el fixture de este campeonato? Esta acción eliminará también los resultados de los partidos.');"><button class="btn danger" type="submit">🗑️ Eliminar fixture</button></form>
         </div>
       </div>
