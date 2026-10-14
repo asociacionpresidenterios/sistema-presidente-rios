@@ -68,6 +68,8 @@
 {% for partido in partidos_jornada|sort(attribute='hora') %}
 <div class="match"><div><strong>{{ partido.hora or '--:--' }}</strong>{% if partido.fecha %}<div class="venue">{{ partido.fecha.strftime('%d/%m/%Y') }}</div>{% endif %}</div><div><strong>{{ partido.local_club.nombre }} vs {{ partido.visitante_club.nombre }}</strong><div class="venue">🏟️ {{ partido.cancha or 'Cancha por confirmar' }}{% if partido.turno_club %} · Turno: {{ partido.turno_club.nombre }}{% endif %}</div></div><div class="score">{% if partido.estado and partido.estado|lower == 'finalizado' and partido.goles_local is not none and partido.goles_visitante is not none %}{{ partido.goles_local }} - {{ partido.goles_visitante }}{% else %}Prog.{% endif %}</div></div>
 {% endfor %}
+{% set libres_jornada = p.clubes_libres_por_jornada.get(numero_jornada, []) %}
+{% if libres_jornada %}<div style="margin:12px 0 6px;padding:12px 15px;border-radius:10px;background:#fff6e8;border:1px solid #f3d19b;color:#814b08"><strong>🆓 Clubes libres de la fecha:</strong> {% for club_libre in libres_jornada %}{{ club_libre.nombre }}{% if not loop.last %}, {% endif %}{% endfor %}</div>{% endif %}
 {% endfor %}
 {% if not p.jornadas_programacion %}<div class="empty">No hay fixture registrado.</div>{% endif %}
 </div></details></div>
