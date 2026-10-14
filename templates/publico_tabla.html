@@ -2,6 +2,15 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071426">
+<meta name="description" content="Consulta la tabla de posiciones actualizada del campeonato {{ campeonato.nombre }}.">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="es_CL">
+<meta property="og:site_name" content="Asociación de Fútbol Presidente Ríos">
+<meta property="og:title" content="Posiciones · {{ campeonato.nombre }} · Presidente Ríos">
+<meta property="og:description" content="Consulta la tabla de posiciones actualizada del campeonato {{ campeonato.nombre }}.">
+<meta property="og:url" content="{{ url_for('publico_tabla', campeonato_id=campeonato.id, _external=True) }}">
+<link rel="canonical" href="{{ url_for('publico_tabla', campeonato_id=campeonato.id, _external=True) }}">
 <title>Posiciones · {{ campeonato.nombre }} · Presidente Ríos</title>
 <style>
 body{margin:0;background:#f1f5f9;font-family:Arial;color:#0f172a}
