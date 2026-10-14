@@ -118,16 +118,30 @@
 
   <div class="card">
     <h2>✅ Clubes actualmente inscritos</h2>
-    <p class="sub">Esta es la lista que utilizarán los siguientes módulos del campeonato. Si un club se baja, usa <strong>Dar de baja</strong> para que el sistema reorganice automáticamente el fixture.</p>
+    <p class="sub">Puedes excluir un club de la tabla sin borrarlo del fixture. Usa “Retirar y reorganizar fixture” solo si realmente quieres quitarlo del calendario pendiente.</p>
 
     {% if clubes_participantes %}
       <div>
         {% for registro in clubes_participantes %}
           <div class="participant-row">
-            <span class="pill">⚽ {{ registro.club.nombre }}</span>
-            <form method="POST" action="{{ url_for('retirar_club_campeonato', campeonato_id=campeonato.id, club_id=registro.club.id) }}" onsubmit="return confirmarRetiroClub({{ registro.club.nombre|tojson }});">
-              <button type="submit" class="withdraw-btn">↘️ Dar de baja</button>
-            </form>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span class="pill">⚽ {{ registro.club.nombre }}</span>
+              {% if registro.excluido_tabla %}
+                <span style="font-size:11px;font-weight:800;padding:5px 8px;border-radius:999px;background:#fff7ed;color:#9a3412">🚫 Excluido de tabla</span>
+              {% else %}
+                <span style="font-size:11px;font-weight:800;padding:5px 8px;border-radius:999px;background:#ecfdf5;color:#166534">✓ En tabla</span>
+              {% endif %}
+            </div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end">
+              <form method="POST" action="{{ url_for('excluir_club_de_tabla', campeonato_id=campeonato.id, club_id=registro.club.id) }}" onsubmit="return confirm('¿{{ 'Volver a incluir' if registro.excluido_tabla else 'Excluir' }} a {{ registro.club.nombre }} de la tabla de posiciones? El club seguirá en el fixture y no se borrarán partidos ni resultados.');">
+                <button type="submit" class="btn {% if registro.excluido_tabla %}success{% else %}light{% endif %}" style="font-size:11px;padding:7px 10px">
+                  {% if registro.excluido_tabla %}↩️ Incluir en tabla{% else %}🚫 Excluir de tabla{% endif %}
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('retirar_club_campeonato', campeonato_id=campeonato.id, club_id=registro.club.id) }}" onsubmit="return confirmarRetiroClub({{ registro.club.nombre|tojson }});">
+                <button type="submit" class="withdraw-btn">↘️ Retirar y reorganizar fixture</button>
+              </form>
+            </div>
           </div>
         {% endfor %}
       </div>
