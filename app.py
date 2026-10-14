@@ -438,6 +438,9 @@ class CampeonatoClub(db.Model):
         index=True
     )
 
+    # Permite mantener el club y sus partidos en el fixture, excluyéndolo de la tabla.
+    excluido_tabla = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+
     campeonato = db.relationship(
         "Campeonato",
         back_populates="clubes_participantes"
@@ -1162,6 +1165,9 @@ def preparar_vinculos_campeonato():
             "partido": {
                 "turno_club_id": "INTEGER",
                 "fixture_bloqueado": "BOOLEAN DEFAULT FALSE",
+            },
+            "campeonato_club": {
+                "excluido_tabla": "BOOLEAN NOT NULL DEFAULT FALSE",
             },
         }
 
@@ -5440,6 +5446,47 @@ def detalle_campeonato(campeonato_id):
 
 
 @app.route(
+    "/campeonatos/<int:campeonato_id>/club/<int:club_id>/excluir-tabla",
+    methods=["POST"]
+)
+@rol_permitido("Administrador")
+def excluir_club_de_tabla(campeonato_id, club_id):
+    """Oculta un club de la clasificación sin retirarlo del campeonato ni tocar el fixture."""
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    participacion = CampeonatoClub.query.filter_by(
+        campeonato_id=campeonato.id, club_id=club_id
+    ).first()
+    if not participacion:
+        flash("El club no está inscrito en este campeonato.", "error")
+        return redirect(url_for("detalle_campeonato", campeonato_id=campeonato.id))
+    try:
+        participacion.excluido_tabla = not bool(participacion.excluido_tabla)
+        db.session.commit()
+        if participacion.excluido_tabla:
+            flash(
+                f"{participacion.club.nombre} quedó excluido de la tabla de posiciones. "
+                "Seguirá apareciendo en el fixture y sus partidos no sumarán estadísticas en la tabla.",
+                "success"
+            )
+        else:
+            flash(
+                f"{participacion.club.nombre} volvió a incluirse en la tabla de posiciones. "
+                "El fixture y los resultados se conservaron.",
+                "success"
+            )
+        registrar_auditoria(
+            "CAMBIAR_INCLUSION_TABLA", "Campeonatos",
+            f"Club '{participacion.club.nombre}' en '{campeonato.nombre}': "
+            f"{'excluido' if participacion.excluido_tabla else 'incluido'} en tabla. Fixture conservado."
+        )
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR CAMBIANDO INCLUSION DE TABLA:", repr(error))
+        flash("No se pudo cambiar la inclusión del club en la tabla.", "error")
+    return redirect(url_for("detalle_campeonato", campeonato_id=campeonato.id) + "#clubes-participantes")
+
+
+@app.route(
     "/campeonatos/<int:campeonato_id>/club/<int:club_id>/retirar",
     methods=["POST"]
 )
@@ -6754,7 +6801,7 @@ def tabla_campeonato(campeonato_id):
 
     clubes_participantes = (
         CampeonatoClub.query
-        .filter_by(campeonato_id=campeonato.id)
+        .filter_by(campeonato_id=campeonato.id, excluido_tabla=False)
         .join(Club, CampeonatoClub.club_id == Club.id)
         .order_by(Club.nombre)
         .all()
@@ -7723,7 +7770,7 @@ def informe_jugador(jugador_id):
 # ============================================================
 
 def obtener_tabla_publica(campeonato):
-    registros = (CampeonatoClub.query.filter_by(campeonato_id=campeonato.id)
+    registros = (CampeonatoClub.query.filter_by(campeonato_id=campeonato.id, excluido_tabla=False)
                  .join(Club, CampeonatoClub.club_id == Club.id).order_by(Club.nombre).all())
     partidos = Partido.query.filter_by(campeonato_id=campeonato.id).all()
     resoluciones_activas = ResolucionPuntosSecretaria.query.filter_by(
