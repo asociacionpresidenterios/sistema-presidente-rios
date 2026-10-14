@@ -24,8 +24,11 @@
      {% for c in campeonatos %}<option value="{{c.id}}" {% if campeonato_id == c.id %}selected{% endif %}>{{c.nombre}}{% if c.temporada %} · {{c.temporada}}{% endif %}</option>{% endfor %}
     </select>
    </label>
-   <button class="btn" type="submit">Aplicar filtro</button>
-   {% if campeonato_id %}<a href="{{url_for('admin_suspensiones_automaticas')}}" style="font-size:12px;font-weight:800;color:#475569;text-decoration:none;padding:9px">Quitar filtro</a>{% endif %}
+   <label style="display:grid;gap:5px;font-size:12px;font-weight:800;color:#334155">Buscar jugador o club
+    <input type="search" name="q" value="{{busqueda}}" placeholder="Nombre o club..." style="min-width:220px;max-width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px">
+   </label>
+   <button class="btn" type="submit">Aplicar filtros</button>
+   {% if campeonato_id or busqueda %}<a href="{{url_for('admin_suspensiones_automaticas')}}" style="font-size:12px;font-weight:800;color:#475569;text-decoration:none;padding:9px">Limpiar filtros</a>{% endif %}
   </form>
   <table><thead><tr><th>Jugador</th><th>Club</th><th>Campeonato</th><th>Fecha registro</th><th>Umbral</th><th>Motivo</th><th>Acción</th></tr></thead><tbody>
  {% for r in suspensiones %}
