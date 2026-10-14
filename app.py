@@ -6142,6 +6142,83 @@ def fixture_campeonato(campeonato_id):
     )
 
 
+@app.route("/campeonatos/<int:campeonato_id>/fixture/recuperar-tres-jornadas", methods=["POST"])
+@rol_permitido("Administrador")
+def recuperar_tres_jornadas_clausura_adultos(campeonato_id):
+    """Restaura exclusivamente las jornadas 1-3 del Clausura 2026 Adultos según los afiches oficiales."""
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    nombre_campeonato = (campeonato.nombre or "").casefold()
+    serie_campeonato = (campeonato.serie or "").casefold()
+    if "clausura" not in nombre_campeonato or "2026" not in nombre_campeonato or "adult" not in serie_campeonato:
+        flash("Esta recuperación solo está habilitada para Clausura 2026 — Serie Adultos.", "error")
+        return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+
+    import unicodedata
+    def normalizar_nombre(texto):
+        texto = unicodedata.normalize("NFKD", (texto or "").casefold())
+        return "".join(c for c in texto if not unicodedata.combining(c)).replace("°", "").replace(".", "").strip()
+
+    clubes = Club.query.join(CampeonatoClub, CampeonatoClub.club_id == Club.id).filter(
+        CampeonatoClub.campeonato_id == campeonato.id
+    ).all()
+    clubes_por_nombre = {normalizar_nombre(c.nombre): c.id for c in clubes}
+    aliases = {
+        "independiente 2c": ("independiente 2c", "independiente 2 c", "independiente 2°c"),
+        "polideportivo e soro": ("polideportivo e soro",),
+    }
+    def club_id(nombre):
+        candidatos = aliases.get(normalizar_nombre(nombre), (nombre,))
+        for candidato in candidatos:
+            clave = normalizar_nombre(candidato)
+            if clave in clubes_por_nombre:
+                return clubes_por_nombre[clave]
+        raise ValueError("No se encontró el club inscrito: " + nombre)
+
+    # Fecha, hora, cancha, local, visita; solo se reconstruyen estas 15 filas.
+    partidos_oficiales = [
+        (1, "2026-09-27", "15:00", "Mirador Viejo", "Carlos Godoy B", "San Cristóbal"),
+        (1, "2026-09-27", "16:30", "Mirador Viejo", "Unión Miraflores", "Carlos Godoy"),
+        (1, "2026-09-27", "15:20", "Polideportivo E. Soro", "Independiente 2C", "Brisas del Maipo"),
+        (1, "2026-09-27", "18:00", "Mirador Viejo", "México", "Torino"),
+        (1, "2026-09-27", "19:50", "Mirador Viejo", "Vidal Araya", "Juventud Esmeralda"),
+        (2, "2026-10-04", "15:00", "Mirador Viejo", "Carlos Godoy", "Hermandad 47"),
+        (2, "2026-10-04", "16:30", "Mirador Viejo", "Carlos Godoy B", "Independiente 2C"),
+        (2, "2026-10-04", "18:00", "Mirador Viejo", "Brisas del Maipo", "Vidal Araya"),
+        (2, "2026-10-04", "19:50", "Mirador Viejo", "Juventud Esmeralda", "México"),
+        (2, "2026-10-04", "15:00", "Polideportivo E. Soro", "Torino", "Unión Miraflores"),
+        (3, "2026-10-11", "15:00", "Mirador Viejo", "Vidal Araya", "México"),
+        (3, "2026-10-11", "16:30", "Mirador Viejo", "Juventud Esmeralda", "Hermandad 47"),
+        (3, "2026-10-11", "18:00", "Mirador Viejo", "Brisas del Maipo", "Torino"),
+        (3, "2026-10-11", "19:50", "Mirador Viejo", "Independiente 2C", "Unión Miraflores"),
+        (3, "2026-10-11", "15:20", "Polideportivo E. Soro", "Carlos Godoy B", "Carlos Godoy"),
+    ]
+    try:
+        ids_resueltos = [(j, fecha, hora, cancha, club_id(local), club_id(visita))
+                         for j, fecha, hora, cancha, local, visita in partidos_oficiales]
+        # El alcance queda limitado al campeonato seleccionado y jornadas 1, 2 y 3.
+        Partido.query.filter(
+            Partido.campeonato_id == campeonato.id,
+            Partido.jornada.in_([1, 2, 3])
+        ).delete(synchronize_session=False)
+        for jornada, fecha, hora, cancha, local_id, visita_id in ids_resueltos:
+            db.session.add(Partido(
+                campeonato_id=campeonato.id, jornada=jornada,
+                fecha=datetime.strptime(fecha, "%Y-%m-%d").date(),
+                hora=hora, cancha=cancha, local_club_id=local_id,
+                visitante_club_id=visita_id, turno_club_id=None,
+                goles_local=None, goles_visitante=None, estado="Programado"
+            ))
+        db.session.commit()
+        registrar_auditoria("RECUPERAR_JORNADAS_1_3", "Campeonatos",
+            f"Se reconstruyeron únicamente las jornadas 1-3 de '{campeonato.nombre}' con 15 partidos; jornadas 4 en adelante intactas.")
+        flash("Jornadas 1, 2 y 3 restauradas con los 15 partidos de los afiches. Los marcadores quedaron vacíos; las jornadas 4 en adelante no se modificaron.", "success")
+    except Exception as error:
+        db.session.rollback()
+        print("ERROR RECUPERANDO JORNADAS 1-3:", repr(error))
+        flash("No se pudo restaurar el fixture. Verifica que los 11 clubes de los afiches estén inscritos en este campeonato.", "error")
+    return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+
+
 @app.route(
     "/campeonatos/<int:campeonato_id>/fixture/generar",
     methods=["POST"]
