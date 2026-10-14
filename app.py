@@ -6603,18 +6603,22 @@ def tabla_campeonato(campeonato_id):
         .all()
     )
 
-    partidos_finalizados = (
-        Partido.query
-        .filter_by(campeonato_id=campeonato.id)
-        .filter(db.func.lower(db.func.trim(Partido.estado)) == "finalizado")
-        .filter(Partido.goles_local.isnot(None), Partido.goles_visitante.isnot(None))
-        .all()
-    )
-
+    partidos_campeonato = Partido.query.filter_by(campeonato_id=campeonato.id).all()
     resoluciones_activas = ResolucionPuntosSecretaria.query.filter_by(
         campeonato_id=campeonato.id,
         estado="Aplicada",
     ).order_by(ResolucionPuntosSecretaria.id).all()
+    partidos_con_derrota_administrativa = {
+        r.partido_id for r in resoluciones_activas if r.efecto == "marcador_0_3"
+    }
+    partidos_finalizados = [
+        p for p in partidos_campeonato
+        if (
+            ((p.estado or "").strip().lower() == "finalizado"
+             and p.goles_local is not None and p.goles_visitante is not None)
+            or p.id in partidos_con_derrota_administrativa
+        )
+    ]
     resoluciones_por_partido = {}
     for resolucion in resoluciones_activas:
         resoluciones_por_partido.setdefault(resolucion.partido_id, []).append(resolucion)
@@ -6641,6 +6645,13 @@ def tabla_campeonato(campeonato_id):
 
         gl = int(partido.goles_local or 0)
         gv = int(partido.goles_visitante or 0)
+        resoluciones = resoluciones_por_partido.get(partido.id, [])
+        resolucion_forfeit = next((r for r in resoluciones if r.efecto == "marcador_0_3"), None)
+        if resolucion_forfeit:
+            if resolucion_forfeit.club_infractor_id == partido.local_club_id:
+                gl, gv = 0, 3
+            else:
+                gl, gv = 3, 0
         local = tabla[partido.local_club_id]
         visitante = tabla[partido.visitante_club_id]
 
@@ -7558,19 +7569,26 @@ def obtener_tabla_publica(campeonato):
     registros = (CampeonatoClub.query.filter_by(campeonato_id=campeonato.id)
                  .join(Club, CampeonatoClub.club_id == Club.id).order_by(Club.nombre).all())
     partidos = Partido.query.filter_by(campeonato_id=campeonato.id).all()
-    finalizados = [
-        p for p in partidos
-        if (p.estado or "").strip().lower() == "finalizado"
-        and p.goles_local is not None
-        and p.goles_visitante is not None
-    ]
     resoluciones_activas = ResolucionPuntosSecretaria.query.filter_by(
         campeonato_id=campeonato.id, estado="Aplicada"
     ).order_by(ResolucionPuntosSecretaria.id).all()
     por_partido = {}
-    ajustes_por_club = {}
     for resolucion in resoluciones_activas:
         por_partido.setdefault(resolucion.partido_id, []).append(resolucion)
+    partidos_con_derrota_administrativa = {
+        partido_id for partido_id, resoluciones in por_partido.items()
+        if any(r.efecto == "marcador_0_3" for r in resoluciones)
+    }
+    # Una resolución 0-3 cuenta como partido oficial aunque el encuentro
+    # no tuviera un marcador deportivo registrado.
+    finalizados = [
+        p for p in partidos
+        if (
+            ((p.estado or "").strip().lower() == "finalizado"
+             and p.goles_local is not None and p.goles_visitante is not None)
+            or p.id in partidos_con_derrota_administrativa
+        )
+    ]
     tabla = {}
     for r in registros:
         tabla[r.club.id] = {"club": r.club, "pj": 0, "pg": 0, "pe": 0, "pp": 0,
@@ -7579,6 +7597,13 @@ def obtener_tabla_publica(campeonato):
         if p.local_club_id not in tabla or p.visitante_club_id not in tabla:
             continue
         gl, gv = int(p.goles_local or 0), int(p.goles_visitante or 0)
+        resoluciones = por_partido.get(p.id, [])
+        resolucion_forfeit = next((r for r in resoluciones if r.efecto == "marcador_0_3"), None)
+        if resolucion_forfeit:
+            if resolucion_forfeit.club_infractor_id == p.local_club_id:
+                gl, gv = 0, 3
+            else:
+                gl, gv = 3, 0
         l, v = tabla[p.local_club_id], tabla[p.visitante_club_id]
         l["pj"] += 1; v["pj"] += 1; l["gf"] += gl; l["gc"] += gv; v["gf"] += gv; v["gc"] += gl
         if gl > gv:
@@ -7598,6 +7623,9 @@ def obtener_tabla_publica(campeonato):
         l["pts"] += puntos_local
         v["pts"] += puntos_visitante
         for resolucion in resoluciones:
+            if resolucion.efecto == "marcador_0_3":
+                # Los 3 puntos del rival ya se asignan por el marcador 0-3.
+                continue
             if resolucion.efecto not in ("descuento_infractor", "descuento_transferencia"):
                 continue
             infractor_id = resolucion.club_infractor_id
