@@ -7981,8 +7981,38 @@ def publico():
                 if registro.club_id not in clubes_que_juegan_jornada
             ]
 
+        # Seleccionar automáticamente la jornada correspondiente a la semana actual
+        # (lunes a domingo). Si no hay partidos fechados esa semana, usar la próxima
+        # jornada futura; si no quedan fechas futuras, mostrar la última jornada.
+        hoy_programacion = date.today()
+        inicio_semana = hoy_programacion - timedelta(days=hoy_programacion.weekday())
+        fin_semana = inicio_semana + timedelta(days=6)
+        fechas_por_jornada = {
+            numero: [partido.fecha for partido in lista if partido.fecha]
+            for numero, lista in jornadas_programacion.items()
+        }
+        jornadas_semana = [
+            numero for numero, fechas in fechas_por_jornada.items()
+            if any(inicio_semana <= fecha <= fin_semana for fecha in fechas)
+        ]
+        if jornadas_semana:
+            jornada_programacion_seleccionada = jornadas_semana[0]
+        else:
+            jornadas_futuras = [
+                (min(fecha for fecha in fechas if fecha >= hoy_programacion), numero)
+                for numero, fechas in fechas_por_jornada.items()
+                if any(fecha >= hoy_programacion for fecha in fechas)
+            ]
+            if jornadas_futuras:
+                jornada_programacion_seleccionada = min(jornadas_futuras)[1]
+            elif jornadas_programacion:
+                jornada_programacion_seleccionada = next(reversed(jornadas_programacion))
+            else:
+                jornada_programacion_seleccionada = None
+
         panel = {"campeonato": campeonato, "jornada": jornada, "partidos": partidos,
                  "jornadas_programacion": jornadas_programacion,
+                 "jornada_programacion_seleccionada": jornada_programacion_seleccionada,
                  "clubes_libres_por_jornada": clubes_libres_por_jornada,
                  "resultados": resultados_recientes,
                  "clubes_libres": clubes_libres,
