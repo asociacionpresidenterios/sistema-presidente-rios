@@ -38,6 +38,11 @@
   <div class="card">
     <h2>⚙️ Administración del fixture</h2>
     <p class="sub">Las jornadas ya cursadas quedan protegidas. Al modificar un partido futuro, el sistema fija ese cambio y adapta automáticamente los demás cruces pendientes.</p>
+    {% if 'clausura' in (campeonato.nombre|lower) and '2026' in (campeonato.nombre|lower) and 'adult' in (campeonato.serie|lower) %}
+    <form method="post" action="{{ url_for('recuperar_tres_jornadas_clausura_adultos', campeonato_id=campeonato.id) }}" onsubmit="return confirm('Se reemplazarán SOLO las jornadas 1, 2 y 3 por los 15 partidos de los afiches. Se borrarán sus resultados y registros asociados. Las jornadas 4 en adelante quedarán intactas. ¿Continuar?')">
+      <button class="btn warning" type="submit">♻️ Restaurar jornadas 1–3 de los afiches</button>
+    </form>
+    {% endif %}
     <div class="warning" style="background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a"><strong>🧠 Fixture adaptable:</strong> los resultados ya registrados nunca se mueven. Los cambios realizados sobre partidos futuros se respetan y el sistema reorganiza automáticamente los cruces restantes para evitar duplicados o equipos jugando dos veces en una misma jornada.</div>
     <div class="stats">
       <div class="stat"><small>Clubes inscritos</small><strong>{{ clubes_participantes|length }}</strong></div>
