@@ -6147,10 +6147,10 @@ def fixture_campeonato(campeonato_id):
 def recuperar_tres_jornadas_clausura_adultos(campeonato_id):
     """Restaura exclusivamente las jornadas 1-3 del Clausura 2026 Adultos según los afiches oficiales."""
     campeonato = db.get_or_404(Campeonato, campeonato_id)
-    nombre_campeonato = (campeonato.nombre or "").casefold()
-    serie_campeonato = (campeonato.serie or "").casefold()
-    if "clausura" not in nombre_campeonato or "2026" not in nombre_campeonato or "adult" not in serie_campeonato:
-        flash("Esta recuperación solo está habilitada para Clausura 2026 — Serie Adultos.", "error")
+    # El botón se está usando desde el campeonato ID 2 (Clausura 2026 Adultos).
+    # Se limita por ID para evitar afectar cualquier otro torneo; no dependemos de cómo esté escrito el nombre/serie.
+    if campeonato.id != 2:
+        flash("Esta recuperación está limitada al campeonato Clausura 2026 — Serie Adultos.", "error")
         return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
 
     import unicodedata
