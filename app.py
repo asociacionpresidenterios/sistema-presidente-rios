@@ -5488,14 +5488,39 @@ def retirar_club_campeonato(campeonato_id, club_id):
         }
 
         calendario = generar_calendario_todos_contra_todos(clubes_actuales)
+
+        # Extraer todos los cruces aún pendientes y redistribuirlos por jornadas.
+        # Filtrar los cruces ya jugados sin volver a emparejar deja jornadas
+        # incompletas y muestra varios clubes libres en la misma fecha.
+        cruces_pendientes = []
+        for jornada_base in calendario:
+            for local_id, visitante_id in jornada_base:
+                if frozenset((local_id, visitante_id)) not in cruces_jugados:
+                    cruces_pendientes.append((local_id, visitante_id))
+
+        # Emparejamiento de jornadas: cada club aparece como máximo una vez
+        # por jornada y se llena cada jornada hasta el máximo posible.
+        max_partidos_jornada = len(clubes_actuales) // 2
         calendario_pendiente = []
-        for jornada in calendario:
-            nuevos = [
-                par for par in jornada
-                if frozenset(par) not in cruces_jugados
-            ]
-            if nuevos:
-                calendario_pendiente.append(nuevos)
+        for cruce in cruces_pendientes:
+            local_id, visitante_id = cruce
+            asignado = False
+            for jornada_base in calendario_pendiente:
+                clubes_usados = {
+                    club_id
+                    for partido_base in jornada_base
+                    for club_id in partido_base
+                }
+                if (
+                    len(jornada_base) < max_partidos_jornada
+                    and local_id not in clubes_usados
+                    and visitante_id not in clubes_usados
+                ):
+                    jornada_base.append(cruce)
+                    asignado = True
+                    break
+            if not asignado:
+                calendario_pendiente.append([cruce])
 
         ultima_jornada = max((p.jornada for p in finalizados), default=0)
         ultima_fecha = max((p.fecha for p in finalizados if p.fecha), default=None)
