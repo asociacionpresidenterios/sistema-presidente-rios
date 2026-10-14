@@ -63,15 +63,22 @@
 </tbody></table></div></div></details></div>
 
 <div class="panel section-programacion"><details open><summary>📅 Programación completa <span class="meta">{{ p.jornadas_programacion|length }} fechas</span></summary><div class="panel-body">
+{% if p.jornadas_programacion %}
+<label for="selector-fechas-{{ p.campeonato.id }}" style="display:block;margin:4px 0 8px;font-size:12px;font-weight:900;color:#52657d">SELECCIONAR FECHA</label>
+<select id="selector-fechas-{{ p.campeonato.id }}" class="selector-fecha-fixture" onchange="seleccionarFechaFixture(this)" style="width:100%;max-width:420px;padding:12px 14px;border:1px solid #d6dfeb;border-radius:10px;background:#fff;color:#172033;font-weight:850;font-size:14px;margin-bottom:14px">
+{% for numero_jornada, partidos_jornada in p.jornadas_programacion.items() %}<option value="fecha-{{ p.campeonato.id }}-{{ numero_jornada }}">Fecha {{ numero_jornada }}{% set fecha_jornada = (partidos_jornada|selectattr('fecha')|map(attribute='fecha')|list|first) %}{% if fecha_jornada %} · {{ fecha_jornada.strftime('%d/%m/%Y') }}{% endif %}</option>{% endfor %}
+</select>
 {% for numero_jornada, partidos_jornada in p.jornadas_programacion.items() %}
-<div style="margin:16px 0 8px;padding:10px 13px;border-radius:9px;background:#eaf1ff;color:#173b70;font-weight:900">📅 Fecha {{ numero_jornada }}</div>
+<div id="fecha-{{ p.campeonato.id }}-{{ numero_jornada }}" class="fixture-fecha-publica" {% if not loop.first %}hidden{% endif %}>
+<div style="margin:4px 0 8px;padding:10px 13px;border-radius:9px;background:#eaf1ff;color:#173b70;font-weight:900">📅 Fecha {{ numero_jornada }}</div>
 {% for partido in partidos_jornada|sort(attribute='hora') %}
 <div class="match"><div><strong>{{ partido.hora or '--:--' }}</strong>{% if partido.fecha %}<div class="venue">{{ partido.fecha.strftime('%d/%m/%Y') }}</div>{% endif %}</div><div><strong>{{ partido.local_club.nombre }} vs {{ partido.visitante_club.nombre }}</strong><div class="venue">🏟️ {{ partido.cancha or 'Cancha por confirmar' }}{% if partido.turno_club %} · Turno: {{ partido.turno_club.nombre }}{% endif %}</div></div><div class="score">{% if partido.estado and partido.estado|lower == 'finalizado' and partido.goles_local is not none and partido.goles_visitante is not none %}{{ partido.goles_local }} - {{ partido.goles_visitante }}{% else %}Prog.{% endif %}</div></div>
 {% endfor %}
 {% set libres_jornada = p.clubes_libres_por_jornada.get(numero_jornada, []) %}
 {% if libres_jornada %}<div style="margin:12px 0 6px;padding:12px 15px;border-radius:10px;background:#fff6e8;border:1px solid #f3d19b;color:#814b08"><strong>🆓 Clubes libres de la fecha:</strong> {% for club_libre in libres_jornada %}{{ club_libre.nombre }}{% if not loop.last %}, {% endif %}{% endfor %}</div>{% endif %}
+</div>
 {% endfor %}
-{% if not p.jornadas_programacion %}<div class="empty">No hay fixture registrado.</div>{% endif %}
+{% else %}<div class="empty">No hay fixture registrado.</div>{% endif %}
 </div></details></div>
 
 <div class="panel section-resultados"><details><summary>⚽ Resultados <span class="meta">Últimos partidos</span></summary><div class="panel-body">
@@ -122,6 +129,16 @@ document.addEventListener('DOMContentLoaded',()=>{
   const firstId=select?.value || document.querySelector('.champ')?.id;
   if(firstId)seleccionarCampeonato(firstId);
 });
+</script>
+<script>
+function seleccionarFechaFixture(selector) {
+  const idCampeonato = selector.id.replace('selector-fechas-', '');
+  document.querySelectorAll('.fixture-fecha-publica').forEach(function (panel) {
+    if (panel.id.startsWith('fecha-' + idCampeonato + '-')) {
+      panel.hidden = panel.id !== selector.value;
+    }
+  });
+}
 </script>
 </body>
 </html>
