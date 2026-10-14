@@ -5047,6 +5047,13 @@ def panel_campeonato(campeonato_id):
             continue
         gl = int(partido.goles_local or 0)
         gv = int(partido.goles_visitante or 0)
+        resoluciones = resoluciones_por_partido.get(partido.id, [])
+        resolucion_forfeit = next((r for r in resoluciones if r.efecto == "marcador_0_3"), None)
+        if resolucion_forfeit:
+            if resolucion_forfeit.club_infractor_id == partido.local_club_id:
+                gl, gv = 0, 3
+            else:
+                gl, gv = 3, 0
         local = tabla[partido.local_club_id]
         visitante = tabla[partido.visitante_club_id]
         local["pj"] += 1
@@ -6657,7 +6664,6 @@ def tabla_campeonato(campeonato_id):
             visitante["pe"] += 1
             puntos_local, puntos_visitante = 1, 1
 
-        resoluciones = resoluciones_por_partido.get(partido.id, [])
         if any(r.efecto == "sin_puntos_ambos" for r in resoluciones):
             puntos_local, puntos_visitante = 0, 0
 
@@ -6665,6 +6671,9 @@ def tabla_campeonato(campeonato_id):
         visitante["pts"] += puntos_visitante
 
         for resolucion in resoluciones:
+            if resolucion.efecto == "marcador_0_3":
+                # El resultado administrativo ya determina los 3 puntos del rival.
+                continue
             if resolucion.efecto not in ("descuento_infractor", "descuento_transferencia"):
                 continue
             infractor_id = resolucion.club_infractor_id
@@ -8217,17 +8226,22 @@ def resolucion_puntos_secretaria(campeonato_id, partido_id):
         publicada = request.form.get("publicada") == "on"
         club_infractor_id = request.form.get("club_infractor_id", type=int)
         puntos = request.form.get("puntos", type=int)
-        efectos_validos = {"descuento_infractor", "descuento_transferencia", "sin_puntos_ambos"}
+        efectos_validos = {"descuento_infractor", "descuento_transferencia", "sin_puntos_ambos", "marcador_0_3"}
         if efecto not in efectos_validos:
             flash("Selecciona un efecto administrativo válido.", "error")
             return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
         if len(motivo) < 10:
             flash("El fundamento debe tener al menos 10 caracteres.", "error")
             return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
-        if efecto in ("descuento_infractor", "descuento_transferencia"):
-            if club_infractor_id not in (partido.local_club_id, partido.visitante_club_id) or not puntos or puntos < 1 or puntos > 100:
-                flash("Selecciona el club infractor y un descuento entre 1 y 100 puntos.", "error")
+        if efecto in ("descuento_infractor", "descuento_transferencia", "marcador_0_3"):
+            if club_infractor_id not in (partido.local_club_id, partido.visitante_club_id):
+                flash("Selecciona el club infractor.", "error")
                 return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
+            if efecto in ("descuento_infractor", "descuento_transferencia") and (not puntos or puntos < 1 or puntos > 100):
+                flash("Selecciona un descuento entre 1 y 100 puntos.", "error")
+                return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
+            if efecto == "marcador_0_3":
+                puntos = 3
         else:
             club_infractor_id = None
             puntos = 0
@@ -8254,7 +8268,11 @@ def resolucion_puntos_secretaria(campeonato_id, partido_id):
             flash("No se pudo guardar la resolución. No se aplicaron cambios.", "error")
             return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
         registrar_auditoria("CREAR_RESOLUCION_PUNTOS", "Secretaría", f"{numero}; efecto={efecto}; campeonato={campeonato.id}; partido={partido.id}; club_infractor={club_infractor_id}; puntos={puntos or 0}")
-        flash(f"Resolución {numero} aplicada. La tabla se recalcula sin modificar el marcador deportivo.", "success")
+        if efecto == "marcador_0_3":
+            detalle = "Marcador administrativo 0-3 para el club rival y 3 puntos para el rival."
+        else:
+            detalle = "La tabla se recalcula sin modificar el marcador deportivo."
+        flash(f"Resolución {numero} aplicada. {detalle}", "success")
         return redirect(url_for("resolucion_puntos_secretaria", campeonato_id=campeonato.id, partido_id=partido.id))
 
     return render_template(
