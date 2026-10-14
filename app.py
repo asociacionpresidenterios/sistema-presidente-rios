@@ -6196,10 +6196,31 @@ def recuperar_tres_jornadas_clausura_adultos(campeonato_id):
         ids_resueltos = [(j, fecha, hora, cancha, club_id(local), club_id(visita))
                          for j, fecha, hora, cancha, local, visita in partidos_oficiales]
         # El alcance queda limitado al campeonato seleccionado y jornadas 1, 2 y 3.
-        Partido.query.filter(
+        partidos_antiguos = Partido.query.filter(
             Partido.campeonato_id == campeonato.id,
             Partido.jornada.in_([1, 2, 3])
-        ).delete(synchronize_session=False)
+        ).all()
+        ids_antiguos = [p.id for p in partidos_antiguos]
+        if ids_antiguos:
+            # El usuario autorizó rehacer manualmente actas, nóminas, resoluciones y datos asociados
+            # de estas tres jornadas. Se limpian primero las referencias para evitar bloqueos FK.
+            ResolucionPuntosSecretaria.query.filter(
+                ResolucionPuntosSecretaria.partido_id.in_(ids_antiguos)
+            ).delete(synchronize_session=False)
+            ResolucionDisciplina.query.filter(
+                ResolucionDisciplina.partido_id.in_(ids_antiguos)
+            ).delete(synchronize_session=False)
+            CuentaTesoreria.query.filter(
+                CuentaTesoreria.partido_id.in_(ids_antiguos)
+            ).update({CuentaTesoreria.partido_id: None}, synchronize_session=False)
+            PartidoJugador.query.filter(
+                PartidoJugador.partido_id.in_(ids_antiguos)
+            ).delete(synchronize_session=False)
+            ActaPartido.query.filter(
+                ActaPartido.partido_id.in_(ids_antiguos)
+            ).delete(synchronize_session=False)
+            for partido_antiguo in partidos_antiguos:
+                db.session.delete(partido_antiguo)
         for jornada, fecha, hora, cancha, local_id, visita_id in ids_resueltos:
             db.session.add(Partido(
                 campeonato_id=campeonato.id, jornada=jornada,
