@@ -1,0 +1,42 @@
+name: Fix public dashboard routes
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, 'fix: public dashboard routes') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch dashboard routes
+        env:
+          GH_ACTOR: ${{ github.actor }}
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('templates/publico.html')
+          s = p.read_text(encoding='utf-8')
+          old = "const routes={table:id=>`/publico/campeonato/${id}/tabla`,program:id=>`/publico/campeonato/${id}/programacion`,results:id=>`/publico/campeonato/${id}/resultados`};"
+          new = '''const routeMap={ {% for serie, panels in series_publicas %}{% for p in panels %}{{ p.campeonato.id }}:{table:"{{ url_for('publico_tabla',campeonato_id=p.campeonato.id) }}",program:"{{ url_for('publico_programacion',campeonato_id=p.campeonato.id) }}",results:"{{ url_for('publico_resultados',campeonato_id=p.campeonato.id) }}"},{% endfor %}{% endfor %} };\nfunction getRoutes(id){return routeMap[String(id)]||routeMap[id]||{};}'''
+          if old not in s:
+              raise SystemExit('target route declaration not found')
+          s = s.replace(old, new, 1)
+          s = s.replace('const tu=routes.table(id),pu=routes.program(id);', 'const routes=getRoutes(id),tu=routes.table,pu=routes.program;')
+          s = s.replace('document.getElementById('"'"'resultsLink'"'"').href=routes.results(id);', 'document.getElementById('"'"'resultsLink'"'"').href=routes.results||"#";')
+          p.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Commit and self-remove
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add templates/publico.html
+          git rm .github/workflows/fix-public-dashboard-routes.yml
+          git commit -m "fix: public dashboard routes"
+          git push
