@@ -1,0 +1,46 @@
+name: Unify public portal design
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  unify:
+    if: ${{ !contains(github.event.head_commit.message, '[premium-public]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply design system
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('templates')
+          css = '<link rel="stylesheet" href="{{ url_for(\'static\', filename=\'public_portal.css\') }}">'
+          for p in sorted(root.glob('publico*.html')):
+              s = p.read_text(encoding='utf-8')
+              if css not in s and '</head>' in s:
+                  s = s.replace('</head>', css + '\n</head>', 1)
+
+              # Consistent navigation affordance on standalone championship pages.
+              # The home portal itself and templates extending public_base already
+              # have their own global navigation and are left untouched.
+              if p.name not in {'publico.html', 'public_base.html', 'publico_disciplina.html', 'publico_expulsados.html', 'publico_clubes.html'} and '{% extends' not in s and 'class="pr-backbar"' not in s and '<body>' in s:
+                  bar = '''<div class="pr-backbar"><a href="{{ url_for('publico') }}">← Portal público</a><span class="pr-context">Información oficial · Presidente Ríos</span></div>'''
+                  s = s.replace('<body>', '<body>\n' + bar, 1)
+              p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit and remove workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f .github/workflows/premium-public-portal.yml
+          git add -A
+          git commit -m "style: premium public portal [premium-public]"
+          git push
