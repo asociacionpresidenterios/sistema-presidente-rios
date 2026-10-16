@@ -4,8 +4,17 @@ from flask import render_template
 from app import app, db, Jugador, index as original_index
 
 
+# Public portal: the main domain opens directly on the official public face.
+# The original Players view is kept available for the administrative module.
+def public_root():
+    return redirect("/publico")
+
+if "index" in app.view_functions:
+    app.view_functions["index"] = public_root
+
+
 # Real administrative Players endpoint. It reuses the existing player view only
-# for its data/template; the root URL remains the administration home.
+# for its data/template; the root URL is reserved for the public portal.
 if "admin_jugadores" not in app.view_functions:
     def admin_jugadores():
         if not session.get("admin_id"):
