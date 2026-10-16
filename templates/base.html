@@ -5,120 +5,64 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}Presidente Ríos{% endblock %}</title>
 <style>
-:root{
- --navy:#0b1830;--navy2:#12284a;--blue:#2563eb;--blue2:#1d4ed8;
- --bg:#f4f7fb;--card:#fff;--text:#142033;--muted:#64748b;
- --line:#e5eaf1;--green:#16a34a;--amber:#d97706;--red:#dc2626;
- --sidebar:258px;
-}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0}
-body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-a{text-decoration:none;color:inherit}
-.app{min-height:100vh;display:flex}
-.sidebar{position:fixed;inset:0 auto 0 0;width:var(--sidebar);background:linear-gradient(180deg,#08172e 0%,#0d2342 100%);color:#fff;display:flex;flex-direction:column;z-index:50;box-shadow:8px 0 28px rgba(15,23,42,.10)}
-.brand{height:82px;padding:16px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,.09)}
-.brand-mark{width:60px;height:60px;min-width:60px;border-radius:12px;background:#fff;display:grid;place-items:center;padding:4px;box-sizing:border-box;overflow:hidden}.brand-mark img{display:block;width:100%;height:100%;object-fit:contain}
-.brand-title{font-size:16px;font-weight:800;line-height:1.1}.brand-sub{font-size:11px;color:#a9b9cf;margin-top:4px}
-.side-scroll{padding:18px 12px;overflow:auto}
-.section-label{font-size:10px;letter-spacing:.12em;color:#7890ae;font-weight:800;padding:12px 11px 7px;text-transform:uppercase}
-.nav-item{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;color:#c8d5e7;font-size:13px;font-weight:650;margin:2px 0;transition:.15s}
-.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
-.nav-item.active{background:linear-gradient(90deg,#2563eb,#1d4ed8);color:#fff;box-shadow:0 7px 18px rgba(37,99,235,.25)}
-.nav-icon{width:20px;text-align:center;font-size:16px}
-.sidebar-footer{margin-top:auto;padding:12px;border-top:1px solid rgba(255,255,255,.09)}
-.user-box{padding:10px 12px;background:rgba(255,255,255,.05);border-radius:11px;font-size:12px;color:#d8e3f1}
-.user-box strong{display:block;color:#fff;font-size:13px;margin-bottom:2px}
-.logout{display:block;margin-top:8px;color:#a9b9cf;font-size:12px}
-.main{margin-left:var(--sidebar);min-width:0;width:calc(100% - var(--sidebar))}
-.topbar{height:66px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:40}
-.breadcrumb{font-size:13px;color:var(--muted)}.breadcrumb strong{color:var(--text)}
-.top-actions{display:flex;align-items:center;gap:10px}
-.top-btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:9px 12px;font-size:12px;font-weight:700;color:#334155}
-.top-btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
-.page{padding:28px;max-width:1700px;margin:auto}
-.flash{padding:12px 15px;border-radius:10px;background:#fff;border:1px solid var(--line);margin-bottom:16px;font-size:13px}
-@media(max-width:900px){
- :root{--sidebar:0px}
- .sidebar{transform:translateX(-100%);width:270px}
- .sidebar.open{transform:translateX(0)}
- .main{margin-left:0;width:100%}
- .topbar{padding:0 16px}.page{padding:18px}
- .mobile-menu{display:block!important}
-}
-.mobile-menu{display:none;border:0;background:#eef3f9;border-radius:9px;padding:9px 11px;font-size:18px}
+:root{--navy:#0b1830;--navy2:#12284a;--blue:#2563eb;--blue2:#1d4ed8;--bg:#f4f7fb;--card:#fff;--text:#142033;--muted:#64748b;--line:#e5eaf1;--green:#16a34a;--amber:#d97706;--red:#dc2626;--sidebar:245px}
+*{box-sizing:border-box}html,body{margin:0;padding:0}body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}a{text-decoration:none;color:inherit}
+.app{min-height:100vh;display:flex}.sidebar{position:fixed;inset:0 auto 0 0;width:var(--sidebar);background:linear-gradient(180deg,#08172e,#0d2342);color:#fff;display:flex;flex-direction:column;z-index:50;box-shadow:8px 0 28px rgba(15,23,42,.10)}
+.brand{height:78px;padding:13px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.09)}.brand-mark{width:52px;height:52px;min-width:52px;border-radius:11px;background:#fff;display:grid;place-items:center;padding:4px;overflow:hidden}.brand-mark img{display:block;width:100%;height:100%;object-fit:contain}.brand-title{font-size:15px;font-weight:800;line-height:1.1}.brand-sub{font-size:10px;color:#a9b9cf;margin-top:4px}
+.side-scroll{padding:12px 10px;overflow:auto}.section-label{font-size:9px;letter-spacing:.12em;color:#7890ae;font-weight:800;padding:12px 10px 6px;text-transform:uppercase}.nav-item{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:9px;color:#c8d5e7;font-size:12px;font-weight:650;margin:2px 0}.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}.nav-item.active{background:linear-gradient(90deg,#2563eb,#1d4ed8);color:#fff;box-shadow:0 7px 18px rgba(37,99,235,.25)}.nav-icon{width:19px;text-align:center;font-size:15px}.sidebar-footer{margin-top:auto;padding:10px;border-top:1px solid rgba(255,255,255,.09)}.user-box{padding:9px 10px;background:rgba(255,255,255,.05);border-radius:10px;font-size:11px;color:#d8e3f1}.user-box strong{display:block;color:#fff;font-size:12px;margin-bottom:2px}.logout{display:block;margin-top:7px;color:#a9b9cf;font-size:11px}
+.main{margin-left:var(--sidebar);min-width:0;width:calc(100% - var(--sidebar))}.topbar{height:62px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:40}.breadcrumb{font-size:12px;color:var(--muted)}.breadcrumb strong{color:var(--text)}.top-actions{display:flex;align-items:center;gap:8px}.top-btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 11px;font-size:11px;font-weight:700;color:#334155}.top-btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.page{padding:24px;max-width:1700px;margin:auto}.flash{padding:11px 14px;border-radius:9px;background:#fff;border:1px solid var(--line);margin-bottom:14px;font-size:12px}
+.mobile-menu{display:none;border:0;background:#eef3f9;border-radius:8px;padding:8px 10px;font-size:17px}@media(max-width:900px){:root{--sidebar:0px}.sidebar{transform:translateX(-100%);width:270px}.sidebar.open{transform:translateX(0)}.main{margin-left:0;width:100%}.topbar{padding:0 14px}.page{padding:16px}.mobile-menu{display:block!important}.top-actions .secondary-mobile{display:none!important}}
 </style>
 {% block head %}{% endblock %}
 </head>
 <body>
 <div class="app">
 <aside class="sidebar" id="sidebar">
-  <div class="brand">
-    <div class="brand-mark"><img src="{{ url_for('static', filename='asociacionTransparente.png') }}" alt="Logo Asociación de Fútbol Presidente Ríos"></div>
-    <div><div class="brand-title">Presidente Ríos</div><div class="brand-sub">Gestión futbolística</div></div>
-  </div>
+  <div class="brand"><div class="brand-mark"><img src="{{ url_for('static', filename='asociacionTransparente.png') }}" alt="Logo Asociación de Fútbol Presidente Ríos"></div><div><div class="brand-title">Presidente Ríos</div><div class="brand-sub">Gestión futbolística</div></div></div>
   <div class="side-scroll">
     <div class="section-label">Inicio</div>
     <a class="nav-item {% if request.endpoint == 'admin_panel_maestro' %}active{% endif %}" href="{{ url_for('admin_panel_maestro') }}"><span class="nav-icon">🏠</span>Inicio</a>
     <a class="nav-item {% if request.endpoint=='publico' %}active{% endif %}" href="{{ url_for('publico') }}"><span class="nav-icon">🌐</span>Portal público</a>
 
     {% if session.get('admin_rol') == 'Administrador' or not session.get('admin_rol') %}
-    <a class="nav-item {% if request.endpoint=='admin_alertas' %}active{% endif %}" href="{{ url_for('admin_alertas') }}"><span class="nav-icon">🚨</span>Centro de Alertas</a>
-    <div class="section-label">Gestión deportiva</div>
+    <div class="section-label">Campeonato</div>
     <a class="nav-item {% if request.endpoint in ['campeonatos','nuevo_campeonato','detalle_campeonato','panel_campeonato'] %}active{% endif %}" href="{{ url_for('campeonatos') }}"><span class="nav-icon">🏆</span>Campeonatos</a>
+    <a class="nav-item {% if request.endpoint in ['admin_partidos','admin_centro_partidos','admin_centro_partido'] %}active{% endif %}" href="{{ url_for('admin_partidos') }}"><span class="nav-icon">⚽</span>Partidos</a>
+    <a class="nav-item {% if request.endpoint in ['admin_actas','acta_partido'] %}active{% endif %}" href="{{ url_for('admin_actas') }}"><span class="nav-icon">📋</span>Actas</a>
+    <a class="nav-item {% if request.endpoint in ['admin_centro_estadisticas'] %}active{% endif %}" href="{{ url_for('admin_centro_estadisticas') }}"><span class="nav-icon">📊</span>Estadísticas</a>
+
+    <div class="section-label">Clubes y jugadores</div>
     <a class="nav-item {% if request.endpoint in ['admin_clubes','admin_planteles','admin_ficha_club','admin_centro_club_series','admin_centro_club_estadisticas'] %}active{% endif %}" href="{{ url_for('admin_clubes') }}"><span class="nav-icon">🏟️</span>Clubes</a>
     <a class="nav-item {% if request.endpoint in ['index','nuevo_jugador','editar_jugador','importar_jugadores','ficha_jugador','historial_jugador','admin_centro_jugador'] %}active{% endif %}" href="{{ url_for('index') }}"><span class="nav-icon">👥</span>Jugadores</a>
-    <a class="nav-item {% if request.endpoint in ['admin_partidos','admin_centro_partidos','admin_centro_partido'] %}active{% endif %}" href="{{ url_for('admin_partidos') }}"><span class="nav-icon">⚽</span>Partidos</a>
-    <a class="nav-item {% if request.endpoint in ['admin_actas','acta_partido','admin_centro_estadisticas'] %}active{% endif %}" href="{{ url_for('admin_actas') }}"><span class="nav-icon">📋</span>Actas</a>
+    <a class="nav-item {% if request.endpoint in ['admin_planteles','admin_planteles_campeonato'] %}active{% endif %}" href="{{ url_for('admin_planteles') }}"><span class="nav-icon">📝</span>Planteles</a>
+
+    <div class="section-label">Control</div>
+    <a class="nav-item {% if request.endpoint in ['admin_alertas'] %}active{% endif %}" href="{{ url_for('admin_alertas') }}"><span class="nav-icon">🚨</span>Alertas</a>
     <a class="nav-item {% if request.endpoint in ['admin_disciplina','crear_resolucion_disciplina','ver_resolucion_disciplina','admin_disciplina_tarjetas','admin_disciplina_expulsados','crear_expulsado_disciplina','ver_expulsado_disciplina'] %}active{% endif %}" href="{{ url_for('admin_disciplina') }}"><span class="nav-icon">⚖️</span>Disciplina</a>
-    <a class="nav-item {% if request.endpoint in ['admin_centro_estadisticas'] %}active{% endif %}" href="{{ url_for('admin_centro_estadisticas') }}"><span class="nav-icon">📊</span>Estadísticas</a>
     <a class="nav-item {% if request.endpoint=='admin_historia' %}active{% endif %}" href="{{ url_for('admin_historia') }}"><span class="nav-icon">🏛️</span>Historia</a>
+
+    <div class="section-label">Administración</div>
     <a class="nav-item {% if request.endpoint=='admin_tesoreria' %}active{% endif %}" href="{{ url_for('admin_tesoreria') }}"><span class="nav-icon">💰</span>Tesorería</a>
+    <a class="nav-item {% if request.endpoint=='admin_usuarios' %}active{% endif %}" href="{{ url_for('admin_usuarios') }}"><span class="nav-icon">🔐</span>Usuarios</a>
+    <a class="nav-item {% if request.endpoint=='admin_auditoria' %}active{% endif %}" href="{{ url_for('admin_auditoria') }}"><span class="nav-icon">📋</span>Auditoría</a>
+    <a class="nav-item {% if request.endpoint in ['identidad_visual','configuracion'] %}active{% endif %}" href="{{ url_for('configuracion') }}"><span class="nav-icon">⚙️</span>Configuración</a>
     {% elif session.get('admin_rol') == 'Disciplina' %}
     <div class="section-label">Disciplina</div>
     <a class="nav-item {% if request.endpoint in ['admin_disciplina','crear_resolucion_disciplina','ver_resolucion_disciplina'] %}active{% endif %}" href="{{ url_for('admin_disciplina') }}"><span class="nav-icon">⚖️</span>Comité de Disciplina</a>
-    <a class="nav-item {% if request.endpoint in ['admin_disciplina_tarjetas'] %}active{% endif %}" href="{{ url_for('admin_disciplina_tarjetas') }}"><span class="nav-icon">🟨</span>Control de tarjetas</a>
+    <a class="nav-item {% if request.endpoint=='admin_disciplina_tarjetas' %}active{% endif %}" href="{{ url_for('admin_disciplina_tarjetas') }}"><span class="nav-icon">🟨</span>Tarjetas</a>
     <a class="nav-item {% if request.endpoint in ['admin_disciplina_expulsados','crear_expulsado_disciplina','ver_expulsado_disciplina'] %}active{% endif %}" href="{{ url_for('admin_disciplina_expulsados') }}"><span class="nav-icon">🚫</span>Expulsados</a>
     {% elif session.get('admin_rol') == 'Tesoreria' %}
     <div class="section-label">Tesorería</div>
     <a class="nav-item {% if request.endpoint=='admin_tesoreria' %}active{% endif %}" href="{{ url_for('admin_tesoreria') }}"><span class="nav-icon">💰</span>Tesorería</a>
     {% endif %}
 
-    {% if session.get('admin_rol') != 'Disciplina' %}
     <div class="section-label">Cuenta</div>
     <a class="nav-item {% if request.endpoint=='mi_cuenta_admin' %}active{% endif %}" href="{{ url_for('mi_cuenta_admin') }}"><span class="nav-icon">👤</span>Mi cuenta</a>
-    {% endif %}
-    {% if session.get('admin_rol') == 'Administrador' or not session.get('admin_rol') %}
-    <div class="section-label">Sistema</div>
-    <a class="nav-item {% if request.endpoint=='admin_usuarios' %}active{% endif %}" href="{{ url_for('admin_usuarios') }}"><span class="nav-icon">🔐</span>Usuarios</a>
-    <a class="nav-item {% if request.endpoint=='admin_auditoria' %}active{% endif %}" href="{{ url_for('admin_auditoria') }}"><span class="nav-icon">📋</span>Auditoría</a>
-    <a class="nav-item {% if request.endpoint in ['identidad_visual','configuracion'] %}active{% endif %}" href="{{ url_for('configuracion') }}"><span class="nav-icon">⚙️</span>Configuración</a>
-    {% endif %}
   </div>
-  <div class="sidebar-footer">
-    <div class="user-box"><strong>{{ session.get('admin_nombre') or 'Administrador' }}</strong>{{ {'Administrador':'Administrador','Disciplina':'Disciplina','Tesoreria':'Tesorería'}.get(session.get('admin_rol'),'Administrador') }}</div>
-    <a class="logout" href="{{ url_for('logout') }}">↪ Cerrar sesión</a>
-  </div>
+  <div class="sidebar-footer"><div class="user-box"><strong>{{ session.get('admin_nombre') or 'Administrador' }}</strong>{{ {'Administrador':'Administrador','Disciplina':'Disciplina','Tesoreria':'Tesorería'}.get(session.get('admin_rol'),'Administrador') }}</div><a class="logout" href="{{ url_for('logout') }}">↪ Cerrar sesión</a></div>
 </aside>
-
 <main class="main">
-  <header class="topbar">
-    <div style="display:flex;align-items:center;gap:12px">
-      <button class="mobile-menu" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
-      <div class="breadcrumb"><strong>Asociación Presidente Ríos</strong> <span style="margin:0 6px;color:#94a3b8">/</span> Gestión</div>
-    </div>
-    <div class="top-actions">
-      <a class="top-btn" href="{{ url_for('publico_disciplina') }}">⚖️ Disciplina</a><a class="top-btn" href="{{ url_for('publico_expulsados') }}">🚫 Expulsados</a>
-      <a class="top-btn primary" href="{{ url_for('publico') }}">🌐 Ver portal público</a>
-    </div>
-  </header>
-  <div class="page">
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}{% for message in messages %}<div class="flash">{{ message }}</div>{% endfor %}{% endif %}
-    {% endwith %}
-    {% block content %}{% endblock %}
-  </div>
-</main>
-</div>
-</body>
-</html>
+  <header class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="mobile-menu" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button><div class="breadcrumb"><strong>Asociación Presidente Ríos</strong><span style="margin:0 5px;color:#94a3b8">/</span>Administración</div></div><div class="top-actions"><a class="top-btn primary" href="{{ url_for('publico') }}">🌐 Ver portal público</a></div></header>
+  <div class="page">{% with messages = get_flashed_messages() %}{% if messages %}{% for message in messages %}<div class="flash">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}{% block content %}{% endblock %}</div>
+</main></div>
+</body></html>
