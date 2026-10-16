@@ -67,4 +67,5 @@
   <div class="page">{% with messages = get_flashed_messages() %}{% if messages %}{% for message in messages %}<div class="flash">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}{% block content %}{% endblock %}</div>
 </main></div>
 <script src="{{ url_for('static', filename='admin_nav.js') }}"></script>
+<script src="{{ url_for('static', filename='admin_dashboard.js') }}"></script>
 </body></html>
