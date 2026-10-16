@@ -1,15 +1,12 @@
 name: Fix button navigation once
 
-on:
-  push:
-    branches: [main]
+on: push
 
 permissions:
   contents: write
 
 jobs:
   repair:
-    if: ${{ !contains(github.event.head_commit.message, '[button-fix]') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,7 +18,6 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          # 1) Administración: la raíz queda como Inicio y Jugadores obtiene su propia ruta.
           p = Path('app.py')
           s = p.read_text(encoding='utf-8')
           old = '''@app.route("/")
@@ -36,8 +32,7 @@ def index():
 @app.route("/admin/jugadores", endpoint="admin_jugadores")
 def index():
     # La raíz es exclusivamente Inicio para administradores.
-    # El listado de jugadores tiene una ruta propia para que el menú
-    # siempre lleve al módulo que indica.
+    # El listado de jugadores tiene una ruta propia.
     if session.get("admin_id") and request.path == "/":
         return redirect(url_for("admin_panel_maestro"))
 '''
@@ -68,7 +63,6 @@ def index():
           s = s.replace(old, new, 1)
           p.write_text(s, encoding='utf-8')
 
-          # 2) Menú administrativo: Jugadores apunta a su módulo real.
           p = Path('templates/base.html')
           s = p.read_text(encoding='utf-8')
           old = '''    <a class="nav-item {% if request.endpoint in ['index','nuevo_jugador','editar_jugador','importar_jugadores','ficha_jugador','historial_jugador','admin_centro_jugador'] %}active{% endif %}" href="{{ url_for('index') }}"><span class="nav-icon">👥</span>Jugadores</a>'''
@@ -78,13 +72,11 @@ def index():
           s = s.replace(old, new, 1)
           p.write_text(s, encoding='utf-8')
 
-          # 3) Gestión de jugadores: búsquedas y limpieza permanecen dentro del módulo.
           p = Path('templates/index.html')
           s = p.read_text(encoding='utf-8')
           s = s.replace("url_for('index')", "url_for('admin_jugadores')")
           p.write_text(s, encoding='utf-8')
 
-          # 4) Portal público: cada botón del menú navega a su página real.
           p = Path('templates/publico.html')
           s = p.read_text(encoding='utf-8')
           old = '''<button class="active" data-target="posiciones" onclick="mostrarSeccion('posiciones',this)">📊 Posiciones</button>
@@ -105,14 +97,12 @@ def index():
               raise SystemExit('No se encontró el menú público esperado')
           s = s.replace(old, new, 1)
 
-          # Los nuevos enlaces conservan el aspecto de los botones y se actualizan
-          # al cambiar campeonato. Si JavaScript falla, el primer campeonato sigue
-          # teniendo enlaces válidos y navegables.
           old = '''.menu button{width:100%;border:0;border-bottom:1px solid #edf0f4;background:#fff;text-align:left;padding:13px 14px;font-weight:800;color:#172033;cursor:pointer}.menu button.active{background:#eaf2ff;color:#1459bd;border-left:4px solid #1769e0}'''
           new = '''.menu button,.menu a{width:100%;display:block;border:0;border-bottom:1px solid #edf0f4;background:#fff;text-align:left;padding:13px 14px;font-weight:800;color:#172033;cursor:pointer;text-decoration:none}.menu button.active,.menu a.active{background:#eaf2ff;color:#1459bd;border-left:4px solid #1769e0}'''
           if old not in s:
               raise SystemExit('No se encontró el CSS del menú público')
           s = s.replace(old, new, 1)
+
           old = '''.menu button{display:block;flex:0 0 auto;width:auto;border-bottom:0;border-right:1px solid #edf0f4;padding:12px 13px;font-size:12px}.menu button.active{border-left:0;border-bottom:3px solid #1769e0}'''
           new = '''.menu button,.menu a{display:block;flex:0 0 auto;width:auto;border-bottom:0;border-right:1px solid #edf0f4;padding:12px 13px;font-size:12px}.menu button.active,.menu a.active{border-left:0;border-bottom:3px solid #1769e0}'''
           if old not in s:
@@ -158,16 +148,12 @@ function actualizarEnlacesMenu(campeonatoId){
           p.write_text(s, encoding='utf-8')
           PY
 
-      - name: Commit repair and remove one-time workflow
+      - name: Commit repair and remove workflow
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           rm -f .github/workflows/fix-buttons-once.yml
           git add -A
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-            exit 0
-          fi
           git commit -m "fix: repair admin and public navigation [button-fix]"
           git push
