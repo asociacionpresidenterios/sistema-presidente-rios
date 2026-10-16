@@ -1,0 +1,44 @@
+name: Fix root public portal
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-root:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Redirect root to public portal
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('app.py')
+          text = path.read_text(encoding='utf-8')
+
+          marker = 'app = Flask(__name__)\n'
+          block = '''app = Flask(__name__)\n\n\n@app.before_request\ndef redirect_root_to_public_portal():\n    """La portada del dominio es siempre el portal público."""\n    if request.path == "/" and not request.path.startswith("/static"):\n        return redirect(url_for("publico"))\n\n'''
+
+          if 'def redirect_root_to_public_portal' not in text:
+              if marker not in text:
+                  raise SystemExit('No se encontró el punto de inserción esperado en app.py')
+              text = text.replace(marker, block, 1)
+              path.write_text(text, encoding='utf-8')
+              print('Root redirect inserted')
+          else:
+              print('Root redirect already present')
+          PY
+
+      - name: Commit and clean workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.py .github/workflows/fix-root-public.yml
+          git rm .github/workflows/fix-root-public.yml
+          git commit -m "fix: make public portal the site root" || exit 0
+          git push
