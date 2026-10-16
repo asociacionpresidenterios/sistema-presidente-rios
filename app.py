@@ -2005,6 +2005,9 @@ def index():
     if session.get("admin_id"):
         return redirect(url_for("admin_panel_maestro"))
 
+    # La raíz pública del dominio debe abrir la portada institucional.
+    return redirect(url_for("publico"))
+
     q = request.args.get(
         "q",
         ""
