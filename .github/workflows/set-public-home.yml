@@ -1,0 +1,36 @@
+name: Set public home
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch-root:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Route root to public portal
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('app.py')
+          s = p.read_text(encoding='utf-8')
+          old = '''    if session.get("admin_id"):\n        return redirect(url_for("admin_panel_maestro"))\n\n    q = request.args.get(\n'''
+          new = '''    if session.get("admin_id"):\n        return redirect(url_for("admin_panel_maestro"))\n\n    # La raíz pública del dominio debe abrir la portada institucional.\n    return redirect(url_for("publico"))\n\n    q = request.args.get(\n'''
+          if old not in s:
+              raise SystemExit('No se encontró el bloque esperado en app.py')
+          p.write_text(s.replace(old, new, 1), encoding='utf-8')
+      - name: Commit app change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.py
+          git commit -m "feat: make public portal the root homepage"
+          git push
+      - name: Remove temporary workflow
+        if: success()
+        run: |
+          git rm .github/workflows/set-public-home.yml
+          git commit -m "chore: remove temporary workflow"
+          git push
