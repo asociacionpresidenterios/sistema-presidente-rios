@@ -25,8 +25,10 @@
 @media(max-width:1050px){.page{grid-template-columns:220px 1fr}.summary{grid-template-columns:repeat(3,1fr)}.content-grid{grid-template-columns:1fr}}
 @media(max-width:720px){.top{height:auto}.top-in{padding:10px 13px}.brand span{display:none}.page{display:block}.sidebar{padding:12px}.side-nav{display:flex;overflow:auto}.side-title{display:none}.side-nav a{white-space:nowrap;border-bottom:0;border-right:1px solid var(--line);padding:11px 13px;font-size:11px}.side-nav .ico{width:auto}.side-note{display:none}.main{padding:10px 12px 35px}.field-head{padding:21px 18px}.field-head h1{font-size:25px}.summary{grid-template-columns:repeat(2,1fr)}.summary .box:last-child{grid-column:1/-1}.bottom-grid{grid-template-columns:1fr}}
 </style>
+<link rel="stylesheet" href="{{ url_for('static', filename='public_portal.css') }}">
 </head>
 <body>
+<div class="pr-backbar"><a href="{{ url_for('publico') }}">← Portal público</a><span class="pr-context">Información oficial · Presidente Ríos</span></div>
 <header class="top"><div class="top-in">
 <a class="brand" href="{{ url_for('publico') }}"><div class="crest">PR</div><div><b>Asociación Presidente Ríos</b><span>RESULTADOS &amp; ESTADÍSTICAS ⚽</span></div></a>
 <div class="top-links"><a href="{{ url_for('publico_clubes') }}">👥 Clubes</a><a href="{{ url_for('login') }}">🔐 Administración</a></div>
