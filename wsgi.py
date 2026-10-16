@@ -1,19 +1,16 @@
-import re
+from flask import redirect, request, session, url_for
+from flask import render_template
 
-from flask import request, session, redirect, url_for
-
-from app import app, index as original_index
+from app import app, db, Jugador, index as original_index
 
 
-# Dedicated player-list endpoint. The existing index view already contains the
-# correct query and template, so sports/data logic remains untouched.
+# Real administrative Players endpoint. It reuses the existing player view only
+# for its data/template; the root URL remains the administration home.
 if "admin_jugadores" not in app.view_functions:
     def admin_jugadores():
         if not session.get("admin_id"):
             return redirect(url_for("login", next=request.path))
 
-        # The original index view redirects admins from /. Temporarily hide only
-        # that session key while reusing its existing player-list logic.
         admin_id = session.pop("admin_id", None)
         try:
             return original_index()
@@ -21,73 +18,39 @@ if "admin_jugadores" not in app.view_functions:
             if admin_id is not None:
                 session["admin_id"] = admin_id
 
-    app.add_url_rule(
-        "/admin/jugadores",
-        endpoint="admin_jugadores",
-        view_func=admin_jugadores,
-        methods=["GET"],
-    )
+    app.add_url_rule("/admin/jugadores", endpoint="admin_jugadores", view_func=admin_jugadores, methods=["GET"])
+
+
+# Keep existing templates that still use url_for('index') inside the Players
+# module when an administrator is logged in. This is a Jinja global override,
+# not a Flask request-context override.
+_original_url_for = app.jinja_env.globals.get("url_for")
+if _original_url_for:
+    def _navigation_url_for(endpoint, *args, **kwargs):
+        if endpoint == "index" and session.get("admin_id"):
+            endpoint = "admin_jugadores"
+        return _original_url_for(endpoint, *args, **kwargs)
+    app.jinja_env.globals["url_for"] = _navigation_url_for
 
 
 @app.after_request
-def repair_public_menu(response):
-    if request.path != "/publico":
+def add_public_back_navigation(response):
+    path = request.path or ""
+    if not path.startswith("/publico/"):
         return response
     if not response.content_type or "text/html" not in response.content_type:
         return response
 
     html = response.get_data(as_text=True)
-    if 'data-target="posiciones"' not in html:
+    if "public-back-navigation" in html:
         return response
 
-    match = re.search(r'value="champ-(\d+)"', html)
-    if not match:
-        return response
-    campeonato_id = match.group(1)
-
-    menu_old = '''<button class="active" data-target="posiciones" onclick="mostrarSeccion('posiciones',this)">📊 Posiciones</button>
-<button data-target="programacion" onclick="mostrarSeccion('programacion',this)">📅 Programación</button>
-<button data-target="resultados" onclick="mostrarSeccion('resultados',this)">⚽ Resultados</button>
-<button data-target="goleadores" onclick="mostrarSeccion('goleadores',this)">🥅 Goleadores</button>
-<button data-target="estadisticas" onclick="mostrarSeccion('estadisticas',this)">📈 Estadísticas</button>
-<button data-target="fairplay" onclick="mostrarSeccion('fairplay',this)">🟧 Fair Play</button>
-<button data-target="enlaces" onclick="mostrarSeccion('enlaces',this)">🔗 Más información</button>'''
-
-    routes = {
-        "posiciones": f"/publico/campeonato/{campeonato_id}/tabla",
-        "programacion": f"/publico/campeonato/{campeonato_id}/programacion",
-        "resultados": f"/publico/campeonato/{campeonato_id}/resultados",
-        "goleadores": f"/publico/campeonato/{campeonato_id}/goleadores",
-        "estadisticas": f"/publico/campeonato/{campeonato_id}/estadisticas",
-        "fairplay": f"/publico/campeonato/{campeonato_id}/fair-play",
-        "enlaces": f"/publico/campeonato/{campeonato_id}",
-    }
-    labels = {
-        "posiciones": "📊 Posiciones",
-        "programacion": "📅 Programación",
-        "resultados": "⚽ Resultados",
-        "goleadores": "🥅 Goleadores",
-        "estadisticas": "📈 Estadísticas",
-        "fairplay": "🟧 Fair Play",
-        "enlaces": "🔗 Más información",
-    }
-
-    menu_new = "\n".join(
-        f'<a class="menu-public-link{(" active" if key == "posiciones" else "")}" '
-        f'data-target="{key}" href="{routes[key]}">{labels[key]}</a>'
-        for key in routes
-    )
-
-    if menu_old in html:
-        html = html.replace(menu_old, menu_new, 1)
-
-    style = '''<style id="button-navigation-fix">\n.menu-public-link{width:100%;display:block;box-sizing:border-box;border:0;border-bottom:1px solid #edf0f4;background:#fff;text-align:left;padding:13px 14px;font-weight:800;color:#172033;cursor:pointer;text-decoration:none}.menu-public-link.active{background:#eaf2ff;color:#1459bd;border-left:4px solid #1769e0}@media(max-width:800px){.menu-public-link{display:block;flex:0 0 auto;width:auto;border-bottom:0;border-right:1px solid #edf0f4;padding:12px 13px;font-size:12px}.menu-public-link.active{border-left:0;border-bottom:3px solid #1769e0}}\n</style>'''
-    if "button-navigation-fix" not in html:
-        html = html.replace("</head>", style + "</head>", 1)
-
-    script = f'''<script id="button-navigation-links">\n(function(){{\n  const base={{posiciones:'/publico/campeonato/ID/tabla',programacion:'/publico/campeonato/ID/programacion',resultados:'/publico/campeonato/ID/resultados',goleadores:'/publico/campeonato/ID/goleadores',estadisticas:'/publico/campeonato/ID/estadisticas',fairplay:'/publico/campeonato/ID/fair-play',enlaces:'/publico/campeonato/ID'}};\n  function actualizar(){{\n    const select=document.getElementById('champSelect');\n    const raw=select && select.value ? select.value.replace('champ-','') : '{campeonato_id}';\n    document.querySelectorAll('#menu a.menu-public-link[data-target]').forEach(function(a){{\n      const template=base[a.dataset.target];\n      if(template)a.href=template.replace('ID',raw);\n    }});\n  }}\n  actualizar();\n  const select=document.getElementById('champSelect');\n  if(select)select.addEventListener('change',function(){{setTimeout(actualizar,0);}});\n}})();\n</script>'''
-    if "button-navigation-links" not in html:
-        html = html.replace("</body>", script + "</body>", 1)
-
+    style = '''<style id="public-back-navigation">\n.public-nav{max-width:1240px;margin:0 auto;padding:10px 18px;display:flex;gap:8px;flex-wrap:wrap}.public-nav a{display:inline-block;text-decoration:none;background:#fff;color:#173b70;border:1px solid #dfe5ec;border-radius:9px;padding:8px 11px;font:800 12px Arial,sans-serif}.public-nav a.primary{background:#1769e0;color:#fff;border-color:#1769e0}\n</style>'''
+    nav = '''<nav class="public-nav" aria-label="Navegación del portal">\n<a class="primary" href="/publico">← Portal público</a>\n<a href="javascript:history.back()">← Volver</a>\n</nav>'''
+    html = html.replace("</head>", style + "</head>", 1)
+    if "<main" in html:
+        html = html.replace("<main", nav + "<main", 1)
+    else:
+        html = html.replace("<body>", "<body>" + nav, 1)
     response.set_data(html)
     return response
