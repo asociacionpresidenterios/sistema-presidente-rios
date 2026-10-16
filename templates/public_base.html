@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071426">
+<meta name="application-name" content="Presidente Ríos">
+<link rel="manifest" href="{{ url_for('static',filename='manifest.json') }}">
+<link rel="icon" href="{{ url_for('static',filename='icon.svg') }}" type="image/svg+xml">
+<link rel="apple-touch-icon" href="{{ url_for('static',filename='icon.svg') }}">
 <title>{% block title %}Presidente Ríos · Portal Oficial{% endblock %}</title>
 <style>
 :root{--navy:#071426;--blue:#1769e0;--bg:#eef2f6;--text:#172033;--muted:#68788c;--line:#dfe5ec}
