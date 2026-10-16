@@ -38,6 +38,14 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
+
+@app.before_request
+def redirect_root_to_public_portal():
+    """La portada del dominio es siempre el portal público."""
+    if request.path == "/" and not request.path.startswith("/static"):
+        return redirect(url_for("publico"))
+
+
 app.config["SECRET_KEY"] = os.environ.get(
     "SECRET_KEY",
     secrets.token_hex(32)
