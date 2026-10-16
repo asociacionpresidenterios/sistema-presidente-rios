@@ -1,14 +1,19 @@
 import re
 
-from flask import request, session
+from flask import request, session, redirect, url_for
 
 from app import app, index as original_index
 
 
 # Dedicated player-list endpoint. The existing index view already contains the
-# correct query and template, so the sports/data logic remains untouched.
+# correct query and template, so sports/data logic remains untouched.
 if "admin_jugadores" not in app.view_functions:
     def admin_jugadores():
+        if not session.get("admin_id"):
+            return redirect(url_for("login", next=request.path))
+
+        # The original index view redirects admins from /. Temporarily hide only
+        # that session key while reusing its existing player-list logic.
         admin_id = session.pop("admin_id", None)
         try:
             return original_index()
@@ -22,27 +27,6 @@ if "admin_jugadores" not in app.view_functions:
         view_func=admin_jugadores,
         methods=["GET"],
     )
-
-
-# Existing templates still reference url_for('index'). During an admin session,
-# make those links stay inside Gestión de jugadores instead of returning Home.
-_original_update_template_context = app.update_template_context
-
-
-def _update_template_context(ctx, context):
-    _original_update_template_context(ctx, context)
-    if session.get("admin_id") and "url_for" in context:
-        original_url_for = context["url_for"]
-
-        def navigation_url_for(endpoint, *args, **kwargs):
-            if endpoint == "index":
-                endpoint = "admin_jugadores"
-            return original_url_for(endpoint, *args, **kwargs)
-
-        context["url_for"] = navigation_url_for
-
-
-app.update_template_context = _update_template_context
 
 
 @app.after_request
