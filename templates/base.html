@@ -66,4 +66,5 @@
   <header class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="mobile-menu" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button><div class="breadcrumb"><strong>Asociación Presidente Ríos</strong><span style="margin:0 5px;color:#94a3b8">/</span>Administración</div></div><div class="top-actions"><a class="top-btn primary" href="{{ url_for('publico') }}">🌐 Ver portal público</a></div></header>
   <div class="page">{% with messages = get_flashed_messages() %}{% if messages %}{% for message in messages %}<div class="flash">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}{% block content %}{% endblock %}</div>
 </main></div>
+<script src="{{ url_for('static', filename='admin_nav.js') }}"></script>
 </body></html>
