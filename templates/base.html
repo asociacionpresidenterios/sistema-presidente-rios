@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{% block title %}Presidente Ríos{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='admin_premium.css') }}">
 <style>
 :root{--navy:#0b1830;--navy2:#12284a;--blue:#2563eb;--blue2:#1d4ed8;--bg:#f4f7fb;--card:#fff;--text:#142033;--muted:#64748b;--line:#e5eaf1;--green:#16a34a;--amber:#d97706;--red:#dc2626;--sidebar:245px}
 *{box-sizing:border-box}html,body{margin:0;padding:0}body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}a{text-decoration:none;color:inherit}
@@ -33,7 +34,7 @@
 
     <div class="section-label">Clubes y jugadores</div>
     <a class="nav-item {% if request.endpoint in ['admin_clubes','admin_planteles','admin_ficha_club','admin_centro_club_series','admin_centro_club_estadisticas'] %}active{% endif %}" href="{{ url_for('admin_clubes') }}"><span class="nav-icon">🏟️</span>Clubes</a>
-    <a class="nav-item {% if request.endpoint in ['index','nuevo_jugador','editar_jugador','importar_jugadores','ficha_jugador','historial_jugador','admin_centro_jugador'] %}active{% endif %}" href="{{ url_for('index') }}"><span class="nav-icon">👥</span>Jugadores</a>
+    <a class="nav-item {% if request.endpoint in ['admin_jugadores','index','nuevo_jugador','editar_jugador','importar_jugadores','ficha_jugador','historial_jugador','admin_centro_jugador'] %}active{% endif %}" href="{{ url_for('admin_jugadores') }}"><span class="nav-icon">👥</span>Jugadores</a>
     <a class="nav-item {% if request.endpoint in ['admin_planteles','admin_planteles_campeonato'] %}active{% endif %}" href="{{ url_for('admin_planteles') }}"><span class="nav-icon">📝</span>Planteles</a>
 
     <div class="section-label">Control</div>
