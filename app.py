@@ -6582,6 +6582,40 @@ def editar_partido_fixture(campeonato_id, partido_id):
         if turno_id is not None and turno_id not in participantes:
             raise ValueError("El club de turno seleccionado no pertenece a este campeonato.")
 
+        # Detectar un cambio directo del equipo libre en la misma jornada.
+        # En ese caso solo se sustituye el equipo del partido seleccionado:
+        # no se reconstruyen ni se reordenan los demás partidos programados.
+        partidos_misma_jornada = Partido.query.filter_by(
+            campeonato_id=campeonato.id,
+            jornada=jornada_original,
+        ).all()
+        clubes_en_jornada = {
+            club_id
+            for p in partidos_misma_jornada
+            for club_id in (p.local_club_id, p.visitante_club_id)
+        }
+        clubes_libres_actuales = participantes - clubes_en_jornada
+        ids_nuevos = {local_id, visitante_id}
+        ids_originales = set(pareja_original)
+        equipo_libre_reemplaza = (
+            jornada_nueva == jornada_original
+            and bool(ids_nuevos - ids_originales)
+            and bool((ids_nuevos - ids_originales) & clubes_libres_actuales)
+            and bool(ids_originales - ids_nuevos)
+        )
+
+        # No permitir repetir un enfrentamiento ya jugado.
+        if equipo_libre_reemplaza:
+            nuevo_cruce = frozenset((local_id, visitante_id))
+            cruce_ya_jugado = any(
+                _partido_finalizado(p)
+                and _pareja_partidos(p) == nuevo_cruce
+                for p in Partido.query.filter_by(campeonato_id=campeonato.id).all()
+                if p.id != partido.id
+            )
+            if cruce_ya_jugado:
+                raise ValueError("Ese enfrentamiento ya fue disputado; no se puede repetir.")
+
         # Si el administrador cambia de jornada, el partido se mueve antes
         # de adaptar el calendario.
         partido.jornada = jornada_nueva
@@ -6590,16 +6624,14 @@ def editar_partido_fixture(campeonato_id, partido_id):
         partido.turno_club_id = turno_id
         partido.fixture_bloqueado = True
 
-        # Si solo se cambió fecha, hora, cancha o turno, guardar directamente.
-        # Recalcular el fixture completo solo si cambia el cruce o la jornada;
-        # así una edición de programación no queda bloqueada por incompatibilidades
-        # ajenas en otras jornadas futuras.
+        # Un cambio de equipo libre es local a esta jornada y conserva intactos
+        # los otros cruces, horarios, canchas y fechas ya programadas.
         cambio_estructural = (
             jornada_nueva != jornada_original
             or _pareja_partidos(partido) != pareja_original
         )
-        if cambio_estructural:
-            # El adaptador protege las jornadas cursadas y valida los cruces futuros.
+        if cambio_estructural and not equipo_libre_reemplaza:
+            # Para otros cambios estructurales se mantiene el adaptador habitual.
             adaptar_fixture_pendiente(campeonato, partido)
         db.session.commit()
 
