@@ -72,24 +72,31 @@
       <span style="font-size:12px;color:#64748b">Se muestra solo la jornada seleccionada.</span>
     </div>
     <script>
-      (function(){
+      document.addEventListener('DOMContentLoaded', function(){
         const selector=document.getElementById('selectorJornada');
+        const filtro=document.getElementById('filtroJornada');
         const rondas=document.querySelectorAll('.round[data-jornada]');
-        if(!selector)return;
-        function mostrarJornada(){rondas.forEach(r=>{r.style.display=(r.dataset.jornada===selector.value)?'block':'none';});}
-        selector.addEventListener('change',function(){
-          mostrarJornada();
-          const url=new URL(window.location.href);
-          url.searchParams.set('jornada',selector.value);
-          history.replaceState(null,'',url.pathname+url.search+'#jornada-'+selector.value);
-        });
-        mostrarJornada();
-        if(window.location.hash.startsWith('#jornada-')){
-          const n=window.location.hash.replace('#jornada-','');
-          if(selector.querySelector('option[value="'+n+'"]')){selector.value=n;mostrarJornada();}
+        function mostrarJornada(valor){
+          rondas.forEach(function(r){r.style.display=(valor==='todas'||r.dataset.jornada===String(valor))?'block':'none';});
         }
-      })();
-    </script>
+        function irJornada(valor){
+          if(!valor||valor==='todas'){mostrarJornada('todas');return;}
+          mostrarJornada(valor);
+          const url=new URL(window.location.href);
+          url.searchParams.set('jornada',valor);
+          history.replaceState(null,'',url.pathname+url.search+'#jornada-'+valor);
+          const destino=document.getElementById('jornada-'+valor);
+          if(destino) destino.scrollIntoView({behavior:'smooth',block:'start'});
+        }
+        if(selector){selector.addEventListener('change',function(){if(filtro)filtro.value=selector.value;irJornada(selector.value);});}
+        if(filtro){filtro.addEventListener('change',function(){if(selector)selector.value=filtro.value;irJornada(filtro.value);});}
+        const params=new URLSearchParams(window.location.search);
+        const initial=params.get('jornada')||window.location.hash.replace('#jornada-','')||(selector?selector.value:'todas');
+        if(selector&&initial!=='todas'&&selector.querySelector('option[value="'+initial+'"]'))selector.value=initial;
+        if(filtro)filtro.value=initial;
+        irJornada(initial);
+      });
+    </script>ipt>
     <div class="stats">
       <div class="stat"><small>Clubes inscritos</small><strong>{{ clubes_participantes|length }}</strong></div>
       <div class="stat"><small>Jornadas</small><strong>{{ jornadas|length if jornadas else 0 }}</strong></div>
@@ -185,7 +192,8 @@
             <summary style="margin:0 16px 12px;cursor:pointer;color:#2563eb;font-size:11px;font-weight:900">✏️ Modificar este partido{% if partido.estado == 'Finalizado' %} · 🔒 protegido{% endif %}</summary>
             <div class="edit-box">
               <div class="edit-title">Editar partido · Jornada {{ partido.jornada }} · Partido {{ loop.index }} {% if partido.estado == 'Finalizado' %}<span class="badge" style="background:#dcfce7;color:#166534">🔒 Cursado</span>{% elif partido.fixture_bloqueado %}<span class="badge" style="background:#dbeafe;color:#1d4ed8">📌 Fijado manualmente</span>{% else %}<span class="badge" style="background:#f8fafc;color:#64748b">🔄 Adaptable</span>{% endif %}</div>
-              <form method="POST" action="{{ url_for('editar_partido_fixture', campeonato_id=campeonato.id, partido_id=partido.id) }}"><input type="hidden" name="return_jornada" value="{{ partido.jornada }}">
+              <form method="POST" action="{{ url_for('editar_partido_fixture', campeonato_id=campeonato.id, partido_id=partido.id) }}">
+                <input type="hidden" name="return_jornada" value="{{ jornada_solicitada or jornada }}"><input type="hidden" name="return_jornada" value="{{ partido.jornada }}">
                 <div class="edit-grid">
                   <div><label>Jornada</label><select name="jornada" required>{% for j in jornadas.keys()|sort %}<option value="{{ j }}" {% if j == partido.jornada %}selected{% endif %}>Jornada {{ j }}</option>{% endfor %}</select></div>
                   <div><label>Fecha</label><input type="date" name="fecha" value="{{ partido.fecha.strftime('%Y-%m-%d') if partido.fecha else '' }}"></div>
