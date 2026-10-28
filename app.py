@@ -6254,7 +6254,7 @@ def recuperar_tres_jornadas_clausura_adultos(campeonato_id):
     methods=["POST"]
 )
 @rol_permitido("Administrador")
-@app.route("/campeonatos/<int:campeonato_id>/fixture/reprogramar-desde", methods=["POST"])
+@app.route("/campeonatos/<int:campeonato_id>/fixture/reprogramar-desde", methods=["POST"], endpoint="fixture_reprogramar_desde_v2")
 @rol_permitido("Administrador")
 def reprogramar_fixture_desde_control_manual(campeonato_id):
     campeonato = db.get_or_404(Campeonato, campeonato_id)
