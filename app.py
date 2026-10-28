@@ -6197,6 +6197,7 @@ def fixture_campeonato(campeonato_id):
         .all()
     )
 
+    jornada_solicitada = request.args.get("jornada", type=int)
     partidos = (
         Partido.query
         .filter_by(campeonato_id=campeonato.id)
