@@ -5873,8 +5873,6 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
                     return False
                 if not pendientes:
                     nuevas = set(cruces_locales)
-                    for par in emparejamientos:
-                        nuevas.remove(frozenset(par))
                     rondas[jornada] = list(emparejamientos)
                     if buscar_rondas(indice_jornada + 1, nuevas, descansos_usados | {libre}):
                         return True
