@@ -6249,11 +6249,6 @@ def recuperar_tres_jornadas_clausura_adultos(campeonato_id):
     return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
 
 
-@app.route(
-    "/campeonatos/<int:campeonato_id>/fixture/generar",
-    methods=["POST"]
-)
-@rol_permitido("Administrador")
 @app.route("/campeonatos/<int:campeonato_id>/fixture/reprogramar-desde", methods=["POST"], endpoint="fixture_reprogramar_desde_v2")
 @rol_permitido("Administrador")
 def reprogramar_fixture_desde_control_manual(campeonato_id):
@@ -6292,6 +6287,11 @@ def reprogramar_fixture_desde_control_manual(campeonato_id):
     return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
 
 
+@app.route(
+    "/campeonatos/<int:campeonato_id>/fixture/generar",
+    methods=["POST"]
+)
+@rol_permitido("Administrador")
 def generar_fixture_campeonato(campeonato_id):
 
     campeonato = db.get_or_404(
