@@ -49,13 +49,13 @@
       <form method="POST" action="{{ url_for('reprogramar_fixture_desde', campeonato_id=campeonato.id) }}" onsubmit="return confirm('¿Reprogramar desde la jornada seleccionada? Las jornadas anteriores y sus resultados no se modificarán.');">
         <div class="form-grid" style="grid-template-columns:1fr 2fr auto">
           <div class="field"><label>Reprogramar desde jornada</label><select name="jornada_inicio" id="jornadaInicio" required>
-            {% for j in range(1, (clubes_participantes|length if clubes_participantes|length % 2 == 0 else clubes_participantes|length)) %}<option value="{{ j }}" {% if j == 5 %}selected{% endif %}>Jornada {{ j }}</option>{% endfor %}
+            {% for j in range(1, clubes_participantes|length + 1) %}<option value="{{ j }}" {% if j == 5 %}selected{% endif %}>Jornada {{ j }}</option>{% endfor %}
           </select></div>
           <div class="field"><label>Club libre por jornada</label><div style="padding:9px;color:#334155;font-size:12px">Selecciona el club que descansará en cada fecha desde la jornada inicial.</div></div>
           <button class="btn success" type="submit">Aplicar reprogramación</button>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:12px">
-          {% for j in range(1, (clubes_participantes|length if clubes_participantes|length % 2 == 0 else clubes_participantes|length)) %}
+          {% for j in range(1, clubes_participantes|length + 1) %}
           <div class="field libre-row" data-jornada="{{ j }}" style="display:none;background:#fff;padding:10px;border:1px solid #dbeafe;border-radius:10px"><label>Club libre — Jornada {{ j }}</label>
             <select name="libre_{{ j }}"><option value="">Automático (sin fijar)</option>{% for registro in clubes_participantes %}<option value="{{ registro.club_id }}">{{ registro.club.nombre }}</option>{% endfor %}</select>
           </div>{% endfor %}
