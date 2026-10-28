@@ -137,7 +137,7 @@
 
   {% if partidos %}
     {% for jornada, lista in jornadas.items() %}
-      <div class="round">
+      <div class="round" data-jornada="{{ jornada }}">
         <div class="round-head" id="jornada-{{ jornada }}" data-jornada="{{ jornada }}" style="align-items:flex-start;flex-direction:column">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;flex-wrap:wrap">
             <div>
