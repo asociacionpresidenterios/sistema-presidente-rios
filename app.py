@@ -5743,6 +5743,12 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
     if partido_modificado.jornada <= ultima_cursada:
         raise ValueError(f"La jornada {partido_modificado.jornada} ya fue cursada y está protegida.")
 
+    # Al cambiar el equipo libre de una jornada, proteger todas las jornadas
+    # anteriores a la jornada editada, aunque algún resultado aún no esté cargado.
+    # Así no se vuelve a programar en la jornada editada un cruce que ya figura
+    # en una jornada anterior (por ejemplo, Vidal Araya vs Brisas del Maipo).
+    jornadas_protegidas_hasta = max(ultima_cursada, partido_modificado.jornada - 1)
+
     clubes_ids = [
         r.club_id for r in CampeonatoClub.query.filter_by(campeonato_id=campeonato.id)
         .order_by(CampeonatoClub.id).all()
@@ -5752,7 +5758,7 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
 
     calendario_base = generar_calendario_todos_contra_todos(clubes_ids)
     total_jornadas = len(calendario_base)
-    jornadas_futuras = list(range(ultima_cursada + 1, total_jornadas + 1))
+    jornadas_futuras = list(range(jornadas_protegidas_hasta + 1, total_jornadas + 1))
     if partido_modificado.jornada not in jornadas_futuras:
         raise ValueError("El partido debe pertenecer a una jornada futura.")
     if club_libre_objetivo_id is not None and club_libre_objetivo_id not in clubes_ids:
@@ -5761,7 +5767,7 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
     # Todas las parejas presentes en jornadas protegidas se consideran reservadas,
     # incluso si una jornada anterior quedó parcialmente jugada.
     parejas_reservadas = {
-        _pareja_partidos(p) for p in todos if p.jornada <= ultima_cursada
+        _pareja_partidos(p) for p in todos if p.jornada <= jornadas_protegidas_hasta
     }
     parejas_cursadas = {_pareja_partidos(p) for p in finalizados}
     parejas_no_disponibles = parejas_reservadas | parejas_cursadas
@@ -5769,7 +5775,7 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
     # Preservar fecha/hora/cancha de cada espacio de partido futuro, no los cruces.
     configuracion = {}
     for p in todos:
-        if p.jornada > ultima_cursada and not _partido_finalizado(p):
+        if p.jornada > jornadas_protegidas_hasta and not _partido_finalizado(p):
             configuracion.setdefault(p.jornada, []).append({
                 "fecha": p.fecha, "hora": p.hora, "cancha": p.cancha
             })
@@ -5831,7 +5837,7 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
 
     futuros = [
         p for p in todos
-        if p.jornada > ultima_cursada and not _partido_finalizado(p)
+        if p.jornada > jornadas_protegidas_hasta and not _partido_finalizado(p)
     ]
     for p in futuros:
         db.session.delete(p)
