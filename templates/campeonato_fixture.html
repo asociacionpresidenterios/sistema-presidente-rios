@@ -46,7 +46,7 @@
     <details style="margin:14px 0;border:1px solid #bfdbfe;border-radius:12px;padding:14px;background:#eff6ff">
       <summary class="btn success" style="display:inline-flex">🔄 Reprogramar desde una jornada y elegir clubes libres</summary>
       <p style="font-size:12px;color:#1e3a8a;margin:12px 0">Solo se reemplazarán los partidos pendientes desde la jornada elegida. Las jornadas anteriores y sus resultados se conservan.</p>
-      <form method="POST" action="{{ url_for('reprogramar_fixture_desde_control_manual', campeonato_id=campeonato.id) }}" onsubmit="return confirm('¿Reprogramar desde la jornada seleccionada? Las jornadas anteriores y sus resultados no se modificarán.');">
+      <form method="POST" action="{{ url_for('fixture_reprogramar_desde_v2', campeonato_id=campeonato.id) }}" onsubmit="return confirm('¿Reprogramar desde la jornada seleccionada? Las jornadas anteriores y sus resultados no se modificarán.');">
         <div class="form-grid" style="grid-template-columns:1fr 2fr auto">
           <div class="field"><label>Reprogramar desde jornada</label><select name="jornada_inicio" id="jornadaInicio" required>
             {% for j in range(1, clubes_participantes|length + 1) %}<option value="{{ j }}" {% if j == 5 %}selected{% endif %}>Jornada {{ j }}</option>{% endfor %}
