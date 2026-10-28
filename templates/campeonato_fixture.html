@@ -64,6 +64,32 @@
       <script>(function(){const inicio=document.getElementById('jornadaInicio');const filas=document.querySelectorAll('.libre-row');function actualizar(){const desde=parseInt(inicio.value||'1',10);filas.forEach(f=>{const mostrar=parseInt(f.dataset.jornada,10)>=desde;f.style.display=mostrar?'block':'none';const s=f.querySelector('select');s.disabled=!mostrar;if(!mostrar)s.value='';});}inicio.addEventListener('change',actualizar);actualizar();})();</script>
     </details>
     {% endif %}
+    <div class="round-picker" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 18px;padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px">
+      <label for="selectorJornada" style="font-weight:900;color:#1e293b">📅 Jornada a administrar</label>
+      <select id="selectorJornada" style="min-width:230px;max-width:100%;padding:11px 14px;border:1px solid #cbd5e1;border-radius:10px;background:white;font-weight:800">
+        {% for jornada in jornadas.keys()|sort %}<option value="{{ jornada }}" {% if jornada == jornada_solicitada %}selected{% endif %}>Jornada {{ jornada }} · {{ jornadas[jornada]|length }} partidos</option>{% endfor %}
+      </select>
+      <span style="font-size:12px;color:#64748b">Se muestra solo la jornada seleccionada.</span>
+    </div>
+    <script>
+      (function(){
+        const selector=document.getElementById('selectorJornada');
+        const rondas=document.querySelectorAll('.round[data-jornada]');
+        if(!selector)return;
+        function mostrarJornada(){rondas.forEach(r=>{r.style.display=(r.dataset.jornada===selector.value)?'block':'none';});}
+        selector.addEventListener('change',function(){
+          mostrarJornada();
+          const url=new URL(window.location.href);
+          url.searchParams.set('jornada',selector.value);
+          history.replaceState(null,'',url.pathname+url.search+'#jornada-'+selector.value);
+        });
+        mostrarJornada();
+        if(window.location.hash.startsWith('#jornada-')){
+          const n=window.location.hash.replace('#jornada-','');
+          if(selector.querySelector('option[value="'+n+'"]')){selector.value=n;mostrarJornada();}
+        }
+      })();
+    </script>
     <div class="stats">
       <div class="stat"><small>Clubes inscritos</small><strong>{{ clubes_participantes|length }}</strong></div>
       <div class="stat"><small>Jornadas</small><strong>{{ jornadas|length if jornadas else 0 }}</strong></div>
@@ -112,7 +138,7 @@
   {% if partidos %}
     {% for jornada, lista in jornadas.items() %}
       <div class="round">
-        <div class="round-head" style="align-items:flex-start;flex-direction:column">
+        <div class="round-head" id="jornada-{{ jornada }}" data-jornada="{{ jornada }}" style="align-items:flex-start;flex-direction:column">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;flex-wrap:wrap">
             <div>
               <strong>📅 Jornada {{ jornada }}</strong>
@@ -129,7 +155,7 @@
               {% endif %}
             </div>
           </div>
-          <form method="POST" action="{{ url_for('configurar_jornada_fixture', campeonato_id=campeonato.id, jornada=jornada) }}" style="width:100%;margin-top:10px">
+          <form method="POST" action="{{ url_for('configurar_jornada_fixture', campeonato_id=campeonato.id, jornada=jornada) }}" style="width:100%;margin-top:10px"><input type="hidden" name="return_jornada" value="{{ jornada }}">
             <div style="display:grid;grid-template-columns:1fr 1fr 1.4fr auto;gap:9px;align-items:end">
               <div class="field"><label style="display:block;font-size:10px;font-weight:900;color:#475569;margin-bottom:5px">Fecha de la jornada</label><input type="date" name="fecha" value="{{ lista[0].fecha.strftime('%Y-%m-%d') if lista and lista[0].fecha else '' }}" required style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;background:#fff"></div>
               <div class="field"><label style="display:block;font-size:10px;font-weight:900;color:#475569;margin-bottom:5px">Horario</label><input type="text" name="hora" value="{{ lista[0].hora or '' }}" placeholder="17:00" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;background:#fff"></div>
@@ -149,7 +175,7 @@
             <summary style="margin:0 16px 12px;cursor:pointer;color:#2563eb;font-size:11px;font-weight:900">✏️ Modificar este partido{% if partido.estado == 'Finalizado' %} · 🔒 protegido{% endif %}</summary>
             <div class="edit-box">
               <div class="edit-title">Editar partido · Jornada {{ partido.jornada }} · Partido {{ loop.index }} {% if partido.estado == 'Finalizado' %}<span class="badge" style="background:#dcfce7;color:#166534">🔒 Cursado</span>{% elif partido.fixture_bloqueado %}<span class="badge" style="background:#dbeafe;color:#1d4ed8">📌 Fijado manualmente</span>{% else %}<span class="badge" style="background:#f8fafc;color:#64748b">🔄 Adaptable</span>{% endif %}</div>
-              <form method="POST" action="{{ url_for('editar_partido_fixture', campeonato_id=campeonato.id, partido_id=partido.id) }}">
+              <form method="POST" action="{{ url_for('editar_partido_fixture', campeonato_id=campeonato.id, partido_id=partido.id) }}"><input type="hidden" name="return_jornada" value="{{ partido.jornada }}">
                 <div class="edit-grid">
                   <div><label>Jornada</label><select name="jornada" required>{% for j in jornadas.keys()|sort %}<option value="{{ j }}" {% if j == partido.jornada %}selected{% endif %}>Jornada {{ j }}</option>{% endfor %}</select></div>
                   <div><label>Fecha</label><input type="date" name="fecha" value="{{ partido.fecha.strftime('%Y-%m-%d') if partido.fecha else '' }}"></div>
