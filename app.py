@@ -5728,202 +5728,146 @@ def _pareja_partidos(partido):
     return frozenset((partido.local_club_id, partido.visitante_club_id))
 
 
-def adaptar_fixture_pendiente(campeonato, partido_modificado):
+def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetivo_id=None):
     """
-    Adapta el fixture futuro sin tocar jornadas ya cursadas.
-
-    Reordena únicamente jornadas futuras usando el fixture todos-contra-todos
-    como base. Si se cambia un cruce, la jornada natural de ese cruce se
-    intercambia con la jornada editada, manteniendo todos los enfrentamientos
-    una sola vez.
+    Reconstruye únicamente las jornadas futuras con cruces aún no disputados.
+    Conserva todas las jornadas hasta la última cursada y permite fijar el club
+    libre en una jornada futura. No repite cruces jugados ni programa dos veces
+    a un club dentro de la misma jornada.
     """
-    todos = (
-        Partido.query
-        .filter_by(campeonato_id=campeonato.id)
-        .order_by(Partido.jornada.asc(), Partido.id.asc())
-        .all()
-    )
-
+    todos = Partido.query.filter_by(campeonato_id=campeonato.id).order_by(
+        Partido.jornada.asc(), Partido.id.asc()
+    ).all()
     finalizados = [p for p in todos if _partido_finalizado(p)]
     ultima_cursada = max((p.jornada for p in finalizados), default=0)
-
-    # Proteger también los partidos pendientes de jornadas ya iniciadas.
-    # Solo se reconstruyen jornadas posteriores a la última jornada cursada.
-    # Así no se borran partidos sin resultado de una jornada parcialmente jugada.
-    futuros = [
-        p for p in todos
-        if p.jornada > ultima_cursada and not _partido_finalizado(p)
-    ]
-
     if partido_modificado.jornada <= ultima_cursada:
         raise ValueError(f"La jornada {partido_modificado.jornada} ya fue cursada y está protegida.")
 
     clubes_ids = [
-        r.club_id
-        for r in CampeonatoClub.query.filter_by(campeonato_id=campeonato.id)
+        r.club_id for r in CampeonatoClub.query.filter_by(campeonato_id=campeonato.id)
         .order_by(CampeonatoClub.id).all()
     ]
-    calendario_base = generar_calendario_todos_contra_todos(clubes_ids)
-    if not calendario_base:
-        raise ValueError("No existe un calendario base válido para este campeonato.")
+    if len(clubes_ids) < 2:
+        raise ValueError("No hay suficientes clubes inscritos para adaptar el fixture.")
 
+    calendario_base = generar_calendario_todos_contra_todos(clubes_ids)
     total_jornadas = len(calendario_base)
     jornadas_futuras = list(range(ultima_cursada + 1, total_jornadas + 1))
-
     if partido_modificado.jornada not in jornadas_futuras:
         raise ValueError("El partido debe pertenecer a una jornada futura.")
+    if club_libre_objetivo_id is not None and club_libre_objetivo_id not in clubes_ids:
+        raise ValueError("El equipo seleccionado como libre no pertenece al campeonato.")
 
-    pareja_editada = _pareja_partidos(partido_modificado)
-    if any(_pareja_partidos(p) == pareja_editada for p in finalizados):
-        raise ValueError("Ese enfrentamiento ya fue cursado y no puede volver a programarse.")
-
-    ronda_por_pareja = {}
-    for indice, jornada_base in enumerate(calendario_base, start=1):
-        for local_id, visitante_id in jornada_base:
-            ronda_por_pareja[frozenset((local_id, visitante_id))] = indice
-
-    ronda_natural = ronda_por_pareja.get(pareja_editada)
-    if ronda_natural is None:
-        raise ValueError("El cruce seleccionado no pertenece al fixture del campeonato.")
-
+    # Todas las parejas presentes en jornadas protegidas se consideran reservadas,
+    # incluso si una jornada anterior quedó parcialmente jugada.
+    parejas_reservadas = {
+        _pareja_partidos(p) for p in todos if p.jornada <= ultima_cursada
+    }
     parejas_cursadas = {_pareja_partidos(p) for p in finalizados}
-    rondas_disponibles = []
-    for ronda in range(1, total_jornadas + 1):
-        parejas_ronda = {frozenset(par) for par in calendario_base[ronda - 1]}
-        if parejas_ronda & parejas_cursadas:
-            continue
-        rondas_disponibles.append(ronda)
+    parejas_no_disponibles = parejas_reservadas | parejas_cursadas
 
-    if len(rondas_disponibles) < len(jornadas_futuras):
-        raise ValueError("No hay suficientes jornadas base disponibles para reconstruir el fixture futuro.")
-
-    bloqueados = [p for p in futuros if p.fixture_bloqueado]
-    if partido_modificado not in bloqueados:
-        partido_modificado.fixture_bloqueado = True
-        bloqueados.append(partido_modificado)
-
-    # Validar los partidos fijados manualmente antes de reconstruir el fixture.
-    # Evita que un club quede programado dos veces en la misma jornada y que
-    # el mismo enfrentamiento quede reservado más de una vez.
-    clubes_por_jornada = {}
-    parejas_por_jornada = {}
-    for p in bloqueados:
-        clubes_jornada = clubes_por_jornada.setdefault(p.jornada, set())
-        pareja = _pareja_partidos(p)
-        if pareja in parejas_por_jornada.setdefault(p.jornada, set()):
-            raise ValueError(
-                f"El enfrentamiento entre los clubes ID {p.local_club_id} y {p.visitante_club_id} "
-                f"está repetido en la jornada {p.jornada}."
-            )
-        if p.local_club_id in clubes_jornada or p.visitante_club_id in clubes_jornada:
-            raise ValueError(
-                f"Conflicto en jornada {p.jornada}: un club aparece en más de un partido fijado. "
-                "Corrige los partidos manuales y vuelve a intentarlo."
-            )
-        clubes_jornada.update((p.local_club_id, p.visitante_club_id))
-        parejas_por_jornada[p.jornada].add(pareja)
-
-    asignacion = {}
-    usados_rondas = set()
-
-    for p in bloqueados:
-        pareja = _pareja_partidos(p)
-        ronda = ronda_por_pareja.get(pareja)
-        if ronda is None:
-            raise ValueError(f"El cruce entre los clubes ID {p.local_club_id} y {p.visitante_club_id} no pertenece al fixture base.")
-        if p.jornada <= ultima_cursada:
-            raise ValueError("No se puede fijar un partido dentro de una jornada cursada.")
-        if p.jornada in asignacion and asignacion[p.jornada] != ronda:
-            raise ValueError(f"La jornada {p.jornada} contiene cambios manuales incompatibles.")
-        if ronda in usados_rondas and asignacion.get(p.jornada) != ronda:
-            raise ValueError("Los cambios manuales actuales generan una incompatibilidad entre jornadas.")
-        asignacion[p.jornada] = ronda
-        usados_rondas.add(ronda)
-
-    rondas_restantes = [r for r in rondas_disponibles if r not in usados_rondas]
-    for jornada in jornadas_futuras:
-        if jornada not in asignacion:
-            if not rondas_restantes:
-                raise ValueError("No quedan jornadas base disponibles para adaptar el fixture.")
-            asignacion[jornada] = rondas_restantes.pop(0)
-
-    if len(set(asignacion.values())) != len(asignacion):
-        raise ValueError("No fue posible construir una distribución válida de jornadas.")
-
-    # Conservamos los espacios de programación por partido, no una sola
-    # configuración por jornada. Así no se pierden canchas/horarios distintos
-    # cuando una fecha usa varios recintos o turnos.
-    partidos_fijos_ids = {p.id for p in bloqueados if p.id is not None}
+    # Preservar fecha/hora/cancha de cada espacio de partido futuro, no los cruces.
     configuracion = {}
-    for p in futuros:
-        if p.id in partidos_fijos_ids:
-            continue
-        configuracion.setdefault(p.jornada, []).append({
-            "fecha": p.fecha,
-            "hora": p.hora,
-            "cancha": p.cancha,
-        })
+    for p in todos:
+        if p.jornada > ultima_cursada and not _partido_finalizado(p):
+            configuracion.setdefault(p.jornada, []).append({
+                "fecha": p.fecha, "hora": p.hora, "cancha": p.cancha
+            })
 
+    # Construir la lista completa de cruces pendientes sin duplicar ningún cruce
+    # ya jugado o reservado en una jornada protegida.
+    cruces = []
+    for i, local_id in enumerate(clubes_ids):
+        for visitante_id in clubes_ids[i + 1:]:
+            pareja = frozenset((local_id, visitante_id))
+            if pareja not in parejas_no_disponibles:
+                cruces.append((local_id, visitante_id))
+
+    # Primero asignar cada jornada futura una ronda vacía. Se llena mediante
+    # emparejamiento voraz; el equipo libre forzado se excluye de esa jornada.
+    rondas = {j: [] for j in jornadas_futuras}
+    equipos_por_jornada = {j: set() for j in jornadas_futuras}
+    libres_forzados = {partido_modificado.jornada: club_libre_objetivo_id} if club_libre_objetivo_id else {}
+
+    # Mantener el cruce editado solo si no está disputado; en el caso de cambiar
+    # el equipo libre, el algoritmo puede reasignarlo si no es válido.
+    pareja_editada = _pareja_partidos(partido_modificado)
+    if pareja_editada in parejas_no_disponibles:
+        raise ValueError("Ese enfrentamiento ya fue disputado o pertenece a una jornada protegida.")
+
+    max_partidos = len(clubes_ids) // 2
+    # Ordenar por grado restante para distribuir primero los clubes con menos opciones.
+    while cruces:
+        progreso = False
+        for jornada in jornadas_futuras:
+            if len(rondas[jornada]) >= max_partidos:
+                continue
+            libre_forzado = libres_forzados.get(jornada)
+            opciones = []
+            for idx, (a, b) in enumerate(cruces):
+                if a in equipos_por_jornada[jornada] or b in equipos_por_jornada[jornada]:
+                    continue
+                if libre_forzado is not None and libre_forzado in (a, b):
+                    continue
+                opciones.append((idx, a, b))
+            if not opciones:
+                continue
+            # Elige el cruce que deja menos conflictos con los clubes restantes.
+            grados = {c: 0 for c in clubes_ids}
+            for a, b in cruces:
+                grados[a] += 1
+                grados[b] += 1
+            idx, a, b = max(opciones, key=lambda item: (grados[item[1]] + grados[item[2]], -item[0]))
+            rondas[jornada].append((a, b))
+            equipos_por_jornada[jornada].update((a, b))
+            cruces.pop(idx)
+            progreso = True
+        if not progreso:
+            raise ValueError(
+                "No fue posible distribuir todos los cruces pendientes en las jornadas disponibles. "
+                "No se guardó ningún cambio; revisa si hay jornadas anteriores incompletas."
+            )
+
+    # Validar que la cantidad de partidos cabe en las jornadas futuras.
+    for jornada in jornadas_futuras:
+        if len(rondas[jornada]) > max_partidos:
+            raise ValueError(f"La jornada {jornada} excede el máximo de partidos permitido.")
+
+    futuros = [
+        p for p in todos
+        if p.jornada > ultima_cursada and not _partido_finalizado(p)
+    ]
     for p in futuros:
         db.session.delete(p)
     db.session.flush()
 
     primera_fecha = siguiente_sabado(campeonato.fecha_inicio)
-
     for jornada in jornadas_futuras:
-        ronda = asignacion[jornada]
         espacios = iter(configuracion.get(jornada, []))
-        indice_espacio = 0
-
-        for local_id, visitante_id in calendario_base[ronda - 1]:
-            fijo = next(
-                (
-                    p for p in bloqueados
-                    if _pareja_partidos(p) == frozenset((local_id, visitante_id))
-                    and p.jornada == jornada
-                ),
-                None,
-            )
-
-            if fijo:
-                local_final = fijo.local_club_id
-                visitante_final = fijo.visitante_club_id
-                fecha_final = fijo.fecha
-                hora_final = fijo.hora
-                cancha_final = fijo.cancha
-                turno_final = fijo.turno_club_id
-                bloqueado_final = True
+        for local_id, visitante_id in rondas[jornada]:
+            cfg = next(espacios, None)
+            if cfg is None:
+                fecha_final = primera_fecha + timedelta(days=(jornada - 1) * 7)
+                hora_final = "17:00"
+                cancha_final = "Por definir"
             else:
-                cfg = next(espacios, None)
-                if cfg is None:
-                    fecha_final = primera_fecha + timedelta(days=(jornada - 1) * 7)
-                    hora_final = "17:00"
-                    cancha_final = "Por definir"
-                else:
-                    fecha_final = cfg["fecha"]
-                    hora_final = cfg["hora"] or "17:00"
-                    cancha_final = cfg["cancha"] or "Por definir"
-                local_final = local_id
-                visitante_final = visitante_id
-                turno_final = None
-                bloqueado_final = False
-
-            db.session.add(
-                Partido(
-                    campeonato_id=campeonato.id,
-                    jornada=jornada,
-                    fecha=fecha_final,
-                    hora=hora_final,
-                    cancha=cancha_final,
-                    local_club_id=local_final,
-                    visitante_club_id=visitante_final,
-                    turno_club_id=turno_final,
-                    goles_local=None,
-                    goles_visitante=None,
-                    estado="Programado",
-                    fixture_bloqueado=bloqueado_final,
-                )
-            )
+                fecha_final = cfg["fecha"]
+                hora_final = cfg["hora"] or "17:00"
+                cancha_final = cfg["cancha"] or "Por definir"
+            db.session.add(Partido(
+                campeonato_id=campeonato.id,
+                jornada=jornada,
+                fecha=fecha_final,
+                hora=hora_final,
+                cancha=cancha_final,
+                local_club_id=local_id,
+                visitante_club_id=visitante_id,
+                turno_club_id=None,
+                goles_local=None,
+                goles_visitante=None,
+                estado="Programado",
+                fixture_bloqueado=False,
+            ))
 
 def generar_calendario_todos_contra_todos(club_ids):
     """Genera una rueda todos-contra-todos usando el método de rotación."""
@@ -6613,7 +6557,7 @@ def editar_partido_fixture(campeonato_id, partido_id):
         if cambio_estructural:
             # Reorganiza el fixture pendiente y mantiene protegidas las jornadas
             # cursadas. Si hay incompatibilidades, se revierte toda la operación.
-            adaptar_fixture_pendiente(campeonato, partido)
+            adaptar_fixture_pendiente(campeonato, partido, next(iter(set(pareja_original) - {local_id, visitante_id}), None))
         db.session.commit()
 
         registrar_auditoria(
