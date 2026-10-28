@@ -5913,7 +5913,7 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
         fallidos.add(estado)
         return False
 
-    if not buscar_rondas(0, set(cruces), descansos_anteriores):
+    if not buscar_rondas(0, {frozenset(par) for par in cruces}, descansos_anteriores):
         raise ValueError(
             "No se encontró una programación válida con esos clubes libres. "
             "No se guardó ningún cambio. Prueba otra combinación de descansos."
