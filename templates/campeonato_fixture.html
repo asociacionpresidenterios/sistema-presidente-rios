@@ -42,6 +42,28 @@
       <button class="btn warning" type="submit">♻️ Restaurar jornadas 1–3 de Clausura 2026 Adultos</button>
     </form>
     <div class="warning" style="background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a"><strong>🧠 Fixture adaptable:</strong> los resultados ya registrados nunca se mueven. Los cambios realizados sobre partidos futuros se respetan y el sistema reorganiza automáticamente los cruces restantes para evitar duplicados o equipos jugando dos veces en una misma jornada.</div>
+    {% if partidos and clubes_participantes|length >= 2 %}
+    <details style="margin:14px 0;border:1px solid #bfdbfe;border-radius:12px;padding:14px;background:#eff6ff">
+      <summary class="btn success" style="display:inline-flex">🔄 Reprogramar desde una jornada y elegir clubes libres</summary>
+      <p style="font-size:12px;color:#1e3a8a;margin:12px 0">Solo se reemplazarán los partidos pendientes desde la jornada elegida. Las jornadas anteriores y sus resultados se conservan.</p>
+      <form method="POST" action="{{ url_for('reprogramar_fixture_desde', campeonato_id=campeonato.id) }}" onsubmit="return confirm('¿Reprogramar desde la jornada seleccionada? Las jornadas anteriores y sus resultados no se modificarán.');">
+        <div class="form-grid" style="grid-template-columns:1fr 2fr auto">
+          <div class="field"><label>Reprogramar desde jornada</label><select name="jornada_inicio" id="jornadaInicio" required>
+            {% for j in range(1, (clubes_participantes|length if clubes_participantes|length % 2 == 0 else clubes_participantes|length)) %}<option value="{{ j }}" {% if j == 5 %}selected{% endif %}>Jornada {{ j }}</option>{% endfor %}
+          </select></div>
+          <div class="field"><label>Club libre por jornada</label><div style="padding:9px;color:#334155;font-size:12px">Selecciona el club que descansará en cada fecha desde la jornada inicial.</div></div>
+          <button class="btn success" type="submit">Aplicar reprogramación</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin-top:12px">
+          {% for j in range(1, (clubes_participantes|length if clubes_participantes|length % 2 == 0 else clubes_participantes|length)) %}
+          <div class="field libre-row" data-jornada="{{ j }}" style="display:none;background:#fff;padding:10px;border:1px solid #dbeafe;border-radius:10px"><label>Club libre — Jornada {{ j }}</label>
+            <select name="libre_{{ j }}"><option value="">Automático (sin fijar)</option>{% for registro in clubes_participantes %}<option value="{{ registro.club_id }}">{{ registro.club.nombre }}</option>{% endfor %}</select>
+          </div>{% endfor %}
+        </div>
+      </form>
+      <script>(function(){const inicio=document.getElementById('jornadaInicio');const filas=document.querySelectorAll('.libre-row');function actualizar(){const desde=parseInt(inicio.value||'1',10);filas.forEach(f=>{const mostrar=parseInt(f.dataset.jornada,10)>=desde;f.style.display=mostrar?'block':'none';const s=f.querySelector('select');s.disabled=!mostrar;if(!mostrar)s.value='';});}inicio.addEventListener('change',actualizar);actualizar();})();</script>
+    </details>
+    {% endif %}
     <div class="stats">
       <div class="stat"><small>Clubes inscritos</small><strong>{{ clubes_participantes|length }}</strong></div>
       <div class="stat"><small>Jornadas</small><strong>{{ jornadas|length if jornadas else 0 }}</strong></div>
