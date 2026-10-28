@@ -6582,56 +6582,37 @@ def editar_partido_fixture(campeonato_id, partido_id):
         if turno_id is not None and turno_id not in participantes:
             raise ValueError("El club de turno seleccionado no pertenece a este campeonato.")
 
-        # Detectar un cambio directo del equipo libre en la misma jornada.
-        # En ese caso solo se sustituye el equipo del partido seleccionado:
-        # no se reconstruyen ni se reordenan los demás partidos programados.
-        partidos_misma_jornada = Partido.query.filter_by(
-            campeonato_id=campeonato.id,
-            jornada=jornada_original,
-        ).all()
-        clubes_en_jornada = {
-            club_id
-            for p in partidos_misma_jornada
-            for club_id in (p.local_club_id, p.visitante_club_id)
-        }
-        clubes_libres_actuales = participantes - clubes_en_jornada
-        ids_nuevos = {local_id, visitante_id}
-        ids_originales = set(pareja_original)
-        equipo_libre_reemplaza = (
-            jornada_nueva == jornada_original
-            and bool(ids_nuevos - ids_originales)
-            and bool((ids_nuevos - ids_originales) & clubes_libres_actuales)
-            and bool(ids_originales - ids_nuevos)
+        # Detectar y rechazar cualquier enfrentamiento que ya se haya disputado.
+        # Cambiar un equipo libre requiere adaptar el calendario pendiente completo;
+        # nunca se debe sustituir un nombre de forma aislada porque puede duplicar
+        # cruces ya jugados o dejar a un club programado dos veces en una jornada.
+        pareja_nueva = frozenset((local_id, visitante_id))
+        cruce_ya_jugado = any(
+            _partido_finalizado(p)
+            and _pareja_partidos(p) == pareja_nueva
+            for p in Partido.query.filter_by(campeonato_id=campeonato.id).all()
+            if p.id != partido.id
         )
-
-        # No permitir repetir un enfrentamiento ya jugado.
-        if equipo_libre_reemplaza:
-            nuevo_cruce = frozenset((local_id, visitante_id))
-            cruce_ya_jugado = any(
-                _partido_finalizado(p)
-                and _pareja_partidos(p) == nuevo_cruce
-                for p in Partido.query.filter_by(campeonato_id=campeonato.id).all()
-                if p.id != partido.id
+        if cruce_ya_jugado:
+            raise ValueError(
+                "Ese enfrentamiento ya fue disputado. El fixture debe reorganizarse "
+                "sin repetir partidos; elige otro cruce pendiente."
             )
-            if cruce_ya_jugado:
-                raise ValueError("Ese enfrentamiento ya fue disputado; no se puede repetir.")
 
-        # Si el administrador cambia de jornada, el partido se mueve antes
-        # de adaptar el calendario.
+        # Si el administrador cambia de jornada, se mueve antes de adaptar.
         partido.jornada = jornada_nueva
         partido.local_club_id = local_id
         partido.visitante_club_id = visitante_id
         partido.turno_club_id = turno_id
         partido.fixture_bloqueado = True
 
-        # Un cambio de equipo libre es local a esta jornada y conserva intactos
-        # los otros cruces, horarios, canchas y fechas ya programadas.
         cambio_estructural = (
             jornada_nueva != jornada_original
             or _pareja_partidos(partido) != pareja_original
         )
-        if cambio_estructural and not equipo_libre_reemplaza:
-            # Para otros cambios estructurales se mantiene el adaptador habitual.
+        if cambio_estructural:
+            # Reorganiza el fixture pendiente y mantiene protegidas las jornadas
+            # cursadas. Si hay incompatibilidades, se revierte toda la operación.
             adaptar_fixture_pendiente(campeonato, partido)
         db.session.commit()
 
