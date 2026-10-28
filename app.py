@@ -5789,51 +5789,135 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
             if pareja not in parejas_no_disponibles:
                 cruces.append((local_id, visitante_id))
 
-    # Primero asignar cada jornada futura una ronda vacía. Se llena mediante
-    # emparejamiento voraz; el equipo libre forzado se excluye de esa jornada.
-    rondas = {j: [] for j in jornadas_futuras}
-    equipos_por_jornada = {j: set() for j in jornadas_futuras}
+    # Detectar los descansos ya consumidos en jornadas protegidas.
+    descansos_anteriores = set()
+    for j in range(1, jornadas_protegidas_hasta + 1):
+        juegan = {cid for p in todos if p.jornada == j for cid in (p.local_club_id, p.visitante_club_id)}
+        libres_j = set(clubes_ids) - juegan
+        if len(libres_j) != 1:
+            raise ValueError(
+                f"La jornada protegida {j} no tiene exactamente un club libre. "
+                "Corrige esa jornada antes de reprogramar para evitar cruces duplicados."
+            )
+        libre_j = next(iter(libres_j))
+        if libre_j in descansos_anteriores:
+            raise ValueError(f"El club libre de la jornada {j} ya tuvo descanso en una jornada anterior.")
+        descansos_anteriores.add(libre_j)
+
     libres_forzados = dict(libres_por_jornada_objetivo or {})
     if club_libre_objetivo_id and partido_modificado.jornada not in libres_forzados:
         libres_forzados[partido_modificado.jornada] = club_libre_objetivo_id
     for jornada_forzada, club_forzado in libres_forzados.items():
-        if jornada_forzada not in rondas or club_forzado not in clubes_ids:
+        if jornada_forzada not in jornadas_futuras or club_forzado not in clubes_ids:
             raise ValueError("Hay una jornada o un club libre seleccionado que no corresponde al fixture pendiente.")
+        if club_forzado in descansos_anteriores:
+            raise ValueError(f"El club seleccionado para quedar libre en la jornada {jornada_forzada} ya tuvo descanso.")
 
-    # Mantener el cruce editado solo si no está disputado; en el caso de cambiar
-    # el equipo libre, el algoritmo puede reasignarlo si no es válido.
-    # El cruce enviado por el formulario puede ser solo la señal del cambio de libre;\n    # los cruces finales se generan exclusivamente desde las parejas aún disponibles.\n\n    max_partidos = len(clubes_ids) // 2
-    # Ordenar por grado restante para distribuir primero los clubes con menos opciones.
-    while cruces:
-        progreso = False
-        for jornada in jornadas_futuras:
-            if len(rondas[jornada]) >= max_partidos:
+    # No se deben mover ni dejar fuera de la nueva distribución partidos con resultado.
+    finalizados_futuros = [p for p in finalizados if p.jornada > jornadas_protegidas_hasta]
+    if finalizados_futuros:
+        raise ValueError(
+            "Hay partidos con resultado registrado desde la jornada seleccionada en adelante. "
+            "No se modificó nada; elige una jornada posterior o revisa esos resultados."
+        )
+
+    max_partidos = len(clubes_ids) // 2
+    if len(cruces) != len(jornadas_futuras) * max_partidos:
+        raise ValueError(
+            "La cantidad de cruces pendientes no coincide con las jornadas disponibles. "
+            "No se guardó ningún cambio porque el fixture tiene jornadas incompletas o cruces repetidos."
+        )
+
+    # Resolver el fixture con búsqueda con retroceso (backtracking), no con una
+    # asignación voraz. Cada jornada debe tener el máximo de partidos y un solo
+    # descanso; cada cruce se usa una sola vez y cada club descansa una vez en la rueda.
+    rondas = {j: [] for j in jornadas_futuras}
+    nodos_busqueda = 0
+    limite_nodos = 180000
+    fallidos = set()
+
+    def buscar_rondas(indice_jornada, cruces_restantes, descansos_usados):
+        nonlocal nodos_busqueda
+        nodos_busqueda += 1
+        if nodos_busqueda > limite_nodos:
+            return False
+        if indice_jornada == len(jornadas_futuras):
+            return not cruces_restantes
+
+        jornada = jornadas_futuras[indice_jornada]
+        libre_fijo = libres_forzados.get(jornada)
+        candidatos_libre = [libre_fijo] if libre_fijo is not None else [
+            cid for cid in clubes_ids if cid not in descansos_usados
+        ]
+        # Priorizar descansos con menos opciones restantes para reducir retrocesos.
+        grados_actuales = {cid: 0 for cid in clubes_ids}
+        for a, b in cruces_restantes:
+            grados_actuales[a] += 1
+            grados_actuales[b] += 1
+        candidatos_libre.sort(key=lambda cid: (grados_actuales.get(cid, 0), clubes_ids.index(cid)))
+        estado = (indice_jornada, tuple(sorted(tuple(sorted(x)) for x in cruces_restantes)), tuple(sorted(descansos_usados)))
+        if estado in fallidos:
+            return False
+
+        for libre in candidatos_libre:
+            if libre in descansos_usados:
                 continue
-            libre_forzado = libres_forzados.get(jornada)
-            opciones = []
-            for idx, (a, b) in enumerate(cruces):
-                if a in equipos_por_jornada[jornada] or b in equipos_por_jornada[jornada]:
-                    continue
-                if libre_forzado is not None and libre_forzado in (a, b):
-                    continue
-                opciones.append((idx, a, b))
-            if not opciones:
-                continue
-            # Elige el cruce que deja menos conflictos con los clubes restantes.
-            grados = {c: 0 for c in clubes_ids}
-            for a, b in cruces:
-                grados[a] += 1
-                grados[b] += 1
-            idx, a, b = max(opciones, key=lambda item: (grados[item[1]] + grados[item[2]], -item[0]))
-            rondas[jornada].append((a, b))
-            equipos_por_jornada[jornada].update((a, b))
-            cruces.pop(idx)
-            progreso = True
-        if not progreso:
-            raise ValueError(
-                "No fue posible distribuir todos los cruces pendientes en las jornadas disponibles. "
-                "No se guardó ningún cambio; revisa si hay jornadas anteriores incompletas."
-            )
+            disponibles = set(clubes_ids) - {libre}
+            cruces_locales = set(cruces_restantes)
+            emparejamientos = []
+
+            def completar_emparejamiento(pendientes):
+                nonlocal nodos_busqueda
+                nodos_busqueda += 1
+                if nodos_busqueda > limite_nodos:
+                    return False
+                if not pendientes:
+                    nuevas = set(cruces_locales)
+                    for par in emparejamientos:
+                        nuevas.remove(frozenset(par))
+                    rondas[jornada] = list(emparejamientos)
+                    if buscar_rondas(indice_jornada + 1, nuevas, descansos_usados | {libre}):
+                        return True
+                    rondas[jornada] = []
+                    return False
+
+                # Elegir el club con menos rivales disponibles (heurística MRV).
+                opciones_por_club = {}
+                for equipo in pendientes:
+                    rivales = [
+                        rival for rival in pendientes
+                        if rival != equipo and frozenset((equipo, rival)) in cruces_locales
+                    ]
+                    opciones_por_club[equipo] = rivales
+                equipo = min(pendientes, key=lambda x: len(opciones_por_club[x]))
+                rivales = sorted(
+                    opciones_por_club[equipo],
+                    key=lambda rival: (-grados_actuales.get(rival, 0), clubes_ids.index(rival))
+                )
+                for rival in rivales:
+                    par = frozenset((equipo, rival))
+                    cruces_locales.remove(par)
+                    emparejamientos.append((equipo, rival))
+                    siguientes = pendientes - {equipo, rival}
+                    if completar_emparejamiento(siguientes):
+                        return True
+                    emparejamientos.pop()
+                    cruces_locales.add(par)
+                    if nodos_busqueda > limite_nodos:
+                        break
+                return False
+
+            if completar_emparejamiento(disponibles):
+                return True
+
+        fallidos.add(estado)
+        return False
+
+    if not buscar_rondas(0, set(cruces), descansos_anteriores):
+        raise ValueError(
+            "No se encontró una programación válida con esos clubes libres. "
+            "No se guardó ningún cambio. Prueba otra combinación de descansos."
+        )
 
     # Validar que la cantidad de partidos cabe en las jornadas futuras.
     for jornada in jornadas_futuras:
