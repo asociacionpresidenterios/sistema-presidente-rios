@@ -6532,7 +6532,7 @@ def configurar_jornada_fixture(campeonato_id, jornada):
         print("ERROR CONFIGURANDO JORNADA DEL FIXTURE:", repr(error))
         flash("No fue posible configurar la jornada. Revisa la fecha, horario y cancha.", "error")
 
-    return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+    return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id, jornada=jornada) + f"#jornada-{jornada}")
 
 
 @app.route(
