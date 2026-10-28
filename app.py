@@ -5728,7 +5728,7 @@ def _pareja_partidos(partido):
     return frozenset((partido.local_club_id, partido.visitante_club_id))
 
 
-def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetivo_id=None):
+def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetivo_id=None, libres_por_jornada_objetivo=None):
     """
     Reconstruye únicamente las jornadas futuras con cruces aún no disputados.
     Conserva todas las jornadas hasta la última cursada y permite fijar el club
@@ -5793,7 +5793,12 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
     # emparejamiento voraz; el equipo libre forzado se excluye de esa jornada.
     rondas = {j: [] for j in jornadas_futuras}
     equipos_por_jornada = {j: set() for j in jornadas_futuras}
-    libres_forzados = {partido_modificado.jornada: club_libre_objetivo_id} if club_libre_objetivo_id else {}
+    libres_forzados = dict(libres_por_jornada_objetivo or {})
+    if club_libre_objetivo_id and partido_modificado.jornada not in libres_forzados:
+        libres_forzados[partido_modificado.jornada] = club_libre_objetivo_id
+    for jornada_forzada, club_forzado in libres_forzados.items():
+        if jornada_forzada not in rondas or club_forzado not in clubes_ids:
+            raise ValueError("Hay una jornada o un club libre seleccionado que no corresponde al fixture pendiente.")
 
     # Mantener el cruce editado solo si no está disputado; en el caso de cambiar
     # el equipo libre, el algoritmo puede reasignarlo si no es válido.
@@ -6249,6 +6254,44 @@ def recuperar_tres_jornadas_clausura_adultos(campeonato_id):
     methods=["POST"]
 )
 @rol_permitido("Administrador")
+@app.route("/campeonatos/<int:campeonato_id>/fixture/reprogramar-desde", methods=["POST"])
+@rol_permitido("Administrador")
+def reprogramar_fixture_desde(campeonato_id):
+    campeonato = db.get_or_404(Campeonato, campeonato_id)
+    todos = Partido.query.filter_by(campeonato_id=campeonato.id).all()
+    finalizados = [p for p in todos if _partido_finalizado(p)]
+    ultima_cursada = max((p.jornada for p in finalizados), default=0)
+    clubes_ids = [r.club_id for r in CampeonatoClub.query.filter_by(campeonato_id=campeonato.id).order_by(CampeonatoClub.id).all()]
+    total_jornadas = len(generar_calendario_todos_contra_todos(clubes_ids))
+    try:
+        jornada_inicio = int(request.form.get("jornada_inicio", "0"))
+        if jornada_inicio <= ultima_cursada:
+            raise ValueError(f"No puedes comenzar antes o dentro de una jornada ya cursada. La última jornada protegida es la {ultima_cursada}.")
+        if jornada_inicio < 1 or jornada_inicio > total_jornadas:
+            raise ValueError("La jornada inicial no es válida.")
+        libres = {}
+        for j in range(jornada_inicio, total_jornadas + 1):
+            raw = request.form.get(f"libre_{j}", "").strip()
+            if raw:
+                libres[j] = int(raw)
+        if len(set(libres.values())) != len(libres):
+            raise ValueError("Elegiste el mismo club libre en más de una jornada.")
+        libres_anteriores = set()
+        for j in range(1, jornada_inicio):
+            jugados = {cid for p in todos if p.jornada == j for cid in (p.local_club_id, p.visitante_club_id)}
+            libres_anteriores.update(set(clubes_ids) - jugados)
+        if libres_anteriores.intersection(libres.values()):
+            raise ValueError("Uno de los clubes seleccionados ya tuvo jornada libre antes de la jornada inicial.")
+        disparador = type("JornadaDisparador", (), {"jornada": jornada_inicio})()
+        adaptar_fixture_pendiente(campeonato, disparador, libres_por_jornada_objetivo=libres)
+        db.session.commit()
+        flash(f"Fixture reprogramado desde la jornada {jornada_inicio}. Se conservaron las jornadas anteriores y los resultados registrados.", "success")
+    except Exception as exc:
+        db.session.rollback()
+        flash(f"No se reprogramó el fixture: {exc}", "error")
+    return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+
+
 def generar_fixture_campeonato(campeonato_id):
 
     campeonato = db.get_or_404(
