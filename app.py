@@ -5791,11 +5791,7 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
 
     # Mantener el cruce editado solo si no está disputado; en el caso de cambiar
     # el equipo libre, el algoritmo puede reasignarlo si no es válido.
-    pareja_editada = _pareja_partidos(partido_modificado)
-    if pareja_editada in parejas_no_disponibles:
-        raise ValueError("Ese enfrentamiento ya fue disputado o pertenece a una jornada protegida.")
-
-    max_partidos = len(clubes_ids) // 2
+    # El cruce enviado por el formulario puede ser solo la señal del cambio de libre;\n    # los cruces finales se generan exclusivamente desde las parejas aún disponibles.\n\n    max_partidos = len(clubes_ids) // 2
     # Ordenar por grado restante para distribuir primero los clubes con menos opciones.
     while cruces:
         progreso = False
@@ -6526,21 +6522,44 @@ def editar_partido_fixture(campeonato_id, partido_id):
         if turno_id is not None and turno_id not in participantes:
             raise ValueError("El club de turno seleccionado no pertenece a este campeonato.")
 
-        # Detectar y rechazar cualquier enfrentamiento que ya se haya disputado.
-        # Cambiar un equipo libre requiere adaptar el calendario pendiente completo;
-        # nunca se debe sustituir un nombre de forma aislada porque puede duplicar
-        # cruces ya jugados o dejar a un club programado dos veces en una jornada.
+        # Detectar si la edición busca cambiar el equipo libre de esta jornada.
+        # Ejemplo: se reemplaza el rival por el equipo que estaba libre; el equipo
+        # retirado del cruce pasa a ser el libre objetivo y el cruce escrito en el
+        # formulario solo actúa como instrucción para reorganizar los pendientes.
         pareja_nueva = frozenset((local_id, visitante_id))
+        ids_nuevos = {local_id, visitante_id}
+        ids_originales = set(pareja_original)
+        eliminados_del_cruce = ids_originales - ids_nuevos
+        partidos_otros_jornada = [
+            p for p in Partido.query.filter_by(
+                campeonato_id=campeonato.id, jornada=jornada_original
+            ).all() if p.id != partido.id
+        ]
+        clubes_en_otros = {
+            cid for p in partidos_otros_jornada
+            for cid in (p.local_club_id, p.visitante_club_id)
+        }
+        clubes_libres_antes = participantes - clubes_en_otros - ids_originales
+        club_libre_objetivo_id = None
+        if (
+            jornada_nueva == jornada_original
+            and len(eliminados_del_cruce) == 1
+            and (ids_nuevos - ids_originales) & clubes_libres_antes
+        ):
+            posible_libre = next(iter(eliminados_del_cruce))
+            if posible_libre not in clubes_en_otros:
+                club_libre_objetivo_id = posible_libre
+
         cruce_ya_jugado = any(
             _partido_finalizado(p)
             and _pareja_partidos(p) == pareja_nueva
             for p in Partido.query.filter_by(campeonato_id=campeonato.id).all()
             if p.id != partido.id
         )
-        if cruce_ya_jugado:
+        if cruce_ya_jugado and club_libre_objetivo_id is None:
             raise ValueError(
-                "Ese enfrentamiento ya fue disputado. El fixture debe reorganizarse "
-                "sin repetir partidos; elige otro cruce pendiente."
+                "Ese enfrentamiento ya fue disputado. Solo se permite seleccionarlo "
+                "como referencia para cambiar el equipo libre de una jornada."
             )
 
         # Si el administrador cambia de jornada, se mueve antes de adaptar.
@@ -6557,7 +6576,7 @@ def editar_partido_fixture(campeonato_id, partido_id):
         if cambio_estructural:
             # Reorganiza el fixture pendiente y mantiene protegidas las jornadas
             # cursadas. Si hay incompatibilidades, se revierte toda la operación.
-            adaptar_fixture_pendiente(campeonato, partido, next(iter(set(pareja_original) - {local_id, visitante_id}), None))
+            adaptar_fixture_pendiente(campeonato, partido, club_libre_objetivo_id)
         db.session.commit()
 
         registrar_auditoria(
