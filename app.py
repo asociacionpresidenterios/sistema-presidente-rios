@@ -6223,13 +6223,18 @@ def fixture_campeonato(campeonato_id):
             if club_id not in clubes_que_juegan
         ]
 
+    jornada_solicitada = request.args.get("jornada", type=int)
+    if jornada_solicitada not in jornadas:
+        jornada_solicitada = min(jornadas.keys()) if jornadas else 1
+
     return render_template(
         "campeonato_fixture.html",
         campeonato=campeonato,
         clubes_participantes=clubes_participantes,
         partidos=partidos,
         jornadas=jornadas,
-        libres_por_jornada=libres_por_jornada
+        libres_por_jornada=libres_por_jornada,
+        jornada_solicitada=jornada_solicitada
     )
 
 
@@ -6328,7 +6333,7 @@ def recuperar_tres_jornadas_clausura_adultos(campeonato_id):
         db.session.rollback()
         print("ERROR RECUPERANDO JORNADAS 1-3:", repr(error))
         flash("No se pudo restaurar el fixture. Verifica que los 11 clubes de los afiches estén inscritos en este campeonato.", "error")
-    return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+    return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id, jornada=jornada) + f"#jornada-{jornada}")
 
 
 @app.route("/campeonatos/<int:campeonato_id>/fixture/reprogramar-desde", methods=["POST"], endpoint="fixture_reprogramar_desde_v2")
@@ -6732,7 +6737,8 @@ def editar_partido_fixture(campeonato_id, partido_id):
         print("ERROR ADAPTANDO FIXTURE:", repr(error))
         flash(f"No fue posible adaptar el fixture: {error}", "error")
 
-    return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+    jornada_regreso = request.form.get("return_jornada", type=int) or request.form.get("jornada", type=int) or 1
+    return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id, jornada=jornada_regreso) + f"#jornada-{jornada_regreso}")
 
 
 @app.route(
