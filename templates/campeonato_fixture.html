@@ -89,6 +89,7 @@
       })();
     </script>
     {% if partidos %}<div style="margin-top:10px;padding:10px 12px;border-radius:10px;background:#eff6ff;color:#1e3a8a;font-size:12px"><strong>📄 Exportación:</strong> el botón “Exportar jornadas a Word” genera un documento con <strong>una jornada por página</strong>, incluyendo fecha, horario, cancha, partidos, club libre y club de turno, listo para usar como base de tus afiches.</div>{% endif %}
+    {% endif %}
 
     {% if clubes_participantes|length >= 2 %}
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
