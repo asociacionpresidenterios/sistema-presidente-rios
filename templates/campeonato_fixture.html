@@ -129,6 +129,7 @@
 
   {% if partidos %}
     {% for jornada, lista_original in jornadas.items() %}
+      {% if jornada == jornada_solicitada %}
       {% set lista = lista_original|sort(attribute="hora")|sort(attribute="cancha") %}
       <div class="round" data-jornada="{{ jornada }}">
         <div class="round-head" id="jornada-{{ jornada }}" data-jornada="{{ jornada }}" style="align-items:flex-start;flex-direction:column">
@@ -186,6 +187,7 @@
           </details>
         {% endfor %}
       </div>
+      {% endif %}
     {% endfor %}
   {% else %}
     <div class="card"><div class="empty"><div style="font-size:42px;margin-bottom:10px">📅</div><strong>Aún no hay fixture generado.</strong><br>Presiona “Generar fixture” para crear automáticamente las jornadas.</div></div>
