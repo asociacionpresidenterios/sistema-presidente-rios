@@ -6469,71 +6469,42 @@ def generar_fixture_campeonato(campeonato_id):
 )
 @rol_permitido("Administrador")
 def configurar_jornada_fixture(campeonato_id, jornada):
-    """Configura la jornada; una apertura directa redirige al fixture."""
+    """Guarda fecha, cancha, horario y club de turno de una jornada."""
     campeonato = db.get_or_404(Campeonato, campeonato_id)
-
-    # Esta URL es un destino de formulario, no una página independiente.
-    # Si se abre desde la barra del navegador (GET), evita el error 405.
     if request.method == "GET":
-        flash(
-            f"Para configurar la jornada {jornada}, utiliza el formulario del fixture.",
-            "info"
-        )
-        return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id))
+        return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id, jornada=jornada) + "#jornada-" + str(jornada))
 
     try:
-        partidos_jornada = (
-            Partido.query
-            .filter_by(campeonato_id=campeonato.id, jornada=jornada)
-            .all()
-        )
-
+        partidos_jornada = Partido.query.filter_by(campeonato_id=campeonato.id, jornada=jornada).order_by(Partido.id).all()
         if not partidos_jornada:
             raise ValueError("La jornada no tiene partidos.")
-
         fecha_texto = request.form.get("fecha", "").strip()
         if not fecha_texto:
             raise ValueError("Debes indicar una fecha.")
-
         fecha = datetime.strptime(fecha_texto, "%Y-%m-%d").date()
-
-        # Horarios oficiales por recinto: cada cancha recibe el patrón
-        # 17:30, 18:40 y 20:00 según el orden de sus partidos en la jornada.
-        # No se reemplazan las canchas ni se modifica el orden de los cruces.
-        horarios_oficiales = ("17:30", "18:40", "20:00")
-        partidos_por_cancha = {}
-        for partido in sorted(partidos_jornada, key=lambda p: (p.cancha or "").strip().casefold(),):
-            clave_cancha = (partido.cancha or "").strip()
-            partidos_por_cancha.setdefault(clave_cancha, []).append(partido)
-
+        cancha = request.form.get("cancha", "").strip()
+        hora = request.form.get("hora", "").strip()
+        turno_raw = request.form.get("turno_club_id", "").strip()
+        turno_id = int(turno_raw) if turno_raw else None
+        participantes = {r.club_id for r in CampeonatoClub.query.filter_by(campeonato_id=campeonato.id).all()}
+        if turno_id is not None and turno_id not in participantes:
+            raise ValueError("El club de turno seleccionado no pertenece a este campeonato.")
         for partido in partidos_jornada:
             partido.fecha = fecha
-
-        for cancha_nombre, partidos_recinto in partidos_por_cancha.items():
-            for indice, partido in enumerate(
-                sorted(partidos_recinto, key=lambda p: (p.id or 0))
-            ):
-                partido.hora = horarios_oficiales[min(indice, len(horarios_oficiales) - 1)]
-
+            if cancha:
+                partido.cancha = cancha
+            if hora:
+                partido.hora = hora
+            if "turno_club_id" in request.form:
+                partido.turno_club_id = turno_id
         db.session.commit()
-        registrar_auditoria(
-            "CONFIGURAR_JORNADA",
-            "Campeonatos",
-            f"Se configuró la jornada {jornada} del campeonato '{campeonato.nombre}' con horarios oficiales 17:30, 18:40 y 20:00 por recinto.",
-        )
-        flash(
-            f"Jornada {jornada} actualizada: {fecha.strftime('%d/%m/%Y')}. "
-            "Se aplicaron los horarios oficiales 17:30, 18:40 y 20:00 por recinto, "
-            "respetando la cancha de cada partido.",
-            "success"
-        )
-
+        registrar_auditoria("CONFIGURAR_JORNADA", "Campeonatos", "Jornada " + str(jornada) + " del campeonato " + campeonato.nombre + ": fecha, cancha, horario y turno actualizados.")
+        flash("Jornada " + str(jornada) + " guardada: fecha, cancha, horario y turno actualizados.", "success")
     except Exception as error:
         db.session.rollback()
         print("ERROR CONFIGURANDO JORNADA DEL FIXTURE:", repr(error))
-        flash("No fue posible configurar la jornada. Revisa la fecha, horario y cancha.", "error")
-
-    return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id, jornada=jornada) + f"#jornada-{jornada}")
+        flash("No se pudo guardar la jornada " + str(jornada) + ": " + str(error), "error")
+    return redirect(url_for("fixture_campeonato", campeonato_id=campeonato.id, jornada=jornada) + "#jornada-" + str(jornada))
 
 
 @app.route(
