@@ -174,11 +174,12 @@
             </div>
           </div>
           <form method="POST" action="{{ url_for('configurar_jornada_fixture', campeonato_id=campeonato.id, jornada=jornada) }}" style="width:100%;margin-top:10px"><input type="hidden" name="return_jornada" value="{{ jornada }}">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1.4fr auto;gap:9px;align-items:end">
-              <div class="field"><label style="display:block;font-size:10px;font-weight:900;color:#475569;margin-bottom:5px">Fecha de la jornada</label><input type="date" name="fecha" value="{{ lista[0].fecha.strftime('%Y-%m-%d') if lista and lista[0].fecha else '' }}" required style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;background:#fff"></div>
-              <div class="field"><label style="display:block;font-size:10px;font-weight:900;color:#475569;margin-bottom:5px">Horario</label><input type="text" name="hora" value="{{ lista[0].hora or '' }}" placeholder="17:00" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;background:#fff"></div>
-              <div class="field"><label style="display:block;font-size:10px;font-weight:900;color:#475569;margin-bottom:5px">Cancha</label><input type="text" name="cancha" value="{{ lista[0].cancha or '' }}" placeholder="Mirador Viejo" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;background:#fff"></div>
-              <button class="btn success small" type="submit">💾 Aplicar a jornada</button>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:9px;align-items:end">
+              <div class="field"><label>Fecha de la jornada</label><input type="date" name="fecha" value="{{ lista[0].fecha.strftime('%Y-%m-%d') if lista and lista[0].fecha else '' }}" required style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;background:#fff"></div>
+              <div class="field"><label>Horario</label><input type="text" name="hora" value="{{ lista[0].hora or '' }}" placeholder="17:00" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;background:#fff"></div>
+              <div class="field"><label>Cancha para la jornada</label><input type="text" name="cancha" value="{{ lista[0].cancha or '' }}" placeholder="Mirador Viejo" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;background:#fff"></div>
+              <div class="field"><label>Club de turno (toda la jornada)</label><select name="turno_club_id" style="width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:9px;padding:9px;background:#fff"><option value="">Sin asignar / limpiar turno</option>{% for registro in clubes_participantes %}<option value="{{ registro.club_id }}" {% if lista[0].turno_club_id == registro.club_id %}selected{% endif %}>{{ registro.club.nombre }}</option>{% endfor %}</select></div>
+              <button class="btn success small" type="submit">💾 Guardar jornada</button>
             </div>
           </form>
         </div>
