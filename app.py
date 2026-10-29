@@ -5867,35 +5867,30 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
         if not jornadas_futuras and cruces_pendientes:
             raise ValueError("No quedan jornadas futuras disponibles para programar los cruces pendientes.")
 
-        # Colorear los cruces en jornadas sin repetir equipos. Se priorizan las
-        # jornadas menos cargadas para repartir los partidos en todas las fechas disponibles.
-        max_partidos_activos = len(clubes_activos_ids) // 2
-        rondas_adaptadas = {j: [] for j in jornadas_futuras}
-        equipos_por_jornada = {j: set() for j in jornadas_futuras}
-        grados = {cid: 0 for cid in clubes_activos_ids}
-        for a, b in cruces_pendientes:
-            grados[a] += 1
-            grados[b] += 1
-        cruces_ordenados = sorted(
-            cruces_pendientes,
-            key=lambda par: (-(grados[par[0]] + grados[par[1]]), clubes_activos_ids.index(par[0]), clubes_activos_ids.index(par[1]))
-        )
-        for local_id, visitante_id in cruces_ordenados:
-            opciones = [
-                j for j in jornadas_futuras
-                if local_id not in equipos_por_jornada[j]
-                and visitante_id not in equipos_por_jornada[j]
-                and len(rondas_adaptadas[j]) < max_partidos_activos
+        # Generar una rueda válida de los clubes activos y retirar los cruces
+        # ya disputados/reservados. Al retirarse un equipo, puede ser necesario
+        # ampliar el calendario más allá de la jornada 15; no se fuerzan cruces repetidos.
+        calendario_activos = generar_calendario_todos_contra_todos(clubes_activos_ids)
+        cruces_por_jornada = []
+        for ronda_base in calendario_activos:
+            ronda_filtrada = [
+                (local_id, visitante_id)
+                for local_id, visitante_id in ronda_base
+                if frozenset((local_id, visitante_id)) not in parejas_usadas
             ]
-            if not opciones:
-                # No se ha borrado nada todavía; abortar sin dejar el fixture a medias.
-                raise ValueError(
-                    "No se pudieron acomodar todos los cruces sin repetir equipos por jornada. "
-                    "No se modificó el fixture. Amplía las jornadas futuras o revisa los partidos protegidos."
-                )
-            jornada_destino = min(opciones, key=lambda j: (len(rondas_adaptadas[j]), j))
-            rondas_adaptadas[jornada_destino].append((local_id, visitante_id))
-            equipos_por_jornada[jornada_destino].update((local_id, visitante_id))
+            if ronda_filtrada:
+                cruces_por_jornada.append(ronda_filtrada)
+
+        jornadas_adaptadas = list(range(
+            jornadas_protegidas_hasta + 1,
+            jornadas_protegidas_hasta + len(cruces_por_jornada) + 1
+        ))
+        rondas_adaptadas = {
+            jornada: cruces_por_jornada[indice]
+            for indice, jornada in enumerate(jornadas_adaptadas)
+        }
+        jornadas_futuras_originales = jornadas_futuras[:]
+        jornadas_futuras = jornadas_adaptadas
 
         # Si alguna fecha queda vacía, no crear partidos fantasma. En las jornadas
         # con partidos, San Cristóbal queda automáticamente libre al estar excluido.
