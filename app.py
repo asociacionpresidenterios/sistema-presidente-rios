@@ -5903,6 +5903,7 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
         db.session.flush()
 
         fechas_asignadas_adaptadas = set(fechas_protegidas)
+        primera_fecha_adaptada = siguiente_sabado(campeonato.fecha_inicio)
         ultima_fecha_adaptada = ultima_fecha_protegida
         for jornada in jornadas_futuras:
             partidos_ronda = rondas_adaptadas[jornada]
@@ -5911,7 +5912,7 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
             cfgs = configuracion.get(jornada, [])
             fecha_ronda = next(
                 (cfg["fecha"] for cfg in cfgs if cfg.get("fecha")),
-                primera_fecha + timedelta(days=(jornada - 1) * 7)
+                primera_fecha_adaptada + timedelta(days=(jornada - 1) * 7)
             )
             if fecha_ronda in fechas_asignadas_adaptadas or (
                 ultima_fecha_adaptada is not None and fecha_ronda <= ultima_fecha_adaptada
