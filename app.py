@@ -5834,6 +5834,117 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
             "No se modificó nada; elige una jornada posterior o revisa esos resultados."
         )
 
+    # Caso especial: San Cristóbal se retiró del campeonato de adultos.
+    # Desde la jornada 6 no debe volver a ser emparejado; las jornadas futuras
+    # se reconstruyen con los clubes activos y se permiten jornadas parciales.
+    texto_campeonato = f"{campeonato.nombre or ''} {campeonato.serie or ''}".lower()
+    texto_campeonato = texto_campeonato.translate(str.maketrans("áéíóúü", "aeiouu"))
+    es_adultos = "adult" in texto_campeonato or "senior" in texto_campeonato
+    clubes_por_id = {c.id: c for c in Club.query.filter(Club.id.in_(clubes_ids)).all()}
+    san_cristobal_id = next(
+        (cid for cid in clubes_ids
+         if (clubes_por_id.get(cid).nombre if clubes_por_id.get(cid) else "").strip().lower()
+         .translate(str.maketrans("áéíóúü", "aeiouu")) == "san cristobal"),
+        None
+    )
+    if es_adultos and san_cristobal_id is not None and partido_modificado.jornada >= 6:
+        clubes_activos_ids = [cid for cid in clubes_ids if cid != san_cristobal_id]
+        if len(clubes_activos_ids) < 2:
+            raise ValueError("No hay suficientes clubes activos para reconstruir el fixture.")
+
+        # No reutilizar ningún cruce de las jornadas protegidas entre clubes que siguen activos.
+        parejas_usadas = {
+            _pareja_partidos(p) for p in todos
+            if p.jornada <= jornadas_protegidas_hasta
+            and p.local_club_id in clubes_activos_ids
+            and p.visitante_club_id in clubes_activos_ids
+        }
+        cruces_pendientes = [
+            (a, b) for i, a in enumerate(clubes_activos_ids)
+            for b in clubes_activos_ids[i + 1:]
+            if frozenset((a, b)) not in parejas_usadas
+        ]
+        if not jornadas_futuras and cruces_pendientes:
+            raise ValueError("No quedan jornadas futuras disponibles para programar los cruces pendientes.")
+
+        # Colorear los cruces en jornadas sin repetir equipos. Se priorizan las
+        # jornadas menos cargadas para repartir los partidos en todas las fechas disponibles.
+        max_partidos_activos = len(clubes_activos_ids) // 2
+        rondas_adaptadas = {j: [] for j in jornadas_futuras}
+        equipos_por_jornada = {j: set() for j in jornadas_futuras}
+        grados = {cid: 0 for cid in clubes_activos_ids}
+        for a, b in cruces_pendientes:
+            grados[a] += 1
+            grados[b] += 1
+        cruces_ordenados = sorted(
+            cruces_pendientes,
+            key=lambda par: (-(grados[par[0]] + grados[par[1]]), clubes_activos_ids.index(par[0]), clubes_activos_ids.index(par[1]))
+        )
+        for local_id, visitante_id in cruces_ordenados:
+            opciones = [
+                j for j in jornadas_futuras
+                if local_id not in equipos_por_jornada[j]
+                and visitante_id not in equipos_por_jornada[j]
+                and len(rondas_adaptadas[j]) < max_partidos_activos
+            ]
+            if not opciones:
+                # No se ha borrado nada todavía; abortar sin dejar el fixture a medias.
+                raise ValueError(
+                    "No se pudieron acomodar todos los cruces sin repetir equipos por jornada. "
+                    "No se modificó el fixture. Amplía las jornadas futuras o revisa los partidos protegidos."
+                )
+            jornada_destino = min(opciones, key=lambda j: (len(rondas_adaptadas[j]), j))
+            rondas_adaptadas[jornada_destino].append((local_id, visitante_id))
+            equipos_por_jornada[jornada_destino].update((local_id, visitante_id))
+
+        # Si alguna fecha queda vacía, no crear partidos fantasma. En las jornadas
+        # con partidos, San Cristóbal queda automáticamente libre al estar excluido.
+        futuros_a_borrar = [
+            p for p in todos
+            if p.jornada > jornadas_protegidas_hasta and not _partido_finalizado(p)
+        ]
+        for p in futuros_a_borrar:
+            db.session.delete(p)
+        db.session.flush()
+
+        fechas_asignadas_adaptadas = set(fechas_protegidas)
+        ultima_fecha_adaptada = ultima_fecha_protegida
+        for jornada in jornadas_futuras:
+            partidos_ronda = rondas_adaptadas[jornada]
+            if not partidos_ronda:
+                continue
+            cfgs = configuracion.get(jornada, [])
+            fecha_ronda = next(
+                (cfg["fecha"] for cfg in cfgs if cfg.get("fecha")),
+                primera_fecha + timedelta(days=(jornada - 1) * 7)
+            )
+            if fecha_ronda in fechas_asignadas_adaptadas or (
+                ultima_fecha_adaptada is not None and fecha_ronda <= ultima_fecha_adaptada
+            ):
+                base_fecha = ultima_fecha_adaptada or fecha_ronda
+                fecha_ronda = base_fecha + timedelta(days=7)
+                while fecha_ronda in fechas_asignadas_adaptadas:
+                    fecha_ronda += timedelta(days=7)
+            fechas_asignadas_adaptadas.add(fecha_ronda)
+            ultima_fecha_adaptada = fecha_ronda
+            for indice_partido, (local_id, visitante_id) in enumerate(partidos_ronda):
+                cfg = cfgs[indice_partido] if indice_partido < len(cfgs) else {}
+                db.session.add(Partido(
+                    campeonato_id=campeonato.id,
+                    jornada=jornada,
+                    fecha=fecha_ronda,
+                    hora=cfg.get("hora") or "17:00",
+                    cancha=cfg.get("cancha") or "Por definir",
+                    local_club_id=local_id,
+                    visitante_club_id=visitante_id,
+                    turno_club_id=None,
+                    goles_local=None,
+                    goles_visitante=None,
+                    estado="Programado",
+                    fixture_bloqueado=False,
+                ))
+        return
+
     max_partidos = len(clubes_ids) // 2
     if len(cruces) != len(jornadas_futuras) * max_partidos:
         raise ValueError(
