@@ -5867,26 +5867,46 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
         if not jornadas_futuras and cruces_pendientes:
             raise ValueError("No quedan jornadas futuras disponibles para programar los cruces pendientes.")
 
-        # Repartir TODOS los cruces que aún faltan en jornadas compactas.
-        # Filtrar cada ronda del calendario original dejaba rondas casi vacías
-        # (incluso una sola partida) cuando varios cruces ya se habían disputado.
-        # La asignación voraz coloca cada pareja en la primera jornada donde ambos
-        # clubes estén disponibles, sin repetir rivales ni hacer jugar dos veces
-        # a un club en la misma jornada.
+        # Construir cada jornada con un emparejamiento máximo. La asignación
+        # voraz anterior podía dejar equipos libres aunque aún tuvieran rivales
+        # disponibles. En cada ronda se busca primero el club con menos opciones
+        # y se completa el mayor número posible de partidos sin repetir clubes.
+        cruces_restantes = set(frozenset((a, b)) for a, b in cruces_pendientes)
         cruces_por_jornada = []
-        clubes_por_ronda = []
-        for local_id, visitante_id in cruces_pendientes:
-            asignado = False
-            for indice_ronda, clubes_ocupados in enumerate(clubes_por_ronda):
-                if local_id not in clubes_ocupados and visitante_id not in clubes_ocupados:
-                    cruces_por_jornada[indice_ronda].append((local_id, visitante_id))
-                    clubes_ocupados.add(local_id)
-                    clubes_ocupados.add(visitante_id)
-                    asignado = True
-                    break
-            if not asignado:
-                cruces_por_jornada.append([(local_id, visitante_id)])
-                clubes_por_ronda.append({local_id, visitante_id})
+        while cruces_restantes:
+            ronda = []
+            ocupados = set()
+
+            def buscar_emparejamiento(disponibles, seleccionados):
+                if not disponibles:
+                    return seleccionados[:]
+                # Elegir el club con menos rivales posibles reduce los callejones
+                # sin salida y ayuda a completar la jornada.
+                club = min(
+                    disponibles,
+                    key=lambda cid: sum(
+                        1 for pareja in cruces_restantes
+                        if cid in pareja and (next(iter(pareja - {cid}), None) in disponibles)
+                    )
+                )
+                sin_club = disponibles - {club}
+                mejor = buscar_emparejamiento(sin_club, seleccionados)
+                for rival in list(sin_club):
+                    pareja = frozenset((club, rival))
+                    if pareja in cruces_restantes:
+                        candidato = buscar_emparejamiento(sin_club - {rival}, seleccionados + [(club, rival)])
+                        if len(candidato) > len(mejor):
+                            mejor = candidato
+                        if len(mejor) == len(disponibles) // 2:
+                            break
+                return mejor
+
+            ronda = buscar_emparejamiento(set(clubes_activos_ids), [])
+            if not ronda:
+                raise ValueError("No fue posible organizar los cruces pendientes sin repetir equipos.")
+            cruces_por_jornada.append(ronda)
+            for a, b in ronda:
+                cruces_restantes.discard(frozenset((a, b)))
 
         jornadas_adaptadas = list(range(
             jornadas_protegidas_hasta + 1,
