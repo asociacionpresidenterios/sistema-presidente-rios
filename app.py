@@ -5747,7 +5747,9 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
     # anteriores a la jornada editada, aunque algún resultado aún no esté cargado.
     # Así no se vuelve a programar en la jornada editada un cruce que ya figura
     # en una jornada anterior (por ejemplo, Vidal Araya vs Brisas del Maipo).
-    jornadas_protegidas_hasta = max(ultima_cursada, partido_modificado.jornada - 1)
+    # La jornada editada queda protegida completa para que la adaptación no
+    # elimine el partido que el administrador acaba de guardar.
+    jornadas_protegidas_hasta = max(ultima_cursada, partido_modificado.jornada)
 
     clubes_ids = [
         r.club_id for r in CampeonatoClub.query.filter_by(campeonato_id=campeonato.id)
@@ -5759,7 +5761,7 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
     calendario_base = generar_calendario_todos_contra_todos(clubes_ids)
     total_jornadas = len(calendario_base)
     jornadas_futuras = list(range(jornadas_protegidas_hasta + 1, total_jornadas + 1))
-    if partido_modificado.jornada not in jornadas_futuras:
+    if partido_modificado.jornada <= ultima_cursada:
         raise ValueError("El partido debe pertenecer a una jornada futura.")
     if club_libre_objetivo_id is not None and club_libre_objetivo_id not in clubes_ids:
         raise ValueError("El equipo seleccionado como libre no pertenece al campeonato.")
@@ -6629,6 +6631,22 @@ def editar_partido_fixture(campeonato_id, partido_id):
             )
         if turno_id is not None and turno_id not in participantes:
             raise ValueError("El club de turno seleccionado no pertenece a este campeonato.")
+
+        # Evitar que un club quede programado dos veces en la jornada de destino.
+        partidos_destino = [
+            p for p in Partido.query.filter_by(
+                campeonato_id=campeonato.id, jornada=jornada_nueva
+            ).all() if p.id != partido.id
+        ]
+        clubes_destino = {
+            cid for p in partidos_destino
+            for cid in (p.local_club_id, p.visitante_club_id)
+        }
+        if local_id in clubes_destino or visitante_id in clubes_destino:
+            raise ValueError(
+                "Uno de los clubes seleccionados ya tiene partido en esa jornada. "
+                "Elige otra jornada o un rival disponible."
+            )
 
         # Detectar si la edición busca cambiar el equipo libre de esta jornada.
         # Ejemplo: se reemplaza el rival por el equipo que estaba libre; el equipo
