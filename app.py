@@ -5806,9 +5806,9 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
             raise ValueError(f"El club libre de la jornada {j} ya tuvo descanso en una jornada anterior.")
         descansos_anteriores.add(libre_j)
 
+    # La jornada del partido editado ya está protegida; su club libre se
+    # determina por los cruces que quedaron guardados en esa misma jornada.
     libres_forzados = dict(libres_por_jornada_objetivo or {})
-    if club_libre_objetivo_id and partido_modificado.jornada not in libres_forzados:
-        libres_forzados[partido_modificado.jornada] = club_libre_objetivo_id
     for jornada_forzada, club_forzado in libres_forzados.items():
         if jornada_forzada not in jornadas_futuras or club_forzado not in clubes_ids:
             raise ValueError("Hay una jornada o un club libre seleccionado que no corresponde al fixture pendiente.")
