@@ -5811,8 +5811,10 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
                 "Corrige esa jornada antes de reprogramar para evitar cruces duplicados."
             )
         libre_j = next(iter(libres_j))
-        if libre_j in descansos_anteriores:
-            raise ValueError(f"El club libre de la jornada {j} ya tuvo descanso en una jornada anterior.")
+        # Los fixtures antiguos pueden contener descansos duplicados por el
+        # error de programación. No abortar por ese historial: marcar como ya
+        # descansados todos los clubes que aparecieron libres y excluirlos de
+        # nuevos descansos desde la jornada que se está reconstruyendo.
         descansos_anteriores.add(libre_j)
 
     # La jornada del partido editado ya está protegida; su club libre se
@@ -6393,7 +6395,10 @@ def reprogramar_fixture_desde_control_manual(campeonato_id):
             jugados = {cid for p in todos if p.jornada == j for cid in (p.local_club_id, p.visitante_club_id)}
             libres_anteriores.update(set(clubes_ids) - jugados)
         if libres_anteriores.intersection(libres.values()):
-            raise ValueError("Uno de los clubes seleccionados ya tuvo jornada libre antes de la jornada inicial.")
+            raise ValueError(
+                "Uno de los clubes seleccionados ya tuvo jornada libre antes de la jornada inicial. "
+                "Elige un club distinto para que no vuelva a quedar libre."
+            )
         disparador = type("JornadaDisparador", (), {"jornada": jornada_inicio})()
         adaptar_fixture_pendiente(campeonato, disparador, libres_por_jornada_objetivo=libres, proteger_jornada_modificada=False)
         db.session.commit()
