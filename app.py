@@ -5867,19 +5867,26 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
         if not jornadas_futuras and cruces_pendientes:
             raise ValueError("No quedan jornadas futuras disponibles para programar los cruces pendientes.")
 
-        # Generar una rueda válida de los clubes activos y retirar los cruces
-        # ya disputados/reservados. Al retirarse un equipo, puede ser necesario
-        # ampliar el calendario más allá de la jornada 15; no se fuerzan cruces repetidos.
-        calendario_activos = generar_calendario_todos_contra_todos(clubes_activos_ids)
+        # Repartir TODOS los cruces que aún faltan en jornadas compactas.
+        # Filtrar cada ronda del calendario original dejaba rondas casi vacías
+        # (incluso una sola partida) cuando varios cruces ya se habían disputado.
+        # La asignación voraz coloca cada pareja en la primera jornada donde ambos
+        # clubes estén disponibles, sin repetir rivales ni hacer jugar dos veces
+        # a un club en la misma jornada.
         cruces_por_jornada = []
-        for ronda_base in calendario_activos:
-            ronda_filtrada = [
-                (local_id, visitante_id)
-                for local_id, visitante_id in ronda_base
-                if frozenset((local_id, visitante_id)) not in parejas_usadas
-            ]
-            if ronda_filtrada:
-                cruces_por_jornada.append(ronda_filtrada)
+        clubes_por_ronda = []
+        for local_id, visitante_id in cruces_pendientes:
+            asignado = False
+            for indice_ronda, clubes_ocupados in enumerate(clubes_por_ronda):
+                if local_id not in clubes_ocupados and visitante_id not in clubes_ocupados:
+                    cruces_por_jornada[indice_ronda].append((local_id, visitante_id))
+                    clubes_ocupados.add(local_id)
+                    clubes_ocupados.add(visitante_id)
+                    asignado = True
+                    break
+            if not asignado:
+                cruces_por_jornada.append([(local_id, visitante_id)])
+                clubes_por_ronda.append({local_id, visitante_id})
 
         jornadas_adaptadas = list(range(
             jornadas_protegidas_hasta + 1,
