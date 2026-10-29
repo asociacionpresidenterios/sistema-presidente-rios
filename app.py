@@ -5774,8 +5774,14 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
     parejas_cursadas = {_pareja_partidos(p) for p in finalizados}
     parejas_no_disponibles = parejas_reservadas | parejas_cursadas
 
-    # Preservar fecha/hora/cancha de cada espacio de partido futuro, no los cruces.
+    # Preservar fecha/hora/cancha de cada espacio futuro, pero detectar fechas
+    # ya usadas por jornadas protegidas para que la reprogramación no duplique fechas.
     configuracion = {}
+    fechas_protegidas = {
+        p.fecha for p in todos
+        if p.jornada <= jornadas_protegidas_hasta and p.fecha is not None
+    }
+    ultima_fecha_protegida = max(fechas_protegidas, default=None)
     for p in todos:
         if p.jornada > jornadas_protegidas_hasta and not _partido_finalizado(p):
             configuracion.setdefault(p.jornada, []).append({
@@ -5933,16 +5939,34 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
     db.session.flush()
 
     primera_fecha = siguiente_sabado(campeonato.fecha_inicio)
+    fechas_asignadas = set(fechas_protegidas)
+    ultima_fecha_asignada = ultima_fecha_protegida
     for jornada in jornadas_futuras:
         espacios = iter(configuracion.get(jornada, []))
+        fecha_ronda = next(
+            (cfg["fecha"] for cfg in configuracion.get(jornada, []) if cfg.get("fecha")),
+            primera_fecha + timedelta(days=(jornada - 1) * 7)
+        )
+        # Si la fecha de esta jornada ya está ocupada por otra jornada, moverla
+        # al siguiente sábado disponible. No se cambian fechas únicas existentes.
+        if fecha_ronda in fechas_asignadas or (
+            ultima_fecha_asignada is not None and fecha_ronda <= ultima_fecha_asignada
+        ):
+            base = ultima_fecha_asignada or fecha_ronda
+            fecha_ronda = base + timedelta(days=7)
+            while fecha_ronda in fechas_asignadas:
+                fecha_ronda += timedelta(days=7)
+        fechas_asignadas.add(fecha_ronda)
+        ultima_fecha_asignada = fecha_ronda
         for local_id, visitante_id in rondas[jornada]:
             cfg = next(espacios, None)
             if cfg is None:
-                fecha_final = primera_fecha + timedelta(days=(jornada - 1) * 7)
+                fecha_final = fecha_ronda
                 hora_final = "17:00"
                 cancha_final = "Por definir"
             else:
-                fecha_final = cfg["fecha"]
+                # Todos los partidos de una jornada comparten la misma fecha.
+                fecha_final = fecha_ronda
                 hora_final = cfg["hora"] or "17:00"
                 cancha_final = cfg["cancha"] or "Por definir"
             db.session.add(Partido(
@@ -6484,6 +6508,16 @@ def configurar_jornada_fixture(campeonato_id, jornada):
         if not fecha_texto:
             raise ValueError("Debes indicar una fecha.")
         fecha = datetime.strptime(fecha_texto, "%Y-%m-%d").date()
+        fecha_usada = Partido.query.filter(
+            Partido.campeonato_id == campeonato.id,
+            Partido.jornada != jornada,
+            Partido.fecha == fecha
+        ).first()
+        if fecha_usada:
+            raise ValueError(
+                f"La fecha {fecha.strftime('%d/%m/%Y')} ya está asignada a la jornada "
+                f"{fecha_usada.jornada}. Cada jornada debe tener una fecha distinta."
+            )
         cancha = request.form.get("cancha", "").strip()
         hora = request.form.get("hora", "").strip()
         turno_raw = request.form.get("turno_club_id", "").strip()
