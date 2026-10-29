@@ -8740,7 +8740,29 @@ def publico_programacion(campeonato_id):
     jornadas = {}
     for partido in partidos:
         jornadas.setdefault(partido.jornada, []).append(partido)
-    return render_template("publico_programacion.html", campeonato=campeonato, jornadas=jornadas)
+    clubes_participantes = (
+        CampeonatoClub.query.filter_by(campeonato_id=campeonato.id)
+        .join(Club, CampeonatoClub.club_id == Club.id)
+        .order_by(Club.nombre).all()
+    )
+    clubes_por_id = {registro.club_id: registro.club for registro in clubes_participantes}
+    libres_por_jornada = {}
+    for numero, lista in jornadas.items():
+        clubes_en_partidos = {
+            club_id
+            for p in lista
+            for club_id in (p.local_club_id, p.visitante_club_id)
+        }
+        libres_por_jornada[numero] = [
+            club for club_id, club in clubes_por_id.items()
+            if club_id not in clubes_en_partidos
+        ]
+    return render_template(
+        "publico_programacion.html",
+        campeonato=campeonato,
+        jornadas=jornadas,
+        libres_por_jornada=libres_por_jornada,
+    )
 
 
 @app.route("/publico/campeonato/<int:campeonato_id>/resultados")
