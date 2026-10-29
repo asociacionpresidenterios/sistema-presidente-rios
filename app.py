@@ -5728,7 +5728,7 @@ def _pareja_partidos(partido):
     return frozenset((partido.local_club_id, partido.visitante_club_id))
 
 
-def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetivo_id=None, libres_por_jornada_objetivo=None):
+def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetivo_id=None, libres_por_jornada_objetivo=None, proteger_jornada_modificada=True):
     """
     Reconstruye únicamente las jornadas futuras con cruces aún no disputados.
     Conserva todas las jornadas hasta la última cursada y permite fijar el club
@@ -5743,13 +5743,16 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
     if partido_modificado.jornada <= ultima_cursada:
         raise ValueError(f"La jornada {partido_modificado.jornada} ya fue cursada y está protegida.")
 
-    # Al cambiar el equipo libre de una jornada, proteger todas las jornadas
-    # anteriores a la jornada editada, aunque algún resultado aún no esté cargado.
-    # Así no se vuelve a programar en la jornada editada un cruce que ya figura
-    # en una jornada anterior (por ejemplo, Vidal Araya vs Brisas del Maipo).
-    # La jornada editada queda protegida completa para que la adaptación no
-    # elimine el partido que el administrador acaba de guardar.
-    jornadas_protegidas_hasta = max(ultima_cursada, partido_modificado.jornada)
+    # En una edición individual, proteger también la jornada del partido para
+    # no borrar el cambio que acaba de guardar el administrador. En una
+    # reprogramación global desde la jornada N, reconstruir N en adelante y
+    # proteger únicamente las jornadas anteriores a N.
+    ultima_jornada_a_proteger = (
+        partido_modificado.jornada
+        if proteger_jornada_modificada
+        else partido_modificado.jornada - 1
+    )
+    jornadas_protegidas_hasta = max(ultima_cursada, ultima_jornada_a_proteger)
 
     clubes_ids = [
         r.club_id for r in CampeonatoClub.query.filter_by(campeonato_id=campeonato.id)
@@ -6392,7 +6395,7 @@ def reprogramar_fixture_desde_control_manual(campeonato_id):
         if libres_anteriores.intersection(libres.values()):
             raise ValueError("Uno de los clubes seleccionados ya tuvo jornada libre antes de la jornada inicial.")
         disparador = type("JornadaDisparador", (), {"jornada": jornada_inicio})()
-        adaptar_fixture_pendiente(campeonato, disparador, libres_por_jornada_objetivo=libres)
+        adaptar_fixture_pendiente(campeonato, disparador, libres_por_jornada_objetivo=libres, proteger_jornada_modificada=False)
         db.session.commit()
         flash(f"Fixture reprogramado desde la jornada {jornada_inicio}. Se conservaron las jornadas anteriores y los resultados registrados.", "success")
     except Exception as exc:
