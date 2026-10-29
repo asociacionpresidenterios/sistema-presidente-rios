@@ -43,6 +43,14 @@
     </form>
     <div class="warning" style="background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a"><strong>🧠 Fixture adaptable:</strong> los resultados ya registrados nunca se mueven. Los cambios realizados sobre partidos futuros se respetan y el sistema reorganiza automáticamente los cruces restantes para evitar duplicados o equipos jugando dos veces en una misma jornada.</div>
     {% if partidos and clubes_participantes|length >= 2 %}
+    <div style="margin:14px 0;padding:14px;border:2px solid #b91c1c;border-radius:12px;background:#fff7f7">
+      <strong style="color:#991b1b">Retiro de San Cristóbal</strong>
+      <p style="margin:8px 0;color:#7f1d1d;font-size:13px">Aplicar desde la jornada 6. Se mantienen las jornadas anteriores y los resultados registrados; San Cristóbal no volverá a ser programado en los partidos pendientes.</p>
+      <form method="POST" action="{{ url_for('fixture_reprogramar_desde_v2', campeonato_id=campeonato.id) }}" onsubmit="return confirm('¿Confirmas reprogramar el fixture desde la jornada 6 por el retiro de San Cristóbal? Se conservarán las jornadas anteriores y los resultados registrados.');">
+        <input type="hidden" name="jornada_inicio" value="6">
+        <button class="btn warning" type="submit">Aplicar retiro desde jornada 6</button>
+      </form>
+    </div>
     <details style="margin:14px 0;border:1px solid #bfdbfe;border-radius:12px;padding:14px;background:#eff6ff">
       <summary class="btn success" style="display:inline-flex">🔄 Reprogramar desde una jornada y elegir clubes libres</summary>
       <p style="font-size:12px;color:#1e3a8a;margin:12px 0">Solo se reemplazarán los partidos pendientes desde la jornada elegida. Las jornadas anteriores y sus resultados se conservan.</p>
