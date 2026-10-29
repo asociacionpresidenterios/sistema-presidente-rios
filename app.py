@@ -6682,10 +6682,15 @@ def editar_partido_fixture(campeonato_id, partido_id):
             for p in Partido.query.filter_by(campeonato_id=campeonato.id).all()
             if p.id != partido.id
         )
-        if cruce_ya_jugado and club_libre_objetivo_id is None:
+        # Una edición de fecha, hora, cancha o turno no debe fallar solo porque
+        # exista otro registro histórico con esa misma pareja. La restricción de
+        # cruce ya disputado se aplica cuando realmente se intenta cambiar equipos.
+        cambio_pareja = pareja_nueva != pareja_original
+        if cruce_ya_jugado and club_libre_objetivo_id is None and cambio_pareja:
             raise ValueError(
-                "Ese enfrentamiento ya fue disputado. Solo se permite seleccionarlo "
-                "como referencia para cambiar el equipo libre de una jornada."
+                "No se puede guardar ese cruce porque esos equipos ya disputaron "
+                "entre sí un partido anterior. Puedes cambiar fecha, hora, cancha "
+                "o turno, o seleccionar un rival que no hayan enfrentado."
             )
 
         # Si el administrador cambia de jornada, se mueve antes de adaptar.
