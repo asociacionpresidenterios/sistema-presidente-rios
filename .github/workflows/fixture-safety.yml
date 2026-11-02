@@ -1,0 +1,22 @@
+name: Fixture safety checks
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [fix/proteger-fixture-existente]
+
+jobs:
+  syntax-and-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile application
+        run: python -m py_compile app.py
+      - name: Run fixture safety regression tests
+        run: python -m unittest discover -s tests -v
