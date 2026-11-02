@@ -6564,6 +6564,22 @@ def generar_fixture_campeonato(campeonato_id):
 
     club_ids = [registro.club_id for registro in clubes_participantes]
 
+    # Protección V12.1: nunca regenerar un fixture que ya contiene partidos.
+    # Esto evita borrar resultados, actas y programación manual existente.
+    partidos_existentes = Partido.query.filter_by(
+        campeonato_id=campeonato.id
+    ).count()
+    if partidos_existentes:
+        flash(
+            f"Este campeonato ya tiene {partidos_existentes} partidos registrados. "
+            "No se modificó ningún encuentro. Para ajustar únicamente partidos "
+            "pendientes, utiliza la opción de reprogramación del fixture.",
+            "warning"
+        )
+        return redirect(
+            url_for("fixture_campeonato", campeonato_id=campeonato.id)
+        )
+
     if len(club_ids) < 2:
         flash(
             "Debes tener al menos 2 clubes inscritos para generar el fixture.",
@@ -6575,10 +6591,8 @@ def generar_fixture_campeonato(campeonato_id):
     cancha = request.form.get("cancha", "Por definir").strip() or "Por definir"
 
     try:
-        # Al regenerar, se eliminan solamente los partidos de este campeonato.
-        Partido.query.filter_by(
-            campeonato_id=campeonato.id
-        ).delete(synchronize_session=False)
+        # El fixture solo se crea cuando el campeonato no tiene partidos.
+        # No se elimina ni reemplaza ningún registro existente.
 
         calendario = generar_calendario_todos_contra_todos(club_ids)
         primera_fecha = siguiente_sabado(campeonato.fecha_inicio)
