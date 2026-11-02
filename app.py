@@ -5754,6 +5754,22 @@ def adaptar_fixture_pendiente(campeonato, partido_modificado, club_libre_objetiv
     )
     jornadas_protegidas_hasta = max(ultima_cursada, ultima_jornada_a_proteger)
 
+    # Protección V12.2: no eliminar partidos futuros bloqueados manualmente.
+    # Si la reprogramación global los alcanzaría, cancelar antes de alterar datos.
+    partidos_bloqueados_futuros = [
+        p for p in todos
+        if p.jornada > jornadas_protegidas_hasta
+        and not _partido_finalizado(p)
+        and bool(getattr(p, "fixture_bloqueado", False))
+    ]
+    if partidos_bloqueados_futuros:
+        jornadas_bloqueadas = sorted({p.jornada for p in partidos_bloqueados_futuros})
+        raise ValueError(
+            "No se reprogramó el fixture porque hay partidos futuros protegidos "
+            f"manualmente en las jornadas {', '.join(map(str, jornadas_bloqueadas))}. "
+            "Desbloquea o resuelve esos partidos antes de continuar; no se modificó ningún encuentro."
+        )
+
     clubes_ids = [
         r.club_id for r in CampeonatoClub.query.filter_by(campeonato_id=campeonato.id)
         .order_by(CampeonatoClub.id).all()
@@ -6712,6 +6728,18 @@ def eliminar_fixture_campeonato(campeonato_id):
     )
 
     try:
+        partidos_existentes = Partido.query.filter_by(campeonato_id=campeonato.id).all()
+        partidos_protegidos = [
+            p for p in partidos_existentes
+            if _partido_finalizado(p) or bool(getattr(p, "fixture_bloqueado", False))
+        ]
+        if partidos_protegidos:
+            raise ValueError(
+                "No se puede eliminar el fixture completo porque contiene partidos "
+                "disputados o protegidos manualmente. Los resultados y encuentros "
+                "protegidos se conservaron sin cambios."
+            )
+
         eliminados = Partido.query.filter_by(
             campeonato_id=campeonato.id
         ).delete(synchronize_session=False)
